@@ -84,6 +84,32 @@ describe("useTheme on Linux", () => {
     expect(setTheme).not.toHaveBeenCalled();
   });
 
+  it("starts unsaved installations in Gaussian/light even on a dark system", async () => {
+    mediaQueryMatches = true;
+    const { useTheme } = await import("@/composables/useTheme");
+    const theme = useTheme();
+    theme.applyTheme();
+    expect(theme.themePalette.value).toBe("gaussian");
+    expect(theme.themeMode.value).toBe("light");
+    expect(document.documentElement.classList.contains("theme-gaussian")).toBe(true);
+    expect(document.documentElement.classList.contains("dark")).toBe(false);
+  });
+
+  it("preserves an explicit palette and legacy soft-theme installations", async () => {
+    window.localStorage.setItem("dbx-theme-palette", "cobalt");
+    const theme = await loadTheme("dark");
+    theme.applyTheme();
+    expect(theme.themePalette.value).toBe("cobalt");
+    expect(theme.isDark.value).toBe(true);
+    expect(window.localStorage.getItem("dbx-theme-palette")).toBe("cobalt");
+    vi.resetModules();
+    window.localStorage.removeItem("dbx-theme-palette");
+    window.localStorage.setItem("dbx-theme", "soft-dark");
+    const legacy = (await import("@/composables/useTheme")).useTheme();
+    expect(legacy.themePalette.value).toBe("mist");
+    expect(legacy.isDark.value).toBe(true);
+  });
+
   it("continues to apply system preference changes without writing the native theme", async () => {
     const theme = await loadTheme();
     theme.applyTheme();

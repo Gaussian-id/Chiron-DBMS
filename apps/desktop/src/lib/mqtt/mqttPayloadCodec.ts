@@ -1,11 +1,11 @@
 /**
- * MQTT Payload 编解码工具
- * 支持 Plaintext / JSON / Base64 / Hex / CBOR / MsgPack 六种格式
+ * MQTT payload encoding and decoding utilities.
+ * Supports Plaintext, JSON, Base64, Hex, CBOR, and MsgPack.
  */
 import { decode as cborDecode, encode as cborEncode } from "cbor-x";
 import { decode as msgpackDecode, encode as msgpackEncode } from "@msgpack/msgpack";
 
-/** 支持的编码格式 */
+/** Supported payload encodings. */
 export type PayloadEncoding = "plaintext" | "json" | "base64" | "hex" | "cbor" | "msgpack";
 
 export const PAYLOAD_ENCODING_LABELS: Record<PayloadEncoding, string> = {
@@ -20,7 +20,7 @@ export const PAYLOAD_ENCODING_LABELS: Record<PayloadEncoding, string> = {
 export const PAYLOAD_ENCODINGS: PayloadEncoding[] = ["plaintext", "json", "base64", "hex", "cbor", "msgpack"];
 
 /**
- * 将 base64 编码的 payload 按指定格式解码为可展示的字符串
+ * Decodes a Base64 payload to displayable text using the requested encoding.
  */
 export function decodePayload(base64: string, encoding: PayloadEncoding): string {
   if (!base64) return "";
@@ -58,17 +58,17 @@ export function decodePayload(base64: string, encoding: PayloadEncoding): string
         return bytesToUtf8(bytes);
     }
   } catch {
-    /* 解码失败时回退为纯文本显示 */
+    /* Fall back to plaintext display when decoding fails. */
     try {
       return bytesToUtf8(base64ToBytes(base64));
     } catch {
-      return `[解码失败] ${base64}`;
+      return `[Decode failed] ${base64}`;
     }
   }
 }
 
 /**
- * 将用户输入的文本按指定格式编码为 base64（用于发布消息）
+ * Encodes user input as Base64 using the requested format for publishing.
  */
 export function encodePayload(input: string, encoding: PayloadEncoding): string {
   if (!input) return "";
@@ -79,33 +79,34 @@ export function encodePayload(input: string, encoding: PayloadEncoding): string 
         return bytesToBase64(utf8ToBytes(input));
 
       case "json": {
-        /* 确保输入是合法 JSON 后再编码 */
+        /* Validate JSON before encoding it. */
         const parsed = JSON.parse(input);
         return bytesToBase64(utf8ToBytes(JSON.stringify(parsed)));
       }
 
       case "base64":
-        /* 浏览器 atob 接受缺失 padding 和空白；规范化后再交给 Rust 严格解码 */
+        /* Browser `atob` accepts missing padding and whitespace; normalize before
+           handing the result to Rust's strict decoder. */
         return bytesToBase64(base64ToBytes(input));
 
       case "hex": {
         const cleaned = input.replace(/\s/g, "");
         if (!/^([0-9A-Fa-f]{2})*$/.test(cleaned)) {
-          throw new Error("无效的十六进制字符串");
+          throw new Error("Invalid hexadecimal string");
         }
         const bytes = hexToBytes(cleaned);
         return bytesToBase64(bytes);
       }
 
       case "cbor": {
-        /* 将 JSON 文本编码为 CBOR */
+        /* Encode JSON text as CBOR. */
         const parsed = JSON.parse(input);
         const cborBytes = cborEncode(parsed);
         return bytesToBase64(cborBytes);
       }
 
       case "msgpack": {
-        /* 将 JSON 文本编码为 MsgPack */
+        /* Encode JSON text as MsgPack. */
         const parsed = JSON.parse(input);
         const msgpackBytes = msgpackEncode(parsed);
         return bytesToBase64(msgpackBytes);
@@ -115,11 +116,11 @@ export function encodePayload(input: string, encoding: PayloadEncoding): string 
         return bytesToBase64(utf8ToBytes(input));
     }
   } catch (e) {
-    throw new Error(`编码失败 (${PAYLOAD_ENCODING_LABELS[encoding]}): ${String(e)}`);
+    throw new Error(`Encoding failed (${PAYLOAD_ENCODING_LABELS[encoding]}): ${String(e)}`);
   }
 }
 
-/* ========== 基础转换工具 ========== */
+/* ========== Primitive conversion utilities ========== */
 
 function base64ToBytes(base64: string): Uint8Array {
   const binary = atob(base64);
@@ -164,14 +165,14 @@ function formatDecodedValue(value: unknown): string {
   if (typeof value === "number" || typeof value === "boolean" || typeof value === "bigint") {
     return String(value);
   }
-  /* Buffer / Uint8Array 等二进制类型 */
+  /* Binary types such as Buffer and Uint8Array. */
   if (value instanceof Uint8Array || (ArrayBuffer.isView(value) && (value as ArrayBufferView).byteLength !== undefined)) {
-    return `[二进制数据, ${(value as Uint8Array).byteLength ?? (value as Uint8Array).length} bytes]`;
+    return `[Binary data, ${(value as Uint8Array).byteLength ?? (value as Uint8Array).length} bytes]`;
   }
   if (value instanceof ArrayBuffer) {
-    return `[二进制数据, ${value.byteLength} bytes]`;
+    return `[Binary data, ${value.byteLength} bytes]`;
   }
-  /* 对象/数组 → JSON 格式化 */
+  /* Objects and arrays use formatted JSON. */
   try {
     return JSON.stringify(value, null, 2);
   } catch {

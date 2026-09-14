@@ -509,7 +509,7 @@ onBeforeUnmount(() => {
       </TabsList>
 
       <TabsContent value="form" class="m-0 flex flex-col gap-4 pt-2">
-        <div class="grid gap-4 md:grid-cols-4">
+        <div class="formatter-fields-grid grid gap-4">
           <div class="space-y-2">
             <Label>{{ t("settings.sqlFormatterKeywordCase") }}</Label>
             <Select :model-value="settings.keywordCase" @update:model-value="(value: any) => onCaseOption('keywordCase', value)">
@@ -567,7 +567,7 @@ onBeforeUnmount(() => {
           </div>
         </div>
 
-        <div class="grid gap-4 md:grid-cols-[minmax(0,1fr)_10rem_12rem]">
+        <div class="formatter-fields-grid grid gap-4">
           <div class="space-y-2">
             <Label>{{ t("settings.sqlFormatterIndent") }}</Label>
             <div class="grid grid-cols-2 gap-2">
@@ -609,7 +609,7 @@ onBeforeUnmount(() => {
           </div>
         </div>
 
-        <div class="grid gap-4 md:grid-cols-3">
+        <div class="formatter-fields-grid grid gap-4">
           <div class="space-y-2">
             <Label>{{ t("settings.sqlFormatterLogicalOperatorNewline") }}</Label>
             <Select :model-value="settings.logicalOperatorNewline" @update:model-value="onLogicalOperatorNewline">
@@ -667,7 +667,7 @@ onBeforeUnmount(() => {
           </div>
         </div>
 
-        <div class="grid gap-3 md:grid-cols-2">
+        <div class="formatter-fields-grid grid gap-3">
           <div class="flex items-center justify-between gap-4 rounded-md border bg-muted/20 px-3 py-2">
             <Label for="sql-formatter-preserve-empty-lines">{{ t("settings.sqlFormatterPreserveEmptyLines") }}</Label>
             <Switch id="sql-formatter-preserve-empty-lines" :model-value="settings.preserveEmptyLines" @update:model-value="(value: boolean) => updateOption('preserveEmptyLines', value)" />
@@ -744,3 +744,23 @@ onBeforeUnmount(() => {
     </Tabs>
   </div>
 </template>
+
+<style scoped>
+.formatter-fields-grid {
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 15rem), 1fr));
+}
+.formatter-fields-grid > * {
+  min-width: 0;
+}
+.formatter-fields-grid label {
+  white-space: normal;
+  line-height: 1.4;
+}
+.formatter-fields-grid > .space-y-2 {
+  display: flex;
+  flex-direction: column;
+}
+.formatter-fields-grid > .space-y-2 > :last-child {
+  margin-top: auto;
+}
+</style>

@@ -134,7 +134,7 @@ describe("EditorSettingsDialog choice card containment", () => {
     for (const key of ["iconThemeDefault", "iconThemeBlack"] as const) {
       const block = buttonBlockForKey(key);
       expectClassTokens(classNameFromTag(openingTag(block, "Button")), ["settings-choice-card", "h-auto", "min-w-0", "whitespace-normal", "overflow-hidden"]);
-      expect(block).toContain('class="h-12 w-12 shrink-0"');
+      expectClassTokens(classNameFromTag(openingTag(block, "img")), ["h-12", "w-12", "shrink-0"]);
     }
   });
 });

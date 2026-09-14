@@ -1,0 +1,29 @@
+schemaVersion: 1
+order: 181
+dbType: chirondb
+rustVariant: ChironDb
+label: ChironDB
+runtimeMode: native
+mcpMode: unsupported
+singleConnectionPool: true
+metadataConnectionScoped: true
+skipTcpProbe: false
+defaultPort: 7401
+supportLevel: browse
+capabilities:
+  queryExecution: true
+  metadataBrowse: true
+  objectBrowser: false
+  objectSource: false
+  schemaSearch: false
+  diagram: false
+  tableDataEdit: false
+  tableStructureEdit: false
+  tableImport: false
+  dataTransfer: false
+  sqlFileExecution: false
+  databaseCreate: false
+  fieldLineage: false
+  sqlExplain: false
+  userAdmin: false
+  driverManagement: false

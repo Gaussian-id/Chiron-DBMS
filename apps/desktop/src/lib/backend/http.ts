@@ -1835,6 +1835,9 @@ export async function aiCancelStream(sessionId: string): Promise<boolean> {
 export async function aiTestConnection(config: AiConfig): Promise<AiTestConnectionResult> {
   return post("/api/ai/test-connection", { config });
 }
+export async function aiResolveEndpoint(config: AiConfig): Promise<string> {
+  return post("/api/ai/resolve-endpoint", { config });
+}
 
 export async function aiListModels(config: AiConfig): Promise<AiModelInfo[]> {
   return post("/api/ai/models", { config });
@@ -4189,6 +4192,10 @@ export async function vectorGetCollectionDetail(connectionId: string, database: 
     database,
     collection,
   });
+}
+
+export async function chirondbRequest(connectionId: string, request: import("@/types/chirondb").ChironDbRequest): Promise<import("@/types/chirondb").ChironDbReply> {
+  return post("/api/chirondb/request", { connectionId, request });
 }
 
 export async function vectorDropDatabase(connectionId: string, database: string): Promise<void> {

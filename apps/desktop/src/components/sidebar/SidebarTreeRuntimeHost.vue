@@ -928,7 +928,7 @@ async function toggle(requestId = beginNavigationRequest()) {
         await connectionStore.loadElasticsearchIndices(node.connectionId);
       } else if (config?.db_type === "milvus") {
         await connectionStore.loadMilvusDatabases(node.connectionId);
-      } else if (config?.db_type === "qdrant" || config?.db_type === "weaviate" || config?.db_type === "chromadb") {
+      } else if (config?.db_type === "chirondb" || config?.db_type === "qdrant" || config?.db_type === "weaviate" || config?.db_type === "chromadb") {
         await connectionStore.loadVectorCollections(node.connectionId);
       } else if (config?.db_type === "mq") {
         await connectionStore.loadMqTenants(node.connectionId);
@@ -4578,7 +4578,7 @@ const canOpenSqlFileExecution = computed(() => {
 const canExportAllDatabases = computed(() => {
   if (activeNode.value.type !== "connection" || !activeNode.value.connectionId) return false;
   const dbType = connectionStore.getConfig(activeNode.value.connectionId)?.db_type;
-  return !["redis", "mongodb", "dynamodb", "elasticsearch", "easysearch", "meilisearch", "qdrant", "milvus", "weaviate", "chromadb", "etcd", "zookeeper", "consul", "mq", "nacos"].includes(dbType || "");
+  return !["redis", "mongodb", "dynamodb", "elasticsearch", "easysearch", "meilisearch", "chirondb", "qdrant", "milvus", "weaviate", "chromadb", "etcd", "zookeeper", "consul", "mq", "nacos"].includes(dbType || "");
 });
 
 const canOpenScheduledBackups = computed(() => {
@@ -6569,6 +6569,15 @@ function buildContextMenu(node: TreeNode): ContextMenuItem[] {
   // Normalization is intentionally evaluated only when a menu opens. Besides
   // parity tests, it provides deterministic action identifiers for diagnostics.
   normalizeSidebarMenuDescriptors(menuContext, rawItems);
+  const deferredActions = new Set<ContextMenuItem["action"]>([openTransfer, openSchemaDiff, openSchemaDiffForRoutine, openDataCompare, openDiagram, openDocs, openTableImport, openFieldLineage, openStructureEditor, duplicateStructure, exportStructure]);
+  if (databaseTypeForNode(node) !== "hbase") deferredActions.add(createTable);
+  const markComingSoon = (items: ContextMenuItem[]): ContextMenuItem[] =>
+    items.map((item) => ({
+      ...item,
+      ...(item.action && deferredActions.has(item.action) ? { label: `${item.label} · Coming Soon`, disabled: true, action: undefined } : {}),
+      ...(item.children ? { children: markComingSoon(item.children) } : {}),
+    }));
+  rawItems = markComingSoon(rawItems);
   const items = bindMenuTarget(rawItems, menuContext.target, menuContext.selectedNodeIds);
   activateRuntimeNode(previousNode);
   return items;

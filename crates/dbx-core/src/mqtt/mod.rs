@@ -1,17 +1,17 @@
-//! MQTT 模块：MQTT broker 连接管理、消息订阅/发布。
+//! MQTT module: broker connection management and message subscription/publishing.
 //!
-//! ## 架构
+//! ## Architecture
 //! ```text
-//! DBX 前端 (Vue)
+//! DBX frontend (Vue)
 //!     │ Tauri invoke
 //!     ▼
-//! src-tauri/src/commands/mqtt_cmd.rs  (Tauri command 入口)
+//! src-tauri/src/commands/mqtt_cmd.rs  (Tauri command entry point)
 //!     │
 //!     ▼
-//! crates/dbx-core/src/mqtt/service.rs  (共享核心逻辑)
+//! crates/dbx-core/src/mqtt/service.rs  (shared core logic)
 //!     │
 //!     ▼
-//! crates/dbx-core/src/mqtt/client.rs   (rumqttc 客户端封装)
+//! crates/dbx-core/src/mqtt/client.rs   (rumqttc client wrapper)
 //!     │
 //!     ▼
 //! MQTT Broker (EMQX / Mosquitto / HiveMQ / ...)

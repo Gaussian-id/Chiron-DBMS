@@ -35,6 +35,7 @@ export const DATABASE_NAMESPACE_CREATION_MATRIX = {
   meilisearch: { deferred: "index creation is not modeled as database creation" },
   hbase: { deferred: "namespace creation needs dedicated HBase namespace options" },
   qdrant: { deferred: "collection creation is separate from database creation" },
+  chirondb: { deferred: "use CREATE COLLECTION in the guarded ChironQL workspace" },
   milvus: { deferred: "collection/database lifecycle needs a dedicated vector workflow" },
   weaviate: { deferred: "collection creation is separate from database creation" },
   chromadb: { deferred: "collection creation is separate from database creation" },

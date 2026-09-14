@@ -1,4 +1,5 @@
 pub mod agent_driver;
+pub mod chirondb;
 pub mod clickhouse_driver;
 pub mod cloudberry;
 pub mod cloudflare_d1;

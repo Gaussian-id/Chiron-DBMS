@@ -120,6 +120,7 @@ import { importClipboardApiKeyAfterConfirmation, type AiConfigDeepLinkDraft } fr
 import { clearDebugLogs as clearStoredDebugLogs, downloadDebugLogs, getDebugLogBundleText } from "@/lib/backend/debugLog";
 import {
   aiTestConnection,
+  aiResolveEndpoint,
   checkMcpServerStatus,
   installMcpServer,
   uninstallMcpServer,
@@ -358,10 +359,10 @@ const isSettingsPage = computed(() => props.variant === "page");
 const settingsVisible = computed(() => isSettingsPage.value || props.open === true);
 const settingsRootComponent = computed(() => (isSettingsPage.value ? "div" : Dialog));
 const settingsRootProps = computed(() => (isSettingsPage.value ? {} : { open: props.open === true }));
-const settingsRootClass = computed(() => (isSettingsPage.value ? "h-full min-h-0 overflow-hidden bg-background" : ""));
+const settingsRootClass = computed(() => (isSettingsPage.value ? "settings-shell h-full min-h-0 overflow-hidden bg-background" : ""));
 const settingsContentComponent = computed(() => (isSettingsPage.value ? "div" : DialogContent));
 const settingsContentClass = computed(() =>
-  isSettingsPage.value ? "flex h-full min-h-0 flex-col gap-4 overflow-hidden bg-background p-4" : "h-[min(660px,calc(var(--dbx-viewport-height)-80px))] !max-w-[min(920px,calc(100vw-32px))] grid-rows-[auto_minmax(0,1fr)] gap-3 p-4 sm:!max-w-[min(920px,calc(100vw-48px))]",
+  isSettingsPage.value ? "flex h-full min-h-0 flex-col gap-4 overflow-hidden bg-background p-4" : "settings-shell h-[min(660px,calc(var(--dbx-viewport-height)-80px))] !max-w-[min(920px,calc(100vw-32px))] grid-rows-[auto_minmax(0,1fr)] gap-3 p-4 sm:!max-w-[min(920px,calc(100vw-48px))]",
 );
 const settingsTitleComponent = computed(() => (isSettingsPage.value ? "h2" : DialogTitle));
 
@@ -4327,6 +4328,25 @@ const aiEndpointHint = computed(() => {
   }
   return "";
 });
+const aiResolvedEndpoint = ref("");
+watch([aiEditEndpoint, aiEditProvider, aiEditApiStyle, aiEditModel], async (_, __, onCleanup) => {
+  let stale = false;
+  onCleanup(() => {
+    stale = true;
+  });
+  if (aiIsCliProvider.value || !aiEditEndpoint.value.trim()) {
+    aiResolvedEndpoint.value = "";
+    return;
+  }
+  try {
+    // Pure backend URL resolution: never send draft keys just to preview a URL.
+    const config = { ...currentAiEditConfig(), apiKey: "", customHeaders: {} };
+    const endpoint = await aiResolveEndpoint(config);
+    if (!stale) aiResolvedEndpoint.value = endpoint;
+  } catch {
+    if (!stale) aiResolvedEndpoint.value = "Endpoint preview unavailable";
+  }
+});
 const aiSupportsApiStyle = computed(() => !aiIsCliProvider.value && (aiEditProvider.value === "openai" || aiEditProvider.value === "openai-compatible" || aiEditProvider.value === "custom"));
 const aiSupportsAnthropicApiStyle = computed(() => aiEditProvider.value === "custom");
 const aiCliMcpNeedsInstall = computed(() => aiIsCliProvider.value && (!mcpStatus.value || !mcpStatus.value.installed));
@@ -5194,7 +5214,7 @@ onUnmounted(() => {
           </button>
         </nav>
 
-        <div class="min-w-0 flex-1 overflow-hidden px-1 flex flex-col">
+        <div class="settings-body min-h-0 min-w-0 flex-1 overflow-hidden px-1 flex flex-col">
           <div class="shrink-0 px-2 pt-1 pb-3">
             <div ref="settingsSearchInputContainerRef" class="relative">
               <Search class="pointer-events-none absolute top-1/2 left-4 z-10 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
@@ -5264,8 +5284,8 @@ onUnmounted(() => {
             </div>
           </div>
           <div v-else ref="settingsContentScrollRef" class="min-h-0 flex-1 overflow-y-auto overflow-x-hidden px-1 pr-2">
-            <section v-if="activeSettingsTab === 'editor'" data-settings-search-id="editor" :class="['flex flex-col gap-5 py-2', settingsSearchTargetClass('editor')]">
-              <div class="grid gap-4 md:grid-cols-[1fr_auto]">
+            <section v-if="activeSettingsTab === 'editor'" data-settings-search-id="editor" :class="['settings-form-section flex flex-col gap-5 py-2', settingsSearchTargetClass('editor')]">
+              <div class="settings-responsive-grid grid gap-4 md:grid-cols-[1fr_auto]">
                 <!-- Font Family -->
                 <div class="space-y-2 min-w-0">
                   <Label>{{ t("settings.fontFamily") }}</Label>
@@ -5344,7 +5364,7 @@ onUnmounted(() => {
                 </div>
               </div>
 
-              <div class="grid grid-cols-2 gap-2 lg:grid-cols-4" data-editor-preview-controls>
+              <div class="settings-responsive-grid grid grid-cols-2 gap-2 lg:grid-cols-4" data-editor-preview-controls>
                 <div class="settings-item flex min-w-0 items-center justify-between gap-2 rounded-md border bg-muted/20 px-2 py-1.5">
                   <div class="flex min-w-0 items-center gap-1">
                     <Label for="editor-show-statement-run-buttons" class="truncate text-xs">{{ t("settings.showStatementRunButtons") }}</Label>
@@ -5398,8 +5418,8 @@ onUnmounted(() => {
 
               <Separator />
 
-              <div class="grid gap-4 md:grid-cols-2" data-editor-execution-settings>
-                <div class="settings-item flex items-center justify-between gap-4 rounded-md border bg-muted/20 px-3 py-2 md:col-span-2" data-editor-execute-mode>
+              <div class="settings-responsive-grid grid gap-4 md:grid-cols-2" data-editor-execution-settings>
+                <div class="settings-form-row settings-item flex items-center justify-between gap-4 rounded-md border bg-muted/20 px-3 py-2 md:col-span-2" data-editor-execute-mode>
                   <div class="min-w-0 space-y-1">
                     <Label>{{ executeModeLabel }}</Label>
                     <p class="text-xs text-muted-foreground">
@@ -5417,7 +5437,7 @@ onUnmounted(() => {
                   </Select>
                 </div>
 
-                <div class="settings-item flex items-center justify-between gap-4 rounded-md border bg-muted/20 px-3 py-2" data-editor-default-transaction-mode>
+                <div class="settings-form-row settings-item flex items-center justify-between gap-4 rounded-md border bg-muted/20 px-3 py-2" data-editor-default-transaction-mode>
                   <div class="min-w-0 space-y-1">
                     <Label for="editor-default-transaction-mode">{{ t("settings.defaultTransactionMode") }}</Label>
                     <p class="text-xs text-muted-foreground">
@@ -5435,7 +5455,7 @@ onUnmounted(() => {
                   </Select>
                 </div>
 
-                <div class="settings-item flex items-center justify-between gap-4 rounded-md border bg-muted/20 px-3 py-2" :class="{ 'opacity-50': editExecuteMode !== 'current' }">
+                <div class="settings-form-row settings-item flex items-center justify-between gap-4 rounded-md border bg-muted/20 px-3 py-2" :class="{ 'opacity-50': editExecuteMode !== 'current' }">
                   <div class="space-y-1">
                     <Label for="editor-execute-all-on-blank-line">{{ t("settings.executeAllOnBlankLine") }}</Label>
                     <p class="text-xs text-muted-foreground">
@@ -5445,7 +5465,7 @@ onUnmounted(() => {
                   <Switch id="editor-execute-all-on-blank-line" v-model="editExecuteAllOnBlankLine" :disabled="editExecuteMode !== 'current'" class="mt-0.5" />
                 </div>
 
-                <div class="settings-item flex items-center justify-between gap-4 rounded-md border bg-muted/20 px-3 py-2">
+                <div class="settings-form-row settings-item flex items-center justify-between gap-4 rounded-md border bg-muted/20 px-3 py-2">
                   <div class="space-y-1">
                     <Label for="editor-show-execution-target-picker">{{ t("settings.showExecutionTargetPicker") }}</Label>
                     <p class="text-xs text-muted-foreground">
@@ -5455,7 +5475,7 @@ onUnmounted(() => {
                   <Switch id="editor-show-execution-target-picker" v-model="editShowExecutionTargetPicker" class="mt-0.5" />
                 </div>
 
-                <div class="settings-item flex items-center justify-between gap-4 rounded-md border bg-muted/20 px-3 py-2">
+                <div class="settings-form-row settings-item flex items-center justify-between gap-4 rounded-md border bg-muted/20 px-3 py-2">
                   <div class="space-y-1">
                     <Label for="editor-confirm-dangerous-sql">{{ t("settings.confirmDangerousSqlExecution") }}</Label>
                     <p class="text-xs text-muted-foreground">
@@ -5465,7 +5485,7 @@ onUnmounted(() => {
                   <Switch id="editor-confirm-dangerous-sql" v-model="editConfirmDangerousSqlExecution" class="mt-0.5" />
                 </div>
 
-                <div class="settings-item flex items-center justify-between gap-4 rounded-md border bg-muted/20 px-3 py-2">
+                <div class="settings-form-row settings-item flex items-center justify-between gap-4 rounded-md border bg-muted/20 px-3 py-2">
                   <div class="space-y-1">
                     <Label for="editor-continue-on-error">{{ t("settings.continueOnErrorOnBatch") }}</Label>
                     <p class="text-xs text-muted-foreground">
@@ -5478,8 +5498,8 @@ onUnmounted(() => {
 
               <Separator />
 
-              <div class="grid gap-4 md:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]" data-editor-sql-completion-settings>
-                <div class="settings-item flex items-start justify-between gap-4 rounded-md border bg-muted/20 px-3 py-2" data-editor-completion-trigger-mode>
+              <div class="settings-responsive-grid grid gap-4 md:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]" data-editor-sql-completion-settings>
+                <div class="settings-form-row settings-item flex items-start justify-between gap-4 rounded-md border bg-muted/20 px-3 py-2" data-editor-completion-trigger-mode>
                   <div class="min-w-0 space-y-1">
                     <Label>{{ t("settings.completionTriggerMode") }}</Label>
                     <p class="text-xs leading-tight text-muted-foreground">
@@ -5498,7 +5518,7 @@ onUnmounted(() => {
                   </Select>
                 </div>
 
-                <div class="settings-item flex items-center justify-between gap-4 rounded-md border bg-muted/20 px-3 py-2">
+                <div class="settings-form-row settings-item flex items-center justify-between gap-4 rounded-md border bg-muted/20 px-3 py-2">
                   <div class="space-y-1">
                     <Label for="editor-select-first-completion-on-open">{{ t("settings.selectFirstCompletionOnOpen") }}</Label>
                     <p class="text-xs text-muted-foreground">
@@ -5508,7 +5528,7 @@ onUnmounted(() => {
                   <Switch id="editor-select-first-completion-on-open" v-model="editSelectFirstCompletionOnOpen" class="mt-0.5" />
                 </div>
 
-                <div class="settings-item flex items-center justify-between gap-4 rounded-md border bg-muted/20 px-3 py-2">
+                <div class="settings-form-row settings-item flex items-center justify-between gap-4 rounded-md border bg-muted/20 px-3 py-2">
                   <div class="space-y-1">
                     <Label for="editor-auto-close-brackets">{{ t("settings.autoCloseBrackets") }}</Label>
                     <p class="text-xs text-muted-foreground">
@@ -5518,7 +5538,7 @@ onUnmounted(() => {
                   <Switch id="editor-auto-close-brackets" v-model="editAutoCloseBrackets" class="mt-0.5" />
                 </div>
 
-                <div class="settings-item flex items-center justify-between gap-4 rounded-md border bg-muted/20 px-3 py-2">
+                <div class="settings-form-row settings-item flex items-center justify-between gap-4 rounded-md border bg-muted/20 px-3 py-2">
                   <div class="space-y-1">
                     <Label for="editor-insert-space-after-completion">{{ t("settings.insertSpaceAfterCompletion") }}</Label>
                     <p class="text-xs text-muted-foreground">
@@ -5528,7 +5548,7 @@ onUnmounted(() => {
                   <Switch id="editor-insert-space-after-completion" v-model="editInsertSpaceAfterCompletion" class="mt-0.5" />
                 </div>
 
-                <div class="settings-item flex items-center justify-between gap-4 rounded-md border bg-muted/20 px-3 py-2">
+                <div class="settings-form-row settings-item flex items-center justify-between gap-4 rounded-md border bg-muted/20 px-3 py-2">
                   <div class="space-y-1">
                     <Label for="editor-sort-completion-columns-alphabetically">{{ t("settings.sortCompletionColumnsAlphabetically") }}</Label>
                     <p class="text-xs text-muted-foreground">
@@ -5538,7 +5558,7 @@ onUnmounted(() => {
                   <Switch id="editor-sort-completion-columns-alphabetically" v-model="editSortCompletionColumnsAlphabetically" class="mt-0.5" />
                 </div>
 
-                <div class="settings-item flex items-center justify-between gap-4 rounded-md border bg-muted/20 px-3 py-2">
+                <div class="settings-form-row settings-item flex items-center justify-between gap-4 rounded-md border bg-muted/20 px-3 py-2">
                   <div class="space-y-1">
                     <Label for="editor-auto-alias-tables">{{ t("settings.autoAliasTables") }}</Label>
                     <p class="text-xs text-muted-foreground">
@@ -5551,8 +5571,8 @@ onUnmounted(() => {
 
               <Separator />
 
-              <div class="grid gap-4 md:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]" data-editor-other-settings>
-                <div class="settings-item flex items-center justify-between gap-4 rounded-md border bg-muted/20 px-3 py-2">
+              <div class="settings-responsive-grid grid gap-4 md:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]" data-editor-other-settings>
+                <div class="settings-form-row settings-item flex items-center justify-between gap-4 rounded-md border bg-muted/20 px-3 py-2">
                   <div class="space-y-1">
                     <Label for="editor-show-insert-value-hints">{{ t("settings.showInsertValueHints") }}</Label>
                     <p class="text-xs text-muted-foreground">
@@ -5562,7 +5582,7 @@ onUnmounted(() => {
                   <Switch id="editor-show-insert-value-hints" v-model="editShowInsertValueHints" class="mt-0.5" />
                 </div>
 
-                <div class="settings-item flex items-center justify-between gap-4 rounded-md border bg-muted/20 px-3 py-2">
+                <div class="settings-form-row settings-item flex items-center justify-between gap-4 rounded-md border bg-muted/20 px-3 py-2">
                   <div class="space-y-1">
                     <Label for="editor-word-wrap">{{ t("settings.wordWrap") }}</Label>
                     <p class="text-xs text-muted-foreground">
@@ -5572,7 +5592,7 @@ onUnmounted(() => {
                   <Switch id="editor-word-wrap" v-model="editWordWrap" class="mt-0.5" />
                 </div>
 
-                <div class="settings-item flex items-center justify-between gap-4 rounded-md border bg-muted/20 px-3 py-2">
+                <div class="settings-form-row settings-item flex items-center justify-between gap-4 rounded-md border bg-muted/20 px-3 py-2">
                   <div class="space-y-1">
                     <Label for="editor-vim-mode">{{ t("settings.vimMode") }}</Label>
                     <p class="text-xs text-muted-foreground">
@@ -5582,7 +5602,7 @@ onUnmounted(() => {
                   <Switch id="editor-vim-mode" v-model="editVimModeEnabled" class="mt-0.5" />
                 </div>
 
-                <div class="settings-item flex items-center justify-between gap-4 rounded-md border bg-muted/20 px-3 py-2">
+                <div class="settings-form-row settings-item flex items-center justify-between gap-4 rounded-md border bg-muted/20 px-3 py-2">
                   <div class="space-y-1">
                     <Label for="regex-max-match-count">{{ t("settings.regexMaxMatchCount") }}</Label>
                     <p class="text-xs text-muted-foreground">{{ t("settings.regexMaxMatchCountDescription") }}</p>
@@ -5601,8 +5621,8 @@ onUnmounted(() => {
 
               <Separator />
 
-              <div class="grid gap-3 md:grid-cols-2">
-                <div class="settings-item flex items-center justify-between gap-4 rounded-md border bg-muted/20 px-3 py-2 md:col-span-2">
+              <div class="settings-responsive-grid grid gap-3 md:grid-cols-2">
+                <div class="settings-form-row settings-item flex items-center justify-between gap-4 rounded-md border bg-muted/20 px-3 py-2 md:col-span-2">
                   <div class="min-w-0 space-y-1">
                     <Label for="editor-saved-sql-open-target">{{ t("settings.savedSqlOpenTarget") }}</Label>
                     <p class="text-xs text-muted-foreground">
@@ -5621,7 +5641,7 @@ onUnmounted(() => {
                 </div>
 
                 <div class="settings-item rounded-md border bg-muted/20 p-3 md:col-span-2" data-editor-unsaved-sql-settings>
-                  <div class="grid gap-4 md:grid-cols-2">
+                  <div class="settings-responsive-grid grid gap-4 md:grid-cols-2">
                     <div class="flex min-w-0 items-start justify-between gap-4">
                       <div class="min-w-0 space-y-1">
                         <Label for="editor-confirm-unsaved-sql-close">{{ t("settings.confirmUnsavedSqlClose") }}</Label>
@@ -5657,7 +5677,7 @@ onUnmounted(() => {
                   </div>
                 </div>
 
-                <div class="settings-item flex items-center justify-between gap-4 rounded-md border bg-muted/20 px-3 py-2">
+                <div class="settings-form-row settings-item flex items-center justify-between gap-4 rounded-md border bg-muted/20 px-3 py-2">
                   <div class="space-y-1">
                     <Label for="generate-sql-include-database-name">{{ t("settings.generateSqlIncludeDatabaseName") }}</Label>
                     <p class="text-xs text-muted-foreground">
@@ -5667,7 +5687,7 @@ onUnmounted(() => {
                   <Switch id="generate-sql-include-database-name" v-model="editGenerateSqlIncludeDatabaseName" class="mt-0.5" />
                 </div>
 
-                <div class="settings-item flex items-center justify-between gap-4 rounded-md border bg-muted/20 px-3 py-2">
+                <div class="settings-form-row settings-item flex items-center justify-between gap-4 rounded-md border bg-muted/20 px-3 py-2">
                   <div class="space-y-1">
                     <Label for="generate-sql-quote-identifiers">{{ t("settings.generateSqlQuoteIdentifiers") }}</Label>
                     <p class="text-xs text-muted-foreground">
@@ -5677,7 +5697,7 @@ onUnmounted(() => {
                   <Switch id="generate-sql-quote-identifiers" v-model="editGenerateSqlQuoteIdentifiers" class="mt-0.5" />
                 </div>
 
-                <div class="settings-item flex items-center justify-between gap-4 rounded-md border bg-muted/20 px-3 py-2">
+                <div class="settings-form-row settings-item flex items-center justify-between gap-4 rounded-md border bg-muted/20 px-3 py-2">
                   <div class="space-y-1">
                     <Label for="format-sql-on-sql-file-save">{{ t("settings.formatSqlOnSqlFileSave") }}</Label>
                     <p class="text-xs text-muted-foreground">
@@ -5719,8 +5739,8 @@ onUnmounted(() => {
                     </Select>
                   </div>
                 </div>
-                <div class="grid gap-3 md:grid-cols-2">
-                  <div v-for="key in SQL_VARIABLE_SYNTAX_KEYS" :key="key" class="settings-item flex items-center justify-between gap-4 rounded-md border bg-muted/20 px-3 py-2" :class="{ 'opacity-50': !editSqlVariableSubstitutionEnabled }">
+                <div class="settings-responsive-grid grid gap-3 md:grid-cols-2">
+                  <div v-for="key in SQL_VARIABLE_SYNTAX_KEYS" :key="key" class="settings-form-row settings-item flex items-center justify-between gap-4 rounded-md border bg-muted/20 px-3 py-2" :class="{ 'opacity-50': !editSqlVariableSubstitutionEnabled }">
                     <div class="min-w-0 space-y-1">
                       <Label :for="`sql-var-syntax-${key}`" class="flex items-center gap-1.5">
                         <span class="font-mono text-xs text-primary">{{ SQL_VARIABLE_SYNTAX_TOKENS[key] }}</span>
@@ -5741,7 +5761,7 @@ onUnmounted(() => {
                 <div class="text-sm font-medium text-muted-foreground">
                   {{ t("settings.sqlFileSection") }}
                 </div>
-                <div class="settings-item flex items-center justify-between gap-4 rounded-md border bg-muted/20 px-3 py-2">
+                <div class="settings-form-row settings-item flex items-center justify-between gap-4 rounded-md border bg-muted/20 px-3 py-2">
                   <div class="space-y-1">
                     <Label for="external-sql-editor-max-mb">
                       {{ t("settings.externalSqlEditorMaxMb") }}
@@ -5764,7 +5784,7 @@ onUnmounted(() => {
               </div>
             </section>
 
-            <section v-else-if="activeSettingsTab === 'formatter'" data-settings-search-id="formatter" :class="['flex flex-col gap-5 py-2', settingsSearchTargetClass('formatter')]">
+            <section v-else-if="activeSettingsTab === 'formatter'" data-settings-search-id="formatter" :class="['settings-form-section flex flex-col gap-5 py-2', settingsSearchTargetClass('formatter')]">
               <div class="space-y-3 rounded-md border border-border/70 bg-muted/10 p-3">
                 <div class="text-sm font-medium">
                   {{ t("settings.sqlFormatterEditorShortcuts") }}
@@ -6217,7 +6237,7 @@ onUnmounted(() => {
                 <div class="settings-appearance-choice-grid settings-icon-theme-grid">
                   <Button type="button" variant="outline" class="settings-choice-card h-auto min-w-0 justify-start overflow-hidden whitespace-normal border p-3" :class="editIconTheme === 'default' ? 'dbx-choice-selected' : ''" @click="setIconTheme('default')">
                     <div class="flex w-full min-w-0 items-center gap-3 text-left">
-                      <img :src="webPath('/icon-preview-default.png')" alt="DBX" class="h-12 w-12 shrink-0" />
+                      <img :src="webPath('/logo.png')" alt="ChironDBM by Gaussian" class="h-12 w-12 shrink-0 object-contain" />
                       <div class="min-w-0 text-left">
                         <div class="text-sm font-medium">
                           {{ t("settings.iconThemeDefault") }}
@@ -6230,7 +6250,7 @@ onUnmounted(() => {
                   </Button>
                   <Button type="button" variant="outline" class="settings-choice-card h-auto min-w-0 justify-start overflow-hidden whitespace-normal border p-3" :class="editIconTheme === 'black' ? 'dbx-choice-selected' : ''" @click="setIconTheme('black')">
                     <div class="flex w-full min-w-0 items-center gap-3 text-left">
-                      <img :src="webPath('/icon-preview-black.png')" alt="DBX" class="h-12 w-12 shrink-0" />
+                      <img :src="webPath('/logo-black.png')" alt="ChironDBM by Gaussian" class="h-12 w-12 shrink-0 object-contain" />
                       <div class="min-w-0 text-left">
                         <div class="text-sm font-medium">
                           {{ t("settings.iconThemeBlack") }}
@@ -6320,11 +6340,11 @@ onUnmounted(() => {
               </div>
             </section>
 
-            <section v-else-if="activeSettingsTab === 'navigation'" data-settings-search-id="navigation" :class="['flex flex-col gap-5 py-2', settingsSearchTargetClass('navigation')]">
+            <section v-else-if="activeSettingsTab === 'navigation'" data-settings-search-id="navigation" :class="['settings-form-section flex flex-col gap-5 py-2', settingsSearchTargetClass('navigation')]">
               <div class="space-y-2">
                 <Label>{{ t("settings.sidebarActivation") }}</Label>
-                <div class="grid grid-cols-2 gap-2">
-                  <Button type="button" variant="outline" class="h-auto justify-start border p-3" :class="editSidebarActivation === 'single' ? 'dbx-choice-selected' : ''" @click="setSidebarActivation('single')">
+                <div class="settings-responsive-grid grid grid-cols-2 gap-2">
+                  <Button type="button" variant="outline" class="settings-choice-card h-auto min-w-0 whitespace-normal justify-start border p-3" :class="editSidebarActivation === 'single' ? 'dbx-choice-selected' : ''" @click="setSidebarActivation('single')">
                     <div class="text-left">
                       <div class="text-sm font-medium">
                         {{ t("settings.sidebarActivationSingle") }}
@@ -6334,7 +6354,7 @@ onUnmounted(() => {
                       </div>
                     </div>
                   </Button>
-                  <Button type="button" variant="outline" class="h-auto justify-start border p-3" :class="editSidebarActivation === 'double' ? 'dbx-choice-selected' : ''" @click="setSidebarActivation('double')">
+                  <Button type="button" variant="outline" class="settings-choice-card h-auto min-w-0 whitespace-normal justify-start border p-3" :class="editSidebarActivation === 'double' ? 'dbx-choice-selected' : ''" @click="setSidebarActivation('double')">
                     <div class="text-left">
                       <div class="text-sm font-medium">
                         {{ t("settings.sidebarActivationDouble") }}
@@ -6346,7 +6366,7 @@ onUnmounted(() => {
                   </Button>
                 </div>
               </div>
-              <div class="settings-item flex items-center justify-between gap-4 rounded-md border bg-muted/20 px-3 py-2">
+              <div class="settings-form-row settings-item flex items-center justify-between gap-4 rounded-md border bg-muted/20 px-3 py-2">
                 <div class="flex items-center gap-2">
                   <Label for="sidebar-browse-objects-on-database-activation">{{ t("settings.sidebarBrowseObjectsOnDatabaseActivation") }}</Label>
                   <HelpTooltip :label="t('settings.sidebarBrowseObjectsOnDatabaseActivation')">
@@ -6362,7 +6382,7 @@ onUnmounted(() => {
                     {{ t("settings.reuseDataTabDescription") }}
                   </HelpTooltip>
                 </div>
-                <div class="grid grid-cols-1 gap-2 sm:grid-cols-3">
+                <div class="settings-responsive-grid grid grid-cols-1 gap-2 sm:grid-cols-3">
                   <Button type="button" variant="outline" class="settings-choice-card h-auto min-w-0 items-start justify-start overflow-hidden whitespace-normal border p-3" :class="editDataTabReuseMode === 'always-new' ? 'dbx-choice-selected' : ''" @click="editDataTabReuseMode = 'always-new'">
                     <div class="w-full min-w-0 text-left">
                       <div class="flex min-w-0 items-center gap-2">
@@ -6416,7 +6436,7 @@ onUnmounted(() => {
                   </Button>
                 </div>
               </div>
-              <div class="settings-item flex items-center justify-between gap-4 rounded-md border bg-muted/20 px-3 py-2">
+              <div class="settings-form-row settings-item flex items-center justify-between gap-4 rounded-md border bg-muted/20 px-3 py-2">
                 <div class="flex items-center gap-2">
                   <Label for="open-data-tabs-next-to-active">{{ t("settings.openDataTabsNextToActive") }}</Label>
                   <HelpTooltip :label="t('settings.openDataTabsNextToActive')">
@@ -6427,8 +6447,8 @@ onUnmounted(() => {
               </div>
               <div class="space-y-2">
                 <Label>{{ t("settings.sidebarObjectDisplay") }}</Label>
-                <div class="grid grid-cols-2 gap-2">
-                  <Button type="button" variant="outline" class="h-auto justify-start border p-3" :class="editSidebarObjectDisplay === 'grouped' ? 'dbx-choice-selected' : ''" @click="setSidebarObjectDisplay('grouped')">
+                <div class="settings-responsive-grid grid grid-cols-2 gap-2">
+                  <Button type="button" variant="outline" class="settings-choice-card h-auto min-w-0 whitespace-normal justify-start border p-3" :class="editSidebarObjectDisplay === 'grouped' ? 'dbx-choice-selected' : ''" @click="setSidebarObjectDisplay('grouped')">
                     <div class="text-left">
                       <div class="flex items-center gap-2">
                         <div class="text-sm font-medium">
@@ -6447,7 +6467,7 @@ onUnmounted(() => {
                       </div>
                     </div>
                   </Button>
-                  <Button type="button" variant="outline" class="h-auto justify-start border p-3" :class="editSidebarObjectDisplay === 'simple' ? 'dbx-choice-selected' : ''" @click="setSidebarObjectDisplay('simple')">
+                  <Button type="button" variant="outline" class="settings-choice-card h-auto min-w-0 whitespace-normal justify-start border p-3" :class="editSidebarObjectDisplay === 'simple' ? 'dbx-choice-selected' : ''" @click="setSidebarObjectDisplay('simple')">
                     <div class="text-left">
                       <div class="flex items-center gap-2">
                         <div class="text-sm font-medium">
@@ -6475,7 +6495,7 @@ onUnmounted(() => {
                     {{ t("settings.routineSourceOpenModeQueryTabDescription") }}
                   </HelpTooltip>
                 </div>
-                <div class="grid grid-cols-2 gap-2">
+                <div class="settings-responsive-grid grid grid-cols-2 gap-2">
                   <Button type="button" variant="outline" class="settings-choice-card h-auto min-w-0 justify-start overflow-hidden whitespace-normal border p-3" :class="editRoutineSourceOpenMode === 'query-tab' ? 'dbx-choice-selected' : ''" @click="setRoutineSourceOpenMode('query-tab')">
                     <div class="w-full min-w-0 text-left">
                       <div class="text-sm font-medium">{{ t("settings.routineSourceOpenModeQueryTab") }}</div>
@@ -6494,8 +6514,8 @@ onUnmounted(() => {
                   </Button>
                 </div>
               </div>
-              <div class="grid gap-3 md:grid-cols-2">
-                <div class="settings-item flex items-center justify-between gap-4 rounded-md border bg-muted/20 px-3 py-2">
+              <div class="settings-responsive-grid grid gap-3 md:grid-cols-2">
+                <div class="settings-form-row settings-item flex items-center justify-between gap-4 rounded-md border bg-muted/20 px-3 py-2">
                   <div class="space-y-1">
                     <Label for="editor-click-table-navigation-ddl">{{ t("settings.clickTableNavigationTarget") }}</Label>
                     <p class="text-xs text-muted-foreground">
@@ -6505,7 +6525,7 @@ onUnmounted(() => {
                   <Switch id="editor-click-table-navigation-ddl" :model-value="editClickTableNavigationTarget === 'ddl'" @update:model-value="editClickTableNavigationTarget = $event ? 'ddl' : 'data'" class="mt-0.5" />
                 </div>
 
-                <div class="settings-item flex items-center justify-between gap-4 rounded-md border bg-muted/20 px-3 py-2">
+                <div class="settings-form-row settings-item flex items-center justify-between gap-4 rounded-md border bg-muted/20 px-3 py-2">
                   <div class="space-y-1">
                     <Label for="editor-prefill-new-query">{{ t("settings.prefillNewQueryWithSelect") }}</Label>
                     <p class="text-xs text-muted-foreground">
@@ -6515,7 +6535,7 @@ onUnmounted(() => {
                   <Switch id="editor-prefill-new-query" v-model="editPrefillNewQueryWithSelect" class="mt-0.5" />
                 </div>
               </div>
-              <div class="settings-item flex items-center justify-between gap-4 rounded-md border bg-muted/20 px-3 py-2">
+              <div class="settings-form-row settings-item flex items-center justify-between gap-4 rounded-md border bg-muted/20 px-3 py-2">
                 <div class="flex items-center gap-2">
                   <Label for="sidebar-table-search-enabled">{{ t("settings.sidebarTableSearchEnabled") }}</Label>
                   <HelpTooltip :label="t('settings.sidebarTableSearchEnabled')">
@@ -6524,7 +6544,7 @@ onUnmounted(() => {
                 </div>
                 <Switch id="sidebar-table-search-enabled" v-model="editSidebarTableSearchEnabled" />
               </div>
-              <div class="settings-item flex items-center justify-between gap-4 rounded-md border bg-muted/20 px-3 py-2">
+              <div class="settings-form-row settings-item flex items-center justify-between gap-4 rounded-md border bg-muted/20 px-3 py-2">
                 <div class="flex items-center gap-2">
                   <Label for="auto-select-active-sidebar-node">{{ t("settings.autoSelectActiveSidebarNode") }}</Label>
                   <HelpTooltip :label="t('settings.autoSelectActiveSidebarNode')">
@@ -6599,7 +6619,7 @@ onUnmounted(() => {
                   </SelectContent>
                 </Select>
               </div>
-              <div class="settings-item flex items-center justify-between gap-4 rounded-md border bg-muted/20 px-3 py-2">
+              <div class="settings-form-row settings-item flex items-center justify-between gap-4 rounded-md border bg-muted/20 px-3 py-2">
                 <div class="flex items-center gap-2">
                   <Label for="sidebar-allow-horizontal-scroll">
                     {{ t("settings.sidebarAllowHorizontalScroll") }}
@@ -6610,7 +6630,7 @@ onUnmounted(() => {
                 </div>
                 <Switch id="sidebar-allow-horizontal-scroll" v-model="editSidebarAllowHorizontalScroll" />
               </div>
-              <div class="settings-item flex items-center justify-between gap-4 rounded-md border bg-muted/20 px-3 py-2">
+              <div class="settings-form-row settings-item flex items-center justify-between gap-4 rounded-md border bg-muted/20 px-3 py-2">
                 <div class="flex items-center gap-2">
                   <Label for="sidebar-show-tooltips">
                     {{ t("settings.sidebarShowTooltips") }}
@@ -6621,7 +6641,7 @@ onUnmounted(() => {
                 </div>
                 <Switch id="sidebar-show-tooltips" v-model="editSidebarShowTooltips" />
               </div>
-              <div class="settings-item flex items-center justify-between gap-4 rounded-md border bg-muted/20 px-3 py-2">
+              <div class="settings-form-row settings-item flex items-center justify-between gap-4 rounded-md border bg-muted/20 px-3 py-2">
                 <div class="space-y-1">
                   <Label for="sidebar-indent">{{ t("settings.sidebarIndent") }}</Label>
                   <p class="text-xs text-muted-foreground">
@@ -6644,7 +6664,7 @@ onUnmounted(() => {
                   "
                 />
               </div>
-              <div class="settings-item flex items-center justify-between gap-4 rounded-md border bg-muted/20 px-3 py-2">
+              <div class="settings-form-row settings-item flex items-center justify-between gap-4 rounded-md border bg-muted/20 px-3 py-2">
                 <div class="space-y-1">
                   <Label for="sidebar-font-size">{{ t("settings.sidebarFontSize") }}</Label>
                   <p class="text-xs text-muted-foreground">
@@ -6679,7 +6699,7 @@ onUnmounted(() => {
                   {{ t("settings.sidebarHiddenTablePrefixesDescription") }}
                 </p>
               </div>
-              <div class="settings-item flex items-center justify-between gap-4 rounded-md border bg-muted/20 px-3 py-2">
+              <div class="settings-form-row settings-item flex items-center justify-between gap-4 rounded-md border bg-muted/20 px-3 py-2">
                 <div class="space-y-1">
                   <Label for="sidebar-copy-table-name-separator">{{ t("settings.sidebarCopyTableNameSeparator") }}</Label>
                   <p class="text-xs text-muted-foreground">
@@ -6704,7 +6724,7 @@ onUnmounted(() => {
                   </SelectContent>
                 </Select>
               </div>
-              <div class="settings-item flex items-center justify-between gap-4 rounded-md border bg-muted/20 px-3 py-2">
+              <div class="settings-form-row settings-item flex items-center justify-between gap-4 rounded-md border bg-muted/20 px-3 py-2">
                 <div class="space-y-1">
                   <Label for="sidebar-copy-table-name-include-schema">{{ t("settings.sidebarCopyTableNameIncludeSchema") }}</Label>
                   <p class="text-xs text-muted-foreground">
@@ -6713,7 +6733,7 @@ onUnmounted(() => {
                 </div>
                 <Switch id="sidebar-copy-table-name-include-schema" v-model="editSidebarCopyTableNameIncludeSchema" class="mt-0.5" />
               </div>
-              <div class="settings-item flex items-center justify-between gap-4 rounded-md border bg-muted/20 px-3 py-2">
+              <div class="settings-form-row settings-item flex items-center justify-between gap-4 rounded-md border bg-muted/20 px-3 py-2">
                 <div class="space-y-1">
                   <Label for="sidebar-table-page-size">{{ t("settings.sidebarTablePageSize") }}</Label>
                   <p class="text-xs text-muted-foreground">
@@ -6739,7 +6759,7 @@ onUnmounted(() => {
             </section>
 
             <!-- Data Tab -->
-            <section v-else-if="activeSettingsTab === 'data'" data-settings-search-id="data" :class="['flex flex-col gap-5 py-2', settingsSearchTargetClass('data')]">
+            <section v-else-if="activeSettingsTab === 'data'" data-settings-search-id="data" :class="['settings-form-section flex flex-col gap-5 py-2', settingsSearchTargetClass('data')]">
               <div data-settings-search-id="data-grid-filter-view" :class="['overflow-hidden rounded-md border bg-muted/20', settingsSearchTargetClass('data-grid-filter-view')]">
                 <div class="space-y-3 p-3">
                   <div class="flex items-start justify-between gap-4">
@@ -6766,7 +6786,7 @@ onUnmounted(() => {
                     </Button>
                   </div>
 
-                  <div class="grid grid-cols-3 gap-2" data-data-grid-filter-view-options>
+                  <div class="settings-responsive-grid grid grid-cols-3 gap-2" data-data-grid-filter-view-options>
                     <Button
                       type="button"
                       variant="outline"
@@ -6798,7 +6818,7 @@ onUnmounted(() => {
                       <span class="truncate">{{ t("grid.filterTextView") }}</span>
                     </Button>
                   </div>
-                  <div v-if="editDataGridFilterEditorView !== 'quick'" class="settings-item flex items-center justify-between gap-4 rounded-md border bg-background px-3 py-2">
+                  <div v-if="editDataGridFilterEditorView !== 'quick'" class="settings-form-row settings-item flex items-center justify-between gap-4 rounded-md border bg-background px-3 py-2">
                     <div class="space-y-1">
                       <Label for="data-grid-keep-filter-editor-expanded">{{ t("settings.dataGridKeepFilterEditorExpanded") }}</Label>
                       <p class="text-xs text-muted-foreground">{{ t("settings.dataGridKeepFilterEditorExpandedDescription") }}</p>
@@ -6830,7 +6850,7 @@ onUnmounted(() => {
                         <span>{{ t("grid.filter") }}</span>
                         <Trash2 class="h-3.5 w-3.5 text-muted-foreground" />
                       </div>
-                      <div class="grid grid-cols-[minmax(0,1fr)_72px_minmax(0,1fr)] gap-1.5 text-[11px]">
+                      <div class="settings-responsive-grid grid grid-cols-[minmax(0,1fr)_72px_minmax(0,1fr)] gap-1.5 text-[11px]">
                         <span class="truncate rounded border px-2 py-1">status</span>
                         <span class="truncate rounded border px-2 py-1">=</span>
                         <span class="truncate rounded border px-2 py-1">ACTIVE</span>
@@ -6840,7 +6860,7 @@ onUnmounted(() => {
 
                   <div v-else-if="editDataGridFilterEditorView === 'conditions'" class="flex h-[104px] flex-col bg-muted/5" data-data-grid-filter-preview-conditions>
                     <div class="flex-1 p-2">
-                      <div class="grid grid-cols-[18px_minmax(0,1fr)_92px_minmax(0,1.2fr)_24px] items-center gap-1.5 text-[11px]">
+                      <div class="settings-responsive-grid grid grid-cols-[18px_minmax(0,1fr)_92px_minmax(0,1.2fr)_24px] items-center gap-1.5 text-[11px]">
                         <GripVertical class="h-3.5 w-3.5 text-muted-foreground" />
                         <span class="truncate rounded border bg-background px-2 py-1">status</span>
                         <span class="truncate rounded border bg-background px-2 py-1">=</span>
@@ -6857,7 +6877,7 @@ onUnmounted(() => {
 
                   <div v-else class="flex h-[104px] flex-col bg-muted/5" data-data-grid-filter-preview-text>
                     <div class="flex-1 px-2 py-1.5 text-[11px]">
-                      <div class="grid min-h-7 grid-cols-[18px_18px_minmax(0,1fr)_72px_minmax(0,1.2fr)_36px] items-center gap-1 border-b border-border/45">
+                      <div class="settings-responsive-grid grid min-h-7 grid-cols-[18px_18px_minmax(0,1fr)_72px_minmax(0,1.2fr)_36px] items-center gap-1 border-b border-border/45">
                         <GripVertical class="h-3.5 w-3.5 text-muted-foreground" />
                         <span class="flex h-3.5 w-3.5 items-center justify-center border border-primary bg-primary/10 text-primary"><Check class="h-3 w-3" /></span>
                         <span class="truncate px-1">status</span>
@@ -6896,7 +6916,7 @@ onUnmounted(() => {
                     </Button>
                   </div>
                 </div>
-                <div class="settings-item flex items-center justify-between gap-4 rounded-md border bg-muted/20 px-3 py-2">
+                <div class="settings-form-row settings-item flex items-center justify-between gap-4 rounded-md border bg-muted/20 px-3 py-2">
                   <div class="space-y-1">
                     <Label for="table-open-page-size">
                       {{ t("settings.tableOpenPageSize") }}
@@ -6907,7 +6927,7 @@ onUnmounted(() => {
                   </div>
                   <Input id="table-open-page-size" type="number" inputmode="numeric" class="h-7 w-24 px-2 text-left text-xs tabular-nums" :min="MIN_RESULT_PAGE_SIZE" :max="MAX_RESULT_PAGE_SIZE" :model-value="editTableOpenPageSize" @update:model-value="updateTableOpenPageSizeDraft" />
                 </div>
-                <div class="settings-item flex items-center justify-between gap-4 rounded-md border bg-muted/20 px-3 py-2">
+                <div class="settings-form-row settings-item flex items-center justify-between gap-4 rounded-md border bg-muted/20 px-3 py-2">
                   <div class="space-y-1">
                     <Label for="query-page-size">
                       {{ t("settings.queryPageSize") }}
@@ -6950,7 +6970,7 @@ onUnmounted(() => {
                     </SelectContent>
                   </Select>
                 </div>
-                <div class="settings-item flex items-center justify-between gap-4 rounded-md border bg-muted/20 px-3 py-2">
+                <div class="settings-form-row settings-item flex items-center justify-between gap-4 rounded-md border bg-muted/20 px-3 py-2">
                   <div class="space-y-1">
                     <Label for="query-result-max-rows-enabled">
                       {{ t("settings.queryResultMaxRows") }}
@@ -6975,7 +6995,7 @@ onUnmounted(() => {
                     <Switch id="query-result-max-rows-enabled" v-model="editQueryResultMaxRowsEnabled" :aria-label="t('settings.queryResultMaxRowsEnabled')" />
                   </div>
                 </div>
-                <div class="settings-item flex items-center justify-between gap-4 rounded-md border bg-muted/20 px-3 py-2">
+                <div class="settings-form-row settings-item flex items-center justify-between gap-4 rounded-md border bg-muted/20 px-3 py-2">
                   <div class="space-y-1">
                     <Label for="infinite-scroll">
                       {{ t("settings.infiniteScroll") }}
@@ -6986,7 +7006,7 @@ onUnmounted(() => {
                   </div>
                   <Switch id="infinite-scroll" v-model="editInfiniteScroll" />
                 </div>
-                <div class="settings-item flex items-center justify-between gap-4 rounded-md border bg-muted/20 px-3 py-2">
+                <div class="settings-form-row settings-item flex items-center justify-between gap-4 rounded-md border bg-muted/20 px-3 py-2">
                   <div class="space-y-1">
                     <Label for="auto-calculate-total-rows">
                       {{ t("settings.autoCalculateTotalRows") }}
@@ -6997,7 +7017,7 @@ onUnmounted(() => {
                   </div>
                   <Switch id="auto-calculate-total-rows" v-model="editAutoCalculateTotalRows" />
                 </div>
-                <div class="settings-item flex items-center justify-between gap-4 rounded-md border bg-muted/20 px-3 py-2">
+                <div class="settings-form-row settings-item flex items-center justify-between gap-4 rounded-md border bg-muted/20 px-3 py-2">
                   <div class="space-y-1">
                     <Label for="show-column-comments-in-header">
                       {{ t("settings.showColumnCommentsInHeader") }}
@@ -7008,7 +7028,7 @@ onUnmounted(() => {
                   </div>
                   <Switch id="show-column-comments-in-header" v-model="editShowColumnCommentsInHeader" />
                 </div>
-                <div class="settings-item flex items-center justify-between gap-4 rounded-md border bg-muted/20 px-3 py-2">
+                <div class="settings-form-row settings-item flex items-center justify-between gap-4 rounded-md border bg-muted/20 px-3 py-2">
                   <div class="space-y-1">
                     <Label for="show-column-types-in-header">
                       {{ t("settings.showColumnTypesInHeader") }}
@@ -7019,7 +7039,7 @@ onUnmounted(() => {
                   </div>
                   <Switch id="show-column-types-in-header" v-model="editShowColumnTypesInHeader" />
                 </div>
-                <div class="settings-item flex items-center justify-between gap-4 rounded-md border bg-muted/20 px-3 py-2">
+                <div class="settings-form-row settings-item flex items-center justify-between gap-4 rounded-md border bg-muted/20 px-3 py-2">
                   <div class="space-y-1">
                     <Label for="data-grid-show-transpose-field-metadata">
                       {{ t("settings.dataGridShowTransposeFieldMetadata") }}
@@ -7030,7 +7050,7 @@ onUnmounted(() => {
                   </div>
                   <Switch id="data-grid-show-transpose-field-metadata" v-model="editDataGridShowTransposeFieldMetadata" />
                 </div>
-                <div class="settings-item flex items-center justify-between gap-4 rounded-md border bg-muted/20 px-3 py-2">
+                <div class="settings-form-row settings-item flex items-center justify-between gap-4 rounded-md border bg-muted/20 px-3 py-2">
                   <div class="space-y-1">
                     <Label for="colorize-data-grid-cell-types">
                       {{ t("settings.colorizeDataGridCellTypes") }}
@@ -7041,7 +7061,7 @@ onUnmounted(() => {
                   </div>
                   <Switch id="colorize-data-grid-cell-types" v-model="editColorizeDataGridCellTypes" />
                 </div>
-                <div class="settings-item flex items-center justify-between gap-4 rounded-md border bg-muted/20 px-3 py-2">
+                <div class="settings-form-row settings-item flex items-center justify-between gap-4 rounded-md border bg-muted/20 px-3 py-2">
                   <div class="space-y-1">
                     <Label for="show-index-indicators-in-header">
                       {{ t("settings.showIndexIndicatorsInHeader") }}
@@ -7052,7 +7072,7 @@ onUnmounted(() => {
                   </div>
                   <Switch id="show-index-indicators-in-header" v-model="editShowIndexIndicatorsInHeader" />
                 </div>
-                <div class="settings-item flex items-center justify-between gap-4 rounded-md border bg-muted/20 px-3 py-2">
+                <div class="settings-form-row settings-item flex items-center justify-between gap-4 rounded-md border bg-muted/20 px-3 py-2">
                   <div class="space-y-1">
                     <Label for="compact-column-header-actions">
                       {{ t("settings.compactColumnHeaderActions") }}
@@ -7063,7 +7083,7 @@ onUnmounted(() => {
                   </div>
                   <Switch id="compact-column-header-actions" v-model="editCompactColumnHeaderActions" />
                 </div>
-                <div class="settings-item flex items-center justify-between gap-4 rounded-md border bg-muted/20 px-3 py-2">
+                <div class="settings-form-row settings-item flex items-center justify-between gap-4 rounded-md border bg-muted/20 px-3 py-2">
                   <div class="space-y-1">
                     <Label for="data-grid-quick-entry">
                       {{ t("settings.dataGridQuickEntry") }}
@@ -7074,7 +7094,7 @@ onUnmounted(() => {
                   </div>
                   <Switch id="data-grid-quick-entry" v-model="editDataGridQuickEntry" />
                 </div>
-                <div class="settings-item flex items-center justify-between gap-4 rounded-md border bg-muted/20 px-3 py-2">
+                <div class="settings-form-row settings-item flex items-center justify-between gap-4 rounded-md border bg-muted/20 px-3 py-2">
                   <div class="space-y-1">
                     <Label for="data-grid-auto-transpose-single-row">
                       {{ t("settings.dataGridAutoTransposeSingleRow") }}
@@ -7085,7 +7105,7 @@ onUnmounted(() => {
                   </div>
                   <Switch id="data-grid-auto-transpose-single-row" v-model="editDataGridAutoTransposeSingleRow" />
                 </div>
-                <div class="settings-item flex items-center justify-between gap-4 rounded-md border bg-muted/20 px-3 py-2">
+                <div class="settings-form-row settings-item flex items-center justify-between gap-4 rounded-md border bg-muted/20 px-3 py-2">
                   <div class="space-y-1">
                     <Label for="data-grid-cell-detail-button-visible">
                       {{ t("settings.dataGridCellDetailButtonVisible") }}
@@ -7096,7 +7116,7 @@ onUnmounted(() => {
                   </div>
                   <Switch id="data-grid-cell-detail-button-visible" v-model="editDataGridCellDetailButtonVisible" />
                 </div>
-                <div class="settings-item flex items-center justify-between gap-4 rounded-md border bg-muted/20 px-3 py-2">
+                <div class="settings-form-row settings-item flex items-center justify-between gap-4 rounded-md border bg-muted/20 px-3 py-2">
                   <div class="space-y-1">
                     <Label for="data-grid-crosshair-highlight">
                       {{ t("settings.dataGridCrosshairHighlight") }}
@@ -7107,14 +7127,14 @@ onUnmounted(() => {
                   </div>
                   <Switch id="data-grid-crosshair-highlight" v-model="editDataGridCrosshairHighlight" />
                 </div>
-                <div class="settings-item flex items-center justify-between gap-4 rounded-md border bg-muted/20 px-3 py-2">
+                <div class="settings-form-row settings-item flex items-center justify-between gap-4 rounded-md border bg-muted/20 px-3 py-2">
                   <div class="space-y-1">
                     <Label for="data-grid-show-whitespace">{{ t("settings.dataGridShowWhitespace") }}</Label>
                     <p class="text-xs text-muted-foreground">{{ t("settings.dataGridShowWhitespaceDescription") }}</p>
                   </div>
                   <Switch id="data-grid-show-whitespace" v-model="editDataGridShowWhitespace" />
                 </div>
-                <div class="settings-item flex items-center justify-between gap-4 rounded-md border bg-muted/20 px-3 py-2">
+                <div class="settings-form-row settings-item flex items-center justify-between gap-4 rounded-md border bg-muted/20 px-3 py-2">
                   <div class="space-y-1">
                     <Label for="flattening-multi-line">
                       {{ t("settings.flatteningMultiLineText") }}
@@ -7336,7 +7356,7 @@ onUnmounted(() => {
                 <div class="text-sm font-medium text-muted-foreground">
                   {{ t("settings.sqlFileSection") }}
                 </div>
-                <div class="settings-item flex items-center justify-between gap-4 rounded-md border bg-muted/20 px-3 py-2" :class="{ 'settings-item-disabled': !webSqlFileUploadMaxMbLoaded || webSqlFileUploadMaxMbLoading }">
+                <div class="settings-form-row settings-item flex items-center justify-between gap-4 rounded-md border bg-muted/20 px-3 py-2" :class="{ 'settings-item-disabled': !webSqlFileUploadMaxMbLoaded || webSqlFileUploadMaxMbLoading }">
                   <div class="space-y-1">
                     <Label for="web-sql-file-upload-max-mb">
                       {{ t("settings.webSqlFileUploadMaxMb") }}
@@ -7370,7 +7390,7 @@ onUnmounted(() => {
                 <div class="text-sm font-medium text-muted-foreground">
                   {{ t("settings.performanceSection") }}
                 </div>
-                <div class="settings-item flex items-center justify-between gap-4 rounded-md border bg-muted/20 px-3 py-2">
+                <div class="settings-form-row settings-item flex items-center justify-between gap-4 rounded-md border bg-muted/20 px-3 py-2">
                   <div class="min-w-0 space-y-1">
                     <Label for="metadata-cache-memory-limit">{{ t("settings.metadataCacheMemoryLimit") }}</Label>
                     <p class="text-xs text-muted-foreground">
@@ -7391,14 +7411,14 @@ onUnmounted(() => {
                   {{ t("settings.tableStructureSection") }}
                 </div>
                 <div ref="tableColumnTemplateSectionRef" data-settings-search-id="table-column-templates" :class="['settings-item space-y-2 rounded-md border bg-muted/20 px-3 py-2', settingsSearchTargetClass('table-column-templates')]">
-                  <div class="flex items-start justify-between gap-3">
+                  <div class="settings-table-template-header grid gap-3">
                     <div class="space-y-1">
                       <Label>{{ t("settings.tableColumnTemplateFields") }}</Label>
                       <p class="text-xs text-muted-foreground">
                         {{ t("settings.tableColumnTemplateFieldsDescription") }}
                       </p>
                     </div>
-                    <div class="flex items-center gap-2">
+                    <div class="flex min-w-0 flex-wrap items-center gap-2">
                       <Select v-model="editTableColumnTemplateDatabaseType">
                         <SelectTrigger class="h-8 w-44 px-2 text-xs">
                           <SelectValue />
@@ -7979,7 +7999,7 @@ LIMIT 100;</pre
             </section>
 
             <!-- AI Settings Tab -->
-            <section v-else-if="activeSettingsTab === 'ai'" data-settings-search-id="ai" :class="['flex flex-col gap-5 py-2', settingsSearchTargetClass('ai')]">
+            <section v-else-if="activeSettingsTab === 'ai'" data-settings-search-id="ai" :class="['settings-ai-section flex flex-col gap-5 py-2', settingsSearchTargetClass('ai')]">
               <!-- Config List View -->
               <div v-if="aiConfigListMode === 'list'" class="space-y-4">
                 <div class="flex items-center justify-between">
@@ -8399,8 +8419,12 @@ LIMIT 100;</pre
                 <!-- API Key -->
                 <div v-if="!aiIsCliProvider" class="grid grid-cols-3 items-center gap-3">
                   <Label class="text-right text-xs">{{ aiCredentialLabel }}</Label>
-                  <div class="col-span-2 flex min-w-0 items-center gap-2">
-                    <PasswordInput v-model="aiEditApiKey" autocomplete="off" class="min-w-0 flex-1" inputClass="h-8 text-xs" :placeholder="aiCredentialPlaceholder" />
+                  <div class="col-span-2 flex min-w-0 flex-wrap items-center gap-2">
+                    <template v-if="aiEditApiKey.startsWith('dbx-ai-secret:v1:')">
+                      <span class="text-xs text-muted-foreground">Credential configured (kept unchanged)</span>
+                      <Button size="sm" variant="outline" @click="aiEditApiKey = ''">Replace / remove</Button>
+                    </template>
+                    <PasswordInput v-else v-model="aiEditApiKey" autocomplete="off" class="min-w-0 flex-1" inputClass="h-8 text-xs" :placeholder="aiCredentialPlaceholder" />
                     <Button v-if="selectedAiPartnerPreset" type="button" variant="outline" size="sm" class="h-8 shrink-0 gap-1.5 px-3 text-xs" :title="t('ai.getApiKey')" :aria-label="t('ai.getApiKey')" @click="openExternalUrl(selectedAiPartnerPreset.apiKeyUrl)">
                       {{ t("ai.getApiKey") }}
                       <ExternalLink class="h-3.5 w-3.5" />
@@ -8413,6 +8437,8 @@ LIMIT 100;</pre
                   <Label class="pt-2 text-right text-xs">Endpoint</Label>
                   <div class="col-span-2 space-y-1.5">
                     <Input v-model="aiEditEndpoint" :placeholder="aiEndpointPlaceholder" autocomplete="off" class="h-8 text-xs" />
+                    <p v-if="aiResolvedEndpoint" class="break-all text-[11px] text-muted-foreground">Resolved request URL: {{ aiResolvedEndpoint }}</p>
+                    <p class="text-[11px] text-muted-foreground">Saved keys and header values stay encrypted in this profile. Keep the configured value, replace it, or leave it empty and save to remove it. Save endpoint changes before testing stored credentials.</p>
                     <p v-if="aiEndpointHint" class="text-[11px] text-muted-foreground">
                       {{ aiEndpointHint }}
                     </p>
@@ -8426,7 +8452,8 @@ LIMIT 100;</pre
                     <div class="space-y-1.5">
                       <div v-for="row in aiEditCustomHeaderRows" :key="row.id" class="grid grid-cols-[minmax(0,0.9fr)_minmax(0,1.3fr)_2rem] gap-2">
                         <Input v-model="row.name" autocomplete="off" class="h-8 font-mono text-xs" :placeholder="t('ai.customHeadersNamePlaceholder')" />
-                        <PasswordInput v-model="row.value" autocomplete="off" class="min-w-0" inputClass="h-8 font-mono text-xs" :placeholder="t('ai.customHeadersValuePlaceholder')" />
+                        <Button v-if="row.value.startsWith('dbx-ai-secret:v1:')" size="sm" variant="outline" @click="row.value = ''">Saved value · replace</Button>
+                        <PasswordInput v-else v-model="row.value" autocomplete="off" class="min-w-0" inputClass="h-8 font-mono text-xs" :placeholder="t('ai.customHeadersValuePlaceholder')" />
                         <Button type="button" variant="ghost" size="icon" class="h-8 w-8" :title="t('common.remove')" :aria-label="t('common.remove')" @click="removeAiCustomHeaderRow(row.id)">
                           <X class="h-3.5 w-3.5" />
                         </Button>
@@ -9304,6 +9331,13 @@ LIMIT 100;</pre
             </section>
 
             <section v-else-if="activeSettingsTab === 'about'" data-settings-search-id="about" :class="['flex flex-col gap-5 py-2', settingsSearchTargetClass('about')]">
+              <div class="flex items-center gap-3 rounded-lg border bg-card p-4">
+                <AppLogo class="h-12 w-12 shrink-0" />
+                <div>
+                  <h3 class="font-semibold">{{ t("app.name") }}</h3>
+                  <p class="text-sm text-muted-foreground">Built on DBX. Upstream licenses, attribution, and release infrastructure are preserved.</p>
+                </div>
+              </div>
               <div class="rounded-lg border p-4">
                 <div class="settings-about-section-header flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                   <div class="min-w-0 space-y-1">
@@ -9405,74 +9439,19 @@ LIMIT 100;</pre
 
               <ChangelogPanel :checking-updates="props.checkingUpdates" @check-updates="emit('check-updates')" />
 
-              <div class="grid gap-3 sm:grid-cols-2">
-                <button type="button" class="rounded-lg border p-4 text-left transition-colors hover:bg-muted/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring" @click="openExternalUrl('https://qm.qq.com/cgi-bin/qm/qr?k=&group_code=1087880322')">
-                  <div class="text-xs font-medium uppercase tracking-wider text-muted-foreground">
-                    {{ t("settings.community") }}
-                  </div>
-                  <div class="mt-3 flex items-center gap-2 text-sm font-medium">
-                    <img
-                      src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIGhlaWdodD0iODYiIHdpZHRoPSI4NiIgdmlld0JveD0iMCAwIDEyMCAxNDUiPjxwYXRoIGZpbGw9IiNmYWFiMDciIGQ9Ik02MC41MDMgMTQyLjIzN2MtMTIuNTMzIDAtMjQuMDM4LTQuMTk1LTMxLjQ0NS0xMC40Ni0zLjc2MiAxLjEyNC04LjU3NCAyLjkzMi0xMS42MSA1LjE3NS0yLjYgMS45MTgtMi4yNzUgMy44NzQtMS44MDcgNC42NjMgMi4wNTYgMy40NyAzNS4yNzMgMi4yMTYgNDQuODYyIDEuMTM2em0wIDBjMTIuNTM1IDAgMjQuMDM5LTQuMTk1IDMxLjQ0Ny0xMC40NiAzLjc2IDEuMTI0IDguNTczIDIuOTMyIDExLjYxIDUuMTc1IDIuNTk4IDEuOTE4IDIuMjc0IDMuODc0IDEuODA1IDQuNjYzLTIuMDU2IDMuNDctMzUuMjcyIDIuMjE2LTQ0Ljg2MiAxLjEzNnptMCAwIi8+PHBhdGggZD0iTTYwLjU3NiA2Ny4xMTljMjAuNjk4LS4xNCAzNy4yODYtNC4xNDcgNDIuOTA3LTUuNjgzIDEuMzQtLjM2NyAyLjA1Ni0xLjAyNCAyLjA1Ni0xLjAyNC4wMDUtLjE4OS4wODUtMy4zNy4wODUtNS4wMUMxMDUuNjI0IDI3Ljc2OCA5Mi41OC4wMDEgNjAuNSAwIDI4LjQyLjAwMSAxNS4zNzUgMjcuNzY5IDE1LjM3NSA1NS40MDFjMCAxLjY0Mi4wOCA0LjgyMi4wODYgNS4wMSAwIDAgLjU4My42MTUgMS42NS45MTMgNS4xOSAxLjQ0NCAyMi4wOSA1LjY1IDQzLjMxMiA1Ljc5NXptNTYuMjQ1IDIzLjAyYy0xLjI4My00LjEyOS0zLjAzNC04Ljk0NC00LjgwOC0xMy41NjggMCAwLTEuMDItLjEyNi0xLjUzNy4wMjMtMTUuOTEzIDQuNjIzLTM1LjIwMiA3LjU3LTQ5LjkgNy4zOTJoLS4xNTNjLTE0LjYxNi4xNzUtMzMuNzc0LTIuNzM3LTQ5LjYzNC03LjMxNS0uNjA2LS4xNzUtMS44MDItLjEtMS44MDItLjEtMS43NzQgNC42MjQtMy41MjUgOS40NC00LjgwOCAxMy41NjgtNi4xMTkgMTkuNjktNC4xMzYgMjcuODM4LTIuNjI3IDI4LjAyIDMuMjM5LjM5MiAxMi42MDYtMTQuODIxIDEyLjYwNi0xNC44MjEgMCAxNS40NTkgMTMuOTU3IDM5LjE5NSA0NS45MTggMzkuNDEzaC44NDhjMzEuOTYtLjIxOCA0NS45MTctMjMuOTU0IDQ1LjkxNy0zOS40MTMgMCAwIDkuMzY4IDE1LjIxMyAxMi42MDcgMTQuODIyIDEuNTA4LS4xODMgMy40OTEtOC4zMzItMi42MjctMjguMDIxIi8+PHBhdGggZmlsbD0iI2ZmZiIgZD0iTTQ5LjA4NSA0MC44MjRjLTQuMzUyLjE5Ny04LjA3LTQuNzYtOC4zMDQtMTEuMDYzLS4yMzYtNi4zMDUgMy4wOTgtMTEuNTc2IDcuNDUtMTEuNzczIDQuMzQ3LS4xOTUgOC4wNjQgNC43NiA4LjMgMTEuMDY1LjIzOCA2LjMwNi0zLjA5NyAxMS41NzctNy40NDYgMTEuNzcxbTMxLjEzMy0xMS4wNjNjLS4yMzMgNi4zMDItMy45NTEgMTEuMjYtOC4zMDMgMTEuMDYzLTQuMzUtLjE5NS03LjY4NC01LjQ2NS03LjQ0Ni0xMS43Ny4yMzYtNi4zMDUgMy45NTItMTEuMjYgOC4zLTExLjA2NiA0LjM1Mi4xOTcgNy42ODYgNS40NjggNy40NDkgMTEuNzczIi8+PHBhdGggZmlsbD0iI2ZhYWIwNyIgZD0iTTg3Ljk1MiA0OS43MjVDODYuNzkgNDcuMTUgNzUuMDc3IDQ0LjI4IDYwLjU3OCA0NC4yOGgtLjE1NmMtMTQuNSAwLTI2LjIxMiAyLjg3LTI3LjM3NSA1LjQ0NmEuODYzLjg2MyAwIDAwLS4wODUuMzY3Ljg4Ljg4IDAgMDAuMTYuNDk2Yy45OCAxLjQyNyAxMy45ODUgOC40ODcgMjcuMyA4LjQ4N2guMTU2YzEzLjMxNCAwIDI2LjMxOS03LjA1OCAyNy4yOTktOC40ODdhLjg3My44NzMgMCAwMC4xNi0uNDk4Ljg1Ni44NTYgMCAwMC0uMDg1LS4zNjUiLz48cGF0aCBkPSJNNTQuNDM0IDI5Ljg1NGMuMTk5IDIuNDktMS4xNjcgNC43MDItMy4wNDYgNC45NDMtMS44ODMuMjQyLTMuNTY4LTEuNTgtMy43NjgtNC4wNy0uMTk3LTIuNDkyIDEuMTY3LTQuNzA0IDMuMDQzLTQuOTQ0IDEuODg2LS4yNDQgMy41NzQgMS41OCAzLjc3MSA0LjA3bTExLjk1Ni44MzNjLjM4NS0uNjg5IDMuMDA0LTQuMzEyIDguNDI3LTIuOTkzIDEuNDI1LjM0NyAyLjA4NC44NTcgMi4yMjMgMS4wNTcuMjA1LjI5Ni4yNjIuNzE4LjA1MyAxLjI4Ni0uNDEyIDEuMTI2LTEuMjYzIDEuMDk1LTEuNzM0Ljg3NS0uMzA1LS4xNDItNC4wODItMi42Ni03LjU2MiAxLjA5Ny0uMjQuMjU3LS42NjguMzQ2LTEuMDczLjA0LS40MDctLjMwOC0uNTc0LS45My0uMzM0LTEuMzYyIi8+PHBhdGggZmlsbD0iI2ZmZiIgZD0iTTYwLjU3NiA4My4wOGgtLjE1M2MtOS45OTYuMTItMjIuMTE2LTEuMjA0LTMzLjg1NC0zLjUxOC0xLjAwNCA1LjgxOC0xLjYxIDEzLjEzMi0xLjA5IDIxLjg1MyAxLjMxNiAyMi4wNDMgMTQuNDA3IDM1LjkgMzQuNjE0IDM2LjFoLjgyYzIwLjIwOC0uMiAzMy4yOTgtMTQuMDU3IDM0LjYxNi0zNi4xLjUyLTguNzIzLS4wODctMTYuMDM1LTEuMDkyLTIxLjg1NC0xMS43MzkgMi4zMTUtMjMuODYyIDMuNjQtMzMuODYgMy41MTgiLz48cGF0aCBmaWxsPSIjZWIxOTIzIiBkPSJNMzIuMTAyIDgxLjIzNXYyMS42OTNzOS45MzcgMi4wMDQgMTkuODkzLjYxNlY4My41MzVjLTYuMzA3LS4zNTctMTMuMTA5LTEuMTUyLTE5Ljg5My0yLjMiLz48cGF0aCBmaWxsPSIjZWIxOTIzIiBkPSJNMTA1LjUzOSA2MC40MTJzLTE5LjMzIDYuMTAyLTQ0Ljk2MyA2LjI3NWgtLjE1M2MtMjUuNTkxLS4xNzItNDQuODk2LTYuMjU1LTQ0Ljk2Mi02LjI3NUw4Ljk4NyA3Ni41N2MxNi4xOTMgNC44ODIgMzYuMjYxIDguMDI4IDUxLjQzNiA3Ljg0NWguMTUzYzE1LjE3NS4xODMgMzUuMjQyLTIuOTYzIDUxLjQzNy03Ljg0NXptMCAwIi8+PC9zdmc+"
-                      alt="QQ"
-                      class="h-7 w-7 rounded-md bg-white p-1"
-                    />
-                    {{ t("settings.qqGroup") }}
-                    <ExternalLink class="ml-auto h-3.5 w-3.5 text-muted-foreground" />
-                  </div>
-                  <div class="mt-1 font-mono text-base">1087880322</div>
+              <div class="settings-about-links grid gap-3">
+                <section class="min-w-0 rounded-lg border p-4" aria-label="Discord · Coming Soon">
+                  <h3 class="text-sm font-medium">Discord</h3>
+                  <p class="mt-2 text-sm text-muted-foreground">Coming Soon</p>
+                </section>
+                <button type="button" class="min-w-0 rounded-lg border p-4 text-left transition-colors hover:bg-muted/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring" @click="openExternalUrl('https://github.com/Gaussian-id/Gauss-DBM')">
+                  <span class="flex items-center gap-2 text-sm font-medium">GitHub<ExternalLink class="ml-auto h-3.5 w-3.5 shrink-0 text-muted-foreground" /></span>
+                  <span class="mt-2 block break-all text-sm text-primary">github.com/Gaussian-id/Gauss-DBM</span>
                 </button>
-                <button type="button" class="rounded-lg border p-4 text-left transition-colors hover:bg-muted/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring" @click="openExternalUrl('https://discord.gg/W7NyVDRt6a')">
-                  <div class="text-xs font-medium uppercase tracking-wider text-muted-foreground">
-                    {{ t("settings.community") }}
-                  </div>
-                  <div class="mt-3 flex items-center gap-2 text-sm font-medium">
-                    <img src="https://cdn.simpleicons.org/discord/5865F2" alt="Discord" class="h-7 w-7 rounded-md bg-white p-1" />
-                    Discord
-                    <ExternalLink class="ml-auto h-3.5 w-3.5 text-muted-foreground" />
-                  </div>
-                  <div class="mt-1 text-sm text-primary">discord.gg/W7NyVDRt6a</div>
-                </button>
-                <button type="button" class="rounded-lg border p-4 text-left transition-colors hover:bg-muted/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring" @click="openExternalUrl('https://docs.qq.com/doc/DVVhMY0h1ekJqc0tz')">
-                  <div class="text-xs font-medium uppercase tracking-wider text-muted-foreground">
-                    {{ t("settings.community") }}
-                  </div>
-                  <div class="mt-3 flex items-center gap-2 text-sm font-medium">
-                    <span class="flex h-7 w-7 items-center justify-center rounded-md bg-[#07C160] text-white">
-                      <svg class="h-4 w-4" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-                        <path
-                          d="M9.5 4C5.36 4 2 6.69 2 10c0 1.89 1.08 3.56 2.78 4.66l-.7 2.1 2.46-1.23c.87.27 1.8.42 2.78.42.24 0 .48-.01.71-.03A5.93 5.93 0 0 1 10 14c0-3.31 3.13-6 7-6 .34 0 .67.03 1 .07C17.27 5.56 13.72 4 9.5 4Zm-3 4.5a1 1 0 1 1 0-2 1 1 0 0 1 0 2Zm5 0a1 1 0 1 1 0-2 1 1 0 0 1 0 2ZM22 14c0-2.76-2.69-5-6-5s-6 2.24-6 5 2.69 5 6 5c.73 0 1.43-.11 2.09-.3l1.72.86-.49-1.46C20.94 17.07 22 15.64 22 14Zm-7.5-.5a.75.75 0 1 1 0-1.5.75.75 0 0 1 0 1.5Zm4 0a.75.75 0 1 1 0-1.5.75.75 0 0 1 0 1.5Z"
-                        />
-                      </svg>
-                    </span>
-                    {{ t("settings.wechatGroup") }}
-                    <ExternalLink class="ml-auto h-3.5 w-3.5 text-muted-foreground" />
-                  </div>
-                  <div class="mt-1 text-sm text-primary">
-                    {{ t("settings.wechatGroupInvite") }}
-                  </div>
-                </button>
-                <button type="button" class="rounded-lg border p-4 text-left transition-colors hover:bg-muted/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring" @click="openExternalUrl('https://github.com/t8y2/dbx')">
-                  <div class="text-xs font-medium uppercase tracking-wider text-muted-foreground">
-                    {{ t("settings.project") }}
-                  </div>
-                  <div class="mt-3 flex items-center gap-2 text-sm font-medium">
-                    <img src="https://cdn.simpleicons.org/github/181717" alt="GitHub" class="h-7 w-7 rounded-md bg-white p-1" />
-                    {{ t("settings.openSource") }}
-                    <ExternalLink class="ml-auto h-3.5 w-3.5 text-muted-foreground" />
-                  </div>
-                  <div class="mt-1 text-sm text-primary">github.com/t8y2/dbx</div>
-                </button>
-                <button type="button" class="rounded-lg border p-4 text-left transition-colors hover:bg-muted/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring" @click="openExternalUrl('https://dbxio.com')">
-                  <div class="text-xs font-medium uppercase tracking-wider text-muted-foreground">
-                    {{ t("settings.project") }}
-                  </div>
-                  <div class="mt-3 flex items-center gap-2 text-sm font-medium">
-                    <AppLogo class="h-7 w-7" />
-                    {{ t("settings.officialDocs") }}
-                    <ExternalLink class="ml-auto h-3.5 w-3.5 text-muted-foreground" />
-                  </div>
-                  <div class="mt-1 text-sm text-primary">dbxio.com</div>
-                </button>
+                <section class="min-w-0 rounded-lg border p-4" aria-label="Project documentation · Coming Soon">
+                  <h3 class="text-sm font-medium">Project documentation</h3>
+                  <p class="mt-2 text-sm text-muted-foreground">Coming Soon</p>
+                </section>
               </div>
             </section>
           </div>
@@ -9721,7 +9700,116 @@ LIMIT 100;</pre
 </template>
 
 <style>
-@media (min-width: 1024px) {
+.settings-shell {
+  container: settings-shell / inline-size;
+}
+.settings-body {
+  container: settings-body / inline-size;
+}
+.settings-layout {
+  flex-direction: column !important;
+}
+.settings-category-nav {
+  width: auto !important;
+  flex-direction: row !important;
+  overflow-x: auto !important;
+  overflow-y: hidden !important;
+  border-right: 0 !important;
+  border-bottom: 1px solid var(--border) !important;
+  padding-right: 0 !important;
+  padding-bottom: 0.75rem !important;
+}
+.settings-category-button {
+  width: auto !important;
+}
+
+.settings-form-section .settings-responsive-grid {
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 24rem), 1fr));
+}
+.settings-responsive-grid > .md\:col-span-2 {
+  grid-column: 1 / -1;
+}
+.settings-form-section .settings-form-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 11rem);
+  align-items: start;
+  gap: 0.75rem 1.25rem;
+}
+.settings-form-row > *,
+.settings-form-section .settings-choice-card > * {
+  min-width: 0;
+}
+.settings-form-row > :last-child {
+  justify-self: end;
+  max-width: 100%;
+}
+.settings-form-section label {
+  white-space: normal;
+  line-height: 1.4;
+}
+.settings-form-section p {
+  overflow-wrap: anywhere;
+  line-height: 1.5;
+}
+.settings-form-section .settings-choice-card {
+  height: auto;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+.settings-about-links {
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 16rem), 1fr));
+}
+.settings-table-template-header {
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: start;
+}
+.settings-ai-section .grid-cols-3 {
+  grid-template-columns: minmax(7rem, 1fr) minmax(0, 2fr);
+}
+.settings-ai-section .grid-cols-3 > .col-span-2 {
+  grid-column: 2;
+  min-width: 0;
+}
+.settings-ai-section button {
+  max-width: 100%;
+}
+
+@container settings-body (max-width: 42rem) {
+  .settings-table-template-header {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .settings-form-section .settings-shortcut-row {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+  .settings-form-section .settings-shortcut-actions {
+    justify-self: start !important;
+    text-align: left !important;
+  }
+  .settings-form-section .settings-shortcut-controls {
+    justify-content: flex-start !important;
+    flex-wrap: wrap;
+  }
+  .settings-ai-section .grid-cols-3 {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .settings-ai-section .grid-cols-3 > .col-span-2 {
+    grid-column: 1;
+  }
+  .settings-ai-section .grid-cols-3 > label {
+    text-align: left;
+    padding-top: 0;
+  }
+}
+@container settings-body (max-width: 32rem) {
+  .settings-form-section .settings-form-row {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .settings-form-row > :last-child {
+    justify-self: start;
+  }
+}
+
+@container settings-shell (min-width: 56rem) {
   .settings-layout {
     flex-direction: row !important;
   }

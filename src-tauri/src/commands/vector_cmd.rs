@@ -5,6 +5,15 @@ use tauri::State;
 use crate::commands::connection::{ensure_connection_writable, AppState};
 
 #[tauri::command]
+pub async fn chirondb_request(
+    state: State<'_, Arc<AppState>>,
+    connection_id: String,
+    request: dbx_core::db::chirondb::Request,
+) -> Result<dbx_core::db::chirondb::Reply, String> {
+    dbx_core::db::chirondb::run(&state, &connection_id, request).await
+}
+
+#[tauri::command]
 pub async fn vector_collection_detail(
     state: State<'_, Arc<AppState>>,
     connection_id: String,

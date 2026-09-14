@@ -585,6 +585,9 @@ pub struct AiStreamChunk {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct AiChatMessage {
+    /// Local native transcript only; never included in provider history or restored as approval authority.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub chiron: Option<serde_json::Value>,
     pub role: String,
     pub content: String,
     #[serde(default, skip_serializing_if = "Option::is_none")]

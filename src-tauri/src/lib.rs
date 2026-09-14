@@ -204,7 +204,7 @@ fn native_window_decorations_override(target_os: &str) -> Option<bool> {
 #[cfg(target_os = "macos")]
 fn build_app_menu<R: tauri::Runtime>(app_handle: &tauri::AppHandle<R>) -> tauri::Result<Menu<R>> {
     let pkg_info = app_handle.package_info();
-    let app_name = pkg_info.name.clone();
+    let app_name = "ChironDBM by Gaussian".to_string();
     let about_metadata = AboutMetadata {
         name: Some(app_name.clone()),
         version: Some(pkg_info.version.to_string()),
@@ -744,16 +744,16 @@ fn locale_family(locale: &str) -> LocaleFamily {
 
 fn tray_menu_labels_for_locale(locale: &str) -> (&'static str, &'static str) {
     match locale_family(locale) {
-        LocaleFamily::SimplifiedChinese => ("显示 DBX", "退出 DBX"),
-        LocaleFamily::TraditionalChinese => ("顯示 DBX", "退出 DBX"),
-        LocaleFamily::Japanese => ("DBXを表示", "DBXを終了"),
-        LocaleFamily::Korean => ("DBX 표시", "DBX 종료"),
-        LocaleFamily::Azerbaijani => ("DBX-i göstər", "DBX-dən çıx"),
-        LocaleFamily::Spanish => ("Mostrar DBX", "Salir de DBX"),
-        LocaleFamily::Italian => ("Mostra DBX", "Esci da DBX"),
-        LocaleFamily::Turkish => ("DBX'i Göster", "DBX'ten Çık"),
-        LocaleFamily::Portuguese => ("Mostrar DBX", "Sair do DBX"),
-        LocaleFamily::English => ("Show DBX", "Quit DBX"),
+        LocaleFamily::SimplifiedChinese => ("显示 ChironDBM", "退出 ChironDBM"),
+        LocaleFamily::TraditionalChinese => ("顯示 ChironDBM", "退出 ChironDBM"),
+        LocaleFamily::Japanese => ("ChironDBMを表示", "ChironDBMを終了"),
+        LocaleFamily::Korean => ("ChironDBM 표시", "ChironDBM 종료"),
+        LocaleFamily::Azerbaijani => ("ChironDBM-i göstər", "ChironDBM-dən çıx"),
+        LocaleFamily::Spanish => ("Mostrar ChironDBM", "Salir de ChironDBM"),
+        LocaleFamily::Italian => ("Mostra ChironDBM", "Esci da ChironDBM"),
+        LocaleFamily::Turkish => ("ChironDBM'i Göster", "ChironDBM'ten Çık"),
+        LocaleFamily::Portuguese => ("Mostrar ChironDBM", "Sair do ChironDBM"),
+        LocaleFamily::English => ("Show ChironDBM", "Quit ChironDBM"),
     }
 }
 
@@ -820,8 +820,10 @@ fn setup_desktop_tray<R: tauri::Runtime, M: Manager<R>>(
     _icon_theme: DesktopIconTheme,
 ) -> tauri::Result<()> {
     let menu = build_tray_menu(manager)?;
-    let mut tray =
-        TrayIconBuilder::<R>::with_id(DESKTOP_TRAY_ID).tooltip("DBX").menu(&menu).show_menu_on_left_click(false);
+    let mut tray = TrayIconBuilder::<R>::with_id(DESKTOP_TRAY_ID)
+        .tooltip("ChironDBM by Gaussian")
+        .menu(&menu)
+        .show_menu_on_left_click(false);
     #[cfg(target_os = "macos")]
     {
         tray = tray.icon(MACOS_TRAY_ICON).icon_as_template(true);
@@ -1703,6 +1705,7 @@ pub fn run() {
             commands::ai::ai_agent_stream,
             commands::ai::ai_cancel_stream,
             commands::ai::ai_test_connection,
+            commands::ai::ai_resolve_endpoint,
             commands::ai::ai_list_models,
             commands::ai::ai_resolve_model_effort,
             commands::ai::save_ai_config,
@@ -2242,6 +2245,7 @@ pub fn run() {
             commands::mongo_cmd::mongo_list_databases,
             commands::mongo_cmd::mongo_list_collections,
             commands::vector_cmd::vector_collection_detail,
+            commands::vector_cmd::chirondb_request,
             commands::mongo_cmd::mongo_create_database,
             commands::mongo_cmd::mongo_drop_database,
             commands::mongo_cmd::mongo_drop_collection,

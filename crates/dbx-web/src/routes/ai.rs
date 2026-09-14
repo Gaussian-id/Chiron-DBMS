@@ -279,6 +279,7 @@ pub async fn ai_complete(
 ) -> Result<Json<String>, AppError> {
     reject_web_unsupported_ai_provider(&body.request.config)?;
     let mut request = body.request;
+    request.config = state.app.storage.resolve_ai_config(&request.config).await.map_err(AppError::from)?;
     dbx_core::ai::merge_global_max_retries(
         &mut request.config,
         state.app.storage.load_max_retries().await.unwrap_or(dbx_core::ai::DEFAULT_MAX_RETRIES),
@@ -295,7 +296,7 @@ pub async fn ai_test_connection(
     State(state): State<Arc<WebState>>,
     Json(body): Json<AiTestConnectionRequest>,
 ) -> Result<Json<AiTestConnectionResult>, AppError> {
-    let mut config = body.config;
+    let mut config = state.app.storage.resolve_ai_config(&body.config).await.map_err(AppError::from)?;
     reject_web_unsupported_ai_provider(&config)?;
     dbx_core::ai::merge_global_max_retries(
         &mut config,
@@ -305,11 +306,16 @@ pub async fn ai_test_connection(
     Ok(Json(result))
 }
 
+pub async fn ai_resolve_endpoint(Json(body): Json<AiTestConnectionRequest>) -> Result<Json<String>, AppError> {
+    reject_web_unsupported_ai_provider(&body.config)?;
+    Ok(Json(dbx_core::ai::resolve_endpoint(&body.config)))
+}
+
 pub async fn ai_list_models(
     State(state): State<Arc<WebState>>,
     Json(body): Json<AiListModelsRequest>,
 ) -> Result<Json<Vec<AiModelInfo>>, AppError> {
-    let mut config = body.config;
+    let mut config = state.app.storage.resolve_ai_config(&body.config).await.map_err(AppError::from)?;
     reject_web_unsupported_ai_provider(&config)?;
     dbx_core::ai::merge_global_max_retries(
         &mut config,
@@ -323,7 +329,7 @@ pub async fn ai_resolve_model_effort(
     State(state): State<Arc<WebState>>,
     Json(body): Json<AiResolveModelEffortRequest>,
 ) -> Result<Json<AiEffortCapability>, AppError> {
-    let mut config = body.config;
+    let mut config = state.app.storage.resolve_ai_config(&body.config).await.map_err(AppError::from)?;
     reject_web_unsupported_ai_provider(&config)?;
     dbx_core::ai::merge_global_max_retries(
         &mut config,
@@ -352,6 +358,7 @@ pub async fn ai_stream(
 ) -> Result<Sse<impl Stream<Item = Result<Event, std::convert::Infallible>>>, AppError> {
     let session_id = body.session_id;
     let mut request = body.request;
+    request.config = state.app.storage.resolve_ai_config(&request.config).await.map_err(AppError::from)?;
     reject_web_unsupported_ai_provider(&request.config)?;
     dbx_core::ai::merge_global_max_retries(
         &mut request.config,
@@ -404,7 +411,8 @@ pub async fn ai_agent_stream(
     Json(body): Json<AiAgentStreamRequest>,
 ) -> Result<Sse<impl Stream<Item = Result<Event, std::convert::Infallible>>>, AppError> {
     let session_id = body.session_id;
-    let request = body.request;
+    let mut request = body.request;
+    request.config = state.app.storage.resolve_ai_config(&request.config).await.map_err(AppError::from)?;
     reject_web_unsupported_ai_provider(&request.config)?;
 
     let cancelled = dbx_core::ai::register_stream(&session_id).await;

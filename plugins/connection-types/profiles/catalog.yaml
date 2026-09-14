@@ -1,5 +1,12 @@
 schemaVersion: 1
 profiles:
+  - id: chirondb
+    dbType: chirondb
+    label: ChironDB
+    icon: chirondb
+    port: 7401
+    user: ""
+    category: graph_ai
   - id: mysql
     dbType: mysql
     label: MySQL

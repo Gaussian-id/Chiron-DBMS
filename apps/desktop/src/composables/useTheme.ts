@@ -35,7 +35,7 @@ function isLinuxTauriRuntime() {
 const savedThemeMode = safeLocalStorageGet(APP_THEME_STORAGE_KEY);
 const themeMode = ref<AppThemeMode>(normalizeAppThemeMode(savedThemeMode));
 const savedThemePalette = safeLocalStorageGet(APP_THEME_PALETTE_STORAGE_KEY);
-const savedThemePaletteValue = ref<AppThemePalette>(normalizeAppThemePalette(savedThemePalette));
+const savedThemePaletteValue = ref<AppThemePalette>(normalizeAppThemePalette(savedThemePalette ?? (savedThemeMode?.startsWith("soft-") ? "mist" : null)));
 const previewedThemePalette = ref<AppThemePalette | null>(null);
 // Consumers use the effective palette so editor and canvas surfaces preview in
 // lockstep with the document-level theme classes.

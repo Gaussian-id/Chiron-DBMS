@@ -92,8 +92,8 @@ pub fn uses_synthetic_row_id(database_type: Option<DatabaseType>) -> bool {
     uses_oracle_row_id(database_type) || uses_xugu_row_id(database_type)
 }
 
-/// Oracle 系方言不支持 `INSERT ... VALUES (...), (...)` 多行语法，
-/// 复制为 INSERT 与导出 INSERT 都需按行生成单条语句。
+/// Oracle-family dialects do not support multi-row `INSERT ... VALUES (...), (...)` syntax.
+/// Copy-as-INSERT and INSERT export must therefore emit one statement per row.
 pub fn uses_single_row_insert_statements(database_type: DatabaseType) -> bool {
     matches!(database_type, DatabaseType::Oracle | DatabaseType::OceanbaseOracle)
 }

@@ -23,8 +23,8 @@ test("MQTT Base64 payloads preserve bytes and use canonical encoding", () => {
 test("MQTT hex payloads allow whitespace and reject malformed input", () => {
   const encoded = encodePayload("48 65\n6c\t6c 6f", "hex");
   assert.equal(decodePayload(encoded, "plaintext"), "Hello");
-  assert.throws(() => encodePayload("abc", "hex"), /编码失败 \(Hex\)/);
-  assert.throws(() => encodePayload("zz", "hex"), /编码失败 \(Hex\)/);
+  assert.throws(() => encodePayload("abc", "hex"), /Encoding failed \(Hex\)/);
+  assert.throws(() => encodePayload("zz", "hex"), /Encoding failed \(Hex\)/);
 });
 
 test("MQTT CBOR payloads round-trip JSON values", () => {
@@ -55,7 +55,7 @@ test("MQTT JSON publishing sends canonical bytes instead of the original text", 
   assert.doesNotMatch(source, /encoding\.value === "plaintext" \|\| encoding\.value === "json"/);
 });
 
-test("MQTT 中文 JSON Payload 保留 UTF-8 文本且不添加换行符", () => {
+test("MQTT Chinese JSON payload preserves UTF-8 text without adding a newline", () => {
   const encoded = encodePayload('{\n  "消息": "温度正常",\n  "设备": "客厅传感器"\n}', "json");
   assert.equal(decodePayload(encoded, "plaintext"), '{"消息":"温度正常","设备":"客厅传感器"}');
 });

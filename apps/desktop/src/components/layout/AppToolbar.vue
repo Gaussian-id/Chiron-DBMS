@@ -76,7 +76,7 @@ const emit = defineEmits<{
 const { t } = useI18n();
 const { toast } = useToast();
 const settingsStore = useSettingsStore();
-const toolbarItems = computed(() => settingsStore.editorSettings.toolbarItems);
+const toolbarItems = computed(() => ({ ...settingsStore.editorSettings.toolbarItems, checkUpdates: false }));
 const { isMac, isDesktop, showControls, isMaximized, isFullscreen, minimize, toggleMaximize, close } = useWindowControls();
 const updateTooltip = computed(() => {
   if (props.hasUpdateAvailable && props.updateReady) return t("updates.restartRequiredTooltip");
@@ -263,7 +263,7 @@ const collapsibleRightItemDefs = computed(() => {
       disabled: false,
     });
   }
-  return items;
+  return items.map((item) => (["sqlLibrary", "sqlFileTree"].includes(item.key) ? { ...item, label: `${item.label} · Coming Soon`, disabled: true } : item));
 });
 
 const overflowedRightKeys = computed(() => {
@@ -484,7 +484,7 @@ const moreItems = computed(() => {
     });
   }
 
-  return items;
+  return items.map((item) => (["transfer", "schema-diff", "data-compare", "sql-file", "driver-store", "plugin-center"].includes(item.value) ? { ...item, label: `${item.label} · Coming Soon`, disabled: true } : item));
 });
 
 const showMoreDropdown = computed(() => moreItems.value.length > 0);
@@ -516,17 +516,17 @@ const collapsedItems = computed(() => {
   if (moreItems.value.length > 0) {
     items.push(...moreItems.value);
   }
-  return items;
+  return items.map((item) => (["transfer", "driver-store", "plugin-center"].includes(item.value) && !item.disabled ? { ...item, label: `${item.label} · Coming Soon`, disabled: true } : item));
 });
 
 function runMoreItem(value: string) {
   const item = moreItems.value.find((i) => i.value === value);
-  item?.action();
+  if (item && !item.disabled) item.action();
 }
 
 function runCollapsedItem(value: string) {
   const item = collapsedItems.value.find((i) => i.value === value);
-  item?.action();
+  if (item && !item.disabled) item.action();
 }
 
 // Per-item overflow visibility helper
@@ -568,18 +568,16 @@ const toolbarStyle = computed(() => {
     </Button>
 
     <template v-if="!toolbarCollapsed">
-      <Button v-if="toolbarItems.dataTransfer" variant="ghost" size="sm" :class="toolbarTextButtonClass" @click="emit('open-transfer')" :disabled="!hasConnections">
+      <Button v-if="toolbarItems.dataTransfer" variant="ghost" size="sm" :class="toolbarTextButtonClass" disabled title="Coming Soon">
         <ArrowLeftRight class="h-3.5 w-3.5" />
-        <span :class="toolbarTextLabelClass">{{ t("transfer.dataTransfer") }}</span>
+        <span :class="toolbarTextLabelClass">{{ t("transfer.dataTransfer") }} · Coming Soon</span>
       </Button>
 
-      <Button v-if="toolbarItems.driverManager" variant="ghost" size="sm" :class="[toolbarTextButtonClass, { 'bg-accent': showDriverStore }]" @click="emit('open-driver-store')">
+      <Button v-if="toolbarItems.driverManager" variant="ghost" size="sm" :class="toolbarTextButtonClass" disabled title="Coming Soon">
         <Package class="h-3.5 w-3.5" />
         <span :class="toolbarTextLabelClass">{{ t("toolbar.driverManager") }}</span>
-        <!-- 小圆点仅提示"有可更新驱动"，具体数量交给对话框内标签页红点展示，避免工具栏长期挂红数字。 -->
-        <span v-if="agentDriverUpdateCount > 0" class="ml-0.5 inline-block h-2 w-2 rounded-full bg-red-500" :aria-label="t('toolbar.updatableDriverCount')" :title="t('toolbar.updatableDriverCount')" />
       </Button>
-      <Button v-if="toolbarItems.pluginCenter" variant="ghost" size="sm" :class="[toolbarTextButtonClass, { 'bg-accent': showPluginCenter }]" @click="emit('open-plugin-center')">
+      <Button v-if="toolbarItems.pluginCenter" variant="ghost" size="sm" :class="toolbarTextButtonClass" disabled title="Coming Soon">
         <PlugZap class="h-3.5 w-3.5" />
         <span :class="toolbarTextLabelClass">{{ t("toolbar.pluginCenter") }}</span>
       </Button>
@@ -640,6 +638,8 @@ const toolbarStyle = computed(() => {
           <Button
             v-show="isRightItemVisible('sqlLibrary')"
             data-sql-library-trigger
+            disabled
+            title="SQL Library · Coming Soon"
             variant="ghost"
             size="icon"
             class="toolbar-action-button relative h-8 w-8 shrink-0"
@@ -669,17 +669,17 @@ const toolbarStyle = computed(() => {
             <span v-if="showSqlLibrary" class="toolbar-panel-status" aria-hidden="true" />
           </Button>
         </TooltipTrigger>
-        <TooltipContent>{{ t("sqlLibrary.title") }}</TooltipContent>
+        <TooltipContent>{{ t("sqlLibrary.title") }} · Coming Soon</TooltipContent>
       </Tooltip>
 
       <Tooltip v-if="toolbarItems.sqlFileTree">
         <TooltipTrigger as-child>
-          <Button v-show="isRightItemVisible('sqlFileTree')" variant="ghost" size="icon" class="toolbar-action-button relative h-8 w-8 shrink-0" :class="{ 'toolbar-action-button--active bg-accent': showSqlFilePanel }" @click="emit('toggle-sql-file-panel')">
+          <Button v-show="isRightItemVisible('sqlFileTree')" variant="ghost" size="icon" class="toolbar-action-button relative h-8 w-8 shrink-0" :class="{ 'toolbar-action-button--active bg-accent': showSqlFilePanel }" disabled title="SQL files · Coming Soon">
             <FolderTree class="toolbar-action-icon h-4 w-4" :class="{ 'toolbar-action-icon--active': showSqlFilePanel }" />
             <span v-if="showSqlFilePanel" class="toolbar-panel-status" aria-hidden="true" />
           </Button>
         </TooltipTrigger>
-        <TooltipContent>{{ t("sqlFileTree.title") }}</TooltipContent>
+        <TooltipContent>{{ t("sqlFileTree.title") }} · Coming Soon</TooltipContent>
       </Tooltip>
 
       <Tooltip v-if="toolbarItems.history">

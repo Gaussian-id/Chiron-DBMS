@@ -104,6 +104,7 @@ const MeilisearchSystemWorkspace = defineAsyncComponent(() => import("@/componen
 const MongoGridFsBrowser = defineAsyncComponent(() => import("@/components/document/MongoGridFsBrowser.vue"));
 const MongoBucketBrowser = defineAsyncComponent(() => import("@/components/document/MongoBucketBrowser.vue"));
 const VectorBrowser = defineAsyncComponent(() => import("@/components/vector/VectorBrowser.vue"));
+const ChironDbBrowser = defineAsyncComponent(() => import("@/components/vector/ChironDbBrowser.vue"));
 const HBaseBrowser = defineAsyncComponent(() => import("@/components/hbase/HBaseBrowser.vue"));
 const ElasticsearchJsonResponsePanel = defineAsyncComponent(() => import("@/components/common/ElasticsearchJsonResponsePanel.vue"));
 const ElasticsearchProfilePanel = defineAsyncComponent(() => import("@/components/common/ElasticsearchProfilePanel.vue"));
@@ -115,7 +116,6 @@ const NacosDashboard = defineAsyncComponent(() => import("@/components/nacos/Nac
 const DoltVersionControl = defineAsyncComponent(() => import("@/components/dolt/DoltVersionControl.vue"));
 const DatabaseBrowser = defineAsyncComponent(() => import("@/components/objects/DatabaseBrowser.vue"));
 const ObjectBrowser = defineAsyncComponent(() => import("@/components/objects/ObjectBrowser.vue"));
-const TableStructureEditor = defineAsyncComponent(() => import("@/components/structure/TableStructureEditor.vue"));
 const DatabaseUserAdmin = defineAsyncComponent(() => import("@/components/admin/DatabaseUserAdmin.vue"));
 const ProcessListPanel = defineAsyncComponent(() => import("@/components/admin/ProcessListPanel.vue"));
 const SqlServerActivityTracePanel = defineAsyncComponent(() => import("@/components/admin/SqlServerActivityTracePanel.vue"));
@@ -1305,7 +1305,17 @@ defineExpose({
       <span v-if="productionSessionDetail" class="min-w-0 truncate rounded-md border border-red-500/25 bg-background/65 px-1.5 py-0.5 font-medium text-red-700 dark:text-red-200">{{ productionSessionDetail }}</span>
     </div>
     <!-- Query mode: editor + results -->
-    <template v-if="activeTab.mode === 'query'">
+    <template v-if="activeEffectiveDatabaseType === 'chirondb' && (activeTab.mode === 'query' || activeTab.mode === 'vector')">
+      <ChironDbBrowser
+        :key="activeTab.id"
+        :connection-id="activeTab.connectionId"
+        :collection="activeTab.mode === 'vector' ? activeTab.sql : activeTab.database === 'default' ? '' : activeTab.database"
+        :initial-query="activeTab.mode === 'query' ? activeTab.sql : undefined"
+        @update:query="activeTab.mode === 'query' && queryStore.updateSql(activeTab.id, $event)"
+        @update:busy="activeTab.isExecuting = $event"
+      />
+    </template>
+    <template v-else-if="activeTab.mode === 'query'">
       <Splitpanes horizontal class="query-output-splitpanes flex-1 min-h-0 overflow-hidden" @resized="onResultsResized">
         <Pane v-if="!resultOnly" class="min-h-0" :size="editorPaneSize" :min-size="resultsPaneOpen ? 15 : 100">
           <div class="h-full flex flex-col relative">
@@ -2601,23 +2611,10 @@ defineExpose({
 
     <!-- Structure mode: table structure editor -->
     <template v-else-if="activeTab.mode === 'structure'">
-      <TableStructureEditor
-        ref="tableStructureEditorRef"
-        :key="activeTab.id"
-        :connection-id="activeTab.connectionId"
-        :database="activeTab.database"
-        :catalog="activeTab.catalog"
-        :schema="activeTab.schema"
-        :table-name="activeTab.structureTableName || ''"
-        :initial-tab="activeTab.structureInitialTab"
-        :initial-tab-request-id="activeTab.structureInitialTabRequestId"
-        :initial-target="activeTab.structureInitialTarget"
-        :draft="activeTab.structureDraft"
-        @update:draft="(draft) => (activeTab.structureDraft = draft)"
-        @saved="(commentChanged) => emit('structureEditorSaved', activeTab.id, commentChanged)"
-        @close="emit('structureEditorClose', activeTab.id)"
-        @open-settings="(initialTab, initialSection) => emit('openSettings', initialTab, initialSection)"
-      />
+      <section class="flex flex-1 flex-col items-center justify-center gap-3 p-6 text-muted-foreground" aria-label="Table design · Coming Soon">
+        <h2 class="text-base font-medium">Table design · Coming Soon</h2>
+        <p class="text-sm">Relational schema editing is not available. Existing drafts are preserved.</p>
+      </section>
     </template>
 
     <template v-else-if="activeTab.mode === 'users' && activeConnection">

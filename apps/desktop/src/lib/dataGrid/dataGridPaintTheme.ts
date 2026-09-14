@@ -260,6 +260,8 @@ function paintToken(getVar: (name: string) => string, name: string, fallback: st
 
 export function resolveDataGridPaintTheme(options: { getVar: (name: string) => string; isDark: boolean }): DataGridPaintTheme {
   const { getVar, isDark } = options;
+  // Preserve legacy dark defaults; semantic palettes opt into their surface tokens.
+  const useSurfaceTokens = !isDark || getVar("--data-grid-semantic-surfaces").trim() === "1";
   const background = cssVarColor(getVar, "--background", isDark ? "rgb(19, 20, 22)" : "rgb(255, 255, 255)");
   const foreground = cssVarColor(getVar, "--foreground", isDark ? "rgb(215, 215, 219)" : "rgb(10, 10, 10)");
   const mutedForeground = cssVarColor(getVar, "--muted-foreground", isDark ? "rgb(151, 152, 157)" : "rgb(115, 115, 115)");
@@ -284,7 +286,7 @@ export function resolveDataGridPaintTheme(options: { getVar: (name: string) => s
   const cellSearch = isDark ? DATA_GRID_DARK_SEARCH_COLORS.match : "rgb(253, 245, 184)";
   const cellCurrentSearch = isDark ? DATA_GRID_DARK_SEARCH_COLORS.current : "rgba(253, 224, 71, 0.52)";
   const cellCurrentSearchBorder = isDark ? DATA_GRID_DARK_SEARCH_COLORS.currentBorder : "rgba(234, 179, 8, 0.82)";
-  const rowNumberDefault = isDark ? DATA_GRID_DARK_ROW_NUMBER_BG : paintToken(getVar, "--data-grid-row-number-default-bg", "rgb(255, 255, 255)");
+  const rowNumberDefault = useSurfaceTokens ? paintToken(getVar, "--data-grid-row-number-default-bg", isDark ? DATA_GRID_DARK_ROW_NUMBER_BG : "rgb(255, 255, 255)") : DATA_GRID_DARK_ROW_NUMBER_BG;
   const rowNumberNew = isDark ? DATA_GRID_DARK_ROW_NUMBER_NEW_BG : DATA_GRID_LIGHT_ROW_NUMBER_NEW_BG;
   const rowNumberEdited = isDark ? DATA_GRID_DARK_ROW_NUMBER_EDITED_BG : DATA_GRID_LIGHT_ROW_NUMBER_EDITED_BG;
   const rowNumberDeleted = isDark ? DATA_GRID_DARK_ROW_NUMBER_DELETED_BG : DATA_GRID_LIGHT_ROW_NUMBER_DELETED_BG;
@@ -302,10 +304,10 @@ export function resolveDataGridPaintTheme(options: { getVar: (name: string) => s
     foreground,
     mutedForeground,
     primary,
-    rowMuted: isDark ? rowMuted : paintToken(getVar, "--data-grid-row-muted-bg", rowMuted),
+    rowMuted: useSurfaceTokens ? paintToken(getVar, "--data-grid-row-muted-bg", rowMuted) : rowMuted,
     rowNew: isDark ? rowNew : paintToken(getVar, "--data-grid-row-new-bg", rowNew),
     rowDeleted: isDark ? rowDeleted : paintToken(getVar, "--data-grid-row-deleted-bg", rowDeleted),
-    cellActive: isDark ? cellActive : paintToken(getVar, "--data-grid-cell-active-bg", cellActive),
+    cellActive: useSurfaceTokens ? paintToken(getVar, "--data-grid-cell-active-bg", cellActive) : cellActive,
     cellCrosshairRow,
     cellCrosshairCol,
     cellDirty: paintToken(getVar, "--data-grid-cell-dirty-bg", cellDirty),
@@ -314,7 +316,7 @@ export function resolveDataGridPaintTheme(options: { getVar: (name: string) => s
     cellSelectedBorder: paintToken(getVar, "--data-grid-cell-selected-border", cellSelectedBorder),
     cellSelectedSingle: paintToken(getVar, "--data-grid-cell-selected-single-bg", cellSelectedSingle),
     cellSelectedSingleBorder: paintToken(getVar, "--data-grid-cell-selected-single-border", primary),
-    cellHover: isDark ? cellHover : paintToken(getVar, "--data-grid-cell-hover-bg", cellHover),
+    cellHover: useSurfaceTokens ? paintToken(getVar, "--data-grid-cell-hover-bg", cellHover) : cellHover,
     cellSearch: isDark ? cellSearch : paintToken(getVar, "--data-grid-cell-search-bg", cellSearch),
     cellCurrentSearch: isDark ? cellCurrentSearch : paintToken(getVar, "--data-grid-cell-current-search-bg", cellCurrentSearch),
     cellCurrentSearchBorder: isDark ? cellCurrentSearchBorder : paintToken(getVar, "--data-grid-cell-current-search-border", cellCurrentSearchBorder),
@@ -322,7 +324,7 @@ export function resolveDataGridPaintTheme(options: { getVar: (name: string) => s
     rowNumberNew: isDark ? rowNumberNew : paintToken(getVar, "--data-grid-row-number-new-bg", rowNumberNew),
     rowNumberEdited: isDark ? rowNumberEdited : paintToken(getVar, "--data-grid-row-number-edited-bg", rowNumberEdited),
     rowNumberDeleted: isDark ? rowNumberDeleted : paintToken(getVar, "--data-grid-row-number-deleted-bg", rowNumberDeleted),
-    rowNumberActive: isDark ? rowNumberActive : paintToken(getVar, "--data-grid-row-number-active-bg", rowNumberActive),
+    rowNumberActive: useSurfaceTokens ? paintToken(getVar, "--data-grid-row-number-active-bg", rowNumberActive) : rowNumberActive,
     rowNumberSelected: paintToken(getVar, "--data-grid-row-number-selected-bg", rowNumberSelected),
     rowNumberTextClean: mutedForeground,
     rowNumberTextNew: isDark ? "rgb(94, 233, 181)" : "rgb(0, 122, 85)",

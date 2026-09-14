@@ -562,6 +562,9 @@ pub async fn execute_tool(
     db_type: &DatabaseType,
     sql_permissions: AgentSqlPermissions,
 ) -> ToolResult {
+    if state.configs.read().await.get(connection_id).is_some_and(|c| c.db_type == DatabaseType::ChironDb) {
+        return ToolResult { tool_call_id: tool_call.id.clone(), tool_name: tool_call.name.clone(), content: "ChironDB requires native metadata, parse and guarded assistant operations; generic SQL/vector tools are disabled".into(), is_error: true, explain_data: None };
+    }
     // Agent loops for different conversations may share a physical connection.
     // Lock only the database tool future; model generation and non-DB tools stay
     // concurrent. Dropping a cancelled future releases either the waiter or the

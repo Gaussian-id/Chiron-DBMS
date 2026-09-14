@@ -888,6 +888,7 @@ async fn main() {
         .route("/mongo/list-collections", post(routes::mongo::list_collections))
         .route("/mongo/vector-collection-detail", post(routes::vector::collection_detail))
         .route("/vector/collection-detail", post(routes::vector::collection_detail))
+        .route("/chirondb/request", post(routes::vector::chirondb_request))
         .route("/vector/drop-database", post(routes::vector::drop_database))
         .route("/vector/drop-collection", post(routes::vector::drop_collection))
         .route("/vector/rename-collection", post(routes::vector::rename_collection))
@@ -1021,6 +1022,7 @@ async fn main() {
         .route("/ai/agent-stream", post(routes::ai::ai_agent_stream))
         .route("/ai/cancel-stream", post(routes::ai::ai_cancel_stream))
         .route("/ai/test-connection", post(routes::ai::ai_test_connection))
+        .route("/ai/resolve-endpoint", post(routes::ai::ai_resolve_endpoint))
         .route("/ai/models", post(routes::ai::ai_list_models))
         .route("/ai/model-effort", post(routes::ai::ai_resolve_model_effort))
         // Prompt templates

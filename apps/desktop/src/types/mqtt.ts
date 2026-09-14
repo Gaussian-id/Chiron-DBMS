@@ -54,7 +54,7 @@ export interface MqttMessage {
   qos: number;
   retain: boolean;
   receivedAtMs: number;
-  /** 消息方向：sent（发出的）或 received（接收的） */
+  /** Message direction: `sent` or `received`. */
   direction?: MqttMessageDirection;
 }
 

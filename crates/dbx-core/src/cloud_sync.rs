@@ -1063,9 +1063,15 @@ async fn build_sensitive_payload(
         }
     }
 
+    let mut ai_configs = storage.load_ai_configs().await?;
+    // This payload is only emitted inside the explicitly passphrase-encrypted
+    // secret export. Ordinary snapshots never include these credentials.
+    for item in &mut ai_configs {
+        item.config = storage.resolve_ai_config(&item.config).await?;
+    }
     Ok(SensitiveSyncPayload {
         connection_secrets,
-        ai_configs: Some(storage.load_ai_configs().await.unwrap_or_default()),
+        ai_configs: Some(ai_configs),
         ai_config: None,
         tunnel_profiles: Some(tunnel_profiles.to_vec()),
     })

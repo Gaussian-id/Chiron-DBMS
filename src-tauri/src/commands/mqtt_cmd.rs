@@ -7,15 +7,18 @@ use dbx_core::connection::PoolKind;
 use dbx_core::mqtt::service;
 use dbx_core::mqtt::types::*;
 
-/// 从 connections map 中获取 MQTT 客户端
+/// Gets the MQTT client from the connection map.
 async fn get_mqtt_client(
     state: &AppState,
     connection_id: &str,
 ) -> Result<Arc<dbx_core::mqtt::client::MqttClient>, String> {
-    let pool = state.pool_handle(connection_id).await.ok_or_else(|| format!("连接 {} 未建立", connection_id))?;
+    let pool = state
+        .pool_handle(connection_id)
+        .await
+        .ok_or_else(|| format!("Connection {} is not established", connection_id))?;
     match pool {
         PoolKind::Mqtt(client) => Ok(client),
-        _ => Err(format!("连接 {} 不是 MQTT 类型", connection_id)),
+        _ => Err(format!("Connection {} is not an MQTT connection", connection_id)),
     }
 }
 
@@ -33,14 +36,14 @@ async fn persist_mqtt_topics(
     if let Some(config) = state.configs.write().await.get_mut(connection_id) {
         let mut external_config = config.external_config.take().unwrap_or_else(|| json!({}));
         let Some(external_object) = external_config.as_object_mut() else {
-            return Err("MQTT external_config 必须是 JSON 对象".to_string());
+            return Err("MQTT external_config must be a JSON object".to_string());
         };
         external_object.insert("savedTopics".to_string(), saved_topics);
         config.external_config = Some(external_config);
     }
     Ok(())
 }
-/// 获取 broker 基本信息
+/// Gets basic broker information.
 #[tauri::command]
 pub async fn mqtt_get_broker_info(
     state: State<'_, Arc<AppState>>,
@@ -50,7 +53,7 @@ pub async fn mqtt_get_broker_info(
     service::get_broker_info(&client).await
 }
 
-/// 订阅 topic
+/// Subscribes to a topic.
 #[tauri::command]
 pub async fn mqtt_subscribe(
     state: State<'_, Arc<AppState>>,
@@ -64,7 +67,7 @@ pub async fn mqtt_subscribe(
     persist_mqtt_topics(state.inner(), &connection_id, &client).await
 }
 
-/// 保存订阅配置，不向 broker 发送 SUBSCRIBE。
+/// Saves a subscription configuration without sending SUBSCRIBE to the broker.
 #[tauri::command]
 pub async fn mqtt_save_topic_config(
     state: State<'_, Arc<AppState>>,
@@ -76,7 +79,7 @@ pub async fn mqtt_save_topic_config(
     persist_mqtt_topics(state.inner(), &connection_id, &client).await
 }
 
-/// 取消订阅 topic
+/// Unsubscribes from a topic.
 #[tauri::command]
 pub async fn mqtt_unsubscribe(
     state: State<'_, Arc<AppState>>,
@@ -88,7 +91,7 @@ pub async fn mqtt_unsubscribe(
     persist_mqtt_topics(state.inner(), &connection_id, &client).await
 }
 
-/// 删除已保存的订阅配置；当前订阅由调用方先取消。
+/// Deletes a saved subscription configuration; the caller must unsubscribe first.
 #[tauri::command]
 pub async fn mqtt_delete_topic_config(
     state: State<'_, Arc<AppState>>,
@@ -100,7 +103,7 @@ pub async fn mqtt_delete_topic_config(
     persist_mqtt_topics(state.inner(), &connection_id, &client).await
 }
 
-/// 发布消息
+/// Publishes a message.
 #[tauri::command]
 pub async fn mqtt_publish(
     state: State<'_, Arc<AppState>>,
@@ -111,7 +114,7 @@ pub async fn mqtt_publish(
     service::publish(&client, &request).await
 }
 
-/// 获取已订阅的 topic 列表
+/// Lists subscribed topics.
 #[tauri::command]
 pub async fn mqtt_list_topics(
     state: State<'_, Arc<AppState>>,
@@ -121,7 +124,7 @@ pub async fn mqtt_list_topics(
     service::list_topics(&client).await
 }
 
-/// 获取全部已保存的订阅配置（包含未启用配置）。
+/// Lists all saved subscription configurations, including disabled ones.
 #[tauri::command]
 pub async fn mqtt_list_saved_topic_configs(
     state: State<'_, Arc<AppState>>,
@@ -131,7 +134,7 @@ pub async fn mqtt_list_saved_topic_configs(
     Ok(client.desired_topic_configs().await)
 }
 
-/// 获取 topic 树结构
+/// Gets the topic tree.
 #[tauri::command]
 pub async fn mqtt_get_topic_tree(
     state: State<'_, Arc<AppState>>,
@@ -141,7 +144,7 @@ pub async fn mqtt_get_topic_tree(
     service::get_topic_tree(&client).await
 }
 
-/// 获取消息列表
+/// Gets messages.
 #[tauri::command]
 pub async fn mqtt_get_messages(
     state: State<'_, Arc<AppState>>,
@@ -153,7 +156,7 @@ pub async fn mqtt_get_messages(
     service::get_messages(&client, topic_filter.as_deref(), limit.unwrap_or(50)).await
 }
 
-/// 清空消息历史记录
+/// Clears message history.
 #[tauri::command]
 pub async fn mqtt_clear_messages(state: State<'_, Arc<AppState>>, connection_id: String) -> Result<(), String> {
     let client = get_mqtt_client(&state, &connection_id).await?;

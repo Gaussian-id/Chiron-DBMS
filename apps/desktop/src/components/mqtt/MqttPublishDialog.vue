@@ -40,7 +40,7 @@ let panelResizeObserver: ResizeObserver | undefined;
 const qosLabels = ["QoS 0", "QoS 1", "QoS 2"];
 const qosHints = computed(() => [t("connection.mqttQosAtMostOnce"), t("connection.mqttQosAtLeastOnce"), t("connection.mqttQosExactlyOnce")]);
 
-/* 根据编码格式调整输入提示和占位符 */
+/* Adjust input hints and placeholders for the selected encoding. */
 const payloadPlaceholder = computed(() => {
   switch (encoding.value) {
     case "json":
@@ -57,7 +57,7 @@ const payloadPlaceholder = computed(() => {
   }
 });
 
-/* 监听 topic prop 变化 */
+/* Watch for changes to the topic prop. */
 watch(
   () => props.initialTopic,
   (val) => {
@@ -67,7 +67,7 @@ watch(
   },
 );
 
-/** 计算消息输入框允许使用的最大高度，避免挤占全部消息列表区域 */
+/** Calculates the largest payload editor height that preserves the message list. */
 function maxPayloadHeight() {
   const containerHeight = publishPanelRef.value?.parentElement?.clientHeight || window.innerHeight || 0;
   const panelHeight = publishPanelRef.value?.offsetHeight || 0;
@@ -76,7 +76,7 @@ function maxPayloadHeight() {
   return Math.max(MQTT_PAYLOAD_MIN_HEIGHT_PX, Math.floor(containerHeight * MQTT_PAYLOAD_MAX_PANEL_RATIO - panelChromeHeight));
 }
 
-/** 将消息输入框高度限制在可用区域内 */
+/** Restricts payload editor height to the available area. */
 function clampPayloadHeight(height: number) {
   return Math.max(MQTT_PAYLOAD_MIN_HEIGHT_PX, Math.min(maxPayloadHeight(), Math.round(height)));
 }
@@ -86,12 +86,12 @@ function persistPayloadHeight(height: number) {
   localStorage.setItem(MQTT_PAYLOAD_HEIGHT_STORAGE_KEY, payloadHeight.value.toString());
 }
 
-/** 容器尺寸变化时同步收缩输入框，保证消息列表仍可见 */
+/** Shrinks the payload editor when the container changes so messages remain visible. */
 function handlePanelResize() {
   payloadHeight.value = clampPayloadHeight(payloadHeight.value);
 }
 
-/** 开始拖动消息输入框顶部的高度调节条 */
+/** Starts dragging the payload editor's top resize handle. */
 function startResize(event: MouseEvent) {
   event.preventDefault();
   resizing.value = true;
@@ -104,7 +104,7 @@ function startResize(event: MouseEvent) {
   document.body.style.cursor = "ns-resize";
 }
 
-/** 根据向上拖动的距离实时调整消息输入框高度 */
+/** Updates payload editor height from the upward drag distance. */
 function handleResize(event: MouseEvent) {
   if (!resizing.value) return;
   payloadHeight.value = clampPayloadHeight(resizeStartHeight + resizeStartY - event.clientY);
@@ -117,7 +117,7 @@ function handleResizeKeydown(event: KeyboardEvent) {
   persistPayloadHeight(payloadHeight.value + direction * MQTT_PAYLOAD_KEYBOARD_STEP_PX);
 }
 
-/** 结束拖动并记住用户设置的高度 */
+/** Stops dragging and keeps the user's selected height. */
 function stopResize() {
   if (!resizing.value) return;
   resizing.value = false;
@@ -174,7 +174,7 @@ async function publish() {
     });
     success.value = true;
     emit("published");
-    /* 成功后保留表单内容便于连续测试，1.5 秒后清除成功提示 */
+    /* Keep form values for repeated tests and clear the success message after 1.5 seconds. */
     setTimeout(() => {
       success.value = false;
     }, 1500);
@@ -216,7 +216,7 @@ function clearForm() {
       <Button size="sm" variant="ghost" class="h-6 text-xs" @click="clearForm">{{ t("common.clear") }}</Button>
     </div>
 
-    <!-- Topic + QoS + Retain 行 -->
+    <!-- Topic, QoS, and retain row -->
     <div class="form-row">
       <div class="form-group flex-1">
         <label class="form-label">{{ t("connection.mqttTopic") }}</label>
@@ -244,7 +244,7 @@ function clearForm() {
         </label>
       </div>
 
-      <!-- 编码格式 -->
+      <!-- Payload encoding -->
       <div class="form-group">
         <label class="form-label">{{ t("connection.mqttPayloadEncoding") }}</label>
         <select v-model="encoding" class="form-select text-xs">
@@ -262,11 +262,11 @@ function clearForm() {
       <span class="form-hint">{{ t("connection.mqttPublishShortcut") }}</span>
     </div>
 
-    <!-- 状态提示 -->
+    <!-- Status message -->
     <div v-if="error" class="publish-error">{{ error }}</div>
     <div v-if="success" class="publish-success">✓ {{ t("connection.mqttPublishSuccess") }}</div>
 
-    <!-- 操作按钮 -->
+    <!-- Action buttons -->
     <div class="form-actions">
       <Button size="sm" class="publish-btn" :disabled="loading || !topic.trim()" @click="publish">
         {{ loading ? t("connection.mqttPublishing") : t("connection.mqttPublish") }}

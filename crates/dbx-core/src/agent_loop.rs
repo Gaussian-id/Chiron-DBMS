@@ -136,6 +136,18 @@ pub async fn run_agent_loop(
     task_contract: Option<&AiTaskContract>,
     is_agent_mode: bool,
 ) -> Result<String, String> {
+    if agent_ctx
+        .state
+        .configs
+        .read()
+        .await
+        .get(&agent_ctx.connection_id)
+        .is_some_and(|c| c.db_type == crate::models::connection::DatabaseType::ChironDb)
+    {
+        return Err("ChironDB requires the native ChironQL assistant path; SQL and MCP agent tools are disabled for this connection".into());
+    }
+    let resolved_config = agent_ctx.state.storage.resolve_ai_config(config).await?;
+    let config = &resolved_config;
     let contract_system_prompt = augment_system_prompt_with_task_contract(system_prompt, task_contract, is_agent_mode);
     let system_prompt = contract_system_prompt.as_str();
 

@@ -848,8 +848,9 @@ mod tests {
         let _ = state.session_credentials.set("", "conn-a", "session-secret");
         state.configs.write().await.insert(initial.id.clone(), initial.clone());
 
-        // 持久化同步的空密码 config 覆盖运行态：save_password=false 连接仅密码
-        // 差异不应销毁池（会话密码由内存仓库提供，与运行态 config 无关）。
+        // A persisted sync can overwrite the runtime configuration with an empty password.
+        // For `save_password=false`, that password-only difference must not destroy the pool:
+        // the in-memory credential store supplies the session password independently.
         let mut updated = initial.clone();
         updated.password.clear();
         let sync = sync_connection_configs(&state, std::slice::from_ref(&updated)).await;
@@ -857,7 +858,8 @@ mod tests {
         assert_eq!(state.configs.read().await.get("conn-a").map(|c| c.password.as_str()), Some(""));
         assert!(state.session_credentials.has("", "conn-a"));
 
-        // 真实连接参数（host）变化应销毁池，并清除旧会话凭据以便重新输入。
+        // A real connection-parameter change (host) must destroy the pool and clear the
+        // old session credential so that the user is prompted again.
         let mut host_changed = updated.clone();
         host_changed.host = "other-host".to_string();
         let sync2 = sync_connection_configs(&state, std::slice::from_ref(&host_changed)).await;
@@ -944,7 +946,7 @@ async fn sync_connection_configs(state: &AppState, configs: &[ConnectionConfig])
             true
         } else {
             connection_pool_ids_to_drop.insert(id.clone());
-            // 连接已被删除：同步清理本次运行期会话凭据。
+            // The connection was deleted, so also remove its transient session credential.
             state.session_credentials.clear_connection(id);
             if existing.db_type == DatabaseType::Nacos {
                 nacos_adapter_ids_to_drop.insert(id.clone());
@@ -970,12 +972,14 @@ async fn sync_connection_configs(state: &AppState, configs: &[ConnectionConfig])
                 mq_adapter_ids_to_drop.insert(config.id.clone());
             }
             if !connection_configs_session_credentials_compatible(&previous, config) {
-                // 端点或认证身份变化后，旧密码不能安全复用。显示范围等本地设置
-                // 不影响凭据归属，因此必须保留 no-save 连接的新会话密码。
+                // An endpoint or authentication-identity change makes the old password unsafe
+                // to reuse. Presentation settings, such as visible scopes, do not change
+                // credential ownership and must retain the new no-save session password.
                 state.session_credentials.clear_connection(&config.id);
             }
-            // 仅在真实连接参数变化时销毁池；save_password=false 连接因持久化
-            // 空密码与运行态密码产生的差异被忽略（见 connection_configs_pool_equivalent）。
+            // Destroy the pool only for a real connection-parameter change. Ignore the
+            // persisted-empty versus runtime-password difference for `save_password=false`
+            // connections; see `connection_configs_pool_equivalent`.
             if !connection_configs_pool_equivalent(&previous, config) {
                 connection_pool_ids_to_drop.insert(config.id.clone());
             }
@@ -1453,8 +1457,13 @@ async fn test_connection_with_info_inner(
                 database_info = db::hbase_driver::database_connection_info(&client).await.ok().flatten();
                 Ok("Connection successful".to_string())
             }
-            DatabaseType::Qdrant | DatabaseType::Milvus | DatabaseType::Weaviate | DatabaseType::ChromaDb => {
+            DatabaseType::ChironDb
+            | DatabaseType::Qdrant
+            | DatabaseType::Milvus
+            | DatabaseType::Weaviate
+            | DatabaseType::ChromaDb => {
                 let kind = match config.db_type {
+                    DatabaseType::ChironDb => db::vector_driver::VectorDbKind::ChironDb,
                     DatabaseType::Qdrant => db::vector_driver::VectorDbKind::Qdrant,
                     DatabaseType::Milvus => db::vector_driver::VectorDbKind::Milvus,
                     DatabaseType::Weaviate => db::vector_driver::VectorDbKind::Weaviate,
@@ -1650,8 +1659,9 @@ async fn test_connection_with_info_inner(
     result.map(|message| ConnectionTestResult::success(message).with_database_info(database_info))
 }
 
-/// 连接成功且 `save_password=false` 时，把本次输入的密码记入内存会话凭据仓库，
-/// 供本次运行内 AI / 元数据 / 池重建复用（进程退出即丢，绝不落盘）。
+/// When a `save_password=false` connection succeeds, records the entered password in the
+/// in-memory session-credential store. AI, metadata, and pool reconstruction can reuse it
+/// for this process lifetime only; it is never persisted.
 fn record_session_credential(state: &AppState, config: &ConnectionConfig, connection_id: &str) {
     if !config.save_password && !config.password.is_empty() {
         let _ = state.session_credentials.set("", connection_id, &config.password);
@@ -1674,8 +1684,9 @@ pub async fn connect_db(
     }
     let id = config.id.clone();
     let mut db_config = metadata_connection_config(&config);
-    // save_password=false 连接：前端在会话凭据存在时跳过弹窗并以空密码请求，
-    // 此处从运行期会话凭据仓库补主密码，使重连/AI 新建池不再 ORA-01005。
+    // For `save_password=false`, the frontend skips the prompt when a session credential exists
+    // and sends an empty password. Restore the primary password from the runtime credential
+    // store so reconnects and AI-created pools do not fail with ORA-01005.
     state.apply_session_credential(&config, &mut db_config, &id);
     let attempt = state.begin_connection_attempt_with_client_attempt(&id, client_attempt).await;
     let mut connected_config = config.clone();
@@ -1894,8 +1905,13 @@ pub async fn connect_db(
             db::hbase_driver::test_connection(&client, connect_timeout).await?;
             PoolKind::HBase(client)
         }
-        DatabaseType::Qdrant | DatabaseType::Milvus | DatabaseType::Weaviate | DatabaseType::ChromaDb => {
+        DatabaseType::ChironDb
+        | DatabaseType::Qdrant
+        | DatabaseType::Milvus
+        | DatabaseType::Weaviate
+        | DatabaseType::ChromaDb => {
             let kind = match db_config.db_type {
+                DatabaseType::ChironDb => db::vector_driver::VectorDbKind::ChironDb,
                 DatabaseType::Qdrant => db::vector_driver::VectorDbKind::Qdrant,
                 DatabaseType::Milvus => db::vector_driver::VectorDbKind::Milvus,
                 DatabaseType::Weaviate => db::vector_driver::VectorDbKind::Weaviate,
@@ -2052,7 +2068,8 @@ pub async fn connect_db(
         return Err(err);
     }
     record_session_credential(state.inner(), &connected_config, &id);
-    // 存入全局运行态 configs 的配置脱敏（no-save 密码恒为空），明文只存在于会话凭据仓库。
+    // Store a sanitized configuration globally: no-save passwords are always empty here;
+    // plaintext lives only in the session-credential store.
     let mut stored = connected_config;
     if !stored.save_password {
         stored.password.clear();
@@ -2131,15 +2148,15 @@ pub async fn close_database_connection(
     state.close_database_pool(&connection_id, database).await
 }
 
-/// 查询连接在本次运行期是否已输入并暂存密码（`save_password=false`）。
-/// 供前端决定是否需要弹密码框；仅返回布尔状态，不泄露密码本身。
+/// Returns whether a `save_password=false` connection has an entered, transient password for
+/// this process. The frontend uses this to decide whether to prompt; only a boolean is returned.
 #[tauri::command]
 pub async fn session_credential_status(state: State<'_, Arc<AppState>>, connection_id: String) -> Result<bool, String> {
     Ok(state.session_credentials.has("", &connection_id))
 }
 
-/// "断开并忘记本次密码"：清除连接本次运行期的临时密码，下次连接需重新输入。
-/// 只清内存会话凭据，不影响持久化配置与已保存密码。
+/// "Disconnect and forget this password": clears the connection's transient password so the
+/// next connection prompts again. It only clears in-memory credentials, not saved configuration.
 #[tauri::command]
 pub async fn forget_session_credential(state: State<'_, Arc<AppState>>, connection_id: String) -> Result<(), String> {
     if !state.session_credentials.has("", &connection_id) {
@@ -2166,8 +2183,8 @@ pub async fn replace_nacos_session_credential(
         .await
 }
 
-/// 清空全部运行期会话凭据（桌面端退出前调用；Web 端登出时走 `auth.rs logout`）。
-/// 密码只存在于本次进程内存，进程退出本就会丢失；显式清除用于退出前兜底。
+/// Clears all transient session credentials. The desktop app calls this before exit; the web app
+/// calls `auth.rs logout`. Passwords exist only in process memory, and this is a final safeguard.
 #[tauri::command]
 pub async fn clear_all_session_credentials(state: State<'_, Arc<AppState>>) -> Result<(), String> {
     state.session_credentials.clear();

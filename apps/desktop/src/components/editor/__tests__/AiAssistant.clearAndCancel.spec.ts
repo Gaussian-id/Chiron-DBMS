@@ -74,7 +74,9 @@ describe("AI assistant uses platform-specific conversation lifecycle", () => {
     const deleteBody = bodyOf("async function performDeleteConversation(id: string)");
     expect(deleteBody).toContain("await deleteConversationWithCancellation({");
     expect(deleteBody).toContain("abandon: () => abandonInFlightRequest()");
-    expect(deleteBody).toContain("deletePersisted: () => deleteAiConversation(id).catch(() => {})");
+    expect(deleteBody).toContain("deletePersisted: () => deleteAiConversation(id),");
+    expect(deleteBody).not.toContain("deleteAiConversation(id).catch(() => {})");
+    expect(deleteBody).toContain("Could not delete chat:");
     expect(deleteBody).toContain("if (conversationId.value === id) clearMessages();");
   });
 

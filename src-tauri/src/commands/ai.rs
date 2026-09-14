@@ -6,11 +6,19 @@ use super::connection::AppState;
 pub use dbx_core::ai::*;
 
 #[tauri::command]
+pub fn ai_resolve_endpoint(config: AiConfig) -> Result<String, String> {
+    if is_cli_provider(&config.provider) {
+        return Err("CLI providers do not use an HTTP endpoint".into());
+    }
+    Ok(resolve_endpoint(&config))
+}
+
+#[tauri::command]
 pub async fn ai_test_connection(
     state: State<'_, Arc<AppState>>,
     config: AiConfig,
 ) -> Result<AiTestConnectionResult, String> {
-    let mut config = resolve_cli_provider_config(config);
+    let mut config = resolve_cli_provider_config(state.storage.resolve_ai_config(&config).await?);
     merge_global_max_retries(
         &mut config,
         state.storage.load_max_retries().await.unwrap_or(dbx_core::ai::DEFAULT_MAX_RETRIES),
@@ -20,7 +28,7 @@ pub async fn ai_test_connection(
 
 #[tauri::command]
 pub async fn ai_list_models(state: State<'_, Arc<AppState>>, config: AiConfig) -> Result<Vec<AiModelInfo>, String> {
-    let mut config = resolve_cli_provider_config(config);
+    let mut config = resolve_cli_provider_config(state.storage.resolve_ai_config(&config).await?);
     merge_global_max_retries(
         &mut config,
         state.storage.load_max_retries().await.unwrap_or(dbx_core::ai::DEFAULT_MAX_RETRIES),
@@ -34,7 +42,7 @@ pub async fn ai_resolve_model_effort(
     config: AiConfig,
     model_id: String,
 ) -> Result<AiEffortCapability, String> {
-    let mut config = resolve_cli_provider_config(config);
+    let mut config = resolve_cli_provider_config(state.storage.resolve_ai_config(&config).await?);
     merge_global_max_retries(
         &mut config,
         state.storage.load_max_retries().await.unwrap_or(dbx_core::ai::DEFAULT_MAX_RETRIES),
@@ -88,6 +96,7 @@ pub async fn load_ai_chat_selection(state: State<'_, Arc<AppState>>) -> Result<O
 #[tauri::command]
 pub async fn ai_complete(state: State<'_, Arc<AppState>>, request: AiCompletionRequest) -> Result<String, String> {
     let mut request = request;
+    request.config = state.storage.resolve_ai_config(&request.config).await?;
     merge_global_max_retries(
         &mut request.config,
         state.storage.load_max_retries().await.unwrap_or(dbx_core::ai::DEFAULT_MAX_RETRIES),
@@ -103,6 +112,7 @@ pub async fn ai_stream(
     request: AiCompletionRequest,
 ) -> Result<(), String> {
     let mut request = request;
+    request.config = state.storage.resolve_ai_config(&request.config).await?;
     merge_global_max_retries(
         &mut request.config,
         state.storage.load_max_retries().await.unwrap_or(dbx_core::ai::DEFAULT_MAX_RETRIES),
@@ -335,6 +345,7 @@ pub async fn ai_agent_stream(
     confirmed_schema: Option<String>,
 ) -> Result<String, String> {
     let mut request = resolve_cli_provider_request(request);
+    request.config = state.storage.resolve_ai_config(&request.config).await?;
     merge_global_max_retries(
         &mut request.config,
         state.storage.load_max_retries().await.unwrap_or(dbx_core::ai::DEFAULT_MAX_RETRIES),

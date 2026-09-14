@@ -1117,6 +1117,7 @@ impl ConnectionConfig {
             | DatabaseType::Easysearch
             | DatabaseType::Meilisearch
             | DatabaseType::Hbase
+            | DatabaseType::ChironDb
             | DatabaseType::Qdrant
             | DatabaseType::Milvus
             | DatabaseType::Weaviate
@@ -1301,6 +1302,7 @@ impl ConnectionConfig {
             | DatabaseType::Easysearch
             | DatabaseType::Meilisearch
             | DatabaseType::Hbase
+            | DatabaseType::ChironDb
             | DatabaseType::Qdrant
             | DatabaseType::Milvus
             | DatabaseType::Weaviate

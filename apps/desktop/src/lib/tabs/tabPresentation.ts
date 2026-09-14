@@ -58,6 +58,7 @@ export function databaseDisplayNameForTab(connectionId: string, database: string
   const connection = connectionStore.getConfig(connectionId);
   if (connection?.db_type === "redis" && database !== "") return `db${database}`;
   if (connection?.db_type === "jdbc" && !database) return jdbcTargetLabel(connection);
+  if (connection?.db_type === "chirondb") return "ChironQL";
   return database || t("editor.noDatabase");
 }
 

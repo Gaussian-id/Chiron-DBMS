@@ -1,4 +1,4 @@
-import type { Extension } from "@codemirror/state";
+import { Prec, type Extension } from "@codemirror/state";
 import type { EditorTheme, CustomThemeColors } from "@/stores/settingsStore";
 import { customUiAppearance, type AppCustomUiColors, type AppThemeAppearance, type AppThemePalette } from "@/lib/app/appTheme";
 import { HighlightStyle, syntaxHighlighting } from "@codemirror/language";
@@ -724,6 +724,26 @@ export function editorDiagnosticColors(appearance: AppThemeAppearance): { error:
 
 /** Load a CodeMirror theme extension by theme name. */
 export async function loadEditorTheme(theme: EditorTheme, appAppearance: AppThemeAppearance = "dark", customColors?: CustomThemeColors, appPalette: AppThemePalette = "pearl"): Promise<Extension> {
+  if (theme === "app" && appPalette === "gaussian") {
+    const base = await loadEditorTheme("app", appAppearance, undefined, "pearl");
+    const { EditorView } = await import("@codemirror/view");
+    return [
+      base,
+      Prec.highest(
+        EditorView.theme(
+          {
+            "&": { backgroundColor: "var(--background)", color: "var(--foreground)" },
+            ".cm-gutters": { backgroundColor: "var(--dbx-gutter)", color: "var(--muted-foreground)", borderColor: "var(--border)" },
+            ".cm-content": { caretColor: "var(--ring)" },
+            ".cm-cursor": { borderLeftColor: "var(--ring)" },
+            ".cm-activeLine, .cm-activeLineGutter": { backgroundColor: "var(--accent)" },
+            "&.cm-focused .cm-selectionBackground, .cm-selectionBackground, .cm-content ::selection": { backgroundColor: "var(--secondary)" },
+          },
+          { dark: appAppearance === "dark" },
+        ),
+      ),
+    ];
+  }
   const resolvedTheme = resolveEditorTheme(theme, appAppearance, appPalette);
   switch (resolvedTheme) {
     case "one-dark":

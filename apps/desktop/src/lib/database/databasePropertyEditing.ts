@@ -35,6 +35,7 @@ export const DATABASE_PROPERTY_EDITING_MATRIX = {
   meilisearch: { deferred: "index settings are not database properties" },
   hbase: { deferred: "namespace and table properties need a dedicated HBase workflow" },
   qdrant: { deferred: "collection settings are not database properties" },
+  chirondb: { deferred: "ChironDB has collections rather than relational database properties" },
   milvus: { deferred: "collection/database settings need a dedicated vector workflow" },
   weaviate: { deferred: "collection settings are not database properties" },
   chromadb: { deferred: "collection settings are not database properties" },

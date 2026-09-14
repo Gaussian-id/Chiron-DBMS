@@ -2508,8 +2508,13 @@ impl AppState {
                 db::hbase_driver::test_connection(&client, connect_timeout).await?;
                 PoolKind::HBase(client)
             }
-            DatabaseType::Qdrant | DatabaseType::Milvus | DatabaseType::Weaviate | DatabaseType::ChromaDb => {
+            DatabaseType::ChironDb
+            | DatabaseType::Qdrant
+            | DatabaseType::Milvus
+            | DatabaseType::Weaviate
+            | DatabaseType::ChromaDb => {
                 let kind = match db_config.db_type {
+                    DatabaseType::ChironDb => db::vector_driver::VectorDbKind::ChironDb,
                     DatabaseType::Qdrant => db::vector_driver::VectorDbKind::Qdrant,
                     DatabaseType::Milvus => db::vector_driver::VectorDbKind::Milvus,
                     DatabaseType::Weaviate => db::vector_driver::VectorDbKind::Weaviate,
@@ -5830,6 +5835,7 @@ fn base_pool_key_for_with_catalog(
                     db_type,
                     DatabaseType::Elasticsearch
                         | DatabaseType::Easysearch
+                        | DatabaseType::ChironDb
                         | DatabaseType::Qdrant
                         | DatabaseType::Milvus
                         | DatabaseType::Weaviate

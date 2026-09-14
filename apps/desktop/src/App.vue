@@ -66,6 +66,7 @@ import { resolveExecutableSql, resolveExecutableSqlWithBackend, type SqlExecutio
 import { uuid } from "@/lib/common/utils";
 import { isMacOS, isWindows } from "@/lib/backend/platform";
 import { isTauriRuntime } from "@/lib/backend/tauriRuntime";
+import { relationalComingSoon, relationalComingSoonPanel } from "@/lib/app/relationalComingSoon";
 import { openQueryResultArchiveFile } from "@/lib/query/queryResultArchiveFile";
 import { rememberExternalSqlFileTarget, resolveExternalSqlFileTarget, unassociatedExternalSqlFileTarget } from "@/lib/sql/externalSqlFileTarget";
 import { externalSqlFileOpenErrorMessage, externalSqlEditorMaxBytes, isSqlFilePath, readBrowserSqlFile, sqlFileTitleFromPath } from "@/lib/sql/sqlFileOpen";
@@ -186,6 +187,7 @@ const savedSqlStore = useSavedSqlStore();
 const promptTemplateStore = usePromptTemplateStore();
 const recentConnectionIds = ref<readonly string[]>(parseRecentConnectionIds(safeLocalStorageGet(RECENT_CONNECTION_IDS_STORAGE_KEY)));
 connectionStore.setBeforeConnectHandler(async (config) => {
+  if (relationalComingSoon(config.db_type)) throw new Error("Relational database connections · Coming Soon");
   await ensureJdbcxRuntimeDrivers(config, api);
   const jdbcProductRuntimeBefore = JSON.stringify({
     connectionString: config.connection_string ?? null,
@@ -341,8 +343,8 @@ const showHistory = ref(false);
 const showAiPanel = ref(safeLocalStorageGet("dbx-ai-panel-open") === "true");
 const isAiPanelMaximized = ref(false);
 const isZenMode = ref(false);
-const showSqlLibraryPanel = ref(safeLocalStorageGet("dbx-sql-library-open") === "true");
-const showSqlFilePanel = ref(safeLocalStorageGet("dbx-sql-file-panel-open") === "true");
+const showSqlLibraryPanel = relationalComingSoonPanel();
+const showSqlFilePanel = relationalComingSoonPanel();
 const rightSidebarPanelRefs: Record<RightSidebarPanelId, typeof showAiPanel> = {
   ai: showAiPanel,
   history: showHistory,
@@ -1074,18 +1076,8 @@ function closeSettingsPage() {
 
 const driverStoreFocus = ref<DriverStoreFocus | null>(null);
 
-function openDriverStorePage(target?: "agent" | "jdbc" | "storage" | "runtime" | DriverStoreFocus | null) {
-  if (typeof target === "string") {
-    driverStoreActiveTab.value = target;
-    driverStoreFocus.value = null;
-  } else if (target && target.target === "tab") {
-    driverStoreActiveTab.value = target.tab;
-    driverStoreFocus.value = null;
-  } else {
-    driverStoreFocus.value = target ?? null;
-  }
-  driverStoreTabOpen.value = true;
-  activateMainContentSurface("driverStore");
+function openDriverStorePage(_target?: "agent" | "jdbc" | "storage" | "runtime" | DriverStoreFocus | null) {
+  toast("Driver Manager · Coming Soon");
 }
 
 function closeDriverStorePage() {
@@ -1095,10 +1087,8 @@ function closeDriverStorePage() {
   driverStoreFocus.value = null;
 }
 
-function openPluginCenterPage(focus?: PluginCenterFocus | null) {
-  pluginCenterFocus.value = focus ?? null;
-  pluginCenterTabOpen.value = true;
-  activateMainContentSurface("pluginCenter");
+function openPluginCenterPage(_focus?: PluginCenterFocus | null) {
+  toast("Plugin Center · Coming Soon");
 }
 
 function closePluginCenterPage() {
@@ -2736,7 +2726,7 @@ function changeActiveSchema(tabId: string, schema: string | undefined) {
 }
 
 function openGitHub() {
-  openUrl("https://github.com/t8y2/dbx");
+  openUrl("https://github.com/Gaussian-id/Gauss-DBM");
 }
 function openMcpGuide() {
   openUrl("https://dbxio.com/cn/docs/mcp");
@@ -2902,7 +2892,7 @@ async function handleQuickOpenSelect(item: any) {
         await connectionStore.loadMongoDatabases(item.connectionId);
       } else if (config?.db_type === "elasticsearch" || config?.db_type === "easysearch" || config?.db_type === "meilisearch") {
         await connectionStore.openElasticsearchConnectionTree(item.connectionId);
-      } else if (config?.db_type === "qdrant" || config?.db_type === "milvus" || config?.db_type === "weaviate" || config?.db_type === "chromadb") {
+      } else if (config?.db_type === "chirondb" || config?.db_type === "qdrant" || config?.db_type === "milvus" || config?.db_type === "weaviate" || config?.db_type === "chromadb") {
         await connectionStore.loadVectorCollections(item.connectionId);
       } else if (config?.db_type === "mq") {
         await connectionStore.loadMqTenants(item.connectionId);
@@ -2929,7 +2919,7 @@ async function handleQuickOpenSelect(item: any) {
         await connectionStore.loadMongoDatabases(item.connectionId);
       } else if (config?.db_type === "elasticsearch" || config?.db_type === "easysearch" || config?.db_type === "meilisearch") {
         await connectionStore.openElasticsearchConnectionTree(item.connectionId);
-      } else if (config?.db_type === "qdrant" || config?.db_type === "milvus" || config?.db_type === "weaviate" || config?.db_type === "chromadb") {
+      } else if (config?.db_type === "chirondb" || config?.db_type === "qdrant" || config?.db_type === "milvus" || config?.db_type === "weaviate" || config?.db_type === "chromadb") {
         await connectionStore.loadVectorCollections(item.connectionId);
       } else if (config?.db_type === "mq") {
         await connectionStore.loadMqTenants(item.connectionId);

@@ -5,6 +5,7 @@ import DatabaseIcon from "@/components/icons/DatabaseIcon.vue";
 import TruncatedTextTooltip from "@/components/ui/TruncatedTextTooltip.vue";
 import { connectionDriverLabel, connectionIconType, connectionRedactedNameLabel, connectionRedactedOptionSubtitle } from "@/lib/connection/connectionPresentation";
 import type { ConnectionConfig } from "@/types/database";
+import { webPath } from "@/lib/common/webPath";
 
 export interface WelcomeSavedSqlHistoryItem {
   id: string;
@@ -44,6 +45,16 @@ function welcomeConnectionSubtitle(connection: ConnectionConfig): string {
 <template>
   <div class="min-w-0 flex-1 overflow-x-hidden overflow-y-auto bg-background">
     <div class="welcome-content mx-auto flex min-h-full w-full min-w-0 max-w-5xl flex-col justify-center gap-6 px-8 py-10">
+      <header class="gaussian-welcome-brand flex flex-wrap items-center justify-between gap-4">
+        <div>
+          <h1 class="text-xl font-semibold tracking-tight">ChironDBM</h1>
+          <p class="mt-1 text-xs text-muted-foreground">{{ t("welcome.gaussianTagline") }}</p>
+        </div>
+        <div aria-label="by Gaussian">
+          <img :src="webPath('/gaussian-wordmark.svg')" alt="Gaussian" class="h-7 w-auto dark:hidden" />
+          <img :src="webPath('/gaussian-wordmark-dark.svg')" alt="Gaussian" class="hidden h-7 w-auto dark:block" />
+        </div>
+      </header>
       <div class="welcome-stats-grid grid min-w-0 grid-cols-1 gap-3 sm:grid-cols-3">
         <div class="min-w-0 overflow-hidden rounded-lg border bg-muted/20 px-4 py-3">
           <div class="flex min-w-0 items-center gap-2 text-xs text-muted-foreground">
@@ -156,7 +167,7 @@ function welcomeConnectionSubtitle(connection: ConnectionConfig): string {
 
       <!-- Project Info -->
       <div class="mt-2 flex items-center justify-center gap-3 text-[11px] text-muted-foreground/60">
-        <span>DBX {{ appVersion ? "v" + appVersion : "" }}</span>
+        <span>ChironDBM by Gaussian {{ appVersion ? "v" + appVersion : "" }} · Built on DBX</span>
         <span>·</span>
         <a href="#" class="hover:text-foreground transition-colors" @click.prevent="emit('open-github')">GitHub</a>
       </div>

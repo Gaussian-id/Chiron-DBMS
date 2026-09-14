@@ -52,6 +52,7 @@ function forward<K extends keyof Backend>(name: K): Backend[K] {
 
 // Connection
 export const testConnection = forward("testConnection");
+export const chirondbRequest = forward("chirondbRequest");
 export const testSshTunnel = forward("testSshTunnel");
 export const testConnectionWithInfo = forward("testConnectionWithInfo");
 export const connectDb = forward("connectDb");
@@ -323,6 +324,7 @@ export const aiStream = forward("aiStream");
 export const aiAgentStream = forward("aiAgentStream");
 export const aiCancelStream = forward("aiCancelStream");
 export const aiTestConnection = forward("aiTestConnection");
+export const aiResolveEndpoint = forward("aiResolveEndpoint");
 export const aiListModels = forward("aiListModels");
 export const aiResolveModelEffort = forward("aiResolveModelEffort");
 export const saveAiChatSelection = forward("saveAiChatSelection");

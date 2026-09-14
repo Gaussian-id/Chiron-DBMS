@@ -35,7 +35,7 @@ describe("resolveEditorTheme", () => {
       "claude-dark",
       "custom",
     ];
-    const appPalettes: AppThemePalette[] = ["pearl", "vscode", "idea", "xcode", "jetbrains", "cursor", "claude"];
+    const appPalettes: AppThemePalette[] = ["gaussian", "pearl", "vscode", "idea", "xcode", "jetbrains", "cursor", "claude"];
 
     for (const theme of explicitThemes) {
       for (const palette of appPalettes) {

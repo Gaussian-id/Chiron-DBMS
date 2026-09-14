@@ -68,6 +68,7 @@ pub struct CollectionInfo {
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum VectorDbKind {
+    ChironDb,
     Qdrant,
     Milvus,
     Weaviate,
@@ -77,6 +78,7 @@ pub enum VectorDbKind {
 impl VectorDbKind {
     fn label(self) -> &'static str {
         match self {
+            VectorDbKind::ChironDb => "ChironDB",
             VectorDbKind::Qdrant => "Qdrant",
             VectorDbKind::Milvus => "Milvus",
             VectorDbKind::Weaviate => "Weaviate",
@@ -104,6 +106,10 @@ enum VectorAuth {
 }
 
 impl VectorClient {
+    pub fn is_chirondb(&self) -> bool {
+        self.kind == VectorDbKind::ChironDb
+    }
+
     pub fn new(
         kind: VectorDbKind,
         url: &str,
@@ -119,7 +125,10 @@ impl VectorClient {
         } else {
             None
         };
-        let builder = http_client_builder(timeout).danger_accept_invalid_certs(accept_invalid_certs);
+        let builder = http_client_builder(timeout)
+            .danger_accept_invalid_certs(accept_invalid_certs && kind != VectorDbKind::ChironDb);
+        let builder =
+            if kind == VectorDbKind::ChironDb { builder.redirect(reqwest::redirect::Policy::none()) } else { builder };
         let http = builder.build().unwrap_or_else(|_| HttpClient::new());
         Self { kind, http, base_url, auth, tenant, database: None }
     }
@@ -149,11 +158,11 @@ impl VectorClient {
         chroma_collection_path(self.chroma_tenant(), self.chroma_database(), collection, operation)
     }
 
-    fn get(&self, path: &str) -> reqwest::RequestBuilder {
+    pub(super) fn get(&self, path: &str) -> reqwest::RequestBuilder {
         self.with_auth(self.http.get(format!("{}{}", self.base_url, path)))
     }
 
-    fn post(&self, path: &str) -> reqwest::RequestBuilder {
+    pub(super) fn post(&self, path: &str) -> reqwest::RequestBuilder {
         self.with_auth(self.http.post(format!("{}{}", self.base_url, path)))
     }
 
@@ -178,6 +187,7 @@ impl VectorClient {
 
 fn test_connection_request(client: &VectorClient) -> reqwest::RequestBuilder {
     match client.kind {
+        VectorDbKind::ChironDb => client.get("/v1/collections"),
         VectorDbKind::Qdrant => client.get("/collections"),
         VectorDbKind::Milvus => client
             .post("/v2/vectordb/collections/list")
@@ -191,6 +201,8 @@ fn vector_auth(kind: VectorDbKind, username: Option<&str>, password: Option<&str
     let username = username.unwrap_or("").trim();
     let password = password.unwrap_or("");
     match kind {
+        VectorDbKind::ChironDb if !password.is_empty() => Some(VectorAuth::Bearer(password.to_string())),
+        VectorDbKind::ChironDb => None,
         VectorDbKind::Qdrant if !username.is_empty() => {
             Some(VectorAuth::Basic(username.to_string(), password.to_string()))
         }
@@ -206,6 +218,9 @@ fn vector_auth(kind: VectorDbKind, username: Option<&str>, password: Option<&str
 }
 
 pub async fn test_connection(client: &VectorClient, timeout: Duration) -> Result<(), String> {
+    if client.is_chirondb() {
+        return with_connection_timeout("ChironDB", timeout, super::chirondb::collections(client)).await.map(|_| ());
+    }
     let label = client.kind.label();
     let request = test_connection_request(client);
     with_connection_timeout(label, timeout, async {
@@ -225,6 +240,7 @@ pub(crate) async fn list_collections_with_db(
     database: &str,
 ) -> Result<Vec<CollectionInfo>, String> {
     match client.kind {
+        VectorDbKind::ChironDb => super::chirondb::collections(client).await,
         VectorDbKind::Qdrant => list_qdrant_collections(client).await,
         VectorDbKind::Milvus => list_milvus_collections(client, database).await,
         VectorDbKind::Weaviate => list_weaviate_collections(client).await,
@@ -425,6 +441,11 @@ pub async fn get_collection_detail(
     collection: &str,
 ) -> Result<CollectionInfo, String> {
     match client.kind {
+        VectorDbKind::ChironDb => super::chirondb::collections(client)
+            .await?
+            .into_iter()
+            .find(|item| item.name == collection)
+            .ok_or_else(|| "ChironDB collection not found or not accessible".to_string()),
         VectorDbKind::Qdrant => get_qdrant_collection_detail(client, collection).await,
         VectorDbKind::Milvus => get_milvus_collection_detail(client, database, collection).await,
         VectorDbKind::Weaviate => get_weaviate_collection_detail(client, collection).await,
@@ -726,6 +747,7 @@ pub async fn find_documents(
             format!("GET /v1/objects?class={}&limit={}&offset={}", query_value(collection), limit.max(1), skip)
         }
         VectorDbKind::ChromaDb => unreachable!("ChromaDB handled above"),
+        VectorDbKind::ChironDb => return Err("Use the ChironDB workspace for cursor-based browsing".to_string()),
     };
     let result = execute_rest_query(client, &query).await?;
     let documents = result
@@ -750,6 +772,11 @@ pub async fn find_documents(
 }
 
 pub async fn execute_rest_query(client: &VectorClient, input: &str) -> Result<QueryResult, String> {
+    if client.is_chirondb() {
+        return Err(
+            "Use the guarded ChironQL workspace; generic SQL/REST execution is not supported for ChironDB".to_string()
+        );
+    }
     let start = Instant::now();
     let request = parse_rest_query(client, input)?;
     let resp = request.send().await.map_err(|e| format!("{} request failed: {e}", client.kind.label()))?;
@@ -822,6 +849,7 @@ fn default_collection_query(client: &VectorClient, collection: &str) -> Result<r
         return Err("Vector collection name cannot be empty".to_string());
     }
     match client.kind {
+        VectorDbKind::ChironDb => Err("Use the guarded ChironQL workspace".to_string()),
         VectorDbKind::Qdrant => Ok(client
             .post(&format!("/collections/{}/points/scroll", path_segment(collection)))
             .json(&serde_json::json!({ "limit": 100, "with_payload": true, "with_vector": false }))),

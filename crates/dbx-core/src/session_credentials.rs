@@ -1,36 +1,43 @@
-//! 运行期会话凭据仓库。
+//! Runtime session-credential store.
 //!
-//! 为 `save_password=false` 的连接在本次进程内临时保留主密码，使手动操作、
-//! 编辑器 SQL、AI 工具、元数据请求以及池重建都能复用首次输入的密码，
-//! 无需反复弹窗。
+//! It temporarily retains the primary password for a `save_password=false`
+//! connection in this process. Manual operations, editor SQL, AI tools,
+//! metadata requests, and pool reconstruction can reuse the first password
+//! without prompting again.
 //!
-//! 与持久化 secret store（[`crate::connection_secrets::FileSecretStore`]）职责分离：
-//! 持久层保存"已保存密码"（save_password=true）；本仓库只保存"本次运行期临时密码"
-//! （save_password=false，进程退出即丢，绝不落盘）。
+//! This is separate from the persistent secret store
+//! ([`crate::connection_secrets::FileSecretStore`]): persistent storage holds
+//! saved passwords (`save_password=true`), while this store keeps only
+//! transient runtime passwords (`save_password=false`) and never writes them
+//! to disk.
 //!
-//! 约束：
-//! - 只在 Rust 进程内存中存在，进程退出自然丢失；
-//! - 不写 SQLite、云同步导出、日志或任何磁盘存储；
-//! - [`fmt::Debug`] 只暴露凭据数量，不输出 owner、连接 ID 或密码值，避免调试日志与异常文本泄露。
+//! Invariants:
+//! - Credentials exist only in Rust process memory and disappear on exit.
+//! - They are never written to SQLite, cloud-sync exports, logs, or disk.
+//! - [`fmt::Debug`] exposes only the credential count, never an owner,
+//!   connection ID, or password value.
 //!
-//! # 多会话隔离（Web）
+//! # Web multi-session isolation
 //!
-//! 凭据按 `(owner_scope, connection_id)` 双键存储：桌面端（Tauri）以空字符串作为
-//! owner；Web 端以已认证会话 token 作为 owner，使不同登录会话无法复用彼此的临时
-//! 密码，登出也只清除当前会话的凭据（[`SessionCredentialStore::clear_owner`]）。
+//! Credentials use the compound `(owner_scope, connection_id)` key. Desktop
+//! (Tauri) uses an empty owner; web uses the authenticated session token. This
+//! prevents signed-in sessions from sharing transient passwords, and sign-out
+//! clears only that session's credentials ([`SessionCredentialStore::clear_owner`]).
 //!
-//! owner 通过 [`tokio::task_local`] 在请求边界注入（见 [`with_credential_owner`] /
-//! [`current_credential_owner`]），因此 dbx-core 深层的池创建无需在每个函数签名上
-//! 逐层透传 owner。未注入 owner 的调用（桌面端、后台任务）按空 owner 处理，天然
-//! 隔离于任何 Web 会话凭据；即使 owner 因后台任务丢失，也会因键不匹配而"失败闭合"
-//! （读不到任何会话密码），不会跨会话泄露。
+//! The request boundary injects the owner through [`tokio::task_local`] (see
+//! [`with_credential_owner`] and [`current_credential_owner`]), so deep
+//! dbx-core pool creation does not need to thread it through every function
+//! signature. Calls with no injected owner (desktop and background jobs) use
+//! the empty owner and remain isolated from web sessions. If a background job
+//! loses its owner, key mismatch fails closed: it cannot read any session
+//! password and cannot leak credentials across sessions.
 
 use std::collections::HashMap;
 use std::fmt;
 use std::future::Future;
 use std::sync::RwLock;
 
-/// 桌面端（Tauri）使用的 owner 作用域：无认证会话概念，单用户。
+/// Owner scope used by the single-user desktop (Tauri) runtime.
 pub const DESKTOP_OWNER: &str = "";
 
 #[derive(Clone, Eq, Hash, PartialEq)]
@@ -80,19 +87,23 @@ pub struct PurposeSessionCredentialWriteToken {
     generation: u64,
 }
 
-/// 当前请求的认证会话作用域（Web 会话 token / 桌面端空串）。
+/// Authenticated session scope for the current request: a web session token or
+/// the empty desktop owner.
 ///
-/// 由 Web 鉴权中间件在请求边界通过 [`with_credential_owner`] 注入；未注入（桌面端、
-/// 后台任务、中间件未覆盖的路径）返回 `None`，调用方按空 owner 处理。
+/// The web authentication middleware injects it at the request boundary with
+/// [`with_credential_owner`]. Calls with no injected scope (desktop,
+/// background jobs, or an uncovered middleware path) return `None`; callers
+/// then use the empty owner.
 pub fn current_credential_owner() -> Option<String> {
     CREDENTIAL_OWNER.try_get().ok().flatten()
 }
 
-/// 在一个 future 的整个执行期间设置凭据 owner 作用域。
+/// Sets the credential owner scope for an entire future.
 ///
-/// Web 鉴权中间件用它包裹下游处理器，使请求处理任务内（含其 await 到的池创建）
-/// 都能读到当前会话 owner。未被此函数包裹的调用（桌面端、独立后台任务）等价于
-/// 空 owner。
+/// Web authentication middleware wraps downstream handlers so their request
+/// task, including awaited pool creation, can read the current session owner.
+/// Calls not wrapped by this function (desktop and standalone background jobs)
+/// are equivalent to using the empty owner.
 pub async fn with_credential_owner<F, T>(owner_scope: Option<String>, future: F) -> T
 where
     F: Future<Output = T>,
@@ -104,7 +115,7 @@ tokio::task_local! {
     static CREDENTIAL_OWNER: Option<String>;
 }
 
-/// 内存会话凭据仓库：`(owner_scope, connection_id) -> password`。
+/// In-memory session-credential store: `(owner_scope, connection_id) -> password`.
 #[derive(Default)]
 pub struct SessionCredentialStore {
     state: RwLock<SessionCredentialState>,
@@ -115,11 +126,12 @@ impl SessionCredentialStore {
         Self::default()
     }
 
-    /// 记录一个 no-save 连接在本次运行期输入的密码。
+    /// Records the password entered for a no-save connection in this process.
     ///
-    /// 空密码是 no-op（不覆盖已有凭据，也不删除），删除只能通过 [`Self::remove`]
-    /// 显式触发（"断开并忘记本次密码"）。这样连接成功后以空密码 config 建池
-    /// 不会误清已记录的凭据。
+    /// An empty password is a no-op: it neither overwrites nor deletes an
+    /// existing credential. Only [`Self::remove`] explicitly removes it. Thus,
+    /// building a pool with an empty configuration after a successful
+    /// connection cannot accidentally erase the recorded password.
     pub fn set(&self, owner_scope: &str, connection_id: &str, password: &str) -> Option<SessionCredentialWriteToken> {
         if password.is_empty() {
             return None;
@@ -132,7 +144,7 @@ impl SessionCredentialStore {
         Some(SessionCredentialWriteToken { key, generation })
     }
 
-    /// 读取某个 owner 作用域下的本次运行期临时密码；不存在则返回 `None`。
+    /// Returns an owner's transient runtime password, or `None` when absent.
     pub fn get(&self, owner_scope: &str, connection_id: &str) -> Option<String> {
         let state = self.state.read().unwrap_or_else(|error| error.into_inner());
         state.credentials.get(&CredentialKey::new(owner_scope, connection_id)).map(|entry| entry.password.clone())
@@ -171,12 +183,12 @@ impl SessionCredentialStore {
             .map(|entry| entry.password.clone())
     }
 
-    /// 某个 owner 作用域下是否存在本次运行期临时密码。
+    /// Returns whether an owner has a transient runtime password.
     pub fn has(&self, owner_scope: &str, connection_id: &str) -> bool {
         self.get(owner_scope, connection_id).is_some()
     }
 
-    /// 清除某个 owner 作用域下的临时密码（连接删除 / "断开并忘记本次密码"）。
+    /// Clears an owner's transient password after deletion or an explicit forget.
     pub fn remove(&self, owner_scope: &str, connection_id: &str) {
         let mut state = self.state.write().unwrap_or_else(|error| error.into_inner());
         state.credentials.remove(&CredentialKey::new(owner_scope, connection_id));
@@ -185,7 +197,8 @@ impl SessionCredentialStore {
         });
     }
 
-    /// 仅当指定写入仍是当前值时删除，用于连接失败回滚，避免旧 attempt 删除更新密码。
+    /// Removes a credential only if this write is still current. Used to roll
+    /// back a failed connection attempt without deleting a newer password.
     pub fn remove_if_current(&self, token: &SessionCredentialWriteToken) -> bool {
         let mut state = self.state.write().unwrap_or_else(|error| error.into_inner());
         let is_current =
@@ -208,16 +221,18 @@ impl SessionCredentialStore {
         is_current
     }
 
-    /// 清除某个 owner 作用域下的全部凭据（Web 登出 / 登录会话失效），不影响其他
-    /// 登录会话的凭据。
+    /// Clears all credentials for one owner after web sign-out or session
+    /// invalidation without affecting any other signed-in session.
     pub fn clear_owner(&self, owner_scope: &str) {
         let mut state = self.state.write().unwrap_or_else(|error| error.into_inner());
         state.credentials.retain(|key, _| key.owner_scope != owner_scope);
         state.purpose_credentials.retain(|key, _| key.credential.owner_scope != owner_scope);
     }
 
-    /// 全局连接配置被编辑、删除或复用 ID 时，原子清除所有 owner 的临时凭据和
-    /// 该连接的全部池 owner 标记，防止旧密码或旧池流入新的连接定义。
+    /// When global connection configuration is edited, deleted, or an ID is
+    /// reused, atomically clears every owner's transient credentials and the
+    /// connection's pool-owner markers. This prevents old passwords or pools
+    /// from leaking into a new connection definition.
     pub fn clear_connection(&self, connection_id: &str) {
         let mut state = self.state.write().unwrap_or_else(|error| error.into_inner());
         state.credentials.retain(|key, _| key.connection_id != connection_id);
@@ -228,7 +243,8 @@ impl SessionCredentialStore {
             .retain(|pool_key, _| pool_key != connection_id && !pool_key.starts_with(&pool_prefix));
     }
 
-    /// 清空全部会话凭据（桌面端退出前兜底；Web 全实例重置）。
+    /// Clears all session credentials as a desktop-exit safeguard or full web
+    /// instance reset.
     pub fn clear(&self) {
         let mut state = self.state.write().unwrap_or_else(|error| error.into_inner());
         state.credentials.clear();
@@ -336,10 +352,10 @@ mod tests {
         let store = SessionCredentialStore::new();
         let _ = store.set("token-x", "conn-a", "x-secret");
         let _ = store.set("token-y", "conn-a", "y-secret");
-        // 同一连接在不同登录会话下互不可见。
+        // The same connection is invisible across signed-in sessions.
         assert_eq!(store.get("token-x", "conn-a").as_deref(), Some("x-secret"));
         assert_eq!(store.get("token-y", "conn-a").as_deref(), Some("y-secret"));
-        // 桌面端（空 owner）与任何会话 token 均隔离。
+        // The desktop's empty owner is isolated from every session token.
         assert!(!store.has("", "conn-a"));
         assert!(!store.has("token-z", "conn-a"));
     }
@@ -351,7 +367,7 @@ mod tests {
         let _ = store.set("token-y", "conn-a", "y-secret");
         let _ = store.set("token-y", "conn-b", "y2-secret");
         store.clear_owner("token-y");
-        // Y 登出只清除 Y 的凭据，X 与桌面端不受影响。
+        // Signing out Y clears only Y's credentials, not X's or the desktop's.
         assert!(!store.has("token-y", "conn-a"));
         assert!(!store.has("token-y", "conn-b"));
         assert!(store.has("token-x", "conn-a"));

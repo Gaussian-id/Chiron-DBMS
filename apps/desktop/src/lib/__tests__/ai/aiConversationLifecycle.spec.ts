@@ -10,6 +10,22 @@ function deferred() {
 }
 
 describe("AI conversation lifecycle", () => {
+  it("keeps the visible conversation when persistent deletion fails", async () => {
+    const afterDelete = vi.fn();
+    await expect(
+      deleteConversationWithCancellation({
+        id: "saved",
+        currentConversationId: () => "saved",
+        isGenerating: () => false,
+        abandon: vi.fn(),
+        deletePersisted: async () => {
+          throw new Error("Storage unavailable");
+        },
+        afterDelete,
+      }),
+    ).rejects.toThrow("Storage unavailable");
+    expect(afterDelete).not.toHaveBeenCalled();
+  });
   it("abandons the active generation before deleting its conversation", async () => {
     const deletion = deferred();
     const events: string[] = [];

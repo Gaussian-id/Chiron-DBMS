@@ -18,6 +18,7 @@ export const DATABASE_TYPES = [
   "meilisearch",
   "hbase",
   "qdrant",
+  "chirondb",
   "chromadb",
   "milvus",
   "weaviate",

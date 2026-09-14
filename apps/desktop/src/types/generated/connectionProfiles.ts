@@ -20,6 +20,7 @@ export interface ConnectionPickerOption {
 }
 
 export const CONNECTION_PROFILES = {
+  chirondb: { type: "chirondb", port: 7401, user: "", label: "ChironDB", icon: "chirondb" },
   mysql: { type: "mysql", port: 3306, user: "root", label: "MySQL", icon: "mysql", urlParams: "" },
   postgres: { type: "postgres", port: 5432, user: "postgres", label: "PostgreSQL", icon: "postgres", urlParams: "" },
   cloudberry: { type: "postgres", port: 5432, user: "postgres", label: "Apache Cloudberry", icon: "cloudberry", urlParams: "" },
@@ -127,6 +128,7 @@ export const CONNECTION_PROFILES = {
 } as const satisfies Record<string, ConnectionProfileDefinition>;
 
 export const CONNECTION_PROFILE_ICONS = {
+  chirondb: "chirondb",
   mysql: "mysql",
   postgres: "postgres",
   cloudberry: "cloudberry",
@@ -234,6 +236,7 @@ export const CONNECTION_PROFILE_ICONS = {
 } as const satisfies Record<string, string>;
 
 export const CONNECTION_PICKER_OPTIONS = [
+  { value: "chirondb", label: "ChironDB", category: "graph_ai" },
   { value: "mysql", label: "MySQL", category: "sql" },
   { value: "postgres", label: "PostgreSQL", category: "sql" },
   { value: "cloudberry", label: "Apache Cloudberry", category: "analytics" },

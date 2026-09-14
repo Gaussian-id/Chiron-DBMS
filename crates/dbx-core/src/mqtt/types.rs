@@ -1,8 +1,9 @@
-//! MQTT broker 连接的类型定义。与前端 `apps/desktop/src/types/mqtt.ts` 保持一致。
+//! Types for MQTT broker connections. Keep these aligned with
+//! `apps/desktop/src/types/mqtt.ts` in the frontend.
 
 use serde::{Deserialize, Serialize};
 
-/// MQTT 协议版本
+/// MQTT protocol version.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Default)]
 #[serde(rename_all = "lowercase")]
 pub enum MqttProtocolVersion {
@@ -12,7 +13,7 @@ pub enum MqttProtocolVersion {
     V5,
 }
 
-/// 传输层协议
+/// Transport protocol.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Default)]
 #[serde(rename_all = "lowercase")]
 pub enum MqttTransport {
@@ -22,7 +23,7 @@ pub enum MqttTransport {
     WebSocket,
 }
 
-/// 认证方式
+/// Authentication method.
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
 #[serde(rename_all = "camelCase", tag = "kind")]
 pub enum MqttAuth {
@@ -58,44 +59,44 @@ impl MqttAuth {
     }
 }
 
-/// MQTT 连接配置，存储在 `ConnectionConfig.external_config` 中。
+/// MQTT connection configuration stored in `ConnectionConfig.external_config`.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct MqttConnectionConfig {
-    /// Broker 地址（IP 或域名）
+    /// Broker address (IP address or hostname).
     pub host: String,
-    /// Broker 端口（默认 1883，TLS 默认 8883）
+    /// Broker port (1883 by default; 8883 when TLS is enabled).
     pub port: u16,
-    /// MQTT 客户端标识符
+    /// MQTT client identifier.
     pub client_id: String,
-    /// 协议版本，默认 V5
+    /// Protocol version. Defaults to V5.
     #[serde(default)]
     pub protocol_version: MqttProtocolVersion,
-    /// 传输层，默认 TCP
+    /// Transport layer. Defaults to TCP.
     #[serde(default)]
     pub transport: MqttTransport,
-    /// 是否启用 TLS
+    /// Whether TLS is enabled.
     #[serde(default)]
     pub tls: bool,
-    /// 跳过 TLS 证书验证
+    /// Whether to skip TLS certificate verification.
     #[serde(default)]
     pub tls_skip_verify: bool,
-    /// 认证方式
+    /// Authentication method.
     #[serde(default)]
     pub auth: MqttAuth,
-    /// Keep Alive 间隔（秒），默认 60
+    /// Keep-alive interval in seconds. Defaults to 60.
     #[serde(default = "default_keep_alive")]
     pub keep_alive_secs: u64,
-    /// 连接超时（秒），默认 30
+    /// Connection timeout in seconds. Defaults to 30.
     #[serde(default = "default_connect_timeout")]
     pub connect_timeout_secs: u64,
-    /// 单个 MQTT 报文的最大字节数，默认 16 MiB
+    /// Maximum byte size of one MQTT packet. Defaults to 16 MiB.
     #[serde(default = "default_max_packet_size")]
     pub max_packet_size_bytes: usize,
-    /// WebSocket 路径（仅 WebSocket 传输时使用）
+    /// WebSocket path, used only for WebSocket transport.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub ws_path: Option<String>,
-    /// 已保存的订阅 Topic，跨重连和应用重启恢复。
+    /// Saved topic subscriptions, restored across reconnects and application restarts.
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub saved_topics: Vec<MqttSavedTopic>,
 }
@@ -133,27 +134,27 @@ impl Default for MqttConnectionConfig {
 }
 
 impl MqttConnectionConfig {
-    /// 从 `ConnectionConfig.external_config` 解析 MQTT 连接配置。
+    /// Parses MQTT connection configuration from `ConnectionConfig.external_config`.
     pub fn from_connection(cfg: &crate::models::connection::ConnectionConfig) -> Result<Self, String> {
-        let raw = cfg.external_config.as_ref().ok_or("MQTT 连接缺少 external_config 配置")?;
+        let raw = cfg.external_config.as_ref().ok_or("MQTT connection is missing external_config")?;
         let parsed: MqttConnectionConfig =
-            serde_json::from_value(raw.clone()).map_err(|e| format!("MQTT 配置解析失败: {e}"))?;
+            serde_json::from_value(raw.clone()).map_err(|e| format!("Failed to parse MQTT configuration: {e}"))?;
         if parsed.host.trim().is_empty() {
-            return Err("MQTT Broker 地址不能为空".to_string());
+            return Err("MQTT broker address cannot be empty".to_string());
         }
         if parsed.client_id.trim().is_empty() {
-            return Err("MQTT Client ID 不能为空".to_string());
+            return Err("MQTT client ID cannot be empty".to_string());
         }
         if matches!(parsed.auth, MqttAuth::Certificate { .. }) && !parsed.tls {
-            return Err("MQTT 证书认证必须启用 TLS".to_string());
+            return Err("MQTT certificate authentication requires TLS".to_string());
         }
         if !(1024..=268_435_455).contains(&parsed.max_packet_size_bytes) {
-            return Err("MQTT 最大报文大小必须在 1024 到 268435455 字节之间".to_string());
+            return Err("MQTT maximum packet size must be between 1024 and 268435455 bytes".to_string());
         }
         Ok(parsed)
     }
 
-    /// 构建 MQTT broker URL
+    /// Builds the MQTT broker URL.
     pub fn broker_url(&self) -> String {
         let scheme = if self.tls { "mqtts" } else { "mqtt" };
         match self.transport {
@@ -184,7 +185,7 @@ impl MqttConnectionConfig {
     }
 }
 
-/// 已保存的 MQTT 订阅配置。
+/// A saved MQTT subscription configuration.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct MqttSavedTopic {
@@ -203,7 +204,7 @@ fn default_saved_topic_enabled() -> bool {
     true
 }
 
-/// MQTT 消息服务质量
+/// MQTT message quality of service.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Default)]
 #[serde(rename_all = "lowercase")]
 pub enum MqttQoS {
@@ -232,26 +233,26 @@ impl MqttQoS {
     }
 }
 
-/// 发布消息请求
+/// A request to publish a message.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct MqttPublishRequest {
-    /// 目标 topic
+    /// Target topic.
     pub topic: String,
-    /// 消息负载（Base64 编码的二进制内容）
+    /// Message payload as Base64-encoded binary content.
     pub payload_base64: String,
-    /// 消息负载（文本内容，与 payload_base64 二选一）
+    /// Message payload as text; mutually exclusive with `payload_base64`.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub payload_text: Option<String>,
-    /// 服务质量
+    /// Quality of service.
     #[serde(default)]
     pub qos: MqttQoS,
-    /// 是否为保留消息
+    /// Whether this is a retained message.
     #[serde(default)]
     pub retain: bool,
 }
 
-/// MQTT 消息方向
+/// MQTT message direction.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Default)]
 #[serde(rename_all = "lowercase")]
 pub enum MqttMessageDirection {
@@ -260,63 +261,63 @@ pub enum MqttMessageDirection {
     Received,
 }
 
-/// 接收到的 MQTT 消息
+/// An MQTT message received by the client.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct MqttMessage {
-    /// 消息来源 topic
+    /// Source topic.
     pub topic: String,
-    /// 消息负载（Base64 编码）
+    /// Message payload encoded as Base64.
     pub payload_base64: String,
-    /// 消息负载（UTF-8 文本，解码失败时为 None）
+    /// Message payload as UTF-8 text, or `None` when decoding fails.
     pub payload_text: Option<String>,
-    /// 服务质量
+    /// Quality of service.
     pub qos: u8,
-    /// 是否保留消息
+    /// Whether this is a retained message.
     pub retain: bool,
-    /// 消息接收时间（毫秒时间戳）
+    /// Message receive time as a millisecond timestamp.
     pub received_at_ms: u64,
-    /// 消息方向：sent（发出的）或 received（接收的）
+    /// Message direction: `sent` or `received`.
     #[serde(default)]
     pub direction: MqttMessageDirection,
 }
 
-/// Topic 树节点
+/// A topic-tree node.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct MqttTopicNode {
-    /// 节点名称（单个层级）
+    /// Node name for one topic level.
     pub name: String,
-    /// 完整 topic 路径
+    /// Full topic path.
     pub full_path: String,
-    /// 子节点
+    /// Child nodes.
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub children: Vec<MqttTopicNode>,
-    /// 该节点级别的消息计数（近似值）
+    /// Approximate message count at this node.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub message_count: Option<u64>,
-    /// 是否为叶子节点（可订阅）
+    /// Whether this is a subscribable leaf node.
     #[serde(default)]
     pub is_leaf: bool,
 }
 
-/// Broker 基本信息
+/// Basic broker information.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct MqttBrokerInfo {
-    /// 已连接的 broker URL
+    /// Connected broker URL.
     pub broker_url: String,
-    /// 客户端 ID
+    /// Client ID.
     pub client_id: String,
-    /// 连接状态
+    /// Connection state.
     pub connected: bool,
-    /// MQTT 协议版本
+    /// MQTT protocol version.
     pub protocol_version: String,
-    /// 当前订阅的 topic 数量
+    /// Number of current topic subscriptions.
     pub subscription_count: usize,
 }
 
-/// 订阅请求
+/// A subscription request.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct MqttSubscribeRequest {
@@ -325,7 +326,7 @@ pub struct MqttSubscribeRequest {
     pub qos: MqttQoS,
 }
 
-/// 取消订阅请求
+/// An unsubscribe request.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct MqttUnsubscribeRequest {
@@ -384,7 +385,7 @@ mod tests {
 
     #[test]
     fn from_connection_rejects_empty_host() {
-        // 构造一个最小连接配置以测试空 host 校验
+        // Build the smallest connection configuration needed to test empty-host validation.
         let json = serde_json::json!({
             "host": "",
             "port": 1883,

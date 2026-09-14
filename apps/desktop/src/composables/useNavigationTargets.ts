@@ -65,7 +65,7 @@ async function openTableTarget(target: NavigationTarget, options: { tableInfoTab
   }
   const tableSchema = connectionObjectTreeNodeSchema(config, target.database, target.schema);
   const tabTitle = target.catalog ? `${target.catalog}.${tableSchema || target.database}.${target.tableName}` : tableSchema ? `${tableSchema}.${target.tableName}` : target.tableName;
-  if (config?.db_type === "qdrant" || config?.db_type === "milvus" || config?.db_type === "weaviate" || config?.db_type === "chromadb") {
+  if (config?.db_type === "chirondb" || config?.db_type === "qdrant" || config?.db_type === "milvus" || config?.db_type === "weaviate" || config?.db_type === "chromadb") {
     await connectionStore.ensureConnected(target.connectionId);
     const tabId = queryStore.createTab(target.connectionId, target.database || "default", tabTitle, "vector");
     queryStore.updateSql(tabId, target.tableName);

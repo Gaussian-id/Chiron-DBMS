@@ -29,7 +29,8 @@ describe("AI prompt submission eligibility", () => {
   });
 
   it("wires the click button to the shared eligibility rule", () => {
-    expect(aiAssistantSource).toContain("const canSubmitPrompt = computed(() =>");
+    expect(aiAssistantSource).toMatch(/const canSubmitPrompt = computed\(\s*\(\) =>/);
+    expect(aiAssistantSource).toContain("!chironBusy.value");
     expect(aiAssistantSource).toContain(':disabled="!canSubmitPrompt"');
     expect(aiAssistantSource).not.toMatch(/:disabled=.*props\.tab\?\.database/);
   });

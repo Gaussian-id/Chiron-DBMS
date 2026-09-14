@@ -888,6 +888,7 @@ impl Storage {
         // written to the database, and this runs on the failure path too.
         restrict_db_file_permissions(&storage.path);
         schema?;
+        storage.migrate_ai_secrets().await?;
         Ok(storage)
     }
 
@@ -951,7 +952,7 @@ impl Storage {
         })
     }
 
-    async fn with_conn<T, F>(&self, f: F) -> Result<T, String>
+    pub(crate) async fn with_conn<T, F>(&self, f: F) -> Result<T, String>
     where
         T: Send + 'static,
         F: FnOnce(&mut Connection) -> Result<T, String> + Send + 'static,
@@ -1723,8 +1724,14 @@ fn ai_provider_from_key(provider: &str) -> Result<AiProvider, String> {
 
 impl Storage {
     pub async fn save_ai_config(&self, config: &AiConfig) -> Result<(), String> {
-        let json = serde_json::to_string(config).map_err(|e| e.to_string())?;
+        let config = config.clone();
+        let dir = self.data_dir().to_path_buf();
         self.with_conn(move |conn| {
+            let old: Option<String> = conn
+                .query_row("SELECT config_json FROM ai_config WHERE id=1", [], |r| r.get(0))
+                .optional()
+                .map_err(|e| e.to_string())?;
+            let json = crate::ai_secrets::encode(&dir, "legacy", &config, old.as_deref())?;
             conn.execute("INSERT OR REPLACE INTO ai_config (id, config_json) VALUES (1, ?1)", [json])
                 .map(|_| ())
                 .map_err(|e| e.to_string())
@@ -1740,7 +1747,7 @@ impl Storage {
                     .map_err(|e| e.to_string())
             })
             .await?;
-        json.map(|value| serde_json::from_str(&value).map_err(|e| e.to_string())).transpose()
+        json.map(|value| crate::ai_secrets::public_config("legacy", &value)).transpose()
     }
 
     pub async fn save_ai_provider_config(&self, provider: &str, config: &AiConfig) -> Result<(), String> {
@@ -1755,8 +1762,14 @@ impl Storage {
             config.provider = parsed_provider;
         }
         let provider = provider.to_string();
-        let json = serde_json::to_string(&config).map_err(|e| e.to_string())?;
+        let dir = self.data_dir().to_path_buf();
         self.with_conn(move |conn| {
+            let scope = format!("provider:{provider}");
+            let old: Option<String> = conn
+                .query_row("SELECT config_json FROM ai_provider_configs WHERE provider=?1", [&provider], |r| r.get(0))
+                .optional()
+                .map_err(|e| e.to_string())?;
+            let json = crate::ai_secrets::encode(&dir, &scope, &config, old.as_deref())?;
             conn.execute(
                 "INSERT OR REPLACE INTO ai_provider_configs (provider, config_json) VALUES (?1, ?2)",
                 params![provider, json],
@@ -1778,7 +1791,7 @@ impl Storage {
             let mut map = HashMap::new();
             for row in rows {
                 let (provider, json) = row.map_err(|e| e.to_string())?;
-                match serde_json::from_str::<AiConfig>(&json) {
+                match crate::ai_secrets::public_config(&format!("provider:{provider}"), &json) {
                     Ok(mut config) => {
                         if let Ok(parsed_provider) = ai_provider_from_key(&provider) {
                             let config_provider = ai_provider_key(&config.provider);
@@ -1793,7 +1806,7 @@ impl Storage {
                         }
                     }
                     Err(e) => {
-                        warn!("Failed to deserialize AI config for provider '{}': {}", provider, e);
+                        return Err(format!("Cannot load AI configuration for provider '{provider}': {e}. Existing records were preserved."));
                     }
                 }
             }
@@ -1803,12 +1816,19 @@ impl Storage {
     }
 
     pub async fn save_ai_configs(&self, configs: &[AiConfigItem]) -> Result<(), String> {
-        let configs = configs.to_vec();
+        let mut configs = configs.to_vec();
+        for config in &mut configs {
+            config.config = self.rebind_ai_config(&format!("item:{}", config.id), &config.config).await?;
+        }
+        let dir = self.data_dir().to_path_buf();
         self.with_conn(move |conn| {
             let tx = conn.transaction_with_behavior(TransactionBehavior::Immediate).map_err(|e| e.to_string())?;
+            let encoded = configs.iter().map(|config| {
+                let old: Option<String> = tx.query_row("SELECT config_json FROM ai_configs WHERE id=?1", [&config.id], |r|r.get(0)).optional().map_err(|e|e.to_string())?;
+                crate::ai_secrets::encode(&dir, &format!("item:{}", config.id), &config.config, old.as_deref())
+            }).collect::<Result<Vec<_>,String>>()?;
             tx.execute("DELETE FROM ai_configs", []).map_err(|e| e.to_string())?;
-            for config in &configs {
-                let json = serde_json::to_string(&config.config).map_err(|e| e.to_string())?;
+            for (config, json) in configs.iter().zip(encoded) {
                 let models_json = serde_json::to_string(&config.config.models).map_err(|e| e.to_string())?;
                 tx.execute(
                     "INSERT OR REPLACE INTO ai_configs (id, name, model, models, config_json, is_default) VALUES (?1, ?2, ?3, ?4, ?5, ?6)",
@@ -1845,7 +1865,7 @@ impl Storage {
             let mut configs = Vec::new();
             for row in rows {
                 let (id, name, model_col, models_json_col, json, is_default_col) = row.map_err(|e| e.to_string())?;
-                match serde_json::from_str::<AiConfig>(&json) {
+                match crate::ai_secrets::public_config(&format!("item:{id}"), &json) {
                     Ok(mut config) => {
                         // 优先使用列值，如果列值为空则从 config_json 回退读取
                         if model_col.is_empty() {
@@ -1862,7 +1882,9 @@ impl Storage {
                         configs.push(AiConfigItem { id, name, is_default, config });
                     }
                     Err(e) => {
-                        warn!("Failed to deserialize AI config item '{}': {}", id, e);
+                        return Err(format!(
+                            "Cannot load AI configuration '{id}': {e}. Existing records were preserved."
+                        ));
                     }
                 }
             }
@@ -1885,12 +1907,17 @@ impl Storage {
     }
 
     pub async fn save_ai_config_item(&self, config: &AiConfigItem) -> Result<(), String> {
-        let config = config.clone();
+        let mut config = config.clone();
+        config.config = self.rebind_ai_config(&format!("item:{}", config.id), &config.config).await?;
+        let dir = self.data_dir().to_path_buf();
         self.with_conn(move |conn| {
-            let json = serde_json::to_string(&config.config).map_err(|e| e.to_string())?;
-            let models_json = serde_json::to_string(&config.config.models).map_err(|e| e.to_string())?;
             let tx = conn.transaction_with_behavior(TransactionBehavior::Immediate).map_err(|e| e.to_string())?;
-
+            let old: Option<String> = tx
+                .query_row("SELECT config_json FROM ai_configs WHERE id=?1", [&config.id], |r| r.get(0))
+                .optional()
+                .map_err(|e| e.to_string())?;
+            let json = crate::ai_secrets::encode(&dir, &format!("item:{}", config.id), &config.config, old.as_deref())?;
+            let models_json = serde_json::to_string(&config.config.models).map_err(|e| e.to_string())?;
             // 如果设该配置为默认，先清除其他默认，避免与 idx_ai_configs_default 冲突
             if config.is_default {
                 tx.execute(
@@ -2750,35 +2777,12 @@ fn prune_terminal_ai_runs(tx: &Transaction<'_>) -> Result<(), String> {
 }
 
 fn prune_ai_conversations(tx: &Transaction<'_>) -> Result<(), String> {
-    // The 50-row limit is a soft cap: conversations with active or actionable
-    // runs remain reachable even when they exceed the cap. Only terminal,
-    // unprotected conversations compete for the remaining budget.
-    tx.execute(
-        "WITH protected AS (
-             SELECT DISTINCT conversation_id FROM ai_runs
-             WHERE status IN ('preparing', 'queued', 'running', 'awaiting_write_confirmation', 'pending_recoverable')
-         ), budget AS (
-             SELECT MAX(0, 50 - COUNT(*)) AS value FROM protected
-         ), keepers AS (
-             SELECT conversation_id AS id FROM protected
-             UNION
-             SELECT id FROM (
-                 SELECT id FROM ai_conversations
-                 WHERE id NOT IN (SELECT conversation_id FROM protected)
-                 ORDER BY updated_at DESC
-                 LIMIT (SELECT value FROM budget)
-             )
-         )
-         DELETE FROM ai_conversations WHERE id NOT IN (SELECT id FROM keepers)",
-        [],
-    )
-    .map_err(|e| e.to_string())?;
+    // Chat transcripts are user records, retained until explicitly deleted.
+    // Only disposable runtime bookkeeping is pruned, never conversations.
     // Do not depend on a connection-wide foreign_keys pragma for cleanup.
     tx.execute("DELETE FROM ai_runs WHERE conversation_id NOT IN (SELECT id FROM ai_conversations)", [])
         .map_err(|e| e.to_string())?;
-    // Cap terminal run history for the conversations that survive the cap
-    // above (they are deliberately retained), so normal use cannot grow the
-    // ai_runs table without bound.
+    // Bound obsolete runtime records without removing transcript messages.
     prune_terminal_ai_runs(tx)?;
     Ok(())
 }
@@ -4999,12 +5003,8 @@ impl Storage {
             })
             .await?;
         if count == 0 {
-            self.with_conn(move |conn| {
-                conn.execute("INSERT OR IGNORE INTO ai_config (id, config_json) VALUES (1, ?1)", [json])
-                    .map(|_| ())
-                    .map_err(|e| e.to_string())
-            })
-            .await?;
+            let config: AiConfig = serde_json::from_str(&json).map_err(|e| e.to_string())?;
+            self.save_ai_config(&config).await?;
         }
         let _ = tokio::fs::rename(&path, data_dir.join("ai_config.json.bak")).await;
         Ok(())
@@ -5510,6 +5510,7 @@ mod tests {
             connection_name: "local".to_string(),
             database: "db".to_string(),
             messages: vec![AiChatMessage {
+                chiron: None,
                 role: "user".to_string(),
                 content: id.to_string(),
                 mentions: None,
@@ -5543,7 +5544,7 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn ai_conversation_soft_cap_never_evicts_protected_runs() {
+    async fn ai_conversations_retain_all_completed_and_active_chats() {
         let path = temp_db_path("ai-conversation-soft-cap");
         let storage = Storage::open(&path).await.unwrap();
 
@@ -5556,16 +5557,16 @@ mod tests {
         }
 
         let conversations = storage.load_ai_conversations().await.unwrap();
-        assert_eq!(conversations.len(), 50);
+        assert_eq!(conversations.len(), 56);
         assert!(conversations.iter().any(|conversation| conversation.id == "protected"));
-        assert!(!conversations.iter().any(|conversation| conversation.id == "terminal-0"));
+        assert!(conversations.iter().any(|conversation| conversation.id == "terminal-0"));
         assert!(conversations.iter().any(|conversation| conversation.id == "terminal-54"));
 
         let _ = std::fs::remove_file(path);
     }
 
     #[tokio::test]
-    async fn ai_conversation_soft_cap_allows_more_than_fifty_protected_runs() {
+    async fn ai_conversations_retain_completed_chat_beyond_fifty_active_runs() {
         let path = temp_db_path("ai-conversation-protected-overflow");
         let storage = Storage::open(&path).await.unwrap();
 
@@ -5583,14 +5584,14 @@ mod tests {
         storage.save_ai_conversation(&ai_conversation("terminal-extra", "9999")).await.unwrap();
 
         let conversations = storage.load_ai_conversations().await.unwrap();
-        assert_eq!(conversations.len(), 51);
-        assert!(conversations.iter().all(|conversation| conversation.id.starts_with("protected-")));
+        assert_eq!(conversations.len(), 52);
+        assert!(conversations.iter().any(|conversation| conversation.id == "terminal-extra"));
 
         let _ = std::fs::remove_file(path);
     }
 
     #[tokio::test]
-    async fn ai_conversation_soft_cap_protects_pending_recoverable_runs() {
+    async fn ai_conversations_retain_pending_recoverable_runs_and_old_transcripts() {
         let path = temp_db_path("ai-conversation-pending-recoverable-protection");
         let storage = Storage::open(&path).await.unwrap();
 
@@ -5606,9 +5607,9 @@ mod tests {
         }
 
         let conversations = storage.load_ai_conversations().await.unwrap();
-        assert_eq!(conversations.len(), 50);
+        assert_eq!(conversations.len(), 56);
         assert!(conversations.iter().any(|conversation| conversation.id == "recoverable"));
-        assert!(!conversations.iter().any(|conversation| conversation.id == "terminal-0"));
+        assert!(conversations.iter().any(|conversation| conversation.id == "terminal-0"));
 
         let _ = std::fs::remove_file(path);
     }

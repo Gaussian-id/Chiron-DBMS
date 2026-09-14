@@ -10,6 +10,7 @@ const props = defineProps<{
 const { isDark } = useTheme();
 
 const assetIcons: Record<string, string> = {
+  chirondb: "chirondb.png",
   mysql: "mysql",
   postgres: "postgres",
   postgresql: "postgres",

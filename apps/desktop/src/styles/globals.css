@@ -75,6 +75,7 @@
  * emits none of them.
  */
 @import "./tokens.css";
+@import "./gaussian.css";
 
 :root {
   --data-grid-type-integer-fg: #1d4ed8;

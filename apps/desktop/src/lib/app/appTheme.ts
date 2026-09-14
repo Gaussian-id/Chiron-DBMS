@@ -8,7 +8,7 @@ export const APP_CORNER_STYLE_STORAGE_KEY = "dbx-corner-style";
 
 export type AppThemeMode = "light" | "dark" | "system";
 export type AppThemeAppearance = "light" | "dark";
-export type AppThemePalette = "pearl" | "mist" | "graphite" | "cobalt" | "sage" | "amber" | "blush" | "vscode" | "idea" | "xcode" | "jetbrains" | "cursor" | "claude" | "custom";
+export type AppThemePalette = "gaussian" | "pearl" | "mist" | "graphite" | "cobalt" | "sage" | "amber" | "blush" | "vscode" | "idea" | "xcode" | "jetbrains" | "cursor" | "claude" | "custom";
 export type AppCornerStyle = "none" | "small" | "large";
 
 export interface AppCustomUiColors {
@@ -159,6 +159,7 @@ export type AppThemePaletteOption = {
 };
 
 export const APP_THEME_PALETTES: AppThemePaletteOption[] = [
+  { value: "gaussian", labelKey: "settings.themePaletteGaussian", className: "theme-gaussian", previewColor: "#1456c7" },
   { value: "pearl", labelKey: "settings.themePalettePearl", className: null, previewColor: "#ffffff" },
   { value: "mist", labelKey: "settings.themePaletteMist", className: "theme-soft", previewColor: "#e4eaf2" },
   { value: "graphite", labelKey: "settings.themePaletteGraphite", className: "theme-graphite", previewColor: "#d8dce4" },
@@ -187,6 +188,7 @@ export function normalizeAppThemeMode(value: string | null): AppThemeMode {
 
 export function normalizeAppThemePalette(value: string | null): AppThemePalette {
   if (
+    value === "gaussian" ||
     value === "mist" ||
     value === "graphite" ||
     value === "cobalt" ||
@@ -203,7 +205,7 @@ export function normalizeAppThemePalette(value: string | null): AppThemePalette 
     value === "pearl"
   )
     return value;
-  return "pearl";
+  return "gaussian";
 }
 
 export function normalizeAppCustomUiColors(value: unknown): AppCustomUiColors {

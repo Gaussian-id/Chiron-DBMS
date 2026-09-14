@@ -632,6 +632,9 @@ export async function loadAiProviderConfigs(): Promise<Record<string, AiConfig>>
 export async function aiTestConnection(config: AiConfig): Promise<AiTestConnectionResult> {
   return invoke("ai_test_connection", { config });
 }
+export async function aiResolveEndpoint(config: AiConfig): Promise<string> {
+  return invoke("ai_resolve_endpoint", { config });
+}
 
 export async function aiListModels(config: AiConfig): Promise<AiModelInfo[]> {
   return invoke("ai_list_models", { config });
@@ -1060,6 +1063,7 @@ export async function deleteSqlFileInFolder(rootPath: string, filePath: string):
 // --- AI Conversations ---
 
 export interface AiChatMessage {
+  chiron?: import("@/types/chirondb").ChironTranscript;
   role: string;
   content: string;
   mentions?: unknown[];
@@ -4054,6 +4058,10 @@ export async function vectorGetCollectionDetail(connectionId: string, database: 
     database,
     collection,
   });
+}
+
+export async function chirondbRequest(connectionId: string, request: import("@/types/chirondb").ChironDbRequest): Promise<import("@/types/chirondb").ChironDbReply> {
+  return invoke("chirondb_request", { connectionId, request });
 }
 
 export async function mongoCreateDatabase(connectionId: string, database: string): Promise<void> {

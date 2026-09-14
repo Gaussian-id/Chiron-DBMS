@@ -486,6 +486,8 @@ interface DataGridProps {
   /** Document stores (e.g. MongoDB) count exactly on demand without SQL tableMeta/countSql. */
   countTotalRows?: () => Promise<number | undefined>;
   loading?: boolean;
+  /** Native responses may omit timing; do not display a fabricated zero. */
+  showExecutionTime?: boolean;
   cacheKey?: string;
   columnWidthCacheKey?: string;
   pendingStateKey?: string;
@@ -542,6 +544,7 @@ const props = withDefaults(defineProps<DataGridProps>(), {
   totalRowCountIsExact: true,
   inexactTotalRowCountMode: "at-least",
   paginationEnabled: true,
+  showExecutionTime: true,
   // Omitted row-action limits must keep normal table-data editing.
   allowInsertRows: undefined,
   allowDeleteRows: undefined,
@@ -13333,7 +13336,7 @@ useUpdateBlocker(() => (hasPendingChanges.value || hasPendingDataEditorDraft.val
         </span>
         <span v-if="showTruncationWarning" class="shrink-0 text-amber-500 text-xs">(truncated)</span>
         <span v-if="!hasData" class="shrink-0">{{ t("grid.rowsAffected", { count: result.affected_rows }) }}</span>
-        <span class="shrink-0">{{ result.execution_time_ms }}ms</span>
+        <span v-if="showExecutionTime" class="shrink-0">{{ result.execution_time_ms }}ms</span>
 
         <template v-if="editable && hasDataGridSaveTarget">
           <span v-if="hasPendingChanges" class="shrink-0 text-foreground">
@@ -13696,12 +13699,12 @@ useUpdateBlocker(() => (hasPendingChanges.value || hasPendingDataEditorDraft.val
 }
 
 .data-grid-header-cell {
-  background-color: rgb(239, 239, 239);
+  background-color: var(--data-grid-header-bg, rgb(239, 239, 239));
 }
 
 [data-grid-root].data-grid--dark .data-grid-header-cell,
 :global(.dark) [data-grid-root] .data-grid-header-cell {
-  background-color: rgb(32, 32, 34) !important;
+  background-color: var(--data-grid-header-bg, rgb(32, 32, 34)) !important;
 }
 
 [data-grid-root].data-grid--dark .data-grid-header-row,
@@ -13711,7 +13714,7 @@ useUpdateBlocker(() => (hasPendingChanges.value || hasPendingDataEditorDraft.val
 
 [data-grid-root].data-grid--dark .data-grid-header-cell:hover,
 :global(.dark) [data-grid-root] .data-grid-header-cell:hover {
-  background-color: rgb(46, 47, 51) !important;
+  background-color: var(--data-grid-header-hover-bg, rgb(46, 47, 51)) !important;
 }
 
 .data-grid-header-cell--selected {

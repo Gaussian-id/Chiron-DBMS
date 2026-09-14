@@ -13,7 +13,7 @@ import { CELL_DETAIL_JSON_FORMAT_MAX_LENGTH, isJsonColumnType } from "@/lib/data
 import { clampEditorFontSize, createEditorWheelZoomGestureGuard, createEditorZoomCommitScheduler, fontSizeFromGestureScale, fontSizeFromWheelDelta } from "@/lib/editor/editorZoom";
 import i18n from "@/i18n";
 import EditorSearchPanel from "@/components/editor/EditorSearchPanel.vue";
-import type { EditorTheme } from "@/stores/settingsStore";
+import type { EditorTheme, CustomThemeColors } from "@/stores/settingsStore";
 import type { AppThemeAppearance, AppThemePalette } from "@/lib/app/appTheme";
 import { selectAllCellDetailText } from "@/lib/dataGrid/cellDetailSelection";
 
@@ -37,6 +37,7 @@ export interface UseCellDetailEditorOptions {
    */
   enableBuiltinFind?: boolean;
   editorTheme: () => EditorTheme;
+  customColors?: () => CustomThemeColors;
   appAppearance: () => AppThemeAppearance;
   appPalette: () => AppThemePalette;
   fontSize: () => number;
@@ -157,14 +158,14 @@ export function useCellDetailEditor(options: UseCellDetailEditorOptions): UseCel
     zoomCommitScheduler.flush(liveFontSize);
   }
 
-  watch([() => options.fontSize(), () => options.fontFamily(), () => options.editorTheme(), () => options.appAppearance(), () => options.appPalette()], async ([fontSize, fontFamily, editorTheme, appearance, palette]) => {
+  watch([() => options.fontSize(), () => options.fontFamily(), () => options.editorTheme(), () => options.appAppearance(), () => options.appPalette(), () => options.customColors?.()], async ([fontSize, fontFamily, editorTheme, appearance, palette]) => {
     const editor = view.value;
     if (!editor || destroyed) return;
     if (!isGestureZooming && !zoomCommitScheduler.hasPendingCommit()) {
       liveFontSize = clampEditorFontSize(fontSize);
     }
     syncEditorFontCssVars(liveFontSize, fontFamily);
-    const theme = await loadEditorTheme(editorTheme, appearance, undefined, palette);
+    const theme = await loadEditorTheme(editorTheme, appearance, options.customColors?.(), palette);
     if (!view.value || destroyed) return;
     view.value.dispatch({
       effects: [themeComp.reconfigure(theme), fontThemeComp.reconfigure(editorFontTheme(EditorView, liveFontSize, fontFamily, { fixedHeight: true, scrollable: true }))],
@@ -195,7 +196,7 @@ export function useCellDetailEditor(options: UseCellDetailEditorOptions): UseCel
     const doc = initialValue ?? "";
     currentIsJson = options.language === "json" || shouldUseJsonMode(columnType, doc);
 
-    const theme = await loadEditorTheme(options.editorTheme(), options.appAppearance(), undefined, options.appPalette());
+    const theme = await loadEditorTheme(options.editorTheme(), options.appAppearance(), options.customColors?.(), options.appPalette());
     if (destroyed) return;
     liveFontSize = clampEditorFontSize(options.fontSize());
     const fontTheme = editorFontTheme(EditorView, liveFontSize, options.fontFamily(), { fixedHeight: true, scrollable: true });

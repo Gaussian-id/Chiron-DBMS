@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { relationalComingSoon } from "@/lib/app/relationalComingSoon";
 import type { ObjectDirective } from "vue";
 import { computed, nextTick, onMounted, onUnmounted, reactive, ref, watch } from "vue";
 import { uuid } from "@/lib/common/utils";
@@ -375,14 +376,14 @@ function initialConfigTab(): ConfigTab {
 const defaultForm = (): ConnectionForm => ({
   name: "",
   note: "",
-  db_type: "mysql",
-  driver_profile: "mysql",
-  driver_label: "MySQL",
+  db_type: "chirondb",
+  driver_profile: "chirondb",
+  driver_label: "ChironDB",
   url_params: "",
   agent_java_options: [],
   host: "127.0.0.1",
-  port: 3306,
-  username: "root",
+  port: 7401,
+  username: "",
   password: "",
   database: undefined,
   color: "",
@@ -758,7 +759,7 @@ const keepaliveEnabled = computed({
 });
 const selectedTransportLayerId = ref<string | null>(null);
 const draggedTransportLayerId = ref<string | null>(null);
-const selectedType = ref("mysql");
+const selectedType = ref("chirondb");
 const customDriverName = ref("");
 const mongoUseUrl = ref(false);
 const jdbcDriverPathsInput = ref("");
@@ -798,7 +799,7 @@ const damengJvmOptions = ref("");
 const dialogStep = ref<DialogStep>("select");
 const dbPickerView = ref<DbPickerView>(loadConnectionPickerView());
 const dbSearchQuery = ref("");
-const selectedDbCategory = ref<DbCategoryKey>("sql");
+const selectedDbCategory = ref<DbCategoryKey>("graph_ai");
 const configTab = ref<ConfigTab>("connection");
 
 // 对话框拖动功能
@@ -2897,6 +2898,7 @@ function defaultDatabaseForProfile() {
 }
 
 function onDbTypeChange(val: string) {
+  if (relationalComingSoon(driverProfiles[val]?.type ?? val)) return;
   if (!editingId.value && val === selectedType.value) return;
   if (!editingId.value) {
     resetForm({ preservePickerState: true });
@@ -3163,6 +3165,7 @@ const tlsCapableDatabaseTypes = new Set<DatabaseType>([
   "meilisearch",
   "hbase",
   "qdrant",
+  "chirondb",
   "milvus",
   "weaviate",
   "chromadb",
@@ -3173,7 +3176,7 @@ const tlsCapableDatabaseTypes = new Set<DatabaseType>([
 ]);
 const supportsTlsToggle = computed(() => tlsCapableDatabaseTypes.has(form.value.db_type));
 const supportsCaCertificatePath = computed(() => form.value.db_type === "clickhouse" || form.value.db_type === "victoriametrics");
-const supportsGenericUrlParams = computed(() => form.value.db_type !== "manticoresearch" && form.value.db_type !== "hbase");
+const supportsGenericUrlParams = computed(() => form.value.db_type !== "chirondb" && form.value.db_type !== "manticoresearch" && form.value.db_type !== "hbase");
 const showGenericUrlParamsHint = computed(() => form.value.db_type === "mysql" || form.value.db_type === "doris" || form.value.db_type === "starrocks");
 const bareMysqlProfiles = new Set(["doris", "selectdb", "oceanbase"]);
 const supportsMysqlTlsOptions = computed(() => form.value.db_type === "starrocks" || (form.value.db_type === "mysql" && !bareMysqlProfiles.has(selectedType.value)));
@@ -3723,6 +3726,7 @@ const mongoDriverMode = computed({
 });
 
 function goToConnectionStep(value = selectedType.value) {
+  if (relationalComingSoon(driverProfiles[value]?.type ?? value)) return;
   if (value !== selectedType.value) {
     onDbTypeChange(value);
   }
@@ -3757,6 +3761,7 @@ watch(customDriverName, (value) => {
 });
 
 async function testConnection() {
+  if (relationalComingSoon(form.value.db_type)) return;
   if (isTestingSshTunnel.value) return;
   if (!ensureConnectionHostResolvedFromUrl()) return;
 
@@ -5271,7 +5276,7 @@ function resetForm(options: { preservePickerState?: boolean } = {}) {
   editGlobalQueryTimeoutSecs.value = settingsStore.editorSettings.globalQueryTimeoutSecs;
   selectedTransportLayerId.value = null;
   draggedTransportLayerId.value = null;
-  selectedType.value = "mysql";
+  selectedType.value = "chirondb";
   customDriverName.value = "";
   mongoUseUrl.value = false;
   resetMqFields();
@@ -5288,7 +5293,7 @@ function resetForm(options: { preservePickerState?: boolean } = {}) {
   if (!options.preservePickerState) {
     dialogStep.value = "select";
     dbSearchQuery.value = "";
-    selectedDbCategory.value = "sql";
+    selectedDbCategory.value = "graph_ai";
     configTab.value = "connection";
   }
   resetVisibleDatabaseDraftState();
@@ -5696,6 +5701,10 @@ async function persistConnectionNoteVisibilityDraft() {
 }
 
 async function save(options: { connectAfterSave?: boolean; closeOnSuccess?: boolean } = {}) {
+  if (relationalComingSoon(form.value.db_type)) {
+    toast("Relational database connections · Coming Soon");
+    return;
+  }
   if (!ensureConnectionHostResolvedFromUrl()) return;
   if (isSaving.value) return;
   if (!hasNacosNamespaceScopeForSave()) {
@@ -6213,9 +6222,9 @@ function openExternalUrl(url: string) {
                 <Input v-model="dbSearchQuery" v-connection-dialog-auto-focus class="h-9 pl-8" :placeholder="t('connection.searchDatabasePlaceholder')" />
               </div>
             </div>
-            <Button data-jdbc-connection-entry type="button" variant="outline" class="h-9 shrink-0 gap-2" @click="goToConnectionStep('jdbc')">
+            <Button data-jdbc-connection-entry type="button" variant="outline" class="h-9 shrink-0 gap-2" disabled title="JDBC · Coming Soon">
               <DatabaseIcon db-type="jdbc" class="h-4 w-4" />
-              {{ t("connection.jdbcConnection") }}
+              {{ t("connection.jdbcConnection") }} · Coming Soon
             </Button>
           </div>
 
@@ -6245,7 +6254,8 @@ function openExternalUrl(url: string) {
                     v-for="opt in category.options"
                     :key="opt.value"
                     type="button"
-                    :title="opt.label"
+                    :title="relationalComingSoon(driverProfiles[opt.value]?.type ?? opt.value) ? `${opt.label} · Coming Soon` : opt.label"
+                    :disabled="relationalComingSoon(driverProfiles[opt.value]?.type ?? opt.value)"
                     class="connection-db-picker-option group flex min-h-24 flex-col items-center justify-center gap-2 rounded-[4px] border bg-background/70 p-3 text-center transition hover:border-primary/40 hover:bg-muted/40 hover:shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                     :class="isPickerOptionSelected(opt.value) ? 'dbx-tile-selected shadow-sm' : 'border-border'"
                     :aria-pressed="isPickerOptionSelected(opt.value)"
@@ -6256,8 +6266,9 @@ function openExternalUrl(url: string) {
                       <PluginIcon v-if="opt.plugin" :plugin-id="opt.pluginId || ''" :icon="opt.pluginIcon" class="h-6 w-6" />
                       <DatabaseIcon v-else :db-type="iconTypeMap[opt.value] || opt.value" class="h-6 w-6" />
                     </span>
-                    <span class="flex min-h-8 max-w-full items-center justify-center">
+                    <span class="flex min-h-8 max-w-full flex-col items-center justify-center gap-1">
                       <span class="line-clamp-2 text-sm leading-4 font-medium">{{ opt.label }}</span>
+                      <span v-if="relationalComingSoon(driverProfiles[opt.value]?.type ?? opt.value)" class="text-xs text-muted-foreground">Coming Soon</span>
                     </span>
                   </button>
                 </div>
@@ -6268,6 +6279,7 @@ function openExternalUrl(url: string) {
                     :key="opt.value"
                     type="button"
                     class="connection-db-picker-option flex items-center gap-3 rounded-[4px] border bg-background px-3 py-2 text-left transition hover:border-primary/40 hover:bg-muted/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                    :disabled="relationalComingSoon(driverProfiles[opt.value]?.type ?? opt.value)"
                     :class="isPickerOptionSelected(opt.value) ? 'dbx-tile-selected' : 'border-border'"
                     :aria-pressed="isPickerOptionSelected(opt.value)"
                     @click="onDbTypeChange(opt.value)"
@@ -6275,7 +6287,7 @@ function openExternalUrl(url: string) {
                   >
                     <PluginIcon v-if="opt.plugin" :plugin-id="opt.pluginId || ''" :icon="opt.pluginIcon" class="h-5 w-5 shrink-0" />
                     <DatabaseIcon v-else :db-type="iconTypeMap[opt.value] || opt.value" class="h-5 w-5 shrink-0" />
-                    <span class="min-w-0 flex-1 truncate text-sm font-medium">{{ opt.label }}</span>
+                    <span class="min-w-0 flex-1 truncate text-sm font-medium">{{ opt.label }}<span v-if="relationalComingSoon(driverProfiles[opt.value]?.type ?? opt.value)" class="ml-2 text-xs text-muted-foreground">Coming Soon</span></span>
                     <span v-if="isDbSearchActive" class="text-xs text-muted-foreground">{{ category.title }}</span>
                   </button>
                 </div>
@@ -6294,7 +6306,7 @@ function openExternalUrl(url: string) {
             <DatabaseIcon v-else :db-type="selectedDbIcon" class="h-4 w-4 shrink-0" />
             <span class="truncate">{{ t("connection.selectedDatabase") }}: {{ selectedProfile().label }}</span>
           </div>
-          <Button :disabled="!hasDbPickerResults || !selectedDbOptionIsVisible" @click="goToConnectionStep()">
+          <Button :disabled="!hasDbPickerResults || !selectedDbOptionIsVisible || relationalComingSoon(selectedType)" @click="goToConnectionStep()">
             {{ t("connection.next") }}
             <ChevronRight class="h-4 w-4" />
           </Button>
@@ -7880,13 +7892,13 @@ function openExternalUrl(url: string) {
                       <Input v-model="form.informix_server" class="col-span-3" placeholder="ol_informix1170" />
                     </div>
 
-                    <div v-if="form.db_type !== 'meilisearch' && form.db_type !== 'spanner'" class="grid grid-cols-4 items-center gap-4">
+                    <div v-if="form.db_type !== 'chirondb' && form.db_type !== 'meilisearch' && form.db_type !== 'spanner'" class="grid grid-cols-4 items-center gap-4">
                       <Label :class="connectionLabelClass">{{ t("connection.user") }}</Label>
                       <Input v-model="form.username" class="col-span-3" />
                     </div>
 
                     <div v-if="form.db_type !== 'spanner'" class="grid grid-cols-4 items-center gap-4">
-                      <Label :class="connectionLabelClass">{{ form.db_type === "meilisearch" ? t("connection.mqAuthApiKey") : t("connection.password") }}</Label>
+                      <Label :class="connectionLabelClass">{{ form.db_type === "chirondb" ? t("chiron.apiKey") : form.db_type === "meilisearch" ? t("connection.mqAuthApiKey") : t("connection.password") }}</Label>
                       <PasswordInput v-model="form.password" class="col-span-3" />
                     </div>
 
@@ -7894,8 +7906,8 @@ function openExternalUrl(url: string) {
                       <span />
                       <div class="col-span-3 flex items-center gap-1.5 text-sm">
                         <label class="flex items-center gap-2">
-                          <input v-model="form.save_password" type="checkbox" class="h-4 w-4 rounded border-border accent-primary" :aria-label="t('connection.savePassword')" />
-                          <span class="whitespace-nowrap">{{ t("connection.savePassword") }}</span>
+                          <input v-model="form.save_password" type="checkbox" class="h-4 w-4 rounded border-border accent-primary" :aria-label="t(form.db_type === 'chirondb' ? 'chiron.saveApiKey' : 'connection.savePassword')" />
+                          <span class="whitespace-nowrap">{{ t(form.db_type === "chirondb" ? "chiron.saveApiKey" : "connection.savePassword") }}</span>
                         </label>
                         <HelpTooltip :label="t('connection.savePassword')">
                           {{ form.save_password ? t("connection.savePasswordHint") : t("connection.savePasswordSessionHint") }}
@@ -7903,7 +7915,7 @@ function openExternalUrl(url: string) {
                       </div>
                     </div>
 
-                    <div v-if="form.db_type !== 'hbase' && form.db_type !== 'meilisearch' && form.db_type !== 'spanner'" class="grid grid-cols-4 items-center gap-4">
+                    <div v-if="form.db_type !== 'chirondb' && form.db_type !== 'hbase' && form.db_type !== 'meilisearch' && form.db_type !== 'spanner'" class="grid grid-cols-4 items-center gap-4">
                       <Label :class="connectionLabelClass">{{ databaseLabel }}</Label>
                       <Input v-model="form.database" class="col-span-3" :placeholder="databasePlaceholder" />
                     </div>
@@ -9292,10 +9304,10 @@ function openExternalUrl(url: string) {
               <ListFilter v-else class="mr-1.5 h-4 w-4" />
               {{ visibleSchemaSummary }}
             </Button>
-            <Button variant="outline" class="shrink-0" :disabled="isTesting || isTestingSshTunnel || isSaving" @click="testConnection">
+            <Button variant="outline" class="shrink-0" :disabled="isTesting || isTestingSshTunnel || isSaving || relationalComingSoon(form.db_type)" :title="relationalComingSoon(form.db_type) ? 'Coming Soon' : undefined" @click="testConnection">
               {{ isTesting ? t("connection.testing") : t("connection.test") }}
             </Button>
-            <Button class="shrink-0" @click="save" :disabled="isSaving || isTestingSshTunnel || !hasRequiredConnectionTarget">
+            <Button class="shrink-0" @click="save" :disabled="isSaving || isTestingSshTunnel || !hasRequiredConnectionTarget || relationalComingSoon(form.db_type)" :title="relationalComingSoon(form.db_type) ? 'Coming Soon' : undefined">
               {{ isSaving ? t("common.loading") : editingId || isJdbcConnection ? t("connection.save") : t("connection.saveAndConnect") }}
             </Button>
           </template>

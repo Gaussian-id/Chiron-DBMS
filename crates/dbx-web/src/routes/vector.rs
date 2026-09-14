@@ -10,6 +10,26 @@ use crate::state::WebState;
 
 #[derive(Deserialize)]
 #[serde(rename_all = "camelCase")]
+pub struct ChironDbRequest {
+    pub connection_id: String,
+    pub request: dbx_core::db::chirondb::Request,
+}
+
+pub async fn chirondb_request(
+    State(state): State<Arc<WebState>>,
+    headers: HeaderMap,
+    Json(req): Json<ChironDbRequest>,
+) -> Result<Json<dbx_core::db::chirondb::Reply>, AppError> {
+    if super::mcp_policy::is_mcp_request(&headers) {
+        return Err(AppError::from(
+            "ChironQL is not available through MCP; use the guarded ChironDB workspace".to_string(),
+        ));
+    }
+    dbx_core::db::chirondb::run(&state.app, &req.connection_id, req.request).await.map(Json).map_err(AppError::from)
+}
+
+#[derive(Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct VectorCollectionRequest {
     pub connection_id: String,
     pub database: String,

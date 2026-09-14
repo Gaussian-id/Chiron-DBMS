@@ -449,6 +449,21 @@ export function aiProviderLabel(provider: AiProvider, t: (key: string) => string
 
 export const AI_PROVIDER_PARTNER_PRESETS: readonly AiPartnerProviderPreset[] = [
   {
+    id: "tokenrouter-poc",
+    label: "TokenRouter POC",
+    group: "partner",
+    provider: "openai-compatible",
+    endpoint: "https://api.tokenrouter.com/v1",
+    model: "z-ai/glm-5.3-free",
+    models: [{ name: "z-ai/glm-5.3-free" }],
+    apiStyle: "completions",
+    authMethod: "bearer",
+    requiresApiKey: true,
+    websiteUrl: "https://www.tokenrouter.com",
+    apiKeyUrl: "https://www.tokenrouter.com",
+    descriptionKey: "ai.tokenrouterDescription",
+  },
+  {
     id: "jalapeno-cloud",
     label: "Jalapeno Cloud",
     iconPath: "/icons/ai/jalapeno-cloud.png",
@@ -1978,14 +1993,14 @@ export const useSettingsStore = defineStore("settings", () => {
 
     if (newConfigs.length > 0) {
       await api.saveAiConfigs(newConfigs);
-      aiConfigs.value = newConfigs;
+      aiConfigs.value = (await api.loadAiConfigs()).map(normalizeAiConfigItem);
     }
   }
 
   async function createAiConfig(config: AiConfigItem): Promise<void> {
     const normalized = normalizeAiConfigItem(config);
     await api.saveAiConfigItem(normalized);
-    aiConfigs.value.push(normalized);
+    aiConfigs.value = (await api.loadAiConfigs()).map(normalizeAiConfigItem);
     if (aiConfigs.value.length === 1 && normalized.model.trim()) {
       activeModel.value = {
         configId: normalized.id,
@@ -2001,7 +2016,7 @@ export const useSettingsStore = defineStore("settings", () => {
       const previous = aiConfigs.value[index];
       const updated = normalizeAiConfigItem({ ...previous, ...config });
       await api.saveAiConfigItem(updated);
-      aiConfigs.value[index] = updated;
+      aiConfigs.value = (await api.loadAiConfigs()).map(normalizeAiConfigItem);
       if (previous.provider !== updated.provider) {
         effortPreferences.value = effortPreferences.value.filter((preference) => preference.configId !== id);
         if (activeModel.value?.configId === id) activeModel.value = null;

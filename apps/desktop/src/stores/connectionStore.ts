@@ -3860,7 +3860,7 @@ export const useConnectionStore = defineStore("connection", () => {
       await loadElasticsearchIndices(connectionId);
     } else if (config.db_type === "milvus") {
       await loadMilvusDatabases(connectionId);
-    } else if (config.db_type === "qdrant" || config.db_type === "weaviate" || config.db_type === "chromadb") {
+    } else if (config.db_type === "chirondb" || config.db_type === "qdrant" || config.db_type === "weaviate" || config.db_type === "chromadb") {
       await loadVectorCollections(connectionId);
     } else if (config.db_type === "mq") {
       await loadMqTenants(connectionId, { force: true });
@@ -4632,7 +4632,7 @@ export const useConnectionStore = defineStore("connection", () => {
   async function loadConnectedConnectionRootForSidebarSearch(connectionId: string) {
     if (!connectedIds.value.has(connectionId)) return;
     const config = getConfig(connectionId);
-    if (!config || ["redis", "etcd", "zookeeper", "consul", "mongodb", "dynamodb", "elasticsearch", "easysearch", "meilisearch", "milvus", "qdrant", "weaviate", "chromadb", "mq", "nacos"].includes(config.db_type)) return;
+    if (!config || ["redis", "etcd", "zookeeper", "consul", "mongodb", "dynamodb", "elasticsearch", "easysearch", "meilisearch", "milvus", "chirondb", "qdrant", "weaviate", "chromadb", "mq", "nacos"].includes(config.db_type)) return;
     const node = findConnectionNode(connectionId);
     if (!node || node.type !== "connection" || hasConnectionMetadataChildren(node.children)) return;
     const scope = { kind: "connection-databases" as const, connectionId, driverProfile: metadataDriverProfile(config) };
@@ -6782,7 +6782,7 @@ export const useConnectionStore = defineStore("connection", () => {
         await loadElasticsearchIndices(node.connectionId);
       } else if (config?.db_type === "milvus") {
         await loadMilvusDatabases(node.connectionId);
-      } else if (config?.db_type === "qdrant" || config?.db_type === "weaviate" || config?.db_type === "chromadb") {
+      } else if (config?.db_type === "chirondb" || config?.db_type === "qdrant" || config?.db_type === "weaviate" || config?.db_type === "chromadb") {
         await loadVectorCollections(node.connectionId);
       } else if (config?.db_type === "mq") {
         await loadMqTenants(node.connectionId, options);

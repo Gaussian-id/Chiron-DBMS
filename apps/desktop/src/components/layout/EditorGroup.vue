@@ -6,6 +6,7 @@ import { useQueryStore } from "@/stores/queryStore";
 import { useSettingsStore } from "@/stores/settingsStore";
 import EditorGroupTabBar from "./EditorGroupTabBar.vue";
 import EditorToolbar from "./EditorToolbar.vue";
+import { relationalComingSoon } from "@/lib/app/relationalComingSoon";
 import QueryEditorSurface from "./QueryEditorSurface.vue";
 import ContentArea from "./ContentArea.vue";
 import { createNoopEditorToolbarActions, EDITOR_TOOLBAR_ACTIONS } from "./editorToolbarActions";
@@ -104,7 +105,7 @@ const groupTabs = computed(() => {
 });
 const activeTab = computed(() => groupTabs.value.find((tab) => tab.id === props.activeTabId) ?? groupTabs.value[0] ?? null);
 const activeConnection = computed(() => (activeTab.value ? connectionStore.getConfig(activeTab.value.connectionId) : undefined));
-const showGroupToolbar = computed(() => activeTab.value?.mode === "query" && !isPreviewTab(activeTab.value));
+const showGroupToolbar = computed(() => activeTab.value?.mode === "query" && effectiveDatabaseTypeForConnection(activeConnection.value) !== "chirondb" && !isPreviewTab(activeTab.value));
 const isGroupOracleManualTransaction = computed(() => effectiveDatabaseTypeForConnection(activeConnection.value) === "oracle" && (activeTab.value?.autoCommit ?? true) === false);
 // Each group previews the executable SQL of its own active tab (selection
 // stored on the tab), not the focused tab's global selection.
@@ -167,7 +168,7 @@ const groupExecutableSql = computed(() => {
          placement; only the tab bar moves around it. -->
     <div class="flex min-h-0 min-w-0 flex-1 flex-col">
       <EditorToolbar
-        v-if="activeTab && showGroupToolbar"
+        v-if="activeTab && showGroupToolbar && !relationalComingSoon(activeConnection?.db_type)"
         :active-tab="activeTab"
         :active-connection="activeConnection"
         :executable-sql="groupExecutableSql"
@@ -213,7 +214,11 @@ const groupExecutableSql = computed(() => {
         @clear-default-database="activeTab && toolbar.clearDefaultDatabase(activeTab.id)"
       />
       <div class="relative flex-1 min-h-0">
-        <KeepAlive v-if="activeTab" :max="HOT_TAB_SURFACE_CACHE_SIZE">
+        <section v-if="activeTab && relationalComingSoon(activeConnection?.db_type)" class="flex h-full flex-col items-center justify-center gap-2 p-6 text-center" aria-label="Relational database workspace · Coming Soon">
+          <h2 class="text-lg font-medium">Relational databases · Coming Soon</h2>
+          <p class="text-sm text-muted-foreground">Query execution, transactions, schema tools, and data editing are unavailable. Your saved connection and query drafts are preserved.</p>
+        </section>
+        <KeepAlive v-else-if="activeTab" :max="HOT_TAB_SURFACE_CACHE_SIZE">
           <QueryEditorSurface v-if="activeTab?.mode === 'query'" :key="`query:${activeTab.id}`" ref="activeSurfaceRef" v-bind="surfaceBindings" :auto-focus="groupId === queryStore.focusedGroupId" class="h-full" />
           <ContentArea v-else :key="`content:${activeTab.id}`" ref="activeSurfaceRef" v-bind="surfaceBindings" class="h-full" />
         </KeepAlive>

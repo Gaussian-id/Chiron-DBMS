@@ -162,7 +162,7 @@ export default withEnglishFallback({
     },
   },
   app: {
-    name: "DBX",
+    name: "ChironDBM by Gaussian",
   },
   docs,
   pluginPlatform: {
