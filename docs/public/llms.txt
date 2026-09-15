@@ -20,7 +20,7 @@ License: Apache-2.0
 
 - Desktop releases: https://github.com/Gaussian-id/Gauss-Horizon/releases/latest
 - Getting started: https://distribution-disabled.invalid/en/docs/getting-started
-- Docker deployment: https://distribution-disabled.invalid/en/docs/1panel
+- Desktop downloads: https://github.com/Gaussian-id/Gauss-Horizon/releases
 - CLI: https://distribution-disabled.invalid/en/docs/cli
 - MCP Server: https://distribution-disabled.invalid/en/docs/mcp
 - Offline drivers: https://distribution-disabled.invalid/en/drivers
