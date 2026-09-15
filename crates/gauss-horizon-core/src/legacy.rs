@@ -68,6 +68,33 @@ fn table_exists(connection: &Connection, name: &str) -> Result<bool, String> {
         .map(|v| v.is_some())
         .map_err(error)
 }
+/// Move a serialized absolute profile path without letting the host platform
+/// change the separator style that was stored in the profile.  A profile can
+/// originate from the WebView or another OS, so `Path::join` alone would turn
+/// a POSIX value such as `/old/profile/image.png` into a mixed-separator value
+/// when migration runs on Windows.
+fn relocate_serialized_path(path: &str, source: &str, destination: &str) -> Option<String> {
+    let suffix = path.strip_prefix(source)?;
+    if !suffix.is_empty() && !suffix.starts_with(['/', '\\']) {
+        return None;
+    }
+    Some(format!("{destination}{suffix}"))
+}
+
+fn relocated_profile_path(path: &str, source: &Path, destination: &Path) -> Option<String> {
+    let source = source.to_string_lossy();
+    let destination = destination.to_string_lossy();
+
+    // Use the exact representation first. On Windows, also accept a stored
+    // forward-slash path and produce a forward-slash target path; this is the
+    // form used by WebView-originated settings and portable profiles.
+    relocate_serialized_path(path, &source, &destination).or_else(|| {
+        let source_forward = source.replace('\\', "/");
+        let destination_forward = destination.replace('\\', "/");
+        relocate_serialized_path(path, &source_forward, &destination_forward)
+    })
+}
+
 fn relocate_paths(value: &mut serde_json::Value, source: &Path, destination: &Path) -> bool {
     let mut changed = false;
     match value {
@@ -80,9 +107,8 @@ fn relocate_paths(value: &mut serde_json::Value, source: &Path, destination: &Pa
                     changed |= relocate_paths(value, source, destination);
                 } else if key.to_lowercase().contains("path") || key.to_lowercase().ends_with("dir") {
                     if let Some(path) = value.as_str() {
-                        if let Ok(relative) = Path::new(path).strip_prefix(source) {
-                            *value =
-                                serde_json::Value::String(destination.join(relative).to_string_lossy().into_owned());
+                        if let Some(relocated) = relocated_profile_path(path, source, destination) {
+                            *value = serde_json::Value::String(relocated);
                             changed = true;
                         }
                     }
@@ -420,6 +446,29 @@ mod tests {
         assert_eq!(value["id"], "dbx-model");
         assert_eq!(value["query"], "COUNT dbx_collection;");
         assert_eq!(value["_encryptedAiSecrets"]["path"], "/old/profile/opaque");
+    }
+    #[test]
+    fn serialized_profile_paths_keep_their_separator_style() {
+        assert_eq!(
+            relocate_serialized_path(
+                r"C:\Users\old\profile\image.png",
+                r"C:\Users\old\profile",
+                r"C:\Users\new\profile",
+            ),
+            Some(r"C:\Users\new\profile\image.png".to_owned())
+        );
+        assert_eq!(
+            relocate_serialized_path("C:/Users/old/profile/image.png", "C:/Users/old/profile", "C:/Users/new/profile",),
+            Some("C:/Users/new/profile/image.png".to_owned())
+        );
+        assert_eq!(
+            relocate_serialized_path(
+                "C:/Users/old/profile-copy/image.png",
+                "C:/Users/old/profile",
+                "C:/Users/new/profile"
+            ),
+            None
+        );
     }
     #[test]
     fn empty_old_profile_copies_without_inventing_database_data() {
