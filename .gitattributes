@@ -33,3 +33,4 @@ packages/**/*.test.ts linguist-vendored
 # bytes and fail the guard for a contributor who touched neither file.
 crates/gauss-horizon-core/assets/docs-export.js -text -diff linguist-generated
 crates/gauss-horizon-core/assets/docs-export.css -text -diff linguist-generated
+crates/gauss-horizon-core/assets/database-drivers.manifest.json text eol=lf
