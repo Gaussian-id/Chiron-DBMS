@@ -17,7 +17,7 @@ jobs:
     runs-on: ubuntu-22.04
     env:
       CARGO_INCREMENTAL: "0"
-      CARGO_TARGET_DIR: ${{ runner.temp }}/gauss-horizon-preflight
+      CARGO_TARGET_DIR: ${{ github.workspace }}/.release-target-preflight
     steps:
       - uses: actions/checkout@v4
         with:
@@ -108,7 +108,7 @@ jobs:
       CARGO_INCREMENTAL: "0"
       CARGO_BUILD_JOBS: "3"
       CARGO_PROFILE_RELEASE_DEBUG: "0"
-      CARGO_TARGET_DIR: ${{ runner.temp }}/gauss-horizon-desktop-target
+      CARGO_TARGET_DIR: ${{ github.workspace }}/.release-target-desktop
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -252,7 +252,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     env:
       CARGO_INCREMENTAL: "0"
-      CARGO_TARGET_DIR: ${{ runner.temp }}/gauss-horizon-native-agents
+      CARGO_TARGET_DIR: ${{ github.workspace }}/.release-target-native-agents
     steps:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@1.94.1
