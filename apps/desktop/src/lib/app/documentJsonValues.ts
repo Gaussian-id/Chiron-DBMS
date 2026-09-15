@@ -41,7 +41,7 @@ export function documentStoreValueForGrid(value: unknown, kind: DocumentStoreKin
 export function serializeDocumentStoreId(value: unknown, kind: DocumentStoreKind): string {
   if (kind !== "mongodb" && isLosslessJsonNumber(value)) return value.raw;
   if (kind === "elasticsearch") return String(value);
-  if (kind === "meilisearch") return typeof value === "string" ? `__dbx_meilisearch_string_id__${JSON.stringify(value)}` : String(value);
+  if (kind === "meilisearch") return typeof value === "string" ? `__gauss_horizon_meilisearch_string_id__${JSON.stringify(value)}` : String(value);
   if (kind === "dynamodb") return stringifyJsonPreservingLargeNumbers(value);
   return serializeMongoDocumentId(value);
 }

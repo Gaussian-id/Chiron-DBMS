@@ -36,8 +36,8 @@ func TestLiveXuguSpatialIndexDDL(t *testing.T) {
 	defer s.disconnect()
 
 	const (
-		table = "DBX_SPATIAL_INDEX_LIVE_T"
-		index = "DBX_SPATIAL_INDEX_LIVE_I"
+		table = "GAUSS_HORIZON_SPATIAL_INDEX_LIVE_T"
+		index = "GAUSS_HORIZON_SPATIAL_INDEX_LIVE_I"
 	)
 	_ = s.execWithReconnect("DROP TABLE IF EXISTS " + table)
 	defer func() { _ = s.execWithReconnect("DROP TABLE IF EXISTS " + table) }()

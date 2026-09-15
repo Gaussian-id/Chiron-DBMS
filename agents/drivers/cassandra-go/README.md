@@ -1,6 +1,6 @@
 # Cassandra native Agent
 
-The Cassandra Agent uses Apache `cassandra-gocql-driver` and implements the DBX
+The Cassandra Agent uses Apache `cassandra-gocql-driver` and implements the Gauss Horizon
 multi-session JSON-RPC protocol without a JVM.
 
 ## Compatibility
@@ -20,7 +20,7 @@ multi-session JSON-RPC protocol without a JVM.
 - Metadata: keyspaces, tables, columns, indexes, CQL table DDL, completion search
 - Queries: legacy string result values, paging, cancellation, logged and unlogged batches
 
-The Agent accepts both normal DBX connection fields and Cassandra JDBC-style
+The Agent accepts both normal Gauss Horizon connection fields and Cassandra JDBC-style
 connection strings, including the wrapper's `host1--host2:9042` contact-point
 syntax.
 
@@ -72,10 +72,10 @@ Mapped Java Driver paths include:
 - `advanced.ssl-engine-factory` default TLS, hostname validation, truststore,
   and keystore settings
 
-Native-only settings can be placed under `dbx.cassandra`:
+Native-only settings can be placed under `gauss.horizon.cassandra`:
 
 ```hocon
-dbx.cassandra {
+gauss.horizon.cassandra {
   tls {
     enabled = true
     ca-cert-path = "/path/to/ca.pem"

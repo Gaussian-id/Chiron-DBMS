@@ -76,9 +76,9 @@ function loadDataGridComponent() {
     dataGridComponentPromise = (async () => {
       const shouldLogTiming = isDebugLoggingEnabled();
       const startedAt = shouldLogTiming ? performance.now() : 0;
-      if (shouldLogTiming) appendDebugLog("info", "[DBX][DataGrid:load:start]");
+      if (shouldLogTiming) appendDebugLog("info", "[Gauss Horizon][DataGrid:load:start]");
       const component = await import("@/components/grid/DataGrid.vue");
-      if (shouldLogTiming) appendDebugLog("info", "[DBX][DataGrid:load:done]", { elapsed: `${Math.round(performance.now() - startedAt)}ms` });
+      if (shouldLogTiming) appendDebugLog("info", "[Gauss Horizon][DataGrid:load:done]", { elapsed: `${Math.round(performance.now() - startedAt)}ms` });
       return component;
     })();
   }
@@ -263,10 +263,10 @@ const DEFAULT_QUERY_RESULTS_PANE_SIZE = 68;
 onMounted(() => {
   // The watcher below warms the grid for query/data tabs. Keep source-only
   // tabs out of that path: loading the grid there caused freezes (#8103).
-  window.addEventListener("dbx-refresh-active-kv-browser", onRefreshActiveKvBrowser);
+  window.addEventListener("gauss-horizon-refresh-active-kv-browser", onRefreshActiveKvBrowser);
   window.addEventListener("resize", updateStandaloneResultToolbarDimensions);
   window.visualViewport?.addEventListener("resize", updateStandaloneResultToolbarDimensions);
-  window.addEventListener("dbx:ui-scale-applied", updateStandaloneResultToolbarDimensions);
+  window.addEventListener("gauss-horizon:ui-scale-applied", updateStandaloneResultToolbarDimensions);
   revealActiveResultRunAfterRender();
 });
 
@@ -658,7 +658,7 @@ const mongoQueryResultSaveHandler = computed<CustomSaveHandler | undefined>(() =
   return { save, preview, applySavedChanges, canInsert: false, canDelete: false, supportsInsert: false, readonlyColumns: [target.idColumn], targetLabel: target.collection };
 });
 const resultsPaneOpen = ref(false);
-const resultsPaneSize = ref(Number(safeLocalStorageGet("dbx-results-pane-size")) || DEFAULT_QUERY_RESULTS_PANE_SIZE);
+const resultsPaneSize = ref(Number(safeLocalStorageGet("gauss-horizon-results-pane-size")) || DEFAULT_QUERY_RESULTS_PANE_SIZE);
 // In editor-only mode the results pane is never mounted in this splitpanes,
 // so the editor pane must stay at 100%: a reactive size update alone does not
 // re-normalize a single pane, and shrinking it would leave a blank dead zone.
@@ -690,7 +690,7 @@ function onResultsResized(payload: { panes: { size: number }[] }) {
   const resultsPane = payload.panes[1];
   if (resultsPane?.size != null && resultsPane.size >= 20 && resultsPane.size <= 85) {
     resultsPaneSize.value = resultsPane.size;
-    safeLocalStorageSet("dbx-results-pane-size", String(resultsPane.size));
+    safeLocalStorageSet("gauss-horizon-results-pane-size", String(resultsPane.size));
   }
 }
 let queryRunningElapsedFrame: number | undefined;
@@ -727,10 +727,10 @@ watch(() => [props.activeTab.id, props.activeTab.isExecuting, props.activeTab.qu
 onUnmounted(() => {
   stopQueryRunningElapsedTimer();
   standaloneResultToolbarResizeObserver?.disconnect();
-  window.removeEventListener("dbx-refresh-active-kv-browser", onRefreshActiveKvBrowser);
+  window.removeEventListener("gauss-horizon-refresh-active-kv-browser", onRefreshActiveKvBrowser);
   window.removeEventListener("resize", updateStandaloneResultToolbarDimensions);
   window.visualViewport?.removeEventListener("resize", updateStandaloneResultToolbarDimensions);
-  window.removeEventListener("dbx:ui-scale-applied", updateStandaloneResultToolbarDimensions);
+  window.removeEventListener("gauss-horizon:ui-scale-applied", updateStandaloneResultToolbarDimensions);
 });
 
 watch(
@@ -777,7 +777,7 @@ watch(
     if (!result) return;
     if (!isDebugLoggingEnabled()) return;
     const startedAt = performance.now();
-    appendDebugLog("info", "[DBX][ContentArea:result:observed]", {
+    appendDebugLog("info", "[Gauss Horizon][ContentArea:result:observed]", {
       tabId: props.activeTab.id,
       rowCount: result.rows.length,
       columnCount: result.columns.length,
@@ -785,13 +785,13 @@ watch(
       isExecuting: props.activeTab.isExecuting,
     });
     nextTick(() => {
-      appendDebugLog("info", "[DBX][ContentArea:result:nextTick]", {
+      appendDebugLog("info", "[Gauss Horizon][ContentArea:result:nextTick]", {
         tabId: props.activeTab.id,
         elapsed: `${Math.round(performance.now() - startedAt)}ms`,
         isExecuting: props.activeTab.isExecuting,
       });
       requestAnimationFrame(() => {
-        appendDebugLog("info", "[DBX][ContentArea:result:first-frame]", {
+        appendDebugLog("info", "[Gauss Horizon][ContentArea:result:first-frame]", {
           tabId: props.activeTab.id,
           elapsed: `${Math.round(performance.now() - startedAt)}ms`,
           isExecuting: props.activeTab.isExecuting,
@@ -883,7 +883,7 @@ async function onHandleClickColumn(matchedCols: Array<{ name: string; table: str
     columnInfoColumns.value = results;
   } catch (e: any) {
     // Silently ignore errors
-    console.error("[DBX] Failed to fetch column info:", e);
+    console.error("[Gauss Horizon] Failed to fetch column info:", e);
     return;
   } finally {
     columnInfoLoading.value = false;

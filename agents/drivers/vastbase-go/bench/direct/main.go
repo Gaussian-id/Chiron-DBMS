@@ -173,9 +173,9 @@ func dsn() string {
 		"host=%s port=%s user=%s password=%s dbname=%s sslmode=disable",
 		envOr("VASTBASE_HOST", "127.0.0.1"),
 		envOr("VASTBASE_PORT", "20119"),
-		envOr("VASTBASE_USERNAME", "dbx_bench"),
-		requiredEnv("DBX_TEST_PASSWORD"),
-		envOr("VASTBASE_DATABASE", "dbx_bench"),
+		envOr("VASTBASE_USERNAME", "gauss_horizon_bench"),
+		requiredEnv("GAUSS_HORIZON_TEST_PASSWORD"),
+		envOr("VASTBASE_DATABASE", "gauss_horizon_bench"),
 	)
 }
 

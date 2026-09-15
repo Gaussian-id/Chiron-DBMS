@@ -337,7 +337,7 @@ describe("connectionStore timeout recovery", () => {
 
   it("preserves timeout inheritance across downgrade when snapshots are unchanged", async () => {
     localStorage.setItem(
-      "dbx-timeout-inheritance-backup-v1",
+      "gauss-horizon-timeout-inheritance-backup-v1",
       JSON.stringify({
         version: 1,
         globalConnectTimeoutSecs: 7,
@@ -368,7 +368,7 @@ describe("connectionStore timeout recovery", () => {
 
   it("keeps timeout values changed by a downgraded version as local overrides", async () => {
     localStorage.setItem(
-      "dbx-timeout-inheritance-backup-v1",
+      "gauss-horizon-timeout-inheritance-backup-v1",
       JSON.stringify({
         version: 1,
         globalConnectTimeoutSecs: 7,
@@ -408,7 +408,7 @@ describe("connectionStore timeout recovery", () => {
     expect(settingsStore.editorSettings.queryTimeoutInheritConnectionIds).toEqual([]);
   });
 
-  it("exports effective timeout snapshots for older DBX versions", async () => {
+  it("exports effective timeout snapshots for older Gauss Horizon versions", async () => {
     const encryptConfig = vi.fn().mockResolvedValue({ encrypted: true });
     const click = vi.fn();
     const NativeUrl = globalThis.URL;
@@ -477,7 +477,7 @@ describe("connectionStore timeout recovery", () => {
   });
 
   it("fails the export when writing the file fails instead of reporting success", async () => {
-    const save = vi.fn().mockResolvedValue("/home/user/dbx-connections.json");
+    const save = vi.fn().mockResolvedValue("/home/user/gauss-horizon-connections.json");
     const writeTextFile = vi.fn().mockRejectedValue(new Error("disk full"));
     vi.doMock("@/lib/backend/tauriRuntime", () => ({ isTauriRuntime: () => true }));
     vi.doMock("@tauri-apps/plugin-dialog", () => ({ save }));
@@ -618,7 +618,7 @@ describe("connectionStore timeout recovery", () => {
         id: "slow-bastion",
         host: "bastion.example.com",
         port: 22,
-        user: "dbx",
+        user: "gauss-horizon",
         connect_timeout_secs: 1,
       },
     ];

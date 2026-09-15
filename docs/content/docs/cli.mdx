@@ -1,117 +1,89 @@
 ---
-title: DBX CLI
-description: Use the native DBX CLI to read connections, schemas, query results, and AI context from terminals, scripts, CI, and Codex.
+title: Gauss Horizon CLI
+description: Use the native Gauss Horizon CLI to read connections, schemas, query results, and AI context from terminals, scripts, CI, and Codex.
 ---
 
-<Callout type="info">DBX CLI is a dedicated command line package for terminal, script, and coding-agent workflows. It shares DBX connection storage and SQL safety rules with the MCP server.</Callout>
+<Callout type="info">Gauss Horizon CLI is a dedicated command line package for terminal, script, and coding-agent workflows. It shares Gauss Horizon connection storage and SQL safety rules with the MCP server.</Callout>
 
-## Install
+## Availability in 0.1.0
 
-### npm
+Gauss Horizon 0.1.0 does not publish standalone CLI or npm packages. Use the desktop application for local database workflows and enable its built-in MCP service from **Settings → MCP** when an MCP-capable client needs access.
 
-```bash
-npm install -g @dbx-app/cli
-```
-
-### Homebrew
+Developers can build the CLI from this repository with the same pinned Rust toolchain used by the desktop release:
 
 ```bash
-brew tap t8y2/tap
-brew install dbx-cli
+cargo run -p gauss-horizon-cli -- --help
 ```
 
-Node.js 18.18.0 or newer is required for the npm launcher. The CLI itself does not depend on `better-sqlite3` or a Node.js native-module ABI. Homebrew users do not need to manage Node.js separately.
-
-### Standalone native binary
-
-The `packages-v*` GitHub Release provides native CLI archives for macOS, Linux, and Windows. Download the archive matching your platform, verify it with `CLI-SHA256SUMS`, extract it, and run `dbx` directly. Standalone binaries do not require Node.js.
-
-```bash
-tar -xzf dbx-cli-linux-x64-gnu.tar.gz
-chmod +x dbx
-./dbx --version
-```
-
-Set `DBX_DATA_DIR` when using a custom or portable DBX data directory.
-
-Check the installed version:
-
-```bash
-dbx --version
-```
+Set `GAUSS_HORIZON_DATA_DIR` when working with a custom or portable Gauss Horizon data directory.
 
 ## Common Commands
 
 ```bash
-dbx doctor
-dbx capabilities
-dbx connections list --json
-dbx connections list --format csv
-dbx schema list local --json
-dbx schema describe local users --json
-dbx query local "select count(*) as total from users" --json
-dbx query local "select id, name from users" --format csv
-dbx query local "select * from users" --limit 50 --timeout 10s --json
-dbx query local --file ./query.sql --json
-dbx context local --tables users,orders
-dbx open local users
+gauss-horizon doctor
+gauss-horizon capabilities
+gauss-horizon connections list --json
+gauss-horizon connections list --format csv
+gauss-horizon schema list local --json
+gauss-horizon schema describe local users --json
+gauss-horizon query local "select count(*) as total from users" --json
+gauss-horizon query local "select id, name from users" --format csv
+gauss-horizon query local "select * from users" --limit 50 --timeout 10s --json
+gauss-horizon query local --file ./query.sql --json
+gauss-horizon context local --tables users,orders
+gauss-horizon open local users
 ```
 
 ## Diagnostics
 
-Use `dbx doctor` to inspect local DBX paths, connection-store health, and whether the desktop bridge is available:
+Use `gauss-horizon doctor` to inspect local Gauss Horizon paths, connection-store health, and whether the desktop bridge is available:
 
 ```bash
-dbx doctor
-dbx doctor --json
+gauss-horizon doctor
+gauss-horizon doctor --json
 ```
 
-If the optional platform package was not installed, reinstall without `--no-optional`:
+The standalone npm CLI is deferred for 0.1.0. Rebuild the CLI from this repository when a source-development binary is needed.
+
+Use `gauss-horizon capabilities` to see which database types can be queried directly and which currently require Gauss Horizon Desktop:
 
 ```bash
-npm uninstall -g @dbx-app/cli
-npm install -g @dbx-app/cli
+gauss-horizon capabilities
+gauss-horizon capabilities --json
 ```
 
-Use `dbx capabilities` to see which database types can be queried directly and which currently require DBX Desktop:
-
-```bash
-dbx capabilities
-dbx capabilities --json
-```
-
-The CLI binary currently lists PostgreSQL, Redshift, MySQL, Doris, StarRocks, Manticore Search, SQLite, rqlite, KWDB, and QuestDB as direct-query types. `dbx capabilities` is authoritative for the installed version. Other types require a running DBX Desktop bridge or their Agent/external-driver infrastructure.
+The CLI binary currently lists PostgreSQL, Redshift, MySQL, Doris, StarRocks, Manticore Search, SQLite, rqlite, KWDB, and QuestDB as direct-query types. `gauss-horizon capabilities` is authoritative for the installed version. Other types require a running Gauss Horizon Desktop bridge or their Agent/external-driver infrastructure.
 
 ## Execution Modes
 
 ### Local Storage
 
-By default, CLI reads the same `dbx.db` connection store used by Desktop and MCP. `DBX_DATA_DIR` must point to the directory containing `dbx.db`.
+By default, CLI reads the same `gauss-horizon.db` connection store used by Desktop and MCP. `GAUSS_HORIZON_DATA_DIR` must point to the directory containing `gauss-horizon.db`.
 
 - Direct-query types can run while Desktop is closed
 - Bridge types require Desktop to be running and discoverable through the bridge port file in the data directory
-- Agent/JDBC, DuckDB, and other external-driver paths still require matching components installed through DBX
-- `dbx open` is always a Desktop UI operation and returns `DBX_NOT_RUNNING` when the app is unavailable
+- Agent/JDBC, DuckDB, and other external-driver paths still require matching components installed through Gauss Horizon
+- `gauss-horizon open` is always a Desktop UI operation and returns `GAUSS_HORIZON_NOT_RUNNING` when the app is unavailable
 
-### DBX Web and Docker
+### Gauss Horizon Web and Docker
 
-Set `DBX_WEB_URL` to use a deployed DBX Web backend instead of local connection storage:
+Set `GAUSS_HORIZON_WEB_URL` to use a deployed Gauss Horizon Web backend instead of local connection storage:
 
 ```bash
-DBX_WEB_URL=https://dbx.example.com \
-DBX_WEB_PASSWORD='your-login-password' \
-dbx connections list --json
+GAUSS_HORIZON_WEB_URL=https://gauss-horizon.example.com \
+GAUSS_HORIZON_WEB_PASSWORD='your-login-password' \
+gauss-horizon connections list --json
 ```
 
-`DBX_WEB_PASSWORD` is the Web login password. In Web mode, connections, permissions, drivers, and file paths belong to the server environment. `dbx open` still targets a local Desktop bridge and should not be treated as a remote Web automation API.
+`GAUSS_HORIZON_WEB_PASSWORD` is the Web login password. In Web mode, connections, permissions, drivers, and file paths belong to the server environment. `gauss-horizon open` still targets a local Desktop bridge and should not be treated as a remote Web automation API.
 
 ## Default Connection
 
-Set `DBX_CONNECTION` to omit the connection name for query and context commands:
+Set `GAUSS_HORIZON_CONNECTION` to omit the connection name for query and context commands:
 
 ```bash
-DBX_CONNECTION=local dbx query "select 1" --json
-DBX_CONNECTION=local dbx context --tables users,orders
+GAUSS_HORIZON_CONNECTION=local gauss-horizon query "select 1" --json
+GAUSS_HORIZON_CONNECTION=local gauss-horizon context --tables users,orders
 ```
 
 ## Output Formats
@@ -119,17 +91,17 @@ DBX_CONNECTION=local dbx context --tables users,orders
 Use `--json` or `--format json` for stable machine-readable output. Use `--format csv` for query, connection, and schema data that should be piped into other command line tools.
 
 ```bash
-dbx query local "select id, name from users" --format csv
+gauss-horizon query local "select id, name from users" --format csv
 ```
 
 Errors are written to stderr and return a non-zero exit code.
 
 ## Query Controls
 
-`dbx query` executes SQL for SQL connections and accepts supported Mongo shell commands for MongoDB connections. Redis is not executed through this command; use the MCP Redis tool or the DBX workspace instead. Query mode is read-only by default.
+`gauss-horizon query` executes SQL for SQL connections and accepts supported Mongo shell commands for MongoDB connections. Redis is not executed through this command; use the MCP Redis tool or the Gauss Horizon workspace instead. Query mode is read-only by default.
 
 ```bash
-dbx query local "select * from users" --limit 50 --timeout 10s --json
+gauss-horizon query local "select * from users" --limit 50 --timeout 10s --json
 ```
 
 Durations accept `ms`, `s`, or `m`, such as `500ms`, `10s`, or `1m`.
@@ -137,10 +109,10 @@ Durations accept `ms`, `s`, or `m`, such as `500ms`, `10s`, or `1m`.
 Use `--allow-writes` for non-dangerous write statements:
 
 ```bash
-dbx query local "update users set name = 'Ada' where id = 1" --allow-writes
+gauss-horizon query local "update users set name = 'Ada' where id = 1" --allow-writes
 ```
 
-Dangerous SQL such as `DROP`, `TRUNCATE`, and `ALTER` requires both `--allow-writes` and `--allow-dangerous-sql`. Explicit transaction statements remain blocked by CLI; use [MCP stateful sessions](/en/docs/mcp#stateful-query-sessions) or the DBX editor for pinned multi-step sessions.
+Dangerous SQL such as `DROP`, `TRUNCATE`, and `ALTER` requires both `--allow-writes` and `--allow-dangerous-sql`. Explicit transaction statements remain blocked by CLI; use [MCP stateful sessions](/en/docs/mcp#stateful-query-sessions) or the Gauss Horizon editor for pinned multi-step sessions.
 
 Writes and DDL against production databases remain blocked even when both flags are present. Production detection, SQL risk classification, connection read-only protection, and database privileges form independent upper bounds; the flags are not a production bypass.
 
@@ -149,7 +121,7 @@ Writes and DDL against production databases remain blocked even when both flags 
 Pass `--` before SQL that starts with a dash:
 
 ```bash
-dbx query local --json -- "-- comment
+gauss-horizon query local --json -- "-- comment
 select 1"
 ```
 
@@ -162,40 +134,40 @@ CLI JSON errors use stable codes:
 | `UNKNOWN_OPTION`         | An unsupported flag was provided                    |
 | `INVALID_OPTION`         | A flag is missing a value or has an invalid value   |
 | `INVALID_ARGUMENT`       | Positional arguments are missing or conflicting     |
-| `CONNECTION_STORE_ERROR` | DBX connection storage exists but could not be read |
-| `CONNECTION_NOT_FOUND`   | No DBX connection matched the requested name        |
+| `CONNECTION_STORE_ERROR` | Gauss Horizon connection storage exists but could not be read |
+| `CONNECTION_NOT_FOUND`   | No Gauss Horizon connection matched the requested name        |
 | `SQL_BLOCKED`            | SQL safety rules blocked execution                  |
-| `DBX_NOT_RUNNING`        | DBX Desktop bridge is unavailable                   |
+| `GAUSS_HORIZON_NOT_RUNNING`        | Gauss Horizon Desktop bridge is unavailable                   |
 | `ERROR`                  | Unexpected runtime failure                          |
 
 ## Desktop Deep Links
 
-DBX Desktop supports deep links for launching the client from browsers, bastion hosts, or scripts.
+Gauss Horizon Desktop supports deep links for launching the client from browsers, bastion hosts, or scripts.
 
-Launch or focus DBX without opening another dialog:
+Launch or focus Gauss Horizon without opening another dialog:
 
 ```bash
-open 'dbx://open'
+open 'gauss-horizon://open'
 ```
 
 A web button can link to the protocol directly:
 
 ```html
-<a href="dbx://open">Open in DBX</a>
+<a href="gauss-horizon://open">Open in Gauss Horizon</a>
 ```
 
-Use `dbx://connection/new` to open the new connection dialog with connection fields prefilled.
+Use `gauss-horizon://connection/new` to open the new connection dialog with connection fields prefilled.
 
 DSN mode:
 
 ```bash
-open 'dbx://connection/new?url=postgres%3A%2F%2Fapp%3Asecret%40db.internal%3A5432%2Forders'
+open 'gauss-horizon://connection/new?url=postgres%3A%2F%2Fapp%3Asecret%40db.internal%3A5432%2Forders'
 ```
 
 Field mode:
 
 ```bash
-open 'dbx://connection/new?type=mysql&host=127.0.0.1&port=3306&user=root&password=secret&database=test'
+open 'gauss-horizon://connection/new?type=mysql&host=127.0.0.1&port=3306&user=root&password=secret&database=test'
 ```
 
 Supported fields:
@@ -204,7 +176,7 @@ Supported fields:
 | ------------ | ---------------------------------------------------------------------------------------- |
 | `type`       | Database type; service types include `etcd`, `consul`, `nacos-v2`, `nacos-v3`, `r-nacos` |
 | `url`        | Database DSN; URL encoding is recommended                                                |
-| `name`       | Display name in DBX; when omitted, DBX uses `database`, then `host`                      |
+| `name`       | Display name in Gauss Horizon; when omitted, Gauss Horizon uses `database`, then `host`                      |
 | `host`       | Hostname or IP address                                                                   |
 | `port`       | Port                                                                                     |
 | `user`       | Username                                                                                 |
@@ -217,20 +189,20 @@ Supported fields:
 One-time connection example:
 
 ```bash
-open 'dbx://connection/new?type=redis&host=127.0.0.1&port=6379&user=default&password=secret&database=0&one_time=true'
+open 'gauss-horizon://connection/new?type=redis&host=127.0.0.1&port=6379&user=default&password=secret&database=0&one_time=true'
 ```
 
 Nacos and service-registry examples:
 
 ```bash
-open 'dbx://connection/new?type=consul&host=127.0.0.1&port=8500&password=acl-token'
-open 'dbx://connection/new?type=nacos-v3&host=127.0.0.1&port=8848&user=nacos&password=secret'
-open 'dbx://connection/new?type=r-nacos&url=http%3A%2F%2F127.0.0.1%3A8848%2Fnacos&user=admin&password=secret'
+open 'gauss-horizon://connection/new?type=consul&host=127.0.0.1&port=8500&password=acl-token'
+open 'gauss-horizon://connection/new?type=nacos-v3&host=127.0.0.1&port=8848&user=nacos&password=secret'
+open 'gauss-horizon://connection/new?type=r-nacos&url=http%3A%2F%2F127.0.0.1%3A8848%2Fnacos&user=admin&password=secret'
 ```
 
 `nacos` is an alias for `nacos-v2`, and `rnacos` is an alias for `r-nacos`. In URL mode, service endpoint paths are preserved; top-level `host`, `port`, `user`, `password`, and `ssl` fields override values from `url`. For Consul, `password` is the ACL token. Nacos requires `user` when `password` is present. Omitting `v` or using `v=1` selects the current deep-link protocol; other versions are rejected.
 
-<Callout type="info">Before testing system-level `dbx://` launches, install and open DBX Desktop once so the operating system can register the URL scheme. On macOS, use `open 'dbx://open'` or `open 'dbx://connection/new?...'` to test it.</Callout>
+<Callout type="info">Before testing system-level `gauss-horizon://` launches, install and open Gauss Horizon Desktop once so the operating system can register the URL scheme. On macOS, use `open 'gauss-horizon://open'` or `open 'gauss-horizon://connection/new?...'` to test it.</Callout>
 
 <Callout type="warning">A deep link may expose a database password or Consul ACL token in browser and terminal history. Do not put credential-bearing links in shared logs, shell history, tickets, or chat messages.</Callout>
 
@@ -239,6 +211,6 @@ open 'dbx://connection/new?type=r-nacos&url=http%3A%2F%2F127.0.0.1%3A8848%2Fnaco
 Codex can call the CLI directly from shell tools:
 
 ```bash
-dbx schema describe local users --json
-dbx context local --tables users,orders | codex exec "Write a retention query"
+gauss-horizon schema describe local users --json
+gauss-horizon context local --tables users,orders | codex exec "Write a retention query"
 ```

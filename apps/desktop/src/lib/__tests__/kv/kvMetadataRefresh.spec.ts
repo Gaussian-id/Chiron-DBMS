@@ -77,9 +77,9 @@ describe("decideKvMetadataRefresh", () => {
   });
 
   it("removes an expired key from the cached key list", () => {
-    const keys = [{ key: "/dbx/a" }, { key: "/dbx/aaaaa" }, { key: "/test/a" }];
+    const keys = [{ key: "/gauss-horizon/a" }, { key: "/gauss-horizon/aaaaa" }, { key: "/test/a" }];
 
-    expect(removeMissingKvKey(keys, "/dbx/aaaaa")).toEqual([{ key: "/dbx/a" }, { key: "/test/a" }]);
+    expect(removeMissingKvKey(keys, "/gauss-horizon/aaaaa")).toEqual([{ key: "/gauss-horizon/a" }, { key: "/test/a" }]);
   });
 
   it("tracks only known leased keys and excludes the selected key", () => {

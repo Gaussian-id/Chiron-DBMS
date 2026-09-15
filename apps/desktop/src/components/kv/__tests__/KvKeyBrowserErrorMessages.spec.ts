@@ -4,7 +4,7 @@ import { formatError, sanitizeBackendErrorMessage } from "@/lib/backend/errorUti
 // Reported in #8860: an etcd revision that has already been compacted surfaces
 // its internal Agent contract payload in the history dialog.
 const COMPACTED_HISTORY_ERROR =
-  'ETCD_COMPACTED: requested history was compacted at revision 6538169\nDBX_AGENT_ERROR_DATA:{"contractVersion":1,"category":"protocol","retryable":false,"sessionDisposition":"keep","stage":"execute","operationOutcome":"unknown","agentSessionId":null,"sqlState":null,"vendorCode":null,"exceptionClass":"ETCD_COMPACTED:requestedhistorywascompactedatrevision6538169"}';
+  'ETCD_COMPACTED: requested history was compacted at revision 6538169\nGAUSS_HORIZON_AGENT_ERROR_DATA:{"contractVersion":1,"category":"protocol","retryable":false,"sessionDisposition":"keep","stage":"execute","operationOutcome":"unknown","agentSessionId":null,"sqlState":null,"vendorCode":null,"exceptionClass":"ETCD_COMPACTED:requestedhistorywascompactedatrevision6538169"}';
 
 describe("KV browser error presentation", () => {
   it("keeps the internal Agent payload out of a compacted-revision history error", () => {

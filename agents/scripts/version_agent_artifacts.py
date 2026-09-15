@@ -28,8 +28,8 @@ def version_agent_artifacts(release_dir: Path, versions: dict[str, str]) -> list
     renamed: list[Path] = []
     for driver, version in sorted(versions.items()):
         jar = rename_artifact(
-            release_dir / f"dbx-agent-{driver}.jar",
-            release_dir / f"dbx-agent-{driver}-{version}.jar",
+            release_dir / f"gauss-horizon-agent-{driver}.jar",
+            release_dir / f"gauss-horizon-agent-{driver}-{version}.jar",
         )
         if jar:
             renamed.append(jar)
@@ -41,8 +41,8 @@ def version_agent_artifacts(release_dir: Path, versions: dict[str, str]) -> list
         for platform in PLATFORMS:
             extension = ".exe" if platform.startswith("windows-") else ""
             artifact = rename_artifact(
-                release_dir / f"dbx-agent-{driver}-{platform}{extension}",
-                release_dir / f"dbx-agent-{driver}-{version}-{platform}{extension}",
+                release_dir / f"gauss-horizon-agent-{driver}-{platform}{extension}",
+                release_dir / f"gauss-horizon-agent-{driver}-{version}-{platform}{extension}",
             )
             if artifact:
                 renamed.append(artifact)
@@ -50,7 +50,7 @@ def version_agent_artifacts(release_dir: Path, versions: dict[str, str]) -> list
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="Add module versions to DBX agent release filenames")
+    parser = argparse.ArgumentParser(description="Add module versions to Gauss Horizon agent release filenames")
     parser.add_argument("release_dir", type=Path)
     parser.add_argument("versions_json")
     args = parser.parse_args()

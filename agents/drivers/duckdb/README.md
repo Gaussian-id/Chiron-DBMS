@@ -1,6 +1,6 @@
-# DBX DuckDB Standalone Driver
+# Gauss Horizon DuckDB Standalone Driver
 
-This directory contains the standalone Rust DuckDB sidecar. It reuses DBX's
+This directory contains the standalone Rust DuckDB sidecar. It reuses Gauss Horizon's
 existing newline-delimited JSON worker runtime, while keeping DuckDB and
 `libduckdb-sys` outside the main application dependency graph.
 
@@ -8,19 +8,19 @@ existing newline-delimited JSON worker runtime, while keeping DuckDB and
 
 ```bash
 cd agents/drivers/duckdb
-cargo build --release --bin dbx-duckdb-driver
+cargo build --release --bin gauss-horizon-duckdb-driver
 ```
 
-Point DBX at the resulting executable with:
+Point Gauss Horizon at the resulting executable with:
 
 ```bash
-DBX_DUCKDB_DRIVER_PATH=/absolute/path/to/dbx-duckdb-driver \
-  cargo run -p dbx --no-default-features --features duckdb-sidecar
+GAUSS_HORIZON_DUCKDB_DRIVER_PATH=/absolute/path/to/gauss-horizon-duckdb-driver \
+  cargo run -p gauss-horizon --no-default-features --features duckdb-sidecar
 ```
 
-Release builds publish this driver through the DBX driver registry. Driver
-Manager installs it as `~/.dbx/agents/drivers/duckdb/agent` (or `agent.exe` on
-Windows). `DBX_DUCKDB_DRIVER_PATH` remains available for local development.
+Release builds publish this driver through the Gauss Horizon driver registry. Driver
+Manager installs it as `~/.gauss-horizon/agents/drivers/duckdb/agent` (or `agent.exe` on
+Windows). `GAUSS_HORIZON_DUCKDB_DRIVER_PATH` remains available for local development.
 
 ## Release package
 
@@ -29,10 +29,10 @@ online Driver Manager installation and manual single-driver import:
 
 ```text
 agent-registry.json
-drivers/dbx-agent-duckdb-<version>-<platform>[.exe]
+drivers/gauss-horizon-agent-duckdb-<version>-<platform>[.exe]
 ```
 
-DBX decompresses the package itself, so users do not need to install `zstd`,
+Gauss Horizon decompresses the package itself, so users do not need to install `zstd`,
 DuckDB, or a separate database driver. The existing aggregate offline `.zip`
 packages remain supported for backward compatibility.
 
@@ -43,4 +43,4 @@ on fresh Windows installations without a separate redistributable package.
 
 The driver implements connect, execute, database/schema/table/column metadata,
 table DDL, view source, completion assistance, attach, cancel, and shutdown over
-the DBX sidecar protocol.
+the Gauss Horizon sidecar protocol.

@@ -153,7 +153,7 @@ fn set_query_param(url: &mut Url, key: &str, value: &str) {
 }
 
 fn is_control_param(key: &str) -> bool {
-    key.eq_ignore_ascii_case("transport") || key.eq_ignore_ascii_case("dbx.transport")
+    key.eq_ignore_ascii_case("transport") || key.eq_ignore_ascii_case("gauss.horizon.transport")
 }
 
 fn strip_prefix_ignore_ascii_case<'a>(value: &'a str, prefix: &str) -> Option<&'a str> {
@@ -173,7 +173,7 @@ mod tests {
             database: "power_data".into(),
             username: "root".into(),
             password: "secret".into(),
-            url_params: "timezone=UTC&dbx.transport=rest".into(),
+            url_params: "timezone=UTC&gauss.horizon.transport=rest".into(),
             ..Default::default()
         })
         .unwrap();

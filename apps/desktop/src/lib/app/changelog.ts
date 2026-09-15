@@ -13,6 +13,7 @@ export type ChangelogRelease = {
   tag: string;
   name: string;
   date: string;
+  unreleased?: boolean;
   sections: ChangelogSection[];
 };
 
@@ -37,12 +38,12 @@ export function changelogLangFromLocale(locale: string): ChangelogLang {
   return locale === "zh-CN" || locale === "zh-TW" ? "cn" : "en";
 }
 
-export function changelogWebsiteUrl(lang: ChangelogLang): string {
-  return `https://dbxio.com/${lang}/changelog`;
+export function changelogRepositoryUrl(_lang: ChangelogLang): string {
+  return "https://github.com/Gaussian-id/Gauss-Horizon";
 }
 
 export function changelogReleaseUrl(tag: string): string {
-  return `https://github.com/t8y2/dbx/releases/tag/${encodeURIComponent(tag)}`;
+  return `https://github.com/Gaussian-id/Gauss-Horizon/releases/tag/${encodeURIComponent(tag)}`;
 }
 
 export async function fetchChangelog(lang: ChangelogLang, options: { force?: boolean } = {}): Promise<ChangelogData> {

@@ -190,7 +190,7 @@ describe("Consul Catalog and Health watch views", () => {
 
   it("exports the current Consul full-text search result set", () => {
     expect(keyBrowser).toContain("async function exportSearchResults()");
-    expect(keyBrowser).toContain('format: "dbx-consul-kv-search-results"');
+    expect(keyBrowser).toContain('format: "gauss-horizon-consul-kv-search-results"');
     expect(keyBrowser).toContain('t("consul.tools.exportSearchResults")');
   });
 

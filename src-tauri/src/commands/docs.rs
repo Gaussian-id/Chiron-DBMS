@@ -1,15 +1,15 @@
 use std::sync::atomic::AtomicBool;
 use std::sync::Arc;
 
-use dbx_core::connection::AppState;
-// `apply_annotations` is NOT re-exported at `dbx_core::docs` — that module's
+use gauss_horizon_core::connection::AppState;
+// `apply_annotations` is NOT re-exported at `gauss_horizon_core::docs` — that module's
 // `pub use` list covers collector, color, dbml, keys, relations and snapshot,
 // but not annotations. It must come from the submodule path.
-use dbx_core::docs::annotations::{
+use gauss_horizon_core::docs::annotations::{
     apply_annotations, load_annotations, resolve_notes_path, save_annotations, AnnotationFile,
 };
-use dbx_core::docs::{collect_snapshot, to_standalone_html, CollectOptions, SchemaSnapshot};
-use dbx_core::models::connection::ConnectionConfig;
+use gauss_horizon_core::docs::{collect_snapshot, to_standalone_html, CollectOptions, SchemaSnapshot};
+use gauss_horizon_core::models::connection::ConnectionConfig;
 use tauri::State;
 
 async fn connection_of(state: &Arc<AppState>, connection_id: &str) -> Result<ConnectionConfig, String> {
@@ -17,12 +17,12 @@ async fn connection_of(state: &Arc<AppState>, connection_id: &str) -> Result<Con
     configs.get(connection_id).cloned().ok_or_else(|| format!("Connection {connection_id} not found."))
 }
 
-/// The notes file for a connection, resolved against DBX's data directory.
+/// The notes file for a connection, resolved against Gauss Horizon's data directory.
 ///
-/// `AppState.storage.data_dir()` is the directory DBX is actually using — it
+/// `AppState.storage.data_dir()` is the directory Gauss Horizon is actually using — it
 /// honours a custom data dir, which a fresh `app_data_dir()` lookup would not.
-/// (`dbx-mcp::paths::app_data_dir()` is NOT available here: src-tauri does not
-/// depend on dbx-mcp.)
+/// (`gauss-horizon-mcp::paths::app_data_dir()` is NOT available here: src-tauri does not
+/// depend on gauss-horizon-mcp.)
 async fn notes_path_of(state: &Arc<AppState>, connection_id: &str) -> Result<std::path::PathBuf, String> {
     let config = connection_of(state, connection_id).await?;
     Ok(resolve_notes_path(&config.id, config.docs_notes_path.as_deref(), state.storage.data_dir()))

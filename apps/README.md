@@ -1,6 +1,6 @@
 # Apps
 
-Runnable DBX applications live here.
+Runnable Gauss Horizon applications live here.
 
 ## Directories
 

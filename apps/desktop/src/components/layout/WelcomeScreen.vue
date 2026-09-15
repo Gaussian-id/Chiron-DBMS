@@ -47,7 +47,7 @@ function welcomeConnectionSubtitle(connection: ConnectionConfig): string {
     <div class="welcome-content mx-auto flex min-h-full w-full min-w-0 max-w-5xl flex-col justify-center gap-6 px-8 py-10">
       <header class="gaussian-welcome-brand flex flex-wrap items-center justify-between gap-4">
         <div>
-          <h1 class="text-xl font-semibold tracking-tight">ChironDBM</h1>
+          <h1 class="text-xl font-semibold tracking-tight">Gauss Horizon</h1>
           <p class="mt-1 text-xs text-muted-foreground">{{ t("welcome.gaussianTagline") }}</p>
         </div>
         <div aria-label="by Gaussian">
@@ -158,7 +158,7 @@ function welcomeConnectionSubtitle(connection: ConnectionConfig): string {
               {{ t("welcome.mcpDescription") }}
             </p>
             <div class="mt-2 flex flex-wrap items-center gap-2">
-              <code class="max-w-full break-all rounded bg-muted px-2 py-0.5 text-[11px] select-all">npx @dbx-app/mcp-server</code>
+              <code class="max-w-full break-all rounded bg-muted px-2 py-0.5 text-[11px] select-all">MCP packages are not published yet. Use a locally built binary.</code>
               <a href="#" class="text-xs text-primary hover:underline" @click.prevent="emit('open-mcp-guide')">{{ t("welcome.mcpLearnMore") }}</a>
             </div>
           </div>
@@ -167,7 +167,7 @@ function welcomeConnectionSubtitle(connection: ConnectionConfig): string {
 
       <!-- Project Info -->
       <div class="mt-2 flex items-center justify-center gap-3 text-[11px] text-muted-foreground/60">
-        <span>ChironDBM by Gaussian {{ appVersion ? "v" + appVersion : "" }} · Built on DBX</span>
+        <span>Gauss Horizon by Gaussian {{ appVersion ? "v" + appVersion : "" }}</span>
         <span>·</span>
         <a href="#" class="hover:text-foreground transition-colors" @click.prevent="emit('open-github')">GitHub</a>
       </div>

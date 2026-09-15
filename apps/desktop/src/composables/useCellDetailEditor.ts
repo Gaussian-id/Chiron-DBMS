@@ -1,5 +1,5 @@
 import { shallowRef, onBeforeUnmount, getCurrentInstance, type ShallowRef, createApp, watch } from "vue";
-import { EditorSelection, EditorState, Compartment } from "@codemirror/state";
+import { EditorSelection, EditorState, Compartment, type Extension } from "@codemirror/state";
 import { EditorView, keymap, drawSelection, dropCursor, highlightSpecialChars, highlightActiveLine, highlightActiveLineGutter, lineNumbers } from "@codemirror/view";
 import { json } from "@codemirror/lang-json";
 import { search as cmSearch } from "@codemirror/search";
@@ -18,6 +18,7 @@ import type { AppThemeAppearance, AppThemePalette } from "@/lib/app/appTheme";
 import { selectAllCellDetailText } from "@/lib/dataGrid/cellDetailSelection";
 
 export interface UseCellDetailEditorOptions {
+  extensions?: Extension[];
   onChange?: (value: string) => void;
   onEscape?: () => void;
   onBlur?: () => void;
@@ -205,6 +206,7 @@ export function useCellDetailEditor(options: UseCellDetailEditorOptions): UseCel
     const state = EditorState.create({
       doc,
       extensions: [
+        ...(options.extensions ?? []),
         cmSearch({
           createPanel: () => {
             const dom = document.createElement("span");

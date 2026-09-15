@@ -1,7 +1,7 @@
 import type { SqlCompletionColumn, SqlCompletionTable } from "@/lib/sql/sqlCompletion";
 import { getSqlCompletionContext, isOracleSystemValueName } from "@/lib/sql/sqlCompletion";
 import { executableStatementRanges, isOraclePlSqlStatement, type SqlTextRange } from "@/lib/sql/sqlStatementRanges";
-import { DBX_TDENGINE_TBNAME_COLUMN, isTdengineStableTableType } from "@/lib/table/tableEditing";
+import { GAUSS_HORIZON_TDENGINE_TBNAME_COLUMN, isTdengineStableTableType } from "@/lib/table/tableEditing";
 import type { DatabaseType, SqlColumnReference, SqlReferenceAnalysis, SqlReferenceScope, SqlTableReference, SqlTextSpan } from "@/types/database";
 
 export interface SqlSemanticDiagnostic {
@@ -275,7 +275,7 @@ export function buildSqlSemanticDiagnostics(analysis: SqlReferenceAnalysis, sche
 
     const columnNames = new Set(columns.map((item) => normalizeName(item.name)));
     if (columnNames.has(normalizeName(column.name))) continue;
-    if (schema.databaseType === "tdengine" && normalizeName(column.name) === DBX_TDENGINE_TBNAME_COLUMN) {
+    if (schema.databaseType === "tdengine" && normalizeName(column.name) === GAUSS_HORIZON_TDENGINE_TBNAME_COLUMN) {
       tdengineStableTables ??= tdengineStableTableKeys(schema.tables);
       if (tdengineStableTables.has(tableReferenceKey(table))) continue;
     }

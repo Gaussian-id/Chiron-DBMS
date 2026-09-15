@@ -7,10 +7,10 @@ function bytes(text: string): Uint8Array {
 
 describe("decodePhpSerialized", () => {
   it("decodes arrays, maps, and scalars", () => {
-    expect(decodePhpSerialized(bytes('a:3:{i:0;s:9:"hello dbx";i:1;i:42;i:2;b:1;}'))?.value).toEqual(["hello dbx", 42, true]);
-    expect(decodePhpSerialized(bytes('a:2:{s:3:"msg";s:9:"hello dbx";s:5:"count";d:1.5;}'))?.value).toEqual({ msg: "hello dbx", count: 1.5 });
+    expect(decodePhpSerialized(bytes('a:3:{i:0;s:9:"hello app";i:1;i:42;i:2;b:1;}'))?.value).toEqual(["hello app", 42, true]);
+    expect(decodePhpSerialized(bytes('a:2:{s:3:"msg";s:9:"hello app";s:5:"count";d:1.5;}'))?.value).toEqual({ msg: "hello app", count: 1.5 });
     expect(decodePhpSerialized(bytes("N;"))?.value).toBeNull();
-    expect(decodePhpSerialized(bytes('s:9:"hello dbx";'))?.value).toBe("hello dbx");
+    expect(decodePhpSerialized(bytes('s:9:"hello app";'))?.value).toBe("hello app");
   });
 
   it("decodes objects with their class name", () => {
@@ -33,8 +33,8 @@ describe("decodePhpSerialized", () => {
   });
 
   it("rejects non-serialized payloads and truncation", () => {
-    expect(decodePhpSerialized(bytes("hello dbx"))).toBeNull();
-    expect(decodePhpSerialized(bytes('a:2:{i:0;s:9:"hello dbx";}'))).toBeNull();
+    expect(decodePhpSerialized(bytes("hello app"))).toBeNull();
+    expect(decodePhpSerialized(bytes('a:2:{i:0;s:9:"hello app";}'))).toBeNull();
     expect(decodePhpSerialized(bytes('s:99:"short";'))).toBeNull();
   });
 });

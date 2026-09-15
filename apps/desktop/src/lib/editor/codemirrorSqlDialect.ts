@@ -19,7 +19,7 @@ const BACKSLASH_ESCAPE_CODEMIRROR_DATABASE_TYPES = new Set<DatabaseType>(["hive"
 const CODEMIRROR_SQLITE_EXTENSION_KEYWORDS = new Set("abort analyze attach autoincrement conflict database detach exclusive fail glob ignore index indexed instead isnull notnull offset plan pragma query raise regexp reindex rename replace temp vacuum virtual".split(" "));
 const STANDARD_SQL_TYPES = "array binary bit boolean char character clob date decimal double float int integer interval large national nchar nclob numeric object precision real smallint time timestamp varchar varying";
 
-const DBX_COMMON_SQL_KEYWORDS = [
+const GAUSS_HORIZON_COMMON_SQL_KEYWORDS = [
   "PIVOT",
   "UNPIVOT",
   "EXCLUDE",
@@ -227,7 +227,7 @@ function codeMirrorBaseDialect(langSql: CodeMirrorSqlLanguageModule, dialectName
   return dialectName === "postgres" ? langSql.PostgreSQL : dialectName === "sqlserver" ? langSql.MSSQL : langSql.MySQL;
 }
 
-export function createDbxCodeMirrorSqlDialect(langSql: CodeMirrorSqlLanguageModule, dialectName: CodeMirrorSqlDialectName = "mysql", databaseType?: DatabaseType, driverProfile?: string): SQLDialect {
+export function createGaussHorizonCodeMirrorSqlDialect(langSql: CodeMirrorSqlLanguageModule, dialectName: CodeMirrorSqlDialectName = "mysql", databaseType?: DatabaseType, driverProfile?: string): SQLDialect {
   const baseDialect = codeMirrorBaseDialect(langSql, dialectName, databaseType);
   const isPostgres = baseDialect === langSql.PostgreSQL;
   const isMysql = baseDialect === langSql.MySQL;
@@ -240,7 +240,7 @@ export function createDbxCodeMirrorSqlDialect(langSql: CodeMirrorSqlLanguageModu
   const isStandardSql = isClickHouse || baseDialect === langSql.StandardSQL;
   const baseKeywords = isStandardSql ? standardSqlKeywordSyntaxTerms(langSql) : isPostgres ? postgresKeywordSyntaxTerms(baseDialect.spec.keywords || "") : baseDialect.spec.keywords || "";
   const baseTypes = isStandardSql ? STANDARD_SQL_TYPES : baseDialect.spec.types || "";
-  const commonKeywords = isClickHouse ? DBX_COMMON_SQL_KEYWORDS.toLowerCase() : DBX_COMMON_SQL_KEYWORDS;
+  const commonKeywords = isClickHouse ? GAUSS_HORIZON_COMMON_SQL_KEYWORDS.toLowerCase() : GAUSS_HORIZON_COMMON_SQL_KEYWORDS;
   const baseBuiltin = isSqlServer ? sqlServerBuiltinSyntaxTerms(baseDialect.spec.builtin || "") : baseDialect.spec.builtin || "";
 
   return langSql.SQLDialect.define({

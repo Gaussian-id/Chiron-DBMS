@@ -1,4 +1,4 @@
-export const NACOS_NAMESPACES_CHANGED_EVENT = "dbx:nacos-namespaces-changed";
+export const NACOS_NAMESPACES_CHANGED_EVENT = "gauss-horizon:nacos-namespaces-changed";
 
 export interface NacosNamespacesChangedDetail {
   connectionId: string;

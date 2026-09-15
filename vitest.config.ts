@@ -7,7 +7,7 @@ export default defineConfig({
   resolve: {
     alias: {
       "@": path.resolve(import.meta.dirname, "apps/desktop/src"),
-      "@dbx-app/mongo-shell": path.resolve(import.meta.dirname, "packages/mongo-shell/src/index.ts"),
+      "@gauss-horizon/mongo-shell": path.resolve(import.meta.dirname, "packages/mongo-shell/src/index.ts"),
     },
   },
   test: {

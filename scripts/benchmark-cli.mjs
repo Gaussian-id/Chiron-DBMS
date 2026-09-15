@@ -1,17 +1,17 @@
 import { spawnSync } from "node:child_process";
 import { performance } from "node:perf_hooks";
 
-const rustBinary = process.env.DBX_CLI_RUST_BIN;
-const legacyBinary = process.env.DBX_CLI_LEGACY_BIN;
-const connection = process.env.DBX_CLI_TEST_CONNECTION;
-const table = process.env.DBX_CLI_TEST_TABLE ?? "orders";
-const iterations = Number.parseInt(process.env.DBX_CLI_BENCH_ITERATIONS ?? "12", 10);
+const rustBinary = process.env.GAUSS_HORIZON_CLI_RUST_BIN;
+const legacyBinary = process.env.GAUSS_HORIZON_CLI_LEGACY_BIN;
+const connection = process.env.GAUSS_HORIZON_CLI_TEST_CONNECTION;
+const table = process.env.GAUSS_HORIZON_CLI_TEST_TABLE ?? "orders";
+const iterations = Number.parseInt(process.env.GAUSS_HORIZON_CLI_BENCH_ITERATIONS ?? "12", 10);
 
 if (!rustBinary || !legacyBinary || !connection) {
-  throw new Error("Set DBX_CLI_RUST_BIN, DBX_CLI_LEGACY_BIN, and DBX_CLI_TEST_CONNECTION.");
+  throw new Error("Set GAUSS_HORIZON_CLI_RUST_BIN, GAUSS_HORIZON_CLI_LEGACY_BIN, and GAUSS_HORIZON_CLI_TEST_CONNECTION.");
 }
 if (!Number.isInteger(iterations) || iterations < 3) {
-  throw new Error("DBX_CLI_BENCH_ITERATIONS must be an integer of at least 3.");
+  throw new Error("GAUSS_HORIZON_CLI_BENCH_ITERATIONS must be an integer of at least 3.");
 }
 
 const cases = [

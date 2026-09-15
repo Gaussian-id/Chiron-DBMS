@@ -33,10 +33,10 @@ func TestLiveTriggerDetails(t *testing.T) {
 	s.currentDatabase = params.Database
 	defer s.disconnect()
 
-	const source = "DBX_TRIGGER_METADATA_LIVE"
-	const audit = "DBX_TRIGGER_METADATA_AUDIT"
-	const rowTrigger = "DBX_TRIGGER_METADATA_ROW"
-	const statementTrigger = "DBX_TRIGGER_METADATA_STATEMENT"
+	const source = "GAUSS_HORIZON_TRIGGER_METADATA_LIVE"
+	const audit = "GAUSS_HORIZON_TRIGGER_METADATA_AUDIT"
+	const rowTrigger = "GAUSS_HORIZON_TRIGGER_METADATA_ROW"
+	const statementTrigger = "GAUSS_HORIZON_TRIGGER_METADATA_STATEMENT"
 	for _, statement := range []string{
 		"DROP TRIGGER IF EXISTS " + rowTrigger,
 		"DROP TRIGGER IF EXISTS " + statementTrigger,

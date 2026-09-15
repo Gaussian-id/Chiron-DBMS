@@ -137,7 +137,7 @@ function localDateKey() {
 
 beforeEach(() => {
   vi.clearAllMocks();
-  localStorage.removeItem("dbx-filter-builder-value-shortcut-hint-days");
+  localStorage.removeItem("gauss-horizon-filter-builder-value-shortcut-hint-days");
 });
 describe("DataGrid canvas surfaces", () => {
   it("keeps condition and text filter editors open when persistent expansion is enabled", () => {
@@ -486,14 +486,14 @@ describe("DataGridColumnHeader", () => {
     // The vivid 300-level dark-mode type palette is tuned for grid cells and
     // glares on the popover surface. The tooltip container re-defines the type
     // CSS variables with softer 400-level values while keeping the per-kind hue.
-    const tooltipContent = findOne(mounted.root, (node) => String(node.props?.class ?? "").includes("dbx-column-info-tooltip"));
+    const tooltipContent = findOne(mounted.root, (node) => String(node.props?.class ?? "").includes("gauss-horizon-column-info-tooltip"));
     expect(tooltipContent).toBeDefined();
     const tooltipType = findOne(mounted.root, (node) => hostText(node) === "varchar(255)" && node.props["data-grid-header-type-line"] === undefined);
     expect(String(tooltipType.props.class ?? "")).toContain("data-grid-type-string");
     const headerTypeLine = findOne(mounted.root, (node) => hostText(node) === "varchar(255)" && node.props["data-grid-header-type-line"] === "");
     expect(String(headerTypeLine.props.class)).toContain("data-grid-type-string");
     // Softer dark-mode palette override for the tooltip container.
-    expect(globalsCss).toMatch(/\.dark \.dbx-column-info-tooltip \{[^}]*--data-grid-type-string-fg: #4ade80/);
+    expect(globalsCss).toMatch(/\.dark \.gauss-horizon-column-info-tooltip \{[^}]*--data-grid-type-string-fg: #4ade80/);
   });
 
   it("cancels resize-handle clicks without leaking header click events", () => {
@@ -922,19 +922,19 @@ describe("DataGridFilterBuilder", () => {
     dispatch(secondValueEditor, "blur");
     await nextTick();
     expect(hostText(mounted.root)).not.toContain("grid.filterBuilderValueShortcutHint");
-    expect(JSON.parse(localStorage.getItem("dbx-filter-builder-value-shortcut-hint-days") ?? "[]")).toEqual([{ date: localDateKey(), count: 1 }]);
+    expect(JSON.parse(localStorage.getItem("gauss-horizon-filter-builder-value-shortcut-hint-days") ?? "[]")).toEqual([{ date: localDateKey(), count: 1 }]);
 
     dispatch(secondValueEditor, "focus");
     await nextTick();
     expect(hostText(mounted.root)).toContain("grid.filterBuilderValueShortcutHint");
-    expect(JSON.parse(localStorage.getItem("dbx-filter-builder-value-shortcut-hint-days") ?? "[]")).toEqual([{ date: localDateKey(), count: 2 }]);
+    expect(JSON.parse(localStorage.getItem("gauss-horizon-filter-builder-value-shortcut-hint-days") ?? "[]")).toEqual([{ date: localDateKey(), count: 2 }]);
     dispatch(secondValueEditor, "blur");
     dispatch(secondValueEditor, "focus");
     await nextTick();
     expect(hostText(mounted.root)).not.toContain("grid.filterBuilderValueShortcutHint");
 
     localStorage.setItem(
-      "dbx-filter-builder-value-shortcut-hint-days",
+      "gauss-horizon-filter-builder-value-shortcut-hint-days",
       JSON.stringify([
         { date: "2026-01-01", count: 2 },
         { date: "2026-01-02", count: 2 },
@@ -945,10 +945,10 @@ describe("DataGridFilterBuilder", () => {
     dispatch(thirdDaySecondValueEditor, "focus");
     await nextTick();
     expect(hostText(thirdDayMounted.root)).toContain("grid.filterBuilderValueShortcutHint");
-    expect(JSON.parse(localStorage.getItem("dbx-filter-builder-value-shortcut-hint-days") ?? "[]")).toHaveLength(3);
+    expect(JSON.parse(localStorage.getItem("gauss-horizon-filter-builder-value-shortcut-hint-days") ?? "[]")).toHaveLength(3);
 
     localStorage.setItem(
-      "dbx-filter-builder-value-shortcut-hint-days",
+      "gauss-horizon-filter-builder-value-shortcut-hint-days",
       JSON.stringify([
         { date: "2026-01-01", count: 2 },
         { date: "2026-01-02", count: 2 },
@@ -1695,7 +1695,7 @@ describe("cell detail surfaces", () => {
 
 describe("DataGridCopyColumnNamesDialog", () => {
   beforeEach(() => {
-    localStorage.removeItem("dbx-copy-column-names-separator");
+    localStorage.removeItem("gauss-horizon-copy-column-names-separator");
   });
 
   function previewText(mounted: ReturnType<typeof mountComponent>) {
@@ -1725,7 +1725,7 @@ describe("DataGridCopyColumnNamesDialog", () => {
     );
     expect(copy).toHaveBeenCalledWith("`id`,\n`type`");
     expect(openChange).toHaveBeenCalledWith(false);
-    expect(localStorage.getItem("dbx-copy-column-names-separator")).toBe("comma-newline");
+    expect(localStorage.getItem("gauss-horizon-copy-column-names-separator")).toBe("comma-newline");
   });
 
   it("hides the quote option for non-SQL databases and ignores invalid separators", async () => {

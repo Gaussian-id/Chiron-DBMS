@@ -1,7 +1,7 @@
 use std::path::{Component, Path, PathBuf};
 
-use dbx_core::db::sqlite::path_has_sqlite_header;
-use dbx_core::path_utils::expand_tilde;
+use gauss_horizon_core::db::sqlite::path_has_sqlite_header;
+use gauss_horizon_core::path_utils::expand_tilde;
 
 /// Reveal a file in the platform's file manager.
 ///
@@ -17,7 +17,7 @@ use dbx_core::path_utils::expand_tilde;
 pub fn reveal_in_file_manager(path: &Path) -> Result<(), String> {
     #[cfg(target_os = "macos")]
     {
-        dbx_core::process::new_std_command("open")
+        gauss_horizon_core::process::new_std_command("open")
             .arg("-R")
             .arg(path)
             .spawn()
@@ -39,7 +39,7 @@ pub fn reveal_in_file_manager(path: &Path) -> Result<(), String> {
     #[cfg(all(not(target_os = "macos"), not(target_os = "windows")))]
     {
         let target: PathBuf = path.parent().map(|p| p.to_path_buf()).unwrap_or_else(|| path.to_path_buf());
-        dbx_core::process::new_std_command("xdg-open")
+        gauss_horizon_core::process::new_std_command("xdg-open")
             .arg(&target)
             .spawn()
             .map(|_| ())
@@ -68,7 +68,7 @@ fn validate_path(raw: &str) -> Result<PathBuf, String> {
 }
 
 /// Reveal an absolute file path in the OS file manager. The path may use a
-/// leading `~` which is expanded via `dbx_core::path_utils::expand_tilde`.
+/// leading `~` which is expanded via `gauss_horizon_core::path_utils::expand_tilde`.
 #[tauri::command]
 pub async fn reveal_path_in_file_manager(path: String) -> Result<(), String> {
     let resolved = validate_path(&path)?;
@@ -112,7 +112,7 @@ fn validate_database_backup_file(raw: &str, allowed_roots: &[PathBuf]) -> Result
     if file_name.chars().any(char::is_control) {
         return Err(format!("backup file name contains control characters: {expanded}"));
     }
-    if !file_name.starts_with("dbx-backup__") {
+    if !file_name.starts_with("gauss-horizon-backup__") {
         let resolved = match std::fs::canonicalize(&path) {
             Ok(resolved) => resolved,
             Err(error) if error.kind() == std::io::ErrorKind::NotFound => {
@@ -178,9 +178,9 @@ mod tests {
         // /this/path/should/not/exist on Unix; on Windows the same check fires
         // because the literal also won't exist.
         let probe = if cfg!(windows) {
-            "C:/__dbx_definitely_missing__/foo.sqlite".to_string()
+            "C:/__gauss_horizon_definitely_missing__/foo.sqlite".to_string()
         } else {
-            "/__dbx_definitely_missing__/foo.sqlite".to_string()
+            "/__gauss_horizon_definitely_missing__/foo.sqlite".to_string()
         };
         let err = validate_path(&probe).unwrap_err();
         assert!(err.contains("file does not exist"));
@@ -208,16 +208,23 @@ mod tests {
         let control_character =
             if cfg!(windows) { "C:/tmp/before\n-migration.sql" } else { "/tmp/before\n-migration.sql" };
         assert!(validate_database_backup_file(control_character, &[]).is_err());
-        let valid = if cfg!(windows) { "C:/tmp/dbx-backup__nightly.SQL" } else { "/tmp/dbx-backup__nightly.SQL" };
+        let valid = if cfg!(windows) {
+            "C:/tmp/gauss-horizon-backup__nightly.SQL"
+        } else {
+            "/tmp/gauss-horizon-backup__nightly.SQL"
+        };
         assert!(validate_database_backup_file(valid, &[]).is_ok());
-        let valid_gzip =
-            if cfg!(windows) { "C:/tmp/dbx-backup__nightly.SQL.GZ" } else { "/tmp/dbx-backup__nightly.SQL.GZ" };
+        let valid_gzip = if cfg!(windows) {
+            "C:/tmp/gauss-horizon-backup__nightly.SQL.GZ"
+        } else {
+            "/tmp/gauss-horizon-backup__nightly.SQL.GZ"
+        };
         assert!(validate_database_backup_file(valid_gzip, &[]).is_ok());
     }
 
     #[tokio::test]
     async fn disconnected_root_does_not_abort_batch_cleanup() {
-        let scratch = std::env::temp_dir().join(format!("dbx-backup-mixed-{}", uuid::Uuid::new_v4()));
+        let scratch = std::env::temp_dir().join(format!("gauss-horizon-backup-mixed-{}", uuid::Uuid::new_v4()));
         let connected = scratch.join("connected");
         let disconnected = scratch.join("disconnected");
         std::fs::create_dir_all(&connected).unwrap();
@@ -259,7 +266,7 @@ mod tests {
 
     #[tokio::test]
     async fn custom_backup_outside_allowed_root_is_rejected() {
-        let scratch = std::env::temp_dir().join(format!("dbx-backup-root-test-{}", uuid::Uuid::new_v4()));
+        let scratch = std::env::temp_dir().join(format!("gauss-horizon-backup-root-test-{}", uuid::Uuid::new_v4()));
         let allowed = scratch.join("allowed");
         let outside = scratch.join("outside");
         std::fs::create_dir_all(&allowed).unwrap();
@@ -280,7 +287,7 @@ mod tests {
 
     #[test]
     fn sqlite_header_is_detected() {
-        let path = std::env::temp_dir().join(format!("dbx-sqlite-header-{}.conf", uuid::Uuid::new_v4()));
+        let path = std::env::temp_dir().join(format!("gauss-horizon-sqlite-header-{}.conf", uuid::Uuid::new_v4()));
         std::fs::write(&path, b"SQLite format 3\0extra").unwrap();
 
         assert!(path_has_sqlite_header(&path).unwrap());
@@ -290,7 +297,7 @@ mod tests {
 
     #[test]
     fn non_sqlite_header_is_rejected() {
-        let path = std::env::temp_dir().join(format!("dbx-sqlite-header-{}.conf", uuid::Uuid::new_v4()));
+        let path = std::env::temp_dir().join(format!("gauss-horizon-sqlite-header-{}.conf", uuid::Uuid::new_v4()));
         std::fs::write(&path, b"not sqlite").unwrap();
 
         assert!(!path_has_sqlite_header(&path).unwrap());
@@ -304,7 +311,7 @@ mod tests {
         // use to validate. We do not require any specific file under it; we
         // only assert that expansion happens (so the absolute-path check
         // passes).
-        let home = std::env::var("HOME").or_else(|_| std::env::var("USERPROFILE"));
+        let home = gauss_horizon_core::legacy::var("HOME").or_else(|_| gauss_horizon_core::legacy::var("USERPROFILE"));
         if let Ok(h) = home {
             let p = std::path::Path::new(&h);
             if p.is_absolute() && p.exists() {

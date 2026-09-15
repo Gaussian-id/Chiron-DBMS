@@ -939,7 +939,7 @@ function syncVueFlowNodes() {
 
 function relationshipStorageKey(): string {
   if (!connectionId.value || !database.value) return "";
-  return ["dbx", "diagram", "relationships", "v1", connectionId.value, database.value, effectiveSchemaKey.value].join(":");
+  return ["gauss-horizon", "diagram", "relationships", "v1", connectionId.value, database.value, effectiveSchemaKey.value].join(":");
 }
 
 function isStoredRelationship(value: unknown): value is CustomDiagramRelationship {
@@ -2055,7 +2055,7 @@ onUnmounted(() => {
 
 <template>
   <Dialog v-model:open="open">
-    <DialogContent class="gap-0 p-0 overflow-hidden flex flex-col min-w-0" :class="isFullscreen ? 'dbx-diagram-fullscreen' : 'sm:max-w-[94vw] md:max-w-[94vw] lg:max-w-[94vw] xl:max-w-[94vw]'" :style="dialogStyle" :portal-class="isFullscreen ? 'p-0' : undefined">
+    <DialogContent class="gap-0 p-0 overflow-hidden flex flex-col min-w-0" :class="isFullscreen ? 'gauss-horizon-diagram-fullscreen' : 'sm:max-w-[94vw] md:max-w-[94vw] lg:max-w-[94vw] xl:max-w-[94vw]'" :style="dialogStyle" :portal-class="isFullscreen ? 'p-0' : undefined">
       <DialogHeader class="px-4 py-3 border-b">
         <DialogTitle class="flex items-center gap-2">
           <Network class="w-4 h-4" />

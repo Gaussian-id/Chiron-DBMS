@@ -118,7 +118,7 @@ export interface ConsulBundleEntry {
 }
 
 export interface ConsulKvBundle {
-  format: "dbx-consul-kv-bundle";
+  format: "gauss-horizon-consul-kv-bundle";
   version: 1;
   exportedAtUnixMs: number;
   prefix: string;

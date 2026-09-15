@@ -308,7 +308,7 @@ onMounted(async () => {
   try {
     await connectionStore.ensureConnected(props.connectionId);
   } catch (e) {
-    console.warn("[DBX] ensureConnected failed for", props.connectionId, e);
+    console.warn("[Gauss Horizon] ensureConnected failed for", props.connectionId, e);
   }
   await fetchClusterNodes();
   await fetchInfo();
@@ -426,7 +426,7 @@ function copyEntryValue(entry: InfoEntry) {
             <HardDrive class="h-3.5 w-3.5" />
             <span>{{ t("redis.dashboard.totalMemory") }}</span>
           </div>
-          <div class="text-xl font-semibold tabular-nums dbx-editor-font-family truncate" :title="totalMemory">
+          <div class="text-xl font-semibold tabular-nums gauss-horizon-editor-font-family truncate" :title="totalMemory">
             {{ totalMemory }}
           </div>
         </div>
@@ -436,7 +436,7 @@ function copyEntryValue(entry: InfoEntry) {
             <Activity class="h-3.5 w-3.5" />
             <span>{{ t("redis.dashboard.usedMemory") }}</span>
           </div>
-          <div class="text-xl font-semibold tabular-nums dbx-editor-font-family truncate" :title="usedMemory">
+          <div class="text-xl font-semibold tabular-nums gauss-horizon-editor-font-family truncate" :title="usedMemory">
             {{ usedMemory }}
           </div>
         </div>
@@ -446,7 +446,7 @@ function copyEntryValue(entry: InfoEntry) {
             <Terminal class="h-3.5 w-3.5" />
             <span>{{ t("redis.dashboard.operations") }}</span>
           </div>
-          <div class="text-xl font-semibold tabular-nums dbx-editor-font-family truncate" :title="operation">
+          <div class="text-xl font-semibold tabular-nums gauss-horizon-editor-font-family truncate" :title="operation">
             {{ operation }}
           </div>
         </div>
@@ -456,7 +456,7 @@ function copyEntryValue(entry: InfoEntry) {
             <Target class="h-3.5 w-3.5" />
             <span>{{ t("redis.dashboard.hitRatio") }}</span>
           </div>
-          <div class="text-xl font-semibold tabular-nums dbx-editor-font-family truncate" :title="hitRatio">
+          <div class="text-xl font-semibold tabular-nums gauss-horizon-editor-font-family truncate" :title="hitRatio">
             {{ hitRatio }}
           </div>
         </div>
@@ -466,7 +466,7 @@ function copyEntryValue(entry: InfoEntry) {
             <Database class="h-3.5 w-3.5" />
             <span>{{ t("redis.dashboard.keyCount") }}</span>
           </div>
-          <div class="text-xl font-semibold tabular-nums dbx-editor-font-family truncate" :title="keyCount">
+          <div class="text-xl font-semibold tabular-nums gauss-horizon-editor-font-family truncate" :title="keyCount">
             {{ keyCount }}
           </div>
         </div>
@@ -476,7 +476,7 @@ function copyEntryValue(entry: InfoEntry) {
             <Users class="h-3.5 w-3.5" />
             <span>{{ t("redis.dashboard.clients") }}</span>
           </div>
-          <div class="text-xl font-semibold tabular-nums dbx-editor-font-family truncate" :title="connectedClients">
+          <div class="text-xl font-semibold tabular-nums gauss-horizon-editor-font-family truncate" :title="connectedClients">
             {{ connectedClients }}
           </div>
         </div>
@@ -511,7 +511,7 @@ function copyEntryValue(entry: InfoEntry) {
               <tbody>
                 <tr v-for="(entry, ei) in section.entries" :key="ei" class="hover:bg-muted/20">
                   <td class="w-1/2 border-r border-b px-3 py-1.5 text-muted-foreground select-text break-all cursor-context-menu" :title="t('common.copy') || 'Copy'" @contextmenu.prevent="copyEntryKey(entry)">{{ entry.key }}</td>
-                  <td class="w-1/2 border-b px-3 py-1.5 dbx-editor-font-family tabular-nums select-text break-all cursor-context-menu" :title="t('common.copy') || 'Copy'" @contextmenu.prevent="copyEntryValue(entry)">{{ entry.value }}</td>
+                  <td class="w-1/2 border-b px-3 py-1.5 gauss-horizon-editor-font-family tabular-nums select-text break-all cursor-context-menu" :title="t('common.copy') || 'Copy'" @contextmenu.prevent="copyEntryValue(entry)">{{ entry.value }}</td>
                 </tr>
               </tbody>
             </table>

@@ -280,7 +280,7 @@ function startColumnDrag(option: DataGridColumnLayoutOption, event: PointerEvent
   try {
     handle.setPointerCapture?.(event.pointerId);
   } catch (error) {
-    console.warn("[DBX][DataGridColumnLayoutPopover:pointer-capture]", error);
+    console.warn("[Gauss Horizon][DataGridColumnLayoutPopover:pointer-capture]", error);
   }
 }
 

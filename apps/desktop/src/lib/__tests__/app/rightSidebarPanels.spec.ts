@@ -34,10 +34,10 @@ describe("right sidebar panel entry points", () => {
   });
 
   it("keeps existing persisted panel keys and synchronizes exclusivity after settings load", () => {
-    expect(appSource).toContain('ai: "dbx-ai-panel-open"');
-    expect(appSource).toContain('sqlLibrary: "dbx-sql-library-open"');
-    expect(appSource).toContain('sqlFile: "dbx-sql-file-panel-open"');
-    expect(appSource).not.toContain('history: "dbx-');
+    expect(appSource).toContain('ai: "gauss-horizon-ai-panel-open"');
+    expect(appSource).toContain('sqlLibrary: "gauss-horizon-sql-library-open"');
+    expect(appSource).toContain('sqlFile: "gauss-horizon-sql-file-panel-open"');
+    expect(appSource).not.toContain('history: "gauss-horizon-');
     expect(appSource).toContain("settingsStore.isEditorSettingsLoaded");
     expect(appSource).toContain("enforceRightSidebarPanelExclusivity(currentRightSidebarPanelState(), lastOpenedRightSidebarPanel)");
   });

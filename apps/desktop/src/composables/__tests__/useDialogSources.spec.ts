@@ -81,7 +81,7 @@ describe("useDialogSources", () => {
     mocks.store.applyConnectionsImport.mockReturnValue(applyPromise);
 
     const dialogs = await mountDialogs();
-    await dialogs.onImportClick("dbx");
+    await dialogs.onImportClick("gauss-horizon");
     dialogs.onConfigConnectionSelectConfirm(["imported"]);
     dialogs.onConfigConnectionSelectConfirm(["imported"]);
 

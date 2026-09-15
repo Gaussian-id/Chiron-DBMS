@@ -1,8 +1,8 @@
 {
   "mcpServers": {
-    "dbx": {
+    "gauss-horizon": {
       "command": "npx",
-      "args": ["-y", "@dbx-app/mcp-server"]
+      "args": ["-y", "@gauss-horizon/mcp-server"]
     }
   }
 }

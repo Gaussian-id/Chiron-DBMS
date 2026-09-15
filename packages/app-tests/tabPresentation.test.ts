@@ -142,14 +142,14 @@ test("jdbc tabs use the connection target when database is empty", () => {
           mode: "data",
           tableMeta: {
             schema: "SYSTEM",
-            tableName: "DBX_JDBC_TEST",
+            tableName: "GAUSS_HORIZON_JDBC_TEST",
             columns: [],
             primaryKeys: ["ID"],
           },
         }),
         t,
       ),
-      "DBX_JDBC_TEST@XE.SYSTEM",
+      "GAUSS_HORIZON_JDBC_TEST@XE.SYSTEM",
     );
   } finally {
     restoreStorage();

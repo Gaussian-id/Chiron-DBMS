@@ -58,7 +58,7 @@ function installLocalStorage() {
 function expiredTransactionError() {
   return {
     version: 1 as const,
-    code: "DBX-TXN-1001",
+    code: "Gauss Horizon-TXN-1001",
     messageKey: "backendErrors.transaction.sessionExpired",
     messageParams: { timeoutSecs: 300 },
     source: "legacyBackend" as const,

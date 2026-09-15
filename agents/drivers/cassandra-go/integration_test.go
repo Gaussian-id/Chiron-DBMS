@@ -49,7 +49,7 @@ func TestCassandraIntegration(t *testing.T) {
 	}
 
 	suffix := strconv.FormatInt(time.Now().UnixNano(), 36)
-	keyspace := "dbx_native_it_" + suffix
+	keyspace := "gauss_horizon_native_it_" + suffix
 	table := "all_types"
 	pagedTable := "paged_rows"
 	mustCQL(t, server, "CREATE KEYSPACE "+quoteCQLIdentifier(keyspace)+" WITH replication = {'class': 'SimpleStrategy', 'replication_factor': 1}", "")

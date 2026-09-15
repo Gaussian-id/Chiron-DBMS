@@ -1,22 +1,22 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# Basic DBX CLI workflow.
+# Basic Gauss Horizon CLI workflow.
 # Replace "local" with one of your saved connection names.
 
-CONNECTION="${DBX_CONNECTION:-local}"
+CONNECTION="${GAUSS_HORIZON_CONNECTION:-local}"
 
-echo "==> Checking local DBX setup"
-dbx doctor
+echo "==> Checking local Gauss Horizon setup"
+gauss-horizon doctor
 
 echo "==> Listing connections"
-dbx connections list --json
+gauss-horizon connections list --json
 
 echo "==> Listing tables"
-dbx schema list "$CONNECTION" --json
+gauss-horizon schema list "$CONNECTION" --json
 
 echo "==> Running a read-only query"
-dbx query "$CONNECTION" "select 1 as ok" --json
+gauss-horizon query "$CONNECTION" "select 1 as ok" --json
 
 echo "==> Building schema context for prompts"
-dbx context "$CONNECTION" --tables users,orders
+gauss-horizon context "$CONNECTION" --tables users,orders

@@ -272,7 +272,7 @@ const SHARED_TEMPLATES: &[TemplateFile] = &[
 ];
 
 const FRONTEND_TEMPLATES: &[TemplateFile] = &[
-    TemplateFile { path: "dbx-plugin.toml", content: include_str!("../templates/frontend/dbx-plugin.toml") },
+    TemplateFile { path: "gauss-horizon-plugin.toml", content: include_str!("../templates/frontend/gauss-horizon-plugin.toml") },
     TemplateFile { path: "manifest.json", content: include_str!("../templates/frontend/manifest.json") },
     TemplateFile { path: "README.md", content: include_str!("../templates/frontend/README.md") },
     TemplateFile { path: "ui/index.html", content: include_str!("../templates/frontend/ui/index.html") },
@@ -283,7 +283,7 @@ const FRONTEND_TEMPLATES: &[TemplateFile] = &[
 ];
 
 const SVELTE_TEMPLATES: &[TemplateFile] = &[
-    TemplateFile { path: "dbx-plugin.toml", content: include_str!("../templates/svelte/dbx-plugin.toml") },
+    TemplateFile { path: "gauss-horizon-plugin.toml", content: include_str!("../templates/svelte/gauss-horizon-plugin.toml") },
     TemplateFile { path: "manifest.json", content: include_str!("../templates/svelte/manifest.json") },
     TemplateFile { path: "README.md", content: include_str!("../templates/svelte/README.md") },
     TemplateFile { path: "package.json", content: include_str!("../templates/svelte/package.json") },
@@ -299,7 +299,7 @@ const SVELTE_TEMPLATES: &[TemplateFile] = &[
 ];
 
 const NATIVE_TEMPLATES: &[TemplateFile] = &[
-    TemplateFile { path: "dbx-plugin.toml", content: include_str!("../templates/common/dbx-plugin.toml") },
+    TemplateFile { path: "gauss-horizon-plugin.toml", content: include_str!("../templates/common/gauss-horizon-plugin.toml") },
     TemplateFile { path: "manifest.json", content: include_str!("../templates/common/manifest.json") },
     TemplateFile { path: "README.md", content: include_str!("../templates/common/README.md") },
     TemplateFile { path: "ui/index.html", content: include_str!("../templates/common/ui/index.html") },
@@ -330,7 +330,7 @@ where
         Some("dev") => dev::run(arguments.collect()),
         Some("keygen") => run_keygen(arguments.collect()),
         Some("--version" | "-V" | "version") => {
-            println!("{} {}", styled_stdout("dbx-plugin", ANSI_ACCENT), styled_stdout(CLI_VERSION, ANSI_MUTED));
+            println!("{} {}", styled_stdout("gauss-horizon-plugin", ANSI_ACCENT), styled_stdout(CLI_VERSION, ANSI_MUTED));
             Ok(())
         }
         Some("--help" | "-h" | "help") | None => {
@@ -362,7 +362,7 @@ fn run_create(arguments: Vec<String>) -> Result<(), String> {
             "--version" => inputs.version = Some(value_after(&arguments, &mut index)?.to_string()),
             "--signing-key-id" => {
                 return Err(
-                    "--signing-key-id is no longer used when creating plugins; official packages are signed by DBX Store after review"
+                    "--signing-key-id is no longer used when creating plugins; official packages are signed by Gauss Horizon Store after review"
                         .to_string(),
                 );
             }
@@ -407,7 +407,7 @@ fn run_package(arguments: Vec<String>) -> Result<(), String> {
             "--artifact-url" => artifact_url = Some(value_after(&arguments, &mut index)?.to_string()),
             "--key-id" => {
                 return Err(
-                    "--key-id is no longer supported by dbx-plugin package; build an unsigned candidate, then let the repository operator sign it after review"
+                    "--key-id is no longer supported by gauss-horizon-plugin package; build an unsigned candidate, then let the repository operator sign it after review"
                         .to_string(),
                 );
             }
@@ -430,7 +430,7 @@ fn run_package(arguments: Vec<String>) -> Result<(), String> {
 
 fn run_keygen(arguments: Vec<String>) -> Result<(), String> {
     let mut key_id = None;
-    let mut output = PathBuf::from(".dbx-repository-signing-key.env");
+    let mut output = PathBuf::from(".gauss-horizon-repository-signing-key.env");
     let mut force = false;
     let mut index = 0;
     while index < arguments.len() {
@@ -460,7 +460,7 @@ fn run_keygen(arguments: Vec<String>) -> Result<(), String> {
             interactive,
             "Signing key ID",
             "example.release".to_string(),
-            dbx_plugin_packager::validate_key_id,
+            gauss_horizon_plugin_packager::validate_key_id,
             &mut reader,
             &mut writer,
         )?,
@@ -469,7 +469,7 @@ fn run_keygen(arguments: Vec<String>) -> Result<(), String> {
             true,
             "Signing key ID",
             "example.release".to_string(),
-            dbx_plugin_packager::validate_key_id,
+            gauss_horizon_plugin_packager::validate_key_id,
             &mut reader,
             &mut writer,
         )?,
@@ -483,7 +483,7 @@ fn run_keygen(arguments: Vec<String>) -> Result<(), String> {
     println!("{} {key_id}", styled_stdout("Key ID:", ANSI_PROMPT));
     println!("{} {}", styled_stdout("Public key:", ANSI_PROMPT), material.public_key_base64);
     println!(
-        "{} Use DBX_PLUGIN_SIGNING_KEY only in repository signing CI; publish only the repository key ID and public key.",
+        "{} Use GAUSS_HORIZON_PLUGIN_SIGNING_KEY only in repository signing CI; publish only the repository key ID and public key.",
         styled_stdout("Next:", ANSI_WARNING)
     );
     Ok(())
@@ -493,12 +493,12 @@ pub fn generate_signing_key_file(
     key_id: &str,
     output: &Path,
     force: bool,
-) -> Result<dbx_plugin_packager::SigningKeyMaterial, String> {
-    dbx_plugin_packager::validate_key_id(key_id)?;
+) -> Result<gauss_horizon_plugin_packager::SigningKeyMaterial, String> {
+    gauss_horizon_plugin_packager::validate_key_id(key_id)?;
     if let Some(parent) = output.parent().filter(|parent| !parent.as_os_str().is_empty()) {
         fs::create_dir_all(parent).map_err(|error| format!("Failed to create {}: {error}", parent.display()))?;
     }
-    let material = dbx_plugin_packager::generate_signing_key()?;
+    let material = gauss_horizon_plugin_packager::generate_signing_key()?;
     let mut options = OpenOptions::new();
     options.write(true);
     if force {
@@ -516,10 +516,10 @@ pub fn generate_signing_key_file(
         }
     })?;
     writeln!(file, "# Keep this file secret. Do not commit it.").map_err(|error| error.to_string())?;
-    writeln!(file, "export DBX_PLUGIN_SIGNING_KEY={}", material.private_seed_base64)
+    writeln!(file, "export GAUSS_HORIZON_PLUGIN_SIGNING_KEY={}", material.private_seed_base64)
         .map_err(|error| error.to_string())?;
-    writeln!(file, "export DBX_PLUGIN_SIGNING_KEY_ID={key_id}").map_err(|error| error.to_string())?;
-    writeln!(file, "export DBX_PLUGIN_SIGNING_PUBLIC_KEY={}", material.public_key_base64)
+    writeln!(file, "export GAUSS_HORIZON_PLUGIN_SIGNING_KEY_ID={key_id}").map_err(|error| error.to_string())?;
+    writeln!(file, "export GAUSS_HORIZON_PLUGIN_SIGNING_PUBLIC_KEY={}", material.public_key_base64)
         .map_err(|error| error.to_string())?;
     file.sync_all().map_err(|error| error.to_string())?;
     #[cfg(unix)]
@@ -551,7 +551,7 @@ fn resolve_create_options<R: BufRead, W: Write>(
     writer: &mut W,
 ) -> Result<Option<CreateOptions>, String> {
     if interactive {
-        writeln!(writer, "{}", styled_stdout("Create a DBX plugin", ANSI_ACCENT)).map_err(|error| error.to_string())?;
+        writeln!(writer, "{}", styled_stdout("Create a Gauss Horizon plugin", ANSI_ACCENT)).map_err(|error| error.to_string())?;
     }
     let directory = resolve_project_directory(inputs.directory, inputs.force, interactive, reader, writer)?;
     let slug = project_slug(&directory)?;
@@ -651,7 +651,7 @@ fn prompt_project_directory<R: BufRead, W: Write>(
     writer: &mut W,
 ) -> Result<PathBuf, String> {
     loop {
-        let value = prompt_line("Project directory", "my-dbx-plugin", reader, writer)?;
+        let value = prompt_line("Project directory", "my-gauss-horizon-plugin", reader, writer)?;
         let directory = PathBuf::from(value);
         match validate_project_directory(&directory, force) {
             Ok(()) => return Ok(directory),
@@ -762,7 +762,7 @@ fn print_create_summary<W: Write>(options: &CreateOptions, writer: &mut W) -> Re
         writer,
         "  {}        {}",
         styled_stdout("Release:", ANSI_PROMPT),
-        styled_stdout("builds unsigned candidates; DBX Store signs approved official releases", ANSI_MUTED)
+        styled_stdout("builds unsigned candidates; Gauss Horizon Store signs approved official releases", ANSI_MUTED)
     )
     .map_err(|error| error.to_string())?;
     if let Some(sdk_root) = &options.sdk_root {
@@ -793,7 +793,7 @@ fn prompt_confirmation<R: BufRead, W: Write>(reader: &mut R, writer: &mut W) -> 
 pub fn create_project(options: &CreateOptions) -> Result<(), String> {
     validate_create_options(options)?;
     let slug = project_slug(&options.directory)?;
-    let binary_name = format!("dbx-plugin-{slug}");
+    let binary_name = format!("gauss-horizon-plugin-{slug}");
     let method_prefix = slug.replace('_', "-");
     let sdk_root = options.sdk_root.as_ref().map(|path| canonical_directory(path)).transpose()?;
     let (rust_dependency, go_replace) = match options.template {
@@ -854,7 +854,7 @@ pub fn create_project(options: &CreateOptions) -> Result<(), String> {
     println!(
         "{} {}",
         styled_stdout("Next:", ANSI_PROMPT),
-        styled_stdout(format!("cd {} && dbx-plugin package .", options.directory.display()), ANSI_MUTED)
+        styled_stdout(format!("cd {} && gauss-horizon-plugin package .", options.directory.display()), ANSI_MUTED)
     );
     Ok(())
 }
@@ -862,12 +862,12 @@ pub fn create_project(options: &CreateOptions) -> Result<(), String> {
 pub fn package_project(options: &PackageOptions) -> Result<(PathBuf, PathBuf), String> {
     let project = canonical_directory(&options.project)?;
     let config: ProjectConfig = toml::from_str(
-        &fs::read_to_string(project.join("dbx-plugin.toml"))
-            .map_err(|error| format!("Failed to read dbx-plugin.toml: {error}"))?,
+        &fs::read_to_string(project.join("gauss-horizon-plugin.toml"))
+            .map_err(|error| format!("Failed to read gauss-horizon-plugin.toml: {error}"))?,
     )
-    .map_err(|error| format!("Invalid dbx-plugin.toml: {error}"))?;
+    .map_err(|error| format!("Invalid gauss-horizon-plugin.toml: {error}"))?;
     if config.schema_version != 1 {
-        return Err(format!("Unsupported dbx-plugin.toml schema version {}", config.schema_version));
+        return Err(format!("Unsupported gauss-horizon-plugin.toml schema version {}", config.schema_version));
     }
     let language = config.backend.as_ref().map(|backend| BackendLanguage::parse(&backend.language)).transpose()?;
     if let Some(backend) = &config.backend {
@@ -876,8 +876,8 @@ pub fn package_project(options: &PackageOptions) -> Result<(PathBuf, PathBuf), S
     }
     for include in &config.package.include {
         validate_relative_path(include, "package include")?;
-        if include.components().any(|part| part.as_os_str() == ".dbx-dev") {
-            return Err("Package input cannot contain .dbx-dev development data".to_owned());
+        if include.components().any(|part| part.as_os_str() == ".gauss-horizon-dev") {
+            return Err("Package input cannot contain .gauss-horizon-dev development data".to_owned());
         }
     }
     let manifest_path = project.join("manifest.json");
@@ -889,7 +889,7 @@ pub fn package_project(options: &PackageOptions) -> Result<(PathBuf, PathBuf), S
         .map_err(|error| format!("Invalid manifest.json identity: {error}"))?;
     if manifest.manifest_version != 1 {
         return Err(format!(
-            "Unsupported manifest.json version {}; dbx-plugin packages require version 1",
+            "Unsupported manifest.json version {}; gauss-horizon-plugin packages require version 1",
             manifest.manifest_version
         ));
     }
@@ -899,14 +899,14 @@ pub fn package_project(options: &PackageOptions) -> Result<(PathBuf, PathBuf), S
     validate_display_text(&manifest.publisher, "manifest publisher")?;
     validate_display_text(&manifest.engines.host_api, "manifest engines.host_api")?;
     if manifest.entrypoints.backend.is_some() != config.backend.is_some() {
-        return Err("dbx-plugin.toml and manifest.json must either both declare a backend or both omit it".to_string());
+        return Err("gauss-horizon-plugin.toml and manifest.json must either both declare a backend or both omit it".to_string());
     }
 
     let detected_target = config.backend.as_ref().map(|_| current_target()).transpose()?;
     let target = options
         .target
         .clone()
-        .or_else(|| std::env::var("DBX_PLUGIN_TARGET").ok())
+        .or_else(|| std::env::var("GAUSS_HORIZON_PLUGIN_TARGET").ok())
         .unwrap_or_else(|| detected_target.clone().unwrap_or_else(|| "universal".to_string()));
     validate_artifact_target(&target)?;
     if let Some(detected_target) = &detected_target {
@@ -947,9 +947,9 @@ pub fn package_project(options: &PackageOptions) -> Result<(PathBuf, PathBuf), S
         copy_path(&source, &stage.path().join(include))?;
     }
 
-    let package_name = format!("{}-{}-{target}.dbxp", manifest.id, manifest.version);
+    let package_name = format!("{}-{}-{target}.gauss-horizonp", manifest.id, manifest.version);
     let package_path = output_directory.join(&package_name);
-    let metadata_path = output_directory.join(package_name.replace(".dbxp", ".artifact.json"));
+    let metadata_path = output_directory.join(package_name.replace(".gauss-horizonp", ".artifact.json"));
     let artifact_url = options.artifact_url.clone().unwrap_or(package_name);
     let packager_arguments = vec![
         stage.path().to_string_lossy().into_owned(),
@@ -962,7 +962,7 @@ pub fn package_project(options: &PackageOptions) -> Result<(PathBuf, PathBuf), S
         artifact_url,
     ];
     println!("{} {}", styled_stdout("Packaging:", ANSI_PROMPT), package_path.display());
-    dbx_plugin_packager::run_cli_silent(packager_arguments)?;
+    gauss_horizon_plugin_packager::run_cli_silent(packager_arguments)?;
     println!("{} Built {}", styled_stdout("Success:", ANSI_SUCCESS), package_path.display());
     println!("{} {}", styled_stdout("Metadata:", ANSI_PROMPT), metadata_path.display());
     println!(
@@ -982,7 +982,7 @@ fn package_manifest(mut manifest: Value, backend: Option<&BackendConfig>, target
         .and_then(Value::as_object_mut)
     {
         if ui_entrypoint.contains_key("kind") {
-            return Err("manifest.json entrypoints.ui.kind is obsolete; DBX plugin UI is always sandboxed".to_string());
+            return Err("manifest.json entrypoints.ui.kind is obsolete; Gauss Horizon plugin UI is always sandboxed".to_string());
         }
     }
     if let Some(backend) = backend {
@@ -1002,7 +1002,7 @@ fn package_manifest(mut manifest: Value, backend: Option<&BackendConfig>, target
         }
         if backend_entrypoint.contains_key("protocol") {
             return Err(
-                "manifest.json entrypoints.backend.protocol is obsolete; DBX manifest v1 uses the DBX JSON-RPC protocol"
+                "manifest.json entrypoints.backend.protocol is obsolete; Gauss Horizon manifest v1 uses the Gauss Horizon JSON-RPC protocol"
                     .to_string(),
             );
         }
@@ -1107,12 +1107,12 @@ fn build_rust_backend(
         command.arg("--locked");
     }
     if let Some(sdk_root) = sdk_root_from_environment()? {
-        let sdk = sdk_root.join("plugins/sdk/rust/dbx-plugin-sdk");
+        let sdk = sdk_root.join("plugins/sdk/rust/gauss-horizon-plugin-sdk");
         if !sdk.join("Cargo.toml").is_file() {
             return Err(format!("Rust plugin SDK was not found at {}", sdk.display()));
         }
         command.arg("--config").arg(format!(
-            "patch.crates-io.dbx-plugin-sdk.path={}",
+            "patch.crates-io.gauss-horizon-plugin-sdk.path={}",
             serde_json::to_string(&sdk.to_string_lossy()).map_err(|error| error.to_string())?
         ));
     }
@@ -1137,15 +1137,15 @@ fn build_go_backend(
     let mut command = Command::new("go");
     command.current_dir(&backend_directory).arg("build").arg("-trimpath");
     if let Some(sdk_root) = sdk_root_from_environment()? {
-        let sdk = sdk_root.join("plugins/sdk/go/dbx-plugin-sdk");
+        let sdk = sdk_root.join("plugins/sdk/go/gauss-horizon-plugin-sdk");
         if !sdk.join("go.mod").is_file() {
             return Err(format!("Go plugin SDK was not found at {}", sdk.display()));
         }
         fs::create_dir_all(build_directory).map_err(|error| error.to_string())?;
-        let mod_file = build_directory.join("dbx-plugin.mod");
+        let mod_file = build_directory.join("gauss-horizon-plugin.mod");
         fs::copy(backend_directory.join("go.mod"), &mod_file).map_err(|error| error.to_string())?;
         if backend_directory.join("go.sum").is_file() {
-            fs::copy(backend_directory.join("go.sum"), build_directory.join("dbx-plugin.sum"))
+            fs::copy(backend_directory.join("go.sum"), build_directory.join("gauss-horizon-plugin.sum"))
                 .map_err(|error| error.to_string())?;
         }
         let sdk_module = go_module_path(&sdk.join("go.mod"))?;
@@ -1184,8 +1184,8 @@ fn run_command(command: &mut Command, label: &str) -> Result<(), String> {
 }
 
 fn copy_path(source: &Path, destination: &Path) -> Result<(), String> {
-    if source.file_name().is_some_and(|name| name == ".dbx-dev") {
-        return Err("Package input cannot contain .dbx-dev development data".to_owned());
+    if source.file_name().is_some_and(|name| name == ".gauss-horizon-dev") {
+        return Err("Package input cannot contain .gauss-horizon-dev development data".to_owned());
     }
     let metadata = fs::symlink_metadata(source).map_err(|error| error.to_string())?;
     if metadata.file_type().is_symlink() {
@@ -1264,7 +1264,7 @@ fn unresolved_template_marker(rendered: &str) -> Option<String> {
 fn rust_sdk_dependency(sdk_root: Option<&Path>) -> Result<String, String> {
     match sdk_root {
         Some(root) => {
-            let path = root.join("plugins/sdk/rust/dbx-plugin-sdk");
+            let path = root.join("plugins/sdk/rust/gauss-horizon-plugin-sdk");
             if !path.join("Cargo.toml").is_file() {
                 return Err(format!("Rust plugin SDK was not found at {}", path.display()));
             }
@@ -1277,11 +1277,11 @@ fn rust_sdk_dependency(sdk_root: Option<&Path>) -> Result<String, String> {
 fn go_sdk_replace(sdk_root: Option<&Path>) -> Result<String, String> {
     match sdk_root {
         Some(root) => {
-            let path = root.join("plugins/sdk/go/dbx-plugin-sdk");
+            let path = root.join("plugins/sdk/go/gauss-horizon-plugin-sdk");
             if !path.join("go.mod").is_file() {
                 return Err(format!("Go plugin SDK was not found at {}", path.display()));
             }
-            Ok(format!("replace github.com/t8y2/dbx/plugins/sdk/go/dbx-plugin-sdk => {}", path.display()))
+            Ok(format!("replace github.com/Gaussian-id/Gauss-Horizon/plugins/sdk/go/gauss-horizon-plugin-sdk => {}", path.display()))
         }
         None => Ok(String::new()),
     }
@@ -1297,7 +1297,7 @@ fn canonical_directory(path: &Path) -> Result<PathBuf, String> {
 }
 
 fn sdk_root_from_environment() -> Result<Option<PathBuf>, String> {
-    std::env::var_os("DBX_PLUGIN_SDK_ROOT")
+    std::env::var_os("GAUSS_HORIZON_PLUGIN_SDK_ROOT")
         .filter(|value| !value.is_empty())
         .map(PathBuf::from)
         .map(|path| canonical_directory(&path))
@@ -1398,7 +1398,7 @@ fn title_from_slug(slug: &str) -> String {
 
 fn title_word(word: &str) -> String {
     match word {
-        "api" | "dbx" | "http" | "https" | "jdbc" | "sdk" | "sftp" | "sql" | "ssh" | "tcp" | "tls" | "udp" | "ui" => {
+        "api" | "gauss-horizon" | "http" | "https" | "jdbc" | "sdk" | "sftp" | "sql" | "ssh" | "tcp" | "tls" | "udp" | "ui" => {
             word.to_ascii_uppercase()
         }
         _ => {
@@ -1413,9 +1413,9 @@ fn title_word(word: &str) -> String {
 
 fn default_description(name: &str) -> String {
     if name.to_ascii_lowercase().ends_with(" plugin") {
-        format!("{name} for DBX.")
+        format!("{name} for Gauss Horizon.")
     } else {
-        format!("{name} plugin for DBX.")
+        format!("{name} plugin for Gauss Horizon.")
     }
 }
 
@@ -1478,14 +1478,14 @@ fn escape_toml_path(path: &Path) -> String {
 fn print_usage() {
     println!(
         "{} {}",
-        styled_stdout("dbx-plugin", ANSI_ACCENT),
-        styled_stdout("Create, sign, and package DBX plugins", ANSI_MUTED)
+        styled_stdout("gauss-horizon-plugin", ANSI_ACCENT),
+        styled_stdout("Create, sign, and package Gauss Horizon plugins", ANSI_MUTED)
     );
     println!("\n{}", styled_stdout("Usage:", ANSI_PROMPT));
-    println!("  dbx-plugin <command> [options]");
+    println!("  gauss-horizon-plugin <command> [options]");
     println!("\n{}", styled_stdout("Commands:", ANSI_PROMPT));
     println!("  {}     Create a frontend-only, Svelte, Rust, or Go plugin project", styled_stdout("create", ANSI_SUCCESS));
-    println!("  {}    Build a .dbxp package and artifact metadata", styled_stdout("package", ANSI_SUCCESS));
+    println!("  {}    Build a .gauss-horizonp package and artifact metadata", styled_stdout("package", ANSI_SUCCESS));
     println!(
         "  {}        Run a plugin in the local browser development host (Node.js 22+)",
         styled_stdout("dev", ANSI_SUCCESS)
@@ -1493,15 +1493,15 @@ fn print_usage() {
     println!("  {}     Generate an Ed25519 repository signing key", styled_stdout("keygen", ANSI_SUCCESS));
     println!("  {}    Print the CLI version", styled_stdout("version", ANSI_SUCCESS));
     println!("\n{}", styled_stdout("Examples:", ANSI_PROMPT));
-    println!("  dbx-plugin create");
-    println!("  dbx-plugin create my-plugin --template frontend --yes");
-    println!("  dbx-plugin keygen example.release");
-    println!("  dbx-plugin package .");
-    println!("\nRun dbx-plugin <command> --help for command options.");
+    println!("  gauss-horizon-plugin create");
+    println!("  gauss-horizon-plugin create my-plugin --template frontend --yes");
+    println!("  gauss-horizon-plugin keygen example.release");
+    println!("  gauss-horizon-plugin package .");
+    println!("\nRun gauss-horizon-plugin <command> --help for command options.");
 }
 
 fn print_create_help() {
-    println!("{}", styled_stdout("Create a DBX plugin project", ANSI_ACCENT));
+    println!("{}", styled_stdout("Create a Gauss Horizon plugin project", ANSI_ACCENT));
     println!("\n{}\n  {}", styled_stdout("Usage:", ANSI_PROMPT), create_usage());
     println!("\n{}", styled_stdout("Templates:", ANSI_PROMPT));
     println!("  {}   Sandboxed UI only; packages once as universal", styled_stdout("frontend", ANSI_SUCCESS));
@@ -1517,15 +1517,15 @@ fn print_create_help() {
     println!("      --publisher NAME      Publisher identifier");
     println!("      --description TEXT    Plugin description");
     println!("      --version VERSION     Strict semantic version (default: 0.1.0)");
-    println!("      --sdk-root PATH       Local DBX SDK checkout for Rust or Go templates");
+    println!("      --sdk-root PATH       Local Gauss Horizon SDK checkout for Rust or Go templates");
     println!("      --force               Overwrite generated files");
     println!("  -y, --yes                 Use defaults without prompts");
     println!("  -h, --help                Print this help");
-    println!("\nGenerated release workflows publish unsigned candidates for DBX Store review and signing.");
+    println!("\nGenerated release workflows publish unsigned candidates for Gauss Horizon Store review and signing.");
 }
 
 fn print_package_help() {
-    println!("{}", styled_stdout("Package a DBX plugin", ANSI_ACCENT));
+    println!("{}", styled_stdout("Package a Gauss Horizon plugin", ANSI_ACCENT));
     println!("\n{}\n  {}", styled_stdout("Usage:", ANSI_PROMPT), package_usage());
     println!("\n{}", styled_stdout("Behavior:", ANSI_PROMPT));
     println!("  Frontend-only projects default to target universal.");
@@ -1533,7 +1533,7 @@ fn print_package_help() {
     println!("  Packages are always unsigned review candidates.");
     println!("  The official store or a custom repository operator signs approved candidates separately.");
     println!("\n{}", styled_stdout("Options:", ANSI_PROMPT));
-    println!("      --target TARGET       Artifact target or DBX_PLUGIN_TARGET");
+    println!("      --target TARGET       Artifact target or GAUSS_HORIZON_PLUGIN_TARGET");
     println!("      --output-dir DIR      Output directory (default: dist)");
     println!("      --artifact-url URL    URL recorded in artifact metadata");
     println!("  -h, --help                Print this help");
@@ -1545,30 +1545,30 @@ fn print_keygen_help() {
     println!("\n{}", styled_stdout("Output:", ANSI_PROMPT));
     println!("  Writes a private environment file with mode 0600 on Unix.");
     println!(
-        "  Intended for private or custom repository operators; official DBX Store authors do not need this command."
+        "  Intended for private or custom repository operators; official Gauss Horizon Store authors do not need this command."
     );
     println!("\n{}", styled_stdout("Options:", ANSI_PROMPT));
     println!("      --key-id ID       Public repository key identifier");
-    println!("  -o, --output FILE     Secret output file (default: .dbx-repository-signing-key.env)");
+    println!("  -o, --output FILE     Secret output file (default: .gauss-horizon-repository-signing-key.env)");
     println!("      --force           Replace an existing output file");
     println!("  -h, --help            Print this help");
     println!("\nNever commit the generated private environment file.");
 }
 
 fn usage() -> String {
-    format!("{}\n{}\n{}\nRun 'dbx-plugin --help' for details.", create_usage(), package_usage(), keygen_usage())
+    format!("{}\n{}\n{}\nRun 'gauss-horizon-plugin --help' for details.", create_usage(), package_usage(), keygen_usage())
 }
 
 fn create_usage() -> String {
-    "dbx-plugin create [directory] [--template frontend|rust|go] [options]".to_string()
+    "gauss-horizon-plugin create [directory] [--template frontend|rust|go] [options]".to_string()
 }
 
 fn package_usage() -> String {
-    "dbx-plugin package [project] [--target TARGET] [--output-dir DIR] [--artifact-url URL]".to_string()
+    "gauss-horizon-plugin package [project] [--target TARGET] [--output-dir DIR] [--artifact-url URL]".to_string()
 }
 
 fn keygen_usage() -> String {
-    "dbx-plugin keygen [KEY_ID] [--output FILE] [--force]".to_string()
+    "gauss-horizon-plugin keygen [KEY_ID] [--output FILE] [--force]".to_string()
 }
 
 #[cfg(test)]
@@ -1595,11 +1595,11 @@ mod tests {
     fn rejects_development_data_in_package_inputs() {
         let root = tempfile::tempdir().unwrap();
         let input = root.path().join("ui");
-        std::fs::create_dir_all(input.join(".dbx-dev")).unwrap();
-        std::fs::write(input.join(".dbx-dev/connections.json"), "private").unwrap();
+        std::fs::create_dir_all(input.join(".gauss-horizon-dev")).unwrap();
+        std::fs::write(input.join(".gauss-horizon-dev/connections.json"), "private").unwrap();
         let output = root.path().join("stage");
-        assert!(super::copy_path(&input, &output).unwrap_err().contains(".dbx-dev"));
-        assert!(!output.join(".dbx-dev/connections.json").exists());
+        assert!(super::copy_path(&input, &output).unwrap_err().contains(".gauss-horizon-dev"));
+        assert!(!output.join(".gauss-horizon-dev/connections.json").exists());
     }
 
     #[test]
@@ -1614,8 +1614,8 @@ mod tests {
 
     #[test]
     fn styles_text_without_changing_plain_output() {
-        assert_eq!(styled("DBX", ANSI_ACCENT, false), "DBX");
-        assert_eq!(styled("DBX", ANSI_ACCENT, true), "\x1b[1;35mDBX\x1b[0m");
+        assert_eq!(styled("Gauss Horizon", ANSI_ACCENT, false), "Gauss Horizon");
+        assert_eq!(styled("Gauss Horizon", ANSI_ACCENT, true), "\x1b[1;35mGauss Horizon\x1b[0m");
     }
 
     #[test]
@@ -1624,9 +1624,9 @@ mod tests {
         let output = root.path().join("repository.env");
         let material = generate_signing_key_file("example.release", &output, false).unwrap();
         let content = std::fs::read_to_string(&output).unwrap();
-        assert!(content.contains(&format!("export DBX_PLUGIN_SIGNING_KEY={}", material.private_seed_base64)));
-        assert!(content.contains("export DBX_PLUGIN_SIGNING_KEY_ID=example.release"));
-        assert!(content.contains(&format!("export DBX_PLUGIN_SIGNING_PUBLIC_KEY={}", material.public_key_base64)));
+        assert!(content.contains(&format!("export GAUSS_HORIZON_PLUGIN_SIGNING_KEY={}", material.private_seed_base64)));
+        assert!(content.contains("export GAUSS_HORIZON_PLUGIN_SIGNING_KEY_ID=example.release"));
+        assert!(content.contains(&format!("export GAUSS_HORIZON_PLUGIN_SIGNING_PUBLIC_KEY={}", material.public_key_base64)));
         assert!(generate_signing_key_file("example.release", &output, false).is_err());
         generate_signing_key_file("example.release", &output, true).unwrap();
         #[cfg(unix)]
@@ -1692,7 +1692,7 @@ mod tests {
         let backend_manifest = serde_json::json!({
             "entrypoints": {
                 "backend": {
-                    "protocol": "dbx-jsonrpc",
+                    "protocol": "gauss-horizon-jsonrpc",
                     "executable": "bin/plugin"
                 }
             }
@@ -1761,7 +1761,7 @@ mod tests {
         })
         .unwrap();
         std::fs::write(
-            mismatch.join("dbx-plugin.toml"),
+            mismatch.join("gauss-horizon-plugin.toml"),
             "schema_version = 1\n\n[backend]\nlanguage = \"rust\"\ndirectory = \"backend\"\nbinary = \"mismatch\"\n\n[package]\ninclude = [\"assets\", \"ui\"]\n",
         )
         .unwrap();
@@ -1826,20 +1826,20 @@ mod tests {
             let readme = std::fs::read_to_string(directory.join("README.md")).unwrap();
             assert!(readme.contains("autoUpdate: true"));
             assert!(readme.contains("submission Issue is not required"));
-            assert!(readme.contains("https://dbxio.com/en/docs/plugin-development"));
-            assert!(readme.contains("t8y2/dbx-store:main"));
-            assert!(readme.contains("Do not submit ordinary plugin source to `t8y2/dbx`"));
+            assert!(readme.contains("https://distribution-disabled.invalid/en/docs/plugin-development"));
+            assert!(readme.contains("Gaussian-id/Gauss-DBM-store:main"));
+            assert!(readme.contains("Do not submit ordinary plugin source to `Gaussian-id/Gauss-Horizon`"));
             assert!(std::fs::read_to_string(directory.join(".gitignore"))
                 .unwrap()
-                .contains(".dbx-repository-signing-key.env"));
+                .contains(".gauss-horizon-repository-signing-key.env"));
             let manifest: serde_json::Value =
                 serde_json::from_slice(&std::fs::read(directory.join("manifest.json")).unwrap()).unwrap();
             assert_eq!(manifest["version"], "1.2.3");
             let config: toml::Value =
-                toml::from_str(&std::fs::read_to_string(directory.join("dbx-plugin.toml")).unwrap()).unwrap();
+                toml::from_str(&std::fs::read_to_string(directory.join("gauss-horizon-plugin.toml")).unwrap()).unwrap();
             let workflow = std::fs::read_to_string(directory.join(".github/workflows/plugin-release.yml")).unwrap();
             assert!(!workflow.contains("signing-key-id"));
-            assert!(!workflow.contains("DBX_PLUGIN_SIGNING_KEY"));
+            assert!(!workflow.contains("GAUSS_HORIZON_PLUGIN_SIGNING_KEY"));
             assert!(workflow.contains("plugin-cli-version: 0.1.3"));
             assert!(!workflow.contains("sdk-ref:"));
 
@@ -1897,7 +1897,7 @@ mod tests {
             artifact_url: None,
         })
         .unwrap();
-        assert_eq!(package.file_name().unwrap(), "com.example.frontend-package-1.2.3-universal.dbxp");
+        assert_eq!(package.file_name().unwrap(), "com.example.frontend-package-1.2.3-universal.gauss-horizonp");
         assert!(package.is_file());
         assert!(metadata.is_file());
         let artifact: serde_json::Value = serde_json::from_slice(&std::fs::read(metadata).unwrap()).unwrap();
@@ -1923,20 +1923,20 @@ mod tests {
         assert_eq!(options.plugin_id, "com.acme.wizard");
         assert_eq!(options.name, "Wizard Plugin");
         assert_eq!(options.publisher, "acme");
-        assert_eq!(options.description, "Wizard Plugin for DBX.");
+        assert_eq!(options.description, "Wizard Plugin for Gauss Horizon.");
         assert_eq!(options.version, "1.2.3");
         let output = String::from_utf8(output).unwrap();
         assert!(output.contains("Invalid: choose 1/Frontend, 2/Svelte, 3/Rust, or 4/Go"));
         assert!(output.contains("Invalid: plugin id must use lowercase letters"));
         assert!(output.contains("Invalid: Version must be valid SemVer"));
-        assert!(output.contains("DBX Store signs approved official releases"));
+        assert!(output.contains("Gauss Horizon Store signs approved official releases"));
         assert!(output.contains("Plugin configuration:"));
         assert!(output.contains("Invalid: enter y or n"));
     }
 
     #[test]
     fn formats_common_plugin_acronyms_and_validates_semver() {
-        assert_eq!(title_from_slug("dbx-ssh-sftp-workbench"), "DBX SSH SFTP Workbench");
+        assert_eq!(title_from_slug("gauss-horizon-ssh-sftp-workbench"), "Gauss Horizon SSH SFTP Workbench");
         validate_semver("1.2.3-beta.1+darwin.arm64").unwrap();
         assert!(validate_semver("1.2.3-").is_err());
         assert!(validate_semver("01.2.3").is_err());

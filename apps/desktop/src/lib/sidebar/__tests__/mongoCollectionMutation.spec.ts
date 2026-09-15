@@ -120,7 +120,7 @@ describe("isProtectedMongoIndex", () => {
 
 describe("mongo shell previews", () => {
   it("shows the initialization collection used to materialize a database", () => {
-    expect(mongoCreateDatabasePreview('app "primary"')).toBe('db.getSiblingDB("app \\"primary\\"").createCollection("dbx_init");');
+    expect(mongoCreateDatabasePreview('app "primary"')).toBe('db.getSiblingDB("app \\"primary\\"").createCollection("gauss_horizon_init");');
   });
 
   it("preserves identifier whitespace in rename preview", () => {
@@ -129,7 +129,7 @@ describe("mongo shell previews", () => {
 
   it("describes the version-compatible clone primitives", () => {
     expect(mongoCloneCollectionPreview("app", " users ", " users_backup ")).toBe(
-      "// DBX copies collection options, documents, and non-_id indexes.\n" +
+      "// Gauss Horizon copies collection options, documents, and non-_id indexes.\n" +
         'db.getSiblingDB("app").createCollection(" users_backup ", /* source options */);\n' +
         'db.getSiblingDB("app").getCollection(" users ").find({}).forEach(function (document) { db.getSiblingDB("app").getCollection(" users_backup ").insertOne(document); });\n' +
         "// Recreate source indexes except the target's automatic _id index.",

@@ -1,4 +1,4 @@
-module github.com/t8y2/dbx/agents/drivers/rabbitmq
+module github.com/Gaussian-id/Gauss-Horizon/agents/drivers/rabbitmq
 
 go 1.20
 

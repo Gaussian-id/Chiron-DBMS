@@ -490,12 +490,12 @@ describe("EditorGroupTabBar behavior", () => {
 
     const events: Array<CustomEvent | Event> = [];
     const listener = (event: Event) => events.push(event as CustomEvent);
-    window.addEventListener("dbx:before-tab-switch", listener);
+    window.addEventListener("gauss-horizon:before-tab-switch", listener);
     // The legacy bar flushed pending edits on pointerdown, before activation.
     pointerDownOn(tabPill(host, secondId));
     tabPill(host, secondId).click();
     await settle();
-    window.removeEventListener("dbx:before-tab-switch", listener);
+    window.removeEventListener("gauss-horizon:before-tab-switch", listener);
 
     expect(events).toHaveLength(1);
     expect((events[0] as CustomEvent).detail).toEqual({ tabId: secondId, fromTabId: firstId });

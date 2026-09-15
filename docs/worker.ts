@@ -95,9 +95,9 @@ type DurableClaimResult =
   | { state: "busy" };
 
 const encoder = new TextEncoder();
-const STATE_COOKIE = "dbx_oauth_state";
-const SESSION_COOKIE = "dbx_contributor_session";
-const ISSUE_SESSION_COOKIE = "dbx_issue_session";
+const STATE_COOKIE = "gauss_horizon_oauth_state";
+const SESSION_COOKIE = "gauss_horizon_contributor_session";
+const ISSUE_SESSION_COOKIE = "gauss_horizon_issue_session";
 const ISSUE_SESSION_TTL_MS = 24 * 60 * 60 * 1000;
 const IMMUTABLE_ASSET_CACHE_CONTROL = "public, max-age=31536000, immutable";
 const IMAGE_ASSET_CACHE_CONTROL = "public, max-age=86400, stale-while-revalidate=604800";
@@ -232,14 +232,14 @@ async function finishOAuth(request: Request, env: Env): Promise<Response> {
   const callbackUrl = env.GITHUB_OAUTH_CALLBACK_URL || `${url.origin}/api/auth/github/callback`;
   const tokenResponse = await fetch("https://github.com/login/oauth/access_token", {
     method: "POST",
-    headers: { Accept: "application/json", "Content-Type": "application/json", "User-Agent": "dbx-contributors" },
+    headers: { Accept: "application/json", "Content-Type": "application/json", "User-Agent": "gauss-horizon-contributors" },
     body: JSON.stringify({ client_id: config.clientId, client_secret: config.clientSecret, code, redirect_uri: callbackUrl, code_verifier: storedState.verifier }),
   });
   const tokenData = (await tokenResponse.json()) as { access_token?: string; error?: string };
   if (!tokenResponse.ok || !tokenData.access_token) return json({ error: tokenData.error || "GitHub token exchange failed" }, 502);
 
   const userResponse = await fetch("https://api.github.com/user", {
-    headers: { Accept: "application/vnd.github+json", Authorization: `Bearer ${tokenData.access_token}`, "User-Agent": "dbx-contributors", "X-GitHub-Api-Version": "2022-11-28" },
+    headers: { Accept: "application/vnd.github+json", Authorization: `Bearer ${tokenData.access_token}`, "User-Agent": "gauss-horizon-contributors", "X-GitHub-Api-Version": "2022-11-28" },
   });
   const githubUser = (await userResponse.json()) as { login?: string; avatar_url?: string; html_url?: string };
   if (!userResponse.ok || !githubUser.login) return json({ error: "Unable to read GitHub identity" }, 502);
@@ -368,7 +368,7 @@ function publicImageUrl(baseUrl: string, key: string): string {
 async function uploadIssueImages(env: Env, draftId: string, images: Awaited<ReturnType<typeof readIssueImages>>): Promise<{ keys: string[]; urls: string[] }> {
   if (images.length === 0) return { keys: [], urls: [] };
   if (!env.ISSUE_IMAGES) throw new IssueSubmissionError("ISSUE_IMAGE_STORAGE_NOT_CONFIGURED", 503);
-  const baseUrl = env.ISSUE_IMAGE_PUBLIC_BASE_URL || "https://dl.dbxio.com";
+  const baseUrl = env.ISSUE_IMAGE_PUBLIC_BASE_URL || "https://distribution-disabled.invalid";
   const keys: string[] = [];
   const urls: string[] = [];
   for (const [index, image] of images.entries()) {

@@ -3,7 +3,7 @@ import { describe, expect, it } from "vitest";
 import i18n, { setLocale } from "@/i18n";
 import { formatShortcutDisplay } from "@/lib/editor/shortcutDisplay";
 
-// https://github.com/t8y2/dbx/issues/6199
+// https://github.com/Gaussian-id/Gauss-Horizon/issues/6199
 // "设置为 Windows 但编辑器提示仍为 Mac" — the toolbar's Execute-button tooltip and the
 // Editor Settings "Execute Mode" label hardcode "(Cmd+Enter)" in every locale, including
 // English, so the hints can disagree with both the current platform and a customized binding.

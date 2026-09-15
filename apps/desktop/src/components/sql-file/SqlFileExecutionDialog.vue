@@ -100,7 +100,7 @@ const refreshedTarget = ref(false);
 const DEFAULT_WEB_SQL_FILE_BYTES = 200 * 1024 * 1024;
 const webSqlFileUploadMaxBytes = ref(DEFAULT_WEB_SQL_FILE_BYTES);
 
-// The web server caps SQL file uploads via DBX_SQL_FILE_UPLOAD_MAX_MB; fetch the
+// The web server caps SQL file uploads via GAUSS_HORIZON_SQL_FILE_UPLOAD_MAX_MB; fetch the
 // effective limit once so the client-side pre-check matches the server rule.
 onMounted(async () => {
   if (isDesktopRuntime) return;
@@ -640,7 +640,7 @@ watch(
 
 <template>
   <Dialog :open="open" @update:open="handleOpenChange">
-    <DialogScrollContent class="flex max-h-[calc(var(--dbx-viewport-height)-6rem)] min-h-0 min-w-0 flex-col overflow-hidden sm:max-w-[860px]" :trap-focus="false" @interact-outside.prevent>
+    <DialogScrollContent class="flex max-h-[calc(var(--gauss-horizon-viewport-height)-6rem)] min-h-0 min-w-0 flex-col overflow-hidden sm:max-w-[860px]" :trap-focus="false" @interact-outside.prevent>
       <DialogHeader class="shrink-0">
         <DialogTitle class="flex items-center gap-2">
           <FileCode class="w-4 h-4" />

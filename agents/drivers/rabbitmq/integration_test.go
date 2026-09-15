@@ -17,8 +17,8 @@ func TestRabbitMQIntegration(t *testing.T) {
 	host := envOrDefault("RABBITMQ_HOST", "127.0.0.1")
 	amqpPort := envIntOrDefault(t, "RABBITMQ_PORT", 5672)
 	managementPort := envIntOrDefault(t, "RABBITMQ_MANAGEMENT_PORT", 15672)
-	username := envOrDefault("RABBITMQ_USERNAME", "dbx")
-	password := envOrDefault("RABBITMQ_PASSWORD", "dbx-password")
+	username := envOrDefault("RABBITMQ_USERNAME", "gauss-horizon")
+	password := envOrDefault("RABBITMQ_PASSWORD", "gauss-horizon-password")
 	connection := jsonObject{
 		"addresses": host,
 		"port":      amqpPort,
@@ -50,7 +50,7 @@ func TestRabbitMQIntegration(t *testing.T) {
 	}
 
 	suffix := fmt.Sprintf("%d", time.Now().UnixNano())
-	vhost := "dbx-go-" + suffix
+	vhost := "gauss-horizon-go-" + suffix
 	queue := "queue-" + suffix
 	exchange := "exchange-" + suffix
 	policy := "policy-" + suffix

@@ -1,20 +1,20 @@
 [package]
-name = "dbx-plugin-packager"
+name = "gauss-horizon-plugin-packager"
 version = "0.1.0"
 edition = "2021"
 license = "Apache-2.0"
-description = "Build .dbxp archives for DBX plugins"
+description = "Build .gauss-horizonp archives for Gauss Horizon plugins"
 autobins = false
 
 [workspace]
 
 [lib]
-name = "dbx_plugin_packager"
+name = "gauss_horizon_plugin_packager"
 path = "src/main.rs"
 
 [[bin]]
-name = "dbx-plugin-packager"
-path = "src/bin/dbx-plugin-packager.rs"
+name = "gauss-horizon-plugin-packager"
+path = "src/bin/gauss-horizon-plugin-packager.rs"
 
 [dependencies]
 base64 = "0.22"

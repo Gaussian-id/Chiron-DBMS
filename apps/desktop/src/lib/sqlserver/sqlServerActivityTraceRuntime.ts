@@ -84,7 +84,7 @@ export interface SqlServerActivityTraceRuntime {
   clearEvents(): void;
 }
 
-const PENDING_SESSIONS_STORAGE_KEY = "dbx:sqlserver-trace:pending-sessions:v1";
+const PENDING_SESSIONS_STORAGE_KEY = "gauss-horizon:sqlserver-trace:pending-sessions:v1";
 const runtimes = new Map<string, InternalSqlServerActivityTraceRuntime>();
 const activeSessionNames = new Set<string>();
 const staleCleanupTasks = new Map<string, Promise<number>>();

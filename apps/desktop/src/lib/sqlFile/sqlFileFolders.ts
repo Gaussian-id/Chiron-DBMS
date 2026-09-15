@@ -1,8 +1,8 @@
 import { ref } from "vue";
 import { safeLocalStorageGet, safeLocalStorageSet } from "@/lib/backend/safeStorage";
 
-const STORAGE_KEY = "dbx-sql-file-folders";
-const FILTER_STORAGE_KEY = "dbx-sql-file-filter";
+const STORAGE_KEY = "gauss-horizon-sql-file-folders";
+const FILTER_STORAGE_KEY = "gauss-horizon-sql-file-filter";
 export const DEFAULT_SQL_FILE_FILTER = "*.sql";
 
 /**

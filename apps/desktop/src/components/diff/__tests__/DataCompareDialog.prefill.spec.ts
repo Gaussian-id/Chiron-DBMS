@@ -9,7 +9,7 @@ import type { DataCompareSession } from "@/composables/useDataCompareSession";
 const mocks = vi.hoisted(() => ({
   ensureConnected: vi.fn().mockResolvedValue(undefined),
   listDatabases: vi.fn().mockResolvedValue([]),
-  listSchemas: vi.fn().mockResolvedValue(["DBX_TEST", "REPORTING", "SYS"]),
+  listSchemas: vi.fn().mockResolvedValue(["GAUSS_HORIZON_TEST", "REPORTING", "SYS"]),
   listTables: vi.fn().mockResolvedValue([{ name: "CODEX_7467_META", table_type: "TABLE" }]),
   getColumns: vi.fn().mockResolvedValue([{ name: "ID", data_type: "NUMBER", is_primary_key: true }]),
   buildDataCompareSyncPlan: vi.fn(),
@@ -83,17 +83,17 @@ function completedSession(): DataCompareSession {
     status: "completed",
     config: {
       sourceConnectionId: "oracle-11g",
-      sourceDatabase: "DBX_TEST",
-      sourceSchema: "DBX_TEST",
-      sourceDatabases: ["DBX_TEST"],
-      sourceSchemas: ["DBX_TEST"],
+      sourceDatabase: "GAUSS_HORIZON_TEST",
+      sourceSchema: "GAUSS_HORIZON_TEST",
+      sourceDatabases: ["GAUSS_HORIZON_TEST"],
+      sourceSchemas: ["GAUSS_HORIZON_TEST"],
       sourceTables: ["ORDERS"],
       selectedSourceTables: ["ORDERS"],
       targetConnectionId: "oracle-jdbc-11g",
       targetDatabase: "REPORTING",
-      targetSchema: "DBX_TEST",
+      targetSchema: "GAUSS_HORIZON_TEST",
       targetDatabases: ["REPORTING"],
-      targetSchemas: ["DBX_TEST"],
+      targetSchemas: ["GAUSS_HORIZON_TEST"],
       targetTables: ["ORDERS"],
       targetTable: "ORDERS",
       keyColumns: ["ID"],
@@ -167,8 +167,8 @@ describe("DataCompareDialog source prefill", () => {
           h(DataCompareDialog, {
             open: true,
             prefillConnectionId: "oracle-11g",
-            prefillDatabase: "DBX_TEST",
-            prefillSchema: "DBX_TEST",
+            prefillDatabase: "GAUSS_HORIZON_TEST",
+            prefillSchema: "GAUSS_HORIZON_TEST",
             prefillTable: "CODEX_7046_META",
           }),
       }),
@@ -181,16 +181,16 @@ describe("DataCompareDialog source prefill", () => {
     expect(mocks.listDatabases).not.toHaveBeenCalled();
     expect(mocks.listSchemas).toHaveBeenCalledWith("oracle-11g", "XE", true);
 
-    const searchableSelectTriggers = [...document.querySelectorAll<HTMLButtonElement>("button.dbx-searchable-select-trigger")];
+    const searchableSelectTriggers = [...document.querySelectorAll<HTMLButtonElement>("button.gauss-horizon-searchable-select-trigger")];
     const sourceDatabaseTrigger = searchableSelectTriggers[0];
-    expect(sourceDatabaseTrigger?.title).toBe("DBX_TEST");
+    expect(sourceDatabaseTrigger?.title).toBe("GAUSS_HORIZON_TEST");
     expect(sourceDatabaseTrigger?.disabled).toBe(false);
     sourceDatabaseTrigger?.click();
     await flushAsyncSetup();
 
-    const databaseOptions = [...document.querySelectorAll<HTMLButtonElement>(".dbx-searchable-select-list button")].map((button) => button.textContent?.trim());
-    expect(databaseOptions).toEqual(expect.arrayContaining(["DBX_TEST", "REPORTING"]));
-    expect(mocks.listTables).toHaveBeenCalledWith("oracle-11g", "DBX_TEST", "DBX_TEST");
+    const databaseOptions = [...document.querySelectorAll<HTMLButtonElement>(".gauss-horizon-searchable-select-list button")].map((button) => button.textContent?.trim());
+    expect(databaseOptions).toEqual(expect.arrayContaining(["GAUSS_HORIZON_TEST", "REPORTING"]));
+    expect(mocks.listTables).toHaveBeenCalledWith("oracle-11g", "GAUSS_HORIZON_TEST", "GAUSS_HORIZON_TEST");
     expect(document.body.textContent).toContain("CODEX_7467_META");
     expect(document.body.textContent).not.toContain("暂无可比较的表");
   });
@@ -204,8 +204,8 @@ describe("DataCompareDialog source prefill", () => {
           h(DataCompareDialog, {
             open: true,
             prefillConnectionId: "oracle-11g",
-            prefillDatabase: "DBX_TEST",
-            prefillSchema: "DBX_TEST",
+            prefillDatabase: "GAUSS_HORIZON_TEST",
+            prefillSchema: "GAUSS_HORIZON_TEST",
             prefillTable: "CODEX_7467_META",
           }),
       }),
@@ -215,7 +215,7 @@ describe("DataCompareDialog source prefill", () => {
     app.mount(container);
     await flushAsyncSetup();
 
-    const targetConnectionTrigger = document.querySelectorAll<HTMLButtonElement>("button.dbx-diff-connection-trigger")[1];
+    const targetConnectionTrigger = document.querySelectorAll<HTMLButtonElement>("button.gauss-horizon-diff-connection-trigger")[1];
     expect(targetConnectionTrigger).toBeDefined();
     targetConnectionTrigger?.click();
     await flushAsyncSetup();
@@ -227,21 +227,21 @@ describe("DataCompareDialog source prefill", () => {
 
     expect(mocks.listSchemas).toHaveBeenCalledWith("oracle-jdbc-11g", "", true);
 
-    const triggersAfterTargetLoad = [...document.querySelectorAll<HTMLButtonElement>("button.dbx-searchable-select-trigger")];
+    const triggersAfterTargetLoad = [...document.querySelectorAll<HTMLButtonElement>("button.gauss-horizon-searchable-select-trigger")];
     const targetDatabaseTrigger = triggersAfterTargetLoad[2];
     expect(targetDatabaseTrigger?.disabled).toBe(false);
     targetDatabaseTrigger?.click();
     await flushAsyncSetup();
 
-    const targetDatabaseOptions = [...document.querySelectorAll<HTMLButtonElement>(".dbx-searchable-select-list button")].map((button) => button.textContent?.trim());
-    expect(targetDatabaseOptions).toEqual(expect.arrayContaining(["DBX_TEST", "REPORTING"]));
+    const targetDatabaseOptions = [...document.querySelectorAll<HTMLButtonElement>(".gauss-horizon-searchable-select-list button")].map((button) => button.textContent?.trim());
+    expect(targetDatabaseOptions).toEqual(expect.arrayContaining(["GAUSS_HORIZON_TEST", "REPORTING"]));
 
-    const reportingOption = [...document.querySelectorAll<HTMLButtonElement>(".dbx-searchable-select-list button")].find((button) => button.textContent?.trim() === "REPORTING");
+    const reportingOption = [...document.querySelectorAll<HTMLButtonElement>(".gauss-horizon-searchable-select-list button")].find((button) => button.textContent?.trim() === "REPORTING");
     expect(reportingOption).toBeDefined();
     reportingOption?.click();
     await flushAsyncSetup();
 
-    expect(mocks.listTables).toHaveBeenCalledWith("oracle-jdbc-11g", "REPORTING", "DBX_TEST");
+    expect(mocks.listTables).toHaveBeenCalledWith("oracle-jdbc-11g", "REPORTING", "GAUSS_HORIZON_TEST");
     expect(document.body.textContent).toContain("CODEX_7467_META");
   });
 });

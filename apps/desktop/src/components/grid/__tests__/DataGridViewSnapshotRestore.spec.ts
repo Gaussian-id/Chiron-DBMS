@@ -95,8 +95,8 @@ describe("DataGrid tab-switch view snapshots", () => {
   });
 
   it("wires capture to unmount and to the pre-tab-switch event", () => {
-    expect(dataGridSource).toContain('window.addEventListener("dbx:before-tab-switch", captureTabSwitchViewSnapshot)');
-    expect(dataGridSource).toContain('window.removeEventListener("dbx:before-tab-switch", captureTabSwitchViewSnapshot)');
+    expect(dataGridSource).toContain('window.addEventListener("gauss-horizon:before-tab-switch", captureTabSwitchViewSnapshot)');
+    expect(dataGridSource).toContain('window.removeEventListener("gauss-horizon:before-tab-switch", captureTabSwitchViewSnapshot)');
     expect(dataGridSource).toContain("onUnmounted(() => {\n  // Capture before teardown");
     expect(dataGridSource).toContain("captureTabSwitchViewSnapshot();");
   });

@@ -1,11 +1,11 @@
 {
-  "name": "@dbx-app/cli-win32-arm64",
-  "version": "0.4.86",
-  "description": "Precompiled DBX CLI binary for Windows arm64",
+  "name": "@gauss-horizon/cli-win32-arm64",
+  "version": "0.1.0",
+  "description": "Precompiled Gauss Horizon CLI binary for Windows arm64",
   "license": "Apache-2.0",
   "repository": {
     "type": "git",
-    "url": "https://github.com/t8y2/dbx",
+    "url": "https://github.com/Gaussian-id/Gauss-Horizon",
     "directory": "packages/cli-win32-arm64"
   },
   "os": [
@@ -15,7 +15,7 @@
     "arm64"
   ],
   "bin": {
-    "dbx-native": "bin/dbx.exe"
+    "gauss-horizon-native": "bin/gauss-horizon.exe"
   },
   "files": [
     "bin"

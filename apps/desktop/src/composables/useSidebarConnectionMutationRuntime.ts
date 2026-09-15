@@ -118,7 +118,7 @@ export function useSidebarConnectionMutationRuntime(options: SidebarConnectionMu
       for (const connectionId of connectionIds) {
         connectionStore.disconnect(connectionId).catch((error) => {
           // Removal has already succeeded; disconnect cleanup must not turn it into a failed delete.
-          console.warn("[DBX][connection:delete:disconnect-failed]", { connectionId, error });
+          console.warn("[Gauss Horizon][connection:delete:disconnect-failed]", { connectionId, error });
         });
       }
       toast(targets.length > 1 ? t("connection.deletedSelected", { count: targets.length }) : t("connection.deleted"), 2000);
@@ -413,7 +413,7 @@ export function useSidebarConnectionMutationRuntime(options: SidebarConnectionMu
       options.releaseActiveNodeReference(groupIds);
       for (const connectionId of connectionIds) {
         connectionStore.disconnect(connectionId).catch((error) => {
-          console.warn("[DBX][connection-group:delete:disconnect-failed]", { connectionId, error });
+          console.warn("[Gauss Horizon][connection-group:delete:disconnect-failed]", { connectionId, error });
         });
       }
       showDeleteGroupConfirm.value = false;

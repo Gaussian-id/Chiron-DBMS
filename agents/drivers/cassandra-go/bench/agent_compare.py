@@ -192,7 +192,7 @@ def connection_params() -> dict:
     return {
         "host": env_default("CASSANDRA_HOST", "127.0.0.1"),
         "port": env_int("CASSANDRA_PORT", 9042),
-        "database": env_default("CASSANDRA_KEYSPACE", "dbx_native_test"),
+        "database": env_default("CASSANDRA_KEYSPACE", "gauss_horizon_native_test"),
         "username": os.getenv("CASSANDRA_USERNAME", ""),
         "password": os.getenv("CASSANDRA_PASSWORD", ""),
         "url_params": os.getenv("CASSANDRA_URL_PARAMS", ""),

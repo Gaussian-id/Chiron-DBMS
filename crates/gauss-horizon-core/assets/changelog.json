@@ -1,0 +1,19 @@
+{
+  "updatedAt": "2026-09-14",
+  "releases": [{
+    "tag": "v0.1.0",
+    "name": "Gauss Horizon 0.1.0",
+    "date": "",
+    "unreleased": true,
+    "sections": [
+      {"type": "added", "title": "Initial Gaussian version", "items": [
+        {"title": "Gauss Horizon by Gaussian", "desc": "Gaussian branding, native ChironDB connections and preserved profile migration."},
+        {"title": "Native ChironQL assistant", "desc": "Parser-validated reads, human-approved writes, encrypted credentials and local result privacy."},
+        {"title": "ChironQL scripts", "desc": "Sequential statement results, per-write review, Run-local USE context and line-comment shortcuts."}
+      ]},
+      {"type": "changed", "title": "Distribution", "items": [
+        {"title": "Version numbering starts at 0.1.0", "desc": "Development build. Publication and automatic updates are disabled; platform acceptance is tracked separately."}
+      ]}
+    ]
+  }]
+}

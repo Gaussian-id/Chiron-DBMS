@@ -1,9 +1,9 @@
 import { strict as assert } from "node:assert";
 import { test } from "vitest";
 import {
-  DBX_NEO4J_ELEMENT_ID_COLUMN,
-  DBX_ROWID_COLUMN,
-  DBX_TDENGINE_TBNAME_COLUMN,
+  GAUSS_HORIZON_NEO4J_ELEMENT_ID_COLUMN,
+  GAUSS_HORIZON_ROWID_COLUMN,
+  GAUSS_HORIZON_TDENGINE_TBNAME_COLUMN,
   canEditExistingTableRows,
   canInsertTableRows,
   editablePrimaryKeys,
@@ -29,8 +29,8 @@ function column(name: string, isPrimaryKey = false): ColumnInfo {
 }
 
 test("uses ROWID as Oracle editable key when a table has no primary key", () => {
-  assert.deepEqual(editablePrimaryKeys("oracle", [column("ID"), column("CITY")], "TABLE"), [DBX_ROWID_COLUMN]);
-  assert.deepEqual(editablePrimaryKeys("oceanbase-oracle", [column("ID"), column("CITY")], "TABLE"), [DBX_ROWID_COLUMN]);
+  assert.deepEqual(editablePrimaryKeys("oracle", [column("ID"), column("CITY")], "TABLE"), [GAUSS_HORIZON_ROWID_COLUMN]);
+  assert.deepEqual(editablePrimaryKeys("oceanbase-oracle", [column("ID"), column("CITY")], "TABLE"), [GAUSS_HORIZON_ROWID_COLUMN]);
 });
 
 test("keeps declared primary keys ahead of Oracle ROWID fallback", () => {
@@ -43,10 +43,10 @@ test("does not synthesize ROWID for non-Oracle keyless tables", () => {
 
 test("uses table-specific TDengine editable keys", () => {
   const columns = [column("ts", true), column("seq", true), column("current")];
-  assert.deepEqual(editablePrimaryKeys("tdengine", columns, "STABLE"), [DBX_TDENGINE_TBNAME_COLUMN, "ts", "seq"]);
+  assert.deepEqual(editablePrimaryKeys("tdengine", columns, "STABLE"), [GAUSS_HORIZON_TDENGINE_TBNAME_COLUMN, "ts", "seq"]);
   assert.deepEqual(editablePrimaryKeys("tdengine", columns, "TABLE"), ["ts", "seq"]);
-  assert.equal(hasCompleteTdengineRowIdentity("tdengine", [DBX_TDENGINE_TBNAME_COLUMN, "ts", "seq"], ["tbname", "ts", "seq", "current"]), true);
-  assert.equal(hasCompleteTdengineRowIdentity("tdengine", [DBX_TDENGINE_TBNAME_COLUMN, "ts", "seq"], ["tbname", "ts", "current"]), false);
+  assert.equal(hasCompleteTdengineRowIdentity("tdengine", [GAUSS_HORIZON_TDENGINE_TBNAME_COLUMN, "ts", "seq"], ["tbname", "ts", "seq", "current"]), true);
+  assert.equal(hasCompleteTdengineRowIdentity("tdengine", [GAUSS_HORIZON_TDENGINE_TBNAME_COLUMN, "ts", "seq"], ["tbname", "ts", "current"]), false);
 });
 
 test("allows updateable SQL table data editing even without declared primary keys", () => {
@@ -105,7 +105,7 @@ test("allows existing row edits according to database-specific key requirements"
   assert.equal(canEditExistingTableRows("informix", undefined, ["id"]), true);
   assert.equal(canEditExistingTableRows("tdengine", undefined, []), false);
   assert.equal(canEditExistingTableRows("tdengine", undefined, ["ts"]), true);
-  assert.equal(canEditExistingTableRows("tdengine", undefined, [DBX_TDENGINE_TBNAME_COLUMN, "ts"]), true);
+  assert.equal(canEditExistingTableRows("tdengine", undefined, [GAUSS_HORIZON_TDENGINE_TBNAME_COLUMN, "ts"]), true);
   assert.equal(canEditExistingTableRows("postgres", undefined), true);
 });
 
@@ -127,11 +127,11 @@ test("detects transactional Hive table properties", () => {
 });
 
 test("uses elementId as Neo4j editable key when labels have no primary key", () => {
-  assert.deepEqual(editablePrimaryKeys("neo4j", [column("name"), column("role")]), [DBX_NEO4J_ELEMENT_ID_COLUMN]);
+  assert.deepEqual(editablePrimaryKeys("neo4j", [column("name"), column("role")]), [GAUSS_HORIZON_NEO4J_ELEMENT_ID_COLUMN]);
 });
 
 test("keeps TDengine existing row identity and tag columns read-only", () => {
-  assert.equal(isTdengineExistingRowReadonlyColumn("tdengine", DBX_TDENGINE_TBNAME_COLUMN, [column("ts", true)]), true);
+  assert.equal(isTdengineExistingRowReadonlyColumn("tdengine", GAUSS_HORIZON_TDENGINE_TBNAME_COLUMN, [column("ts", true)]), true);
   assert.equal(isTdengineExistingRowReadonlyColumn("tdengine", "ts", [column("ts", true)]), true);
   assert.equal(isTdengineExistingRowReadonlyColumn("tdengine", "seq", [column("ts", true), column("seq", true)]), true);
   assert.equal(isTdengineExistingRowReadonlyColumn("tdengine", "location", [column("location")]), false);
@@ -140,22 +140,22 @@ test("keeps TDengine existing row identity and tag columns read-only", () => {
 });
 
 test("detects the synthetic Oracle ROWID key case", () => {
-  assert.equal(usesSyntheticRowIdKey("oracle", [DBX_ROWID_COLUMN]), true);
-  assert.equal(usesSyntheticRowIdKey("oracle", [DBX_ROWID_COLUMN.toLowerCase()]), true);
-  assert.equal(usesSyntheticRowIdKey("oceanbase-oracle", [DBX_ROWID_COLUMN]), true);
-  assert.equal(usesSyntheticRowIdKey("oracle", [DBX_ROWID_COLUMN], "VIEW"), false);
-  assert.equal(usesSyntheticRowIdKey("oracle", [DBX_ROWID_COLUMN], "MATERIALIZED_VIEW"), false);
-  assert.equal(usesSyntheticRowIdKey("postgres", [DBX_ROWID_COLUMN]), false);
+  assert.equal(usesSyntheticRowIdKey("oracle", [GAUSS_HORIZON_ROWID_COLUMN]), true);
+  assert.equal(usesSyntheticRowIdKey("oracle", [GAUSS_HORIZON_ROWID_COLUMN.toLowerCase()]), true);
+  assert.equal(usesSyntheticRowIdKey("oceanbase-oracle", [GAUSS_HORIZON_ROWID_COLUMN]), true);
+  assert.equal(usesSyntheticRowIdKey("oracle", [GAUSS_HORIZON_ROWID_COLUMN], "VIEW"), false);
+  assert.equal(usesSyntheticRowIdKey("oracle", [GAUSS_HORIZON_ROWID_COLUMN], "MATERIALIZED_VIEW"), false);
+  assert.equal(usesSyntheticRowIdKey("postgres", [GAUSS_HORIZON_ROWID_COLUMN]), false);
   assert.equal(usesSyntheticRowIdKey("oracle", ["ID"]), false);
-  assert.equal(usesSyntheticRowIdKey("neo4j", [DBX_NEO4J_ELEMENT_ID_COLUMN]), true);
+  assert.equal(usesSyntheticRowIdKey("neo4j", [GAUSS_HORIZON_NEO4J_ELEMENT_ID_COLUMN]), true);
 });
 
 test("hides only the synthetic Oracle ROWID grid column", () => {
-  assert.equal(isHiddenGridColumn("oracle", DBX_ROWID_COLUMN, [DBX_ROWID_COLUMN]), false);
-  assert.equal(isHiddenGridColumn("oracle", DBX_ROWID_COLUMN, [DBX_ROWID_COLUMN], "TABLE"), true);
-  assert.equal(isHiddenGridColumn("oceanbase-oracle", DBX_ROWID_COLUMN, [DBX_ROWID_COLUMN], "TABLE"), true);
-  assert.equal(isHiddenGridColumn("oracle", DBX_ROWID_COLUMN, [DBX_ROWID_COLUMN], "VIEW"), false);
-  assert.equal(isHiddenGridColumn("oracle", "ROWID", [DBX_ROWID_COLUMN]), false);
-  assert.equal(isHiddenGridColumn("mysql", DBX_ROWID_COLUMN, [DBX_ROWID_COLUMN]), false);
-  assert.equal(isHiddenGridColumn("neo4j", DBX_NEO4J_ELEMENT_ID_COLUMN, [DBX_NEO4J_ELEMENT_ID_COLUMN]), true);
+  assert.equal(isHiddenGridColumn("oracle", GAUSS_HORIZON_ROWID_COLUMN, [GAUSS_HORIZON_ROWID_COLUMN]), false);
+  assert.equal(isHiddenGridColumn("oracle", GAUSS_HORIZON_ROWID_COLUMN, [GAUSS_HORIZON_ROWID_COLUMN], "TABLE"), true);
+  assert.equal(isHiddenGridColumn("oceanbase-oracle", GAUSS_HORIZON_ROWID_COLUMN, [GAUSS_HORIZON_ROWID_COLUMN], "TABLE"), true);
+  assert.equal(isHiddenGridColumn("oracle", GAUSS_HORIZON_ROWID_COLUMN, [GAUSS_HORIZON_ROWID_COLUMN], "VIEW"), false);
+  assert.equal(isHiddenGridColumn("oracle", "ROWID", [GAUSS_HORIZON_ROWID_COLUMN]), false);
+  assert.equal(isHiddenGridColumn("mysql", GAUSS_HORIZON_ROWID_COLUMN, [GAUSS_HORIZON_ROWID_COLUMN]), false);
+  assert.equal(isHiddenGridColumn("neo4j", GAUSS_HORIZON_NEO4J_ELEMENT_ID_COLUMN, [GAUSS_HORIZON_NEO4J_ELEMENT_ID_COLUMN]), true);
 });

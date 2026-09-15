@@ -451,7 +451,7 @@ test("suggests only helpers the shell parser accepts", () => {
   assert.ok(methodLabels.includes("count"));
   assert.ok(methodLabels.includes("drop"));
   assert.ok(methodLabels.includes("distinct"));
-  // Suggesting a helper DBX cannot run just hands the user a command that fails.
+  // Suggesting a helper Gauss Horizon cannot run just hands the user a command that fails.
   for (const unsupported of ["bulkWrite", "estimatedDocumentCount", "replaceOne"]) {
     assert.equal(methodLabels.includes(unsupported), false, `${unsupported} is not executable`);
   }

@@ -293,7 +293,7 @@ mod tests {
 
     #[test]
     fn scan_sql_files_skips_pruned_metadata_directories() {
-        let root = std::env::temp_dir().join(format!("dbx-sql-folder-scan-{}", uuid::Uuid::new_v4()));
+        let root = std::env::temp_dir().join(format!("gauss-horizon-sql-folder-scan-{}", uuid::Uuid::new_v4()));
         let idea = root.join(".idea");
         let nested = root.join("queries");
         std::fs::create_dir_all(&idea).unwrap();
@@ -316,7 +316,7 @@ mod tests {
 
     #[test]
     fn scan_sql_files_accepts_user_regular_expressions() {
-        let root = std::env::temp_dir().join(format!("dbx-file-folder-scan-{}", uuid::Uuid::new_v4()));
+        let root = std::env::temp_dir().join(format!("gauss-horizon-file-folder-scan-{}", uuid::Uuid::new_v4()));
         std::fs::create_dir_all(&root).unwrap();
         std::fs::write(root.join("query.sql"), "SELECT 1;").unwrap();
         std::fs::write(root.join("script.sh"), "echo hello").unwrap();
@@ -373,7 +373,7 @@ mod tests {
 
     #[tokio::test]
     async fn renames_and_deletes_filtered_text_files_within_the_opened_root() {
-        let root = std::env::temp_dir().join(format!("dbx-text-file-manage-{}", uuid::Uuid::new_v4()));
+        let root = std::env::temp_dir().join(format!("gauss-horizon-text-file-manage-{}", uuid::Uuid::new_v4()));
         std::fs::create_dir_all(&root).unwrap();
         let source = root.join("script.sh");
         std::fs::write(&source, "echo hello").unwrap();
@@ -394,7 +394,7 @@ mod tests {
 
     #[tokio::test]
     async fn manages_sql_files_within_the_opened_root() {
-        let root = std::env::temp_dir().join(format!("dbx-sql-file-manage-{}", uuid::Uuid::new_v4()));
+        let root = std::env::temp_dir().join(format!("gauss-horizon-sql-file-manage-{}", uuid::Uuid::new_v4()));
         let nested = root.join("queries");
         std::fs::create_dir_all(&nested).unwrap();
 
@@ -419,7 +419,7 @@ mod tests {
 
     #[tokio::test]
     async fn keeps_the_file_tree_path_representation_for_managed_files() {
-        let root = std::env::temp_dir().join(format!("dbx-sql-file-path-{}", uuid::Uuid::new_v4()));
+        let root = std::env::temp_dir().join(format!("gauss-horizon-sql-file-path-{}", uuid::Uuid::new_v4()));
         let nested = root.join("queries");
         let displayed_root = root.join(".");
         let displayed_directory = nested.join(".");
@@ -445,7 +445,7 @@ mod tests {
     #[cfg(windows)]
     #[tokio::test]
     async fn renames_files_when_only_the_case_changes() {
-        let root = std::env::temp_dir().join(format!("dbx-sql-file-case-{}", uuid::Uuid::new_v4()));
+        let root = std::env::temp_dir().join(format!("gauss-horizon-sql-file-case-{}", uuid::Uuid::new_v4()));
         std::fs::create_dir_all(&root).unwrap();
         let source = root.join("draft.sql");
         std::fs::write(&source, "SELECT 1;").unwrap();

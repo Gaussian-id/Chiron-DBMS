@@ -1,7 +1,7 @@
-//! Helpers for interpreting the arguments DBX is launched with.
+//! Helpers for interpreting the arguments Gauss Horizon is launched with.
 //!
 //! The Linux desktop entry uses the `%U` field code so one `Exec=` line can serve
-//! both the `dbx://` scheme and the file associations. With `%U` a file manager may
+//! both the `gauss-horizon://` scheme and the file associations. With `%U` a file manager may
 //! hand over `file://` URLs rather than plain paths, so launch arguments are
 //! normalized before anything treats them as filesystem paths.
 
@@ -33,7 +33,7 @@ mod tests {
     fn passes_plain_paths_through_unchanged() {
         assert_eq!(normalize_launch_path_arg("/tmp/query.sql").as_deref(), Some("/tmp/query.sql"));
         assert_eq!(normalize_launch_path_arg("query.sql").as_deref(), Some("query.sql"));
-        assert_eq!(normalize_launch_path_arg("dbx://open").as_deref(), Some("dbx://open"));
+        assert_eq!(normalize_launch_path_arg("gauss-horizon://open").as_deref(), Some("gauss-horizon://open"));
     }
 
     #[test]
@@ -49,11 +49,11 @@ mod tests {
     }
 
     /// The desktop entry is a shipped artifact whose `Exec=` field code is what puts
-    /// `dbx://` links and associated files into `std::env::args()` on Linux. Without a
+    /// `gauss-horizon://` links and associated files into `std::env::args()` on Linux. Without a
     /// URL field code both arrive empty, so the contract is pinned here.
     #[test]
     fn linux_desktop_entry_forwards_urls_and_files() {
-        let template = include_str!("../../linux/DBX.desktop");
+        let template = include_str!("../../linux/GaussHorizon.desktop");
 
         let exec =
             template.lines().find_map(|line| line.strip_prefix("Exec=")).expect("desktop entry must declare Exec=");
@@ -79,7 +79,7 @@ mod tests {
         for target in ["deb", "rpm"] {
             assert_eq!(
                 config["bundle"]["linux"][target]["desktopTemplate"].as_str(),
-                Some("linux/DBX.desktop"),
+                Some("linux/GaussHorizon.desktop"),
                 "{target} bundle must use the custom desktop entry"
             );
         }

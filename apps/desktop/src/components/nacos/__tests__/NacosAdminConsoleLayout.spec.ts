@@ -209,7 +209,7 @@ describe("NacosAdminConsole config workbench layout", () => {
 
   it("allows the Nacos configuration page size to be changed within the supported range", () => {
     expect(source).toContain("const NACOS_CONFIG_PAGE_SIZE_OPTIONS = [20, 50, 100, 200, 500] as const;");
-    expect(source).toContain('const NACOS_CONFIG_PAGE_SIZE_STORAGE_KEY = "dbx-nacos-config-page-size";');
+    expect(source).toContain('const NACOS_CONFIG_PAGE_SIZE_STORAGE_KEY = "gauss-horizon-nacos-config-page-size";');
     expect(source).toContain("function setConfigPageSize(value: string)");
     expect(source).toContain("safeLocalStorageSet(NACOS_CONFIG_PAGE_SIZE_STORAGE_KEY, String(nextPageSize));");
     expect(source).toContain('t("nacos.configPageSize")');

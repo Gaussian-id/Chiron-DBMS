@@ -177,7 +177,7 @@ watch(selectedTopic, (topic) => emit("topicSelected", topic));
 .partition-overview {
   padding: 14px;
   border: 1px solid var(--color-border);
-  border-radius: var(--dbx-radius-fixed-6);
+  border-radius: var(--gauss-horizon-radius-fixed-6);
   background: var(--color-background-secondary);
 }
 

@@ -10,7 +10,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/t8y2/dbx/agents/go-common/gohive"
+	"github.com/Gaussian-id/Gauss-Horizon/agents/go-common/gohive"
 )
 
 const metadataQueryLimit = 100000
@@ -207,15 +207,15 @@ func (server *server) connectionInfo() (map[string]any, error) {
 	}
 	productName := "Apache Hive"
 	compatibilityMode := "hive"
-	driverName := "DBX Hive Go Agent"
+	driverName := "Gauss Horizon Hive Go Agent"
 	if strings.EqualFold(server.params.DatabaseType, "kyuubi") {
 		productName = "Apache Kyuubi"
 		compatibilityMode = "kyuubi"
-		driverName = "DBX Kyuubi Go Agent"
+		driverName = "Gauss Horizon Kyuubi Go Agent"
 	} else if strings.EqualFold(server.params.DatabaseType, "impala") || strings.Contains(strings.ToLower(version), "impalad version") {
 		productName = "Apache Impala"
 		compatibilityMode = "impala"
-		driverName = "DBX Impala Go Agent"
+		driverName = "Gauss Horizon Impala Go Agent"
 	}
 	return map[string]any{
 		"database":          server.config.Database,

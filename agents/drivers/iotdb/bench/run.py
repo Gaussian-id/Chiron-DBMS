@@ -13,7 +13,7 @@ from pathlib import Path
 BENCH_DIR = Path(__file__).resolve().parent
 IOTDB_PROJECT = BENCH_DIR.parent
 AGENTS_DIR = IOTDB_PROJECT.parents[1]
-JDBC_JAR = BENCH_DIR / "build" / "libs" / "dbx-iotdb-jdbc-benchmark.jar"
+JDBC_JAR = BENCH_DIR / "build" / "libs" / "gauss-horizon-iotdb-jdbc-benchmark.jar"
 GO_BINARY = BENCH_DIR / "build" / "iotdb-go-benchmark"
 
 

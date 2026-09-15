@@ -2,7 +2,7 @@ import { isTauriRuntime } from "@/lib/backend/tauriRuntime";
 
 export type WindowContext = { kind: "main"; windowLabel: "main" } | { kind: "detached-tab"; windowLabel: string; tabId: string };
 
-const DETACHED_WINDOW_PARAM = "dbxDetachedTab";
+const DETACHED_WINDOW_PARAM = "gaussHorizonDetachedTab";
 
 let cachedContext: WindowContext | undefined;
 

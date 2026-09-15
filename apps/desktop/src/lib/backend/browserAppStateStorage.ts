@@ -1,9 +1,9 @@
 import { safeLocalStorageGet, safeLocalStorageSet } from "@/lib/backend/safeStorage";
 
-const DB_NAME = "dbx-app-state";
+const DB_NAME = "gauss-horizon-app-state";
 const DB_VERSION = 1;
 const STORE_NAME = "state";
-const LOCAL_STORAGE_PREFIX = "dbx-app-state:";
+const LOCAL_STORAGE_PREFIX = "gauss-horizon-app-state:";
 
 function indexedDb(): IDBFactory | undefined {
   return typeof globalThis.indexedDB === "undefined" ? undefined : globalThis.indexedDB;

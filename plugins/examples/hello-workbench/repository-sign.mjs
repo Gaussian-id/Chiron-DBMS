@@ -6,17 +6,17 @@ import process from "node:process";
 import { fileURLToPath } from "node:url";
 
 const root = path.dirname(fileURLToPath(import.meta.url));
-const target = process.env.DBX_PLUGIN_TARGET || platformTarget();
-const candidate = path.resolve(process.argv[2] || path.join(root, "dist", `dbx.example.hello-1.0.0-${target}.dbxp`));
+const target = process.env.GAUSS_HORIZON_PLUGIN_TARGET || platformTarget();
+const candidate = path.resolve(process.argv[2] || path.join(root, "dist", `gauss.horizon.example.hello-1.0.0-${target}.gauss-horizonp`));
 const signed = path.resolve(
-  process.argv[3] || path.join(root, "dist", `dbx.example.hello-1.0.0-${target}.signed.dbxp`),
+  process.argv[3] || path.join(root, "dist", `gauss.horizon.example.hello-1.0.0-${target}.signed.gauss-horizonp`),
 );
-const metadata = signed.replace(/\.dbxp$/, ".artifact.json");
-const keyId = process.env.DBX_PLUGIN_SIGNING_KEY_ID;
-const buildRoot = await mkdtemp(path.join(os.tmpdir(), "dbx-repository-sign-"));
+const metadata = signed.replace(/\.gauss-horizonp$/, ".artifact.json");
+const keyId = process.env.GAUSS_HORIZON_PLUGIN_SIGNING_KEY_ID;
+const buildRoot = await mkdtemp(path.join(os.tmpdir(), "gauss-horizon-repository-sign-"));
 
-if (!process.env.DBX_PLUGIN_SIGNING_KEY || !keyId) {
-  throw new Error("Repository signing requires DBX_PLUGIN_SIGNING_KEY and DBX_PLUGIN_SIGNING_KEY_ID");
+if (!process.env.GAUSS_HORIZON_PLUGIN_SIGNING_KEY || !keyId) {
+  throw new Error("Repository signing requires GAUSS_HORIZON_PLUGIN_SIGNING_KEY and GAUSS_HORIZON_PLUGIN_SIGNING_KEY_ID");
 }
 
 try {
@@ -44,7 +44,7 @@ try {
     { CARGO_TARGET_DIR: path.join(buildRoot, "cargo-target") },
   );
 
-  if (process.env.DBX_PLUGIN_SKIP_EXAMPLE_CATALOG !== "1") await updateExampleCatalog(metadata);
+  if (process.env.GAUSS_HORIZON_PLUGIN_SKIP_EXAMPLE_CATALOG !== "1") await updateExampleCatalog(metadata);
   console.log(`Repository-signed ${signed}`);
 } finally {
   await rm(buildRoot, { recursive: true, force: true });

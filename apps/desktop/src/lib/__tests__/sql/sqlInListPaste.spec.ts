@@ -47,7 +47,7 @@ describe("sqlInListPaste", () => {
   it("does not treat common dates, URLs, or absolute paths as value lists", () => {
     expect(buildSqlInConditionFromPasteSource("2026/07/07")).toEqual({ ok: false, reason: "not-list" });
     expect(buildSqlInConditionFromPasteSource("http://example.com/a/b")).toEqual({ ok: false, reason: "not-list" });
-    expect(buildSqlInConditionFromPasteSource("/Users/staff/dbx")).toEqual({ ok: false, reason: "not-list" });
+    expect(buildSqlInConditionFromPasteSource("/Users/staff/gauss-horizon")).toEqual({ ok: false, reason: "not-list" });
   });
 
   it("quotes all non-NULL values uniformly including numbers", () => {

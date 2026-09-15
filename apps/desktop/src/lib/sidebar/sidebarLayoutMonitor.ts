@@ -15,15 +15,15 @@
  *
  * Enabling:
  *  - `pnpm dev` builds sample by default.
- *  - Production builds: `window.__dbxSidebarLayoutMonitor.enable()` or set
- *    localStorage["dbx-sidebar-layout-monitor"] = "1" before the sidebar
+ *  - Production builds: `window.__gaussHorizonSidebarLayoutMonitor.enable()` or set
+ *    localStorage["gauss-horizon-sidebar-layout-monitor"] = "1" before the sidebar
  *    mounts. Enabling the in-app "debug logs" setting also arms the monitor.
  */
 
 import { isDebugLoggingEnabled } from "@/lib/backend/debugLog";
 
-export const SIDEBAR_LAYOUT_MONITOR_STORAGE_KEY = "dbx-sidebar-layout-monitor";
-export const SIDEBAR_LAYOUT_MONITOR_LABEL = "[DBX][sidebar-layout-monitor]";
+export const SIDEBAR_LAYOUT_MONITOR_STORAGE_KEY = "gauss-horizon-sidebar-layout-monitor";
+export const SIDEBAR_LAYOUT_MONITOR_LABEL = "[Gauss Horizon][sidebar-layout-monitor]";
 
 export const SIDEBAR_LAYOUT_MONITOR_MAX_SAMPLES = 240;
 export const SIDEBAR_LAYOUT_MONITOR_MAX_EVENTS = 200;
@@ -605,7 +605,7 @@ export function buildAnomalyDigest(report: SidebarLayoutReport): string {
     lines.push(`  expand-toggle: ${event.expanded ? "expanded" : "collapsed"} ${event.label} (${event.nodeType}, id=${event.nodeId.slice(0, 8)})`);
   }
   lines.push(`  expanded connections: ${formatConnections(report.expandedConnections)}`);
-  lines.push(`  full report: window.__dbxSidebarLayoutMonitor.snapshot()`);
+  lines.push(`  full report: window.__gaussHorizonSidebarLayoutMonitor.snapshot()`);
   return lines.join("\n");
 }
 
@@ -841,13 +841,13 @@ export function createSidebarLayoutMonitor(options: SidebarLayoutMonitorOptions)
       recentEvents: (count = 30) => events.slice(-count),
     };
     handle = nextHandle;
-    window.__dbxSidebarLayoutMonitor = nextHandle;
+    window.__gaussHorizonSidebarLayoutMonitor = nextHandle;
   }
 
   function uninstallWindowHandle() {
     if (typeof window === "undefined") return;
-    if (window.__dbxSidebarLayoutMonitor === handle) {
-      delete window.__dbxSidebarLayoutMonitor;
+    if (window.__gaussHorizonSidebarLayoutMonitor === handle) {
+      delete window.__gaussHorizonSidebarLayoutMonitor;
     }
     handle = null;
   }
@@ -890,7 +890,7 @@ export function createSidebarLayoutMonitor(options: SidebarLayoutMonitorOptions)
     startedAt = Date.now();
     active = enabled;
     installWindowHandle();
-    console.info(SIDEBAR_LAYOUT_MONITOR_LABEL, `started (${enabled ? "armed" : "idle — call window.__dbxSidebarLayoutMonitor.enable() or enable the debug-logs setting to arm"})`, "interval", intervalMs);
+    console.info(SIDEBAR_LAYOUT_MONITOR_LABEL, `started (${enabled ? "armed" : "idle — call window.__gaussHorizonSidebarLayoutMonitor.enable() or enable the debug-logs setting to arm"})`, "interval", intervalMs);
     // The interval always runs so the monitor can arm itself when the
     // debug-logs setting or the localStorage flag is turned on later.
     timer = setInterval(tick, intervalMs);
@@ -924,6 +924,6 @@ export function createSidebarLayoutMonitor(options: SidebarLayoutMonitorOptions)
 
 declare global {
   interface Window {
-    __dbxSidebarLayoutMonitor?: SidebarLayoutMonitorDebugHandle;
+    __gaussHorizonSidebarLayoutMonitor?: SidebarLayoutMonitorDebugHandle;
   }
 }

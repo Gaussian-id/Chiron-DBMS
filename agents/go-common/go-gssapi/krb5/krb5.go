@@ -905,7 +905,7 @@ func principalFromKeytab(value *keytab.Keytab) (string, error) {
 }
 
 func environmentBool(key string) bool {
-	switch strings.ToLower(strings.TrimSpace(os.Getenv(key))) {
+	switch strings.ToLower(strings.TrimSpace(projectEnvironment(key))) {
 	case "1", "true", "yes", "on":
 		return true
 	default:
@@ -915,20 +915,20 @@ func environmentBool(key string) bool {
 
 func clientOptionsFromEnvironment() ClientOptions {
 	return ClientOptions{
-		ConfigPath:      os.Getenv("KRB5_CONFIG"),
-		CCachePath:      os.Getenv("KRB5CCNAME"),
+		ConfigPath:      projectEnvironment("KRB5_CONFIG"),
+		CCachePath:      projectEnvironment("KRB5CCNAME"),
 		KeytabPath:      firstEnvironmentValue("KRB5_CLIENT_KTNAME", "KRB5_KTNAME"),
-		Principal:       os.Getenv("DBX_KRB5_PRINCIPAL"),
-		Password:        os.Getenv("DBX_KRB5_PASSWORD"),
-		UseCCache:       environmentBool("DBX_KRB5_USE_CCACHE"),
-		UseKeytab:       environmentBool("DBX_KRB5_USE_KEYTAB"),
-		DisablePAFXFAST: environmentBool("DBX_KRB5_DISABLE_PAFXFAST"),
+		Principal:       projectEnvironment("GAUSS_HORIZON_KRB5_PRINCIPAL"),
+		Password:        projectEnvironment("GAUSS_HORIZON_KRB5_PASSWORD"),
+		UseCCache:       environmentBool("GAUSS_HORIZON_KRB5_USE_CCACHE"),
+		UseKeytab:       environmentBool("GAUSS_HORIZON_KRB5_USE_KEYTAB"),
+		DisablePAFXFAST: environmentBool("GAUSS_HORIZON_KRB5_DISABLE_PAFXFAST"),
 	}
 }
 
 func firstEnvironmentValue(keys ...string) string {
 	for _, key := range keys {
-		if value := strings.TrimSpace(os.Getenv(key)); value != "" {
+		if value := strings.TrimSpace(projectEnvironment(key)); value != "" {
 			return value
 		}
 	}

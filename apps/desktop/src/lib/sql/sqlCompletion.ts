@@ -2648,7 +2648,7 @@ function isInJoinConditionContext(beforeCursor: string): boolean {
 
 function lastStandaloneKeywordIndex(cleaned: string, keyword: string): number {
   // `\bhaving\b` — a bare `lastIndexOf("having")` also anchors on identifiers
-  // like `having_count` (t8y2/dbx#8953 review).
+  // like `having_count` (Gaussian-id/Gauss-Horizon#8953 review).
   const pattern = new RegExp(`\\b${keyword}\\b`, "g");
   let last = -1;
   for (let match = pattern.exec(cleaned); match; match = pattern.exec(cleaned)) {
@@ -2669,7 +2669,7 @@ function isInOrderOrGroupByContext(beforeCursor: string, databaseType?: Database
   // so aliases stay visible there just like in ORDER BY/GROUP BY — but
   // confirmed rejecters (PostgreSQL family, SQL Server, DB2, Oracle family,
   // Trino, ...) hide them, and their "Unknown column" diagnostic keeps
-  // flagging those (t8y2/dbx#8953 review).
+  // flagging those (Gaussian-id/Gauss-Horizon#8953 review).
   const lastHaving = lastStandaloneKeywordIndex(cleaned, "having");
   const lastContext = Math.max(lastOrderBy, lastGroupBy, lastHaving);
   if (lastContext < 0) return false;

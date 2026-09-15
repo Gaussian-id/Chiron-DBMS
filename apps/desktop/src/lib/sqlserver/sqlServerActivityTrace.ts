@@ -1,7 +1,7 @@
 import type { QueryResult } from "@/types/database";
 
-export const SQLSERVER_TRACE_SESSION_PREFIX = "DBX_TRACE_";
-export const SQLSERVER_TRACE_INTERNAL_MARKER = "DBX_INTERNAL_TRACE";
+export const SQLSERVER_TRACE_SESSION_PREFIX = "GAUSS_HORIZON_TRACE_";
+export const SQLSERVER_TRACE_INTERNAL_MARKER = "GAUSS_HORIZON_INTERNAL_TRACE";
 export const SQLSERVER_TRACE_DEFAULT_MAX_EVENTS = 1000;
 export const SQLSERVER_TRACE_MIN_MAX_EVENTS = 100;
 export const SQLSERVER_TRACE_MAX_MAX_EVENTS = 5000;
@@ -76,7 +76,7 @@ export function buildSqlServerTraceSessionName(expiresAt = Date.now() + (SQLSERV
 }
 
 export function isValidSqlServerTraceSessionName(value: string): boolean {
-  return /^DBX_TRACE_[A-Z0-9_]{3,100}$/.test(value);
+  return /^GAUSS_HORIZON_TRACE_[A-Z0-9_]{3,100}$/.test(value);
 }
 
 function assertSessionName(sessionName: string): string {

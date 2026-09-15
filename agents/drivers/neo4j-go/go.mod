@@ -1,4 +1,4 @@
-module github.com/t8y2/dbx/agents/drivers/neo4j-go
+module github.com/Gaussian-id/Gauss-Horizon/agents/drivers/neo4j-go
 
 go 1.24
 

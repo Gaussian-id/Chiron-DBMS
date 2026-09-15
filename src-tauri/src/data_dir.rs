@@ -1,7 +1,7 @@
 use std::path::{Path, PathBuf};
 
 #[cfg(target_os = "windows")]
-const PORTABLE_MARKER: &str = "portable.dbx";
+const PORTABLE_MARKER: &str = "portable.gauss-horizon";
 #[cfg(target_os = "windows")]
 const INSTALLER_MARKER: &str = "uninstall.exe";
 
@@ -35,7 +35,9 @@ impl DataDirResolution {
 }
 
 pub fn resolve_data_dir_with_mode(default_app_data_dir: PathBuf) -> DataDirResolution {
-    let env_data_dir = std::env::var_os("DBX_DATA_DIR").filter(|value| !value.is_empty()).map(PathBuf::from);
+    let env_data_dir = gauss_horizon_core::legacy::var_os("GAUSS_HORIZON_DATA_DIR")
+        .filter(|value| !value.is_empty())
+        .map(PathBuf::from);
 
     #[cfg(target_os = "windows")]
     let exe_dir = current_exe_dir();
@@ -73,7 +75,7 @@ fn current_exe_dir() -> Option<PathBuf> {
 
 #[cfg(target_os = "windows")]
 fn portable_marker_exists(exe_dir: &Path) -> bool {
-    exe_dir.join(PORTABLE_MARKER).is_file()
+    exe_dir.join(PORTABLE_MARKER).is_file() || exe_dir.join("portable.dbx").is_file()
 }
 
 #[cfg(not(target_os = "windows"))]
@@ -136,8 +138,8 @@ mod tests {
 
     #[test]
     fn uses_portable_data_dir_when_marker_exists_without_installer_marker() {
-        let default_dir = PathBuf::from(r"C:\Users\Administrator\AppData\Roaming\com.dbx.app");
-        let exe_dir = PathBuf::from(r"D:\Apps\DBX");
+        let default_dir = PathBuf::from(r"C:\Users\Administrator\AppData\Roaming\id.gaussian.gauss-horizon");
+        let exe_dir = PathBuf::from(r"D:\Apps\Gauss Horizon");
 
         let resolution = resolve_data_dir_from_inputs(default_dir, Some(exe_dir.clone()), true, false, None);
 
@@ -150,8 +152,8 @@ mod tests {
 
     #[test]
     fn installer_marker_keeps_installed_mode_even_when_portable_marker_exists() {
-        let default_dir = PathBuf::from(r"C:\Users\Administrator\AppData\Roaming\com.dbx.app");
-        let exe_dir = PathBuf::from(r"C:\Program Files\DBX");
+        let default_dir = PathBuf::from(r"C:\Users\Administrator\AppData\Roaming\id.gaussian.gauss-horizon");
+        let exe_dir = PathBuf::from(r"C:\Program Files\Gauss Horizon");
 
         let resolution = resolve_data_dir_from_inputs(default_dir.clone(), Some(exe_dir), true, true, None);
 
@@ -164,9 +166,9 @@ mod tests {
 
     #[test]
     fn env_override_wins_over_installer_and_portable_markers() {
-        let default_dir = PathBuf::from(r"C:\Users\Administrator\AppData\Roaming\com.dbx.app");
-        let exe_dir = PathBuf::from(r"C:\Program Files\DBX");
-        let env_dir = PathBuf::from(r"E:\DBXData");
+        let default_dir = PathBuf::from(r"C:\Users\Administrator\AppData\Roaming\id.gaussian.gauss-horizon");
+        let exe_dir = PathBuf::from(r"C:\Program Files\Gauss Horizon");
+        let env_dir = PathBuf::from(r"E:\GaussHorizonData");
 
         let resolution = resolve_data_dir_from_inputs(default_dir, Some(exe_dir), true, true, Some(env_dir.clone()));
 
@@ -179,8 +181,8 @@ mod tests {
 
     #[test]
     fn portable_mode_can_import_from_default_data_dir() {
-        let default_dir = PathBuf::from(r"C:\Users\Administrator\AppData\Roaming\com.dbx.app");
-        let exe_dir = PathBuf::from(r"D:\Apps\DBX");
+        let default_dir = PathBuf::from(r"C:\Users\Administrator\AppData\Roaming\id.gaussian.gauss-horizon");
+        let exe_dir = PathBuf::from(r"D:\Apps\Gauss Horizon");
 
         let resolution = resolve_data_dir_from_inputs(default_dir.clone(), Some(exe_dir), true, false, None);
 
@@ -189,8 +191,8 @@ mod tests {
 
     #[test]
     fn installed_mode_can_import_from_leftover_portable_data_dir() {
-        let default_dir = PathBuf::from(r"C:\Users\Administrator\AppData\Roaming\com.dbx.app");
-        let exe_dir = PathBuf::from(r"C:\Program Files\DBX");
+        let default_dir = PathBuf::from(r"C:\Users\Administrator\AppData\Roaming\id.gaussian.gauss-horizon");
+        let exe_dir = PathBuf::from(r"C:\Program Files\Gauss Horizon");
 
         let resolution = resolve_data_dir_from_inputs(default_dir, Some(exe_dir.clone()), true, true, None);
 
@@ -199,11 +201,16 @@ mod tests {
 
     #[test]
     fn env_override_does_not_import_from_implicit_alternative_dir() {
-        let default_dir = PathBuf::from(r"C:\Users\Administrator\AppData\Roaming\com.dbx.app");
-        let exe_dir = PathBuf::from(r"D:\Apps\DBX");
+        let default_dir = PathBuf::from(r"C:\Users\Administrator\AppData\Roaming\id.gaussian.gauss-horizon");
+        let exe_dir = PathBuf::from(r"D:\Apps\Gauss Horizon");
 
-        let resolution =
-            resolve_data_dir_from_inputs(default_dir, Some(exe_dir), true, false, Some(PathBuf::from(r"E:\DBXData")));
+        let resolution = resolve_data_dir_from_inputs(
+            default_dir,
+            Some(exe_dir),
+            true,
+            false,
+            Some(PathBuf::from(r"E:\GaussHorizonData")),
+        );
 
         assert_eq!(alternative_data_dir(&resolution), None);
     }

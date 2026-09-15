@@ -3,7 +3,7 @@ import { describe, expect, it } from "vitest";
 
 const dialogSource = readFileSync(new URL("../EditorSettingsDialog.vue", import.meta.url), "utf8");
 
-// Regression for https://github.com/t8y2/dbx/issues/5905: changing a shortcut
+// Regression for https://github.com/Gaussian-id/Gauss-Horizon/issues/5905: changing a shortcut
 // or the sidebar activation mode (and every other draft-gated editor
 // setting) was silently discarded whenever the dialog closed any way other
 // than the explicit "Apply"/"Apply and Close" buttons — Escape, clicking

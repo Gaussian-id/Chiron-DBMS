@@ -1,3 +1,4 @@
+const APP_UPDATES_ENABLED = false;
 import { computed, ref, watch, onScopeDispose } from "vue";
 import { useI18n } from "vue-i18n";
 import { isTauriRuntime } from "@/lib/backend/tauriRuntime";
@@ -91,9 +92,9 @@ export function tagVersion(version: string): string {
 export function resolveUpdateReleaseUrl(info: api.UpdateInfo | null, source: unknown, fallbackUrl: string): string {
   const normalizedSource = normalizeUpdateDownloadSource(source);
   if (normalizedSource === "cnb" && info?.latest_version) {
-    return `https://cnb.cool/dbxio.com/dbx/-/releases/tag/${tagVersion(info.latest_version)}`;
+    return `https://distribution-disabled.invalid/-/releases/tag/${tagVersion(info.latest_version)}`;
   }
-  if (normalizedSource === "cnb") return "https://cnb.cool/dbxio.com/dbx/-/releases";
+  if (normalizedSource === "cnb") return "https://distribution-disabled.invalid/-/releases";
   return info?.release_url || fallbackUrl;
 }
 
@@ -130,7 +131,7 @@ export function useAppUpdater(options: UseAppUpdaterOptions = {}) {
   const hasUpdateAvailable = computed(
     () => notificationsEnabled.value && (updateDownloaded.value || updateReady.value || (updateInfo.value?.update_available === true && (!isTauriRuntime() || updateInfo.value.manual_update_only))) && !isUpdateIgnored(updateInfo.value, settingsStore.editorSettings.ignoredUpdateVersion),
   );
-  const latestReleaseUrl = "https://github.com/t8y2/dbx/releases/latest";
+  const latestReleaseUrl = "https://github.com/Gaussian-id/Gauss-Horizon/releases/latest";
   let generation = 0;
   let activeDownload: Promise<void> | undefined;
   let cancellation: Promise<void> | undefined;
@@ -183,10 +184,15 @@ export function useAppUpdater(options: UseAppUpdaterOptions = {}) {
     clearError();
   }
   function openUrl(url: string) {
+    if (url.includes("distribution-disabled.invalid")) {
+      updateCheckMessage.value = "This Gauss Horizon service is not available in 0.1.0.";
+      return;
+    }
     if (isTauriRuntime()) void import("@tauri-apps/plugin-shell").then(({ open }) => open(url));
     else window.open(url, "_blank", "noopener,noreferrer");
   }
   function openLatestRelease() {
+    if (!APP_UPDATES_ENABLED) return;
     openUrl(resolveUpdateReleaseUrl(updateInfo.value, settingsStore.editorSettings.updateDownloadSource, latestReleaseUrl));
   }
   function formatUpdateError(message: string): string {
@@ -197,6 +203,7 @@ export function useAppUpdater(options: UseAppUpdaterOptions = {}) {
     return t("updates.downloadFailed", { error: message });
   }
   async function checkUpdates(checkOptions: { silent?: boolean } = {}) {
+    if (!APP_UPDATES_ENABLED) return;
     if (disposed || isIgnoringUpdate.value) return;
     if (!checkOptions.silent) showUpdateDialog.value = true;
     if (phase.value !== "idle" || downloaded.value || (checkOptions.silent && !notificationsEnabled.value)) return;
@@ -221,6 +228,7 @@ export function useAppUpdater(options: UseAppUpdaterOptions = {}) {
     }
   }
   async function downloadUpdateInBackground() {
+    if (!APP_UPDATES_ENABLED) return;
     if (disposed || isIgnoringUpdate.value || phase.value !== "idle" || downloaded.value || !canDownloadAndInstallUpdate(updateInfo.value, isTauriRuntime())) return;
     const version = updateInfo.value!.latest_version;
     const token = ++generation;
@@ -292,6 +300,7 @@ export function useAppUpdater(options: UseAppUpdaterOptions = {}) {
     }
   }
   async function changeUpdateDownloadSource(source: SettingsUpdateDownloadSource) {
+    if (!APP_UPDATES_ENABLED) return;
     if (isIgnoringUpdate.value || isInstallingUpdate.value) return;
     try {
       await settingsStore.updateEditorSettingsAndPersist({ updateDownloadSource: source });
@@ -304,6 +313,7 @@ export function useAppUpdater(options: UseAppUpdaterOptions = {}) {
     }
   }
   async function ignoreCurrentVersion() {
+    if (!APP_UPDATES_ENABLED) return;
     const version = updateInfo.value?.latest_version;
     if (!version || isIgnoringUpdate.value || isInstallingUpdate.value || updateReady.value) return;
     isIgnoringUpdate.value = true;
@@ -322,6 +332,7 @@ export function useAppUpdater(options: UseAppUpdaterOptions = {}) {
     }
   }
   async function performInstall(restartOnly: boolean) {
+    if (!APP_UPDATES_ENABLED) return;
     if (!isTauriRuntime() || isInstallingUpdate.value || isIgnoringUpdate.value || (!restartOnly && !downloaded.value)) return;
     const cache = downloaded.value;
     let release: (() => void) | undefined;
@@ -376,6 +387,7 @@ export function useAppUpdater(options: UseAppUpdaterOptions = {}) {
     if (updateReady.value) await performInstall(true);
   }
   async function initialize() {
+    if (!APP_UPDATES_ENABLED) return;
     if (initialized || disposed) return;
     initialized = true;
     if (isTauriRuntime()) {

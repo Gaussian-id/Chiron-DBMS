@@ -5,12 +5,12 @@ import { parseJsonPreservingLargeNumbers } from "@/lib/common/safeJsonFormat";
 
 describe("Meilisearch document saves", () => {
   it("preserves the distinction between string and numeric document ids", () => {
-    expect(serializeDocumentStoreId("001", "meilisearch")).toBe('__dbx_meilisearch_string_id__"001"');
+    expect(serializeDocumentStoreId("001", "meilisearch")).toBe('__gauss_horizon_meilisearch_string_id__"001"');
     expect(serializeDocumentStoreId(1, "meilisearch")).toBe("1");
     expect(serializeDocumentStoreId(parseJsonPreservingLargeNumbers("9007199254740993"), "meilisearch")).toBe("9007199254740993");
   });
 
-  it("describes DBX write semantics without inventing a native primary-key field", () => {
+  it("describes Gauss Horizon write semantics without inventing a native primary-key field", () => {
     const preview = formatMeilisearchDocumentOperationPreview({
       action: "update",
       index: "movies",
@@ -18,7 +18,7 @@ describe("Meilisearch document saves", () => {
       document: { title: "Arrival", rating: 9 },
     });
 
-    expect(preview).toContain("DBX MEILISEARCH UPDATE DOCUMENT");
+    expect(preview).toContain("Gauss Horizon MEILISEARCH UPDATE DOCUMENT");
     expect(preview).toContain('index: "movies"');
     expect(preview).toContain('id: "001"');
     expect(preview).toContain('"title": "Arrival"');
@@ -51,7 +51,7 @@ describe("Meilisearch document saves", () => {
       },
     });
 
-    expect(calls).toEqual(['update:__dbx_meilisearch_string_id__"002"', 'delete:__dbx_meilisearch_string_id__"001"']);
-    expect(update).toHaveBeenCalledWith('__dbx_meilisearch_string_id__"002"', '{"title":"Arrival"}', undefined);
+    expect(calls).toEqual(['update:__gauss_horizon_meilisearch_string_id__"002"', 'delete:__gauss_horizon_meilisearch_string_id__"001"']);
+    expect(update).toHaveBeenCalledWith('__gauss_horizon_meilisearch_string_id__"002"', '{"title":"Arrival"}', undefined);
   });
 });

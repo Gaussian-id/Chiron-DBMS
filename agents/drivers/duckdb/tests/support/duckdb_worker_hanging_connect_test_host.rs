@@ -2,7 +2,7 @@ use std::io::{self, BufRead};
 use std::time::Duration;
 
 fn main() {
-    if let Ok(path) = std::env::var("DBX_DUCKDB_HANGING_CONNECT_PID_FILE") {
+    if let Ok(path) = std::env::var("GAUSS_HORIZON_DUCKDB_HANGING_CONNECT_PID_FILE") {
         let _ = std::fs::write(path, std::process::id().to_string());
     }
 

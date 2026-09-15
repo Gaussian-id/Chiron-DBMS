@@ -1,23 +1,23 @@
 services:
-  dbx:
+  gauss-horizon:
     build:
       context: ..
       dockerfile: deploy/Dockerfile
     ports:
       - "4224:4224"
     environment:
-      - DBX_PASSWORD=changeme
+      - GAUSS_HORIZON_PASSWORD=changeme
       # Native Streamable HTTP MCP is served by this same Web listener at /mcp.
       # Set the host authority clients use (including its externally mapped port).
-      # - DBX_WEB_MCP_TOKEN=replace-with-a-long-random-secret
-      # - DBX_WEB_MCP_ALLOWED_HOSTS=localhost:4224
+      # - GAUSS_HORIZON_WEB_MCP_TOKEN=replace-with-a-long-random-secret
+      # - GAUSS_HORIZON_WEB_MCP_ALLOWED_HOSTS=localhost:4224
       # Browser-based MCP clients additionally need their exact Origin, for example:
-      # - DBX_WEB_MCP_ALLOWED_ORIGINS=https://mcp-client.example.com
-      # Uncomment when publishing DBX under a reverse-proxy subpath, e.g. https://example.com/dbx/
-      # - DBX_PUBLIC_BASE_PATH=/dbx
+      # - GAUSS_HORIZON_WEB_MCP_ALLOWED_ORIGINS=https://mcp-client.example.com
+      # Uncomment when publishing Gauss Horizon under a reverse-proxy subpath, e.g. https://example.com/gauss-horizon/
+      # - GAUSS_HORIZON_PUBLIC_BASE_PATH=/gauss-horizon
     volumes:
-      - dbx-data:/app/data
+      - gauss-horizon-data:/app/data
     restart: unless-stopped
 
 volumes:
-  dbx-data:
+  gauss-horizon-data:

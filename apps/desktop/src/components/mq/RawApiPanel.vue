@@ -316,7 +316,7 @@ async function executeRequest() {
 .response-panel {
   padding: 14px;
   border: 1px solid var(--color-border);
-  border-radius: var(--dbx-radius-fixed-6);
+  border-radius: var(--gauss-horizon-radius-fixed-6);
   background: var(--color-background-secondary);
 }
 
@@ -378,7 +378,7 @@ async function executeRequest() {
   min-height: 58px;
   padding: 10px;
   border: 1px solid var(--color-border);
-  border-radius: var(--dbx-radius-fixed-6);
+  border-radius: var(--gauss-horizon-radius-fixed-6);
   background: var(--color-background);
   color: var(--color-text);
   text-align: left;
@@ -393,7 +393,7 @@ async function executeRequest() {
   display: inline-flex;
   justify-content: center;
   padding: 2px 6px;
-  border-radius: var(--dbx-radius-fixed-4);
+  border-radius: var(--gauss-horizon-radius-fixed-4);
   background: var(--color-primary-alpha);
   color: var(--color-primary);
   font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
@@ -447,7 +447,7 @@ textarea {
   width: 100%;
   padding: 8px 10px;
   border: 1px solid var(--color-border);
-  border-radius: var(--dbx-radius-fixed-4);
+  border-radius: var(--gauss-horizon-radius-fixed-4);
   background: var(--color-background);
   color: var(--color-text);
   box-sizing: border-box;
@@ -493,7 +493,7 @@ pre {
   padding: 12px;
   max-height: 420px;
   overflow: auto;
-  border-radius: var(--dbx-radius-fixed-6);
+  border-radius: var(--gauss-horizon-radius-fixed-6);
   background: var(--color-background);
   color: var(--color-text);
 }
@@ -508,7 +508,7 @@ pre {
 .readonly-hint {
   padding: 12px 16px;
   margin-bottom: 12px;
-  border-radius: var(--dbx-radius-fixed-6);
+  border-radius: var(--gauss-horizon-radius-fixed-6);
   font-size: 13px;
 }
 

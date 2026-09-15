@@ -49,14 +49,14 @@ java {
 }
 
 tasks.named('shadowJar') {
-    archiveBaseName = 'dbx-agent-template'
+    archiveBaseName = 'gauss-horizon-agent-template'
     archiveClassifier = ''
     manifest {
         attributes(
             'Agent-Label': 'Template DB',
             // Add this only when users must provide the JDBC driver jar:
             // 'Agent-External-Driver': 'true',
-            'Main-Class': 'com.dbx.agent.template.TemplateAgent'
+            'Main-Class': 'com.gauss.horizon.agent.template.TemplateAgent'
         )
     }
 }

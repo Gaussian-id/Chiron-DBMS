@@ -6,7 +6,7 @@ use tauri::{AppHandle, Emitter, State};
 
 use crate::commands::connection::AppState;
 
-pub use dbx_core::table_export::{ExportStatus, TableExportProgress, TableExportRequest};
+pub use gauss_horizon_core::table_export::{ExportStatus, TableExportProgress, TableExportRequest};
 
 fn emit_progress(app: &AppHandle, progress: TableExportProgress) {
     let _ = app.emit("table-export-progress", progress);
@@ -31,10 +31,10 @@ pub async fn start_table_export(
 
     // Exports interleave async fetches with synchronous row formatting and
     // buffered disk writes; run them off the async workers (see spawn_export_task).
-    dbx_core::export_runtime::spawn_export_task(async move {
+    gauss_horizon_core::export_runtime::spawn_export_task(async move {
         let cancelled = Arc::new(AtomicBool::new(false));
         let cancelled_progress = cancelled.clone();
-        let result = dbx_core::table_export::export_table_data_core(&state, &request, |progress| {
+        let result = gauss_horizon_core::table_export::export_table_data_core(&state, &request, |progress| {
             if matches!(progress.status, ExportStatus::Cancelled) {
                 cancelled_progress.store(true, Ordering::SeqCst);
             }
@@ -42,7 +42,7 @@ pub async fn start_table_export(
         })
         .await;
 
-        let client_session_id = dbx_core::table_export::table_export_client_session_id(&export_id);
+        let client_session_id = gauss_horizon_core::table_export::table_export_client_session_id(&export_id);
         let _ =
             state.close_client_session_pool(&request.connection_id, Some(&request.database), &client_session_id).await;
 
@@ -64,7 +64,7 @@ pub async fn start_table_export(
             );
         }
 
-        dbx_core::database_export::clear_export_cancelled(&export_id).await;
+        gauss_horizon_core::database_export::clear_export_cancelled(&export_id).await;
     });
 
     Ok(())
@@ -72,7 +72,7 @@ pub async fn start_table_export(
 
 #[tauri::command]
 pub async fn cancel_table_export(export_id: String) -> Result<(), String> {
-    dbx_core::database_export::set_export_cancelled(&export_id).await;
+    gauss_horizon_core::database_export::set_export_cancelled(&export_id).await;
     Ok(())
 }
 
@@ -81,7 +81,7 @@ mod tests {
     use super::remove_incomplete_export;
 
     async fn create_export_file(name: &str) -> std::path::PathBuf {
-        let path = std::env::temp_dir().join(format!("dbx-table-export-{name}-{}", uuid::Uuid::new_v4()));
+        let path = std::env::temp_dir().join(format!("gauss-horizon-table-export-{name}-{}", uuid::Uuid::new_v4()));
         tokio::fs::write(&path, b"partial export").await.unwrap();
         path
     }

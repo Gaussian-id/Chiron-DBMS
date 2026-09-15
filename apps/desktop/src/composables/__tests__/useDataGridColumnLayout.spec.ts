@@ -179,7 +179,7 @@ describe("useDataGridColumnLayout", () => {
     recreatedState.showAllColumns();
     recreatedScope.stop();
 
-    expect(JSON.parse(localStorage.getItem("dbx-data-grid-column-layout:visibility-recreated-layout")!)).toMatchObject({ hiddenKeys: [] });
+    expect(JSON.parse(localStorage.getItem("gauss-horizon-data-grid-column-layout:visibility-recreated-layout")!)).toMatchObject({ hiddenKeys: [] });
   });
 
   it("show all clears hidden keys for fields missing from the current page", () => {
@@ -229,7 +229,7 @@ describe("useDataGridColumnLayout", () => {
     state.toggleColumnVisibility(1);
 
     scope.stop();
-    expect(JSON.parse(localStorage.getItem("dbx-data-grid-column-layout:visibility-null-column-layout")!)).toMatchObject({ hiddenKeys: ["empty\0\0"] });
+    expect(JSON.parse(localStorage.getItem("gauss-horizon-data-grid-column-layout:visibility-null-column-layout")!)).toMatchObject({ hiddenKeys: ["empty\0\0"] });
   });
 
   it("returns ordered layout options with visibility state and reorders hidden fields", () => {
@@ -960,7 +960,7 @@ describe("useDataGridColumnLayout", () => {
       )!;
 
       state.freezeToColumn(1);
-      const raw = localStorage.getItem("dbx-data-grid-frozen-columns:frozen-persist-layout");
+      const raw = localStorage.getItem("gauss-horizon-data-grid-frozen-columns:frozen-persist-layout");
       expect(raw).not.toBeNull();
       expect(JSON.parse(raw!)).toEqual({ version: 1, frozenCount: 2 });
 
@@ -983,16 +983,16 @@ describe("useDataGridColumnLayout", () => {
       )!;
 
       state.freezeToColumn(0);
-      expect(localStorage.getItem("dbx-data-grid-frozen-columns:frozen-remove-layout")).not.toBeNull();
+      expect(localStorage.getItem("gauss-horizon-data-grid-frozen-columns:frozen-remove-layout")).not.toBeNull();
 
       state.unfreezeAllColumns();
-      expect(localStorage.getItem("dbx-data-grid-frozen-columns:frozen-remove-layout")).toBeNull();
+      expect(localStorage.getItem("gauss-horizon-data-grid-frozen-columns:frozen-remove-layout")).toBeNull();
 
       scope.stop();
     });
 
     it("restores frozenColumnCount from localStorage on load", async () => {
-      localStorage.setItem("dbx-data-grid-frozen-columns:frozen-restore-layout", JSON.stringify({ version: 1, frozenCount: 2 }));
+      localStorage.setItem("gauss-horizon-data-grid-frozen-columns:frozen-restore-layout", JSON.stringify({ version: 1, frozenCount: 2 }));
 
       const scope = effectScope();
       const state = scope.run(() =>
@@ -1062,7 +1062,7 @@ describe("useDataGridColumnLayout", () => {
       await nextTick();
 
       expect(state.frozenColumnCount.value).toBe(2);
-      expect(JSON.parse(localStorage.getItem("dbx-data-grid-frozen-columns:frozen-hidden-layout")!)).toMatchObject({ frozenCount: 2 });
+      expect(JSON.parse(localStorage.getItem("gauss-horizon-data-grid-frozen-columns:frozen-hidden-layout")!)).toMatchObject({ frozenCount: 2 });
       scope.stop();
     });
 

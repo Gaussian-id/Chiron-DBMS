@@ -10,7 +10,7 @@ import { isTauriRuntime } from "@/lib/backend/tauriRuntime";
 import { useSettingsStore } from "@/stores/settingsStore";
 import type { SavedSqlFile, SavedSqlFolder, SavedSqlLibrary } from "@/types/database";
 
-const LEGACY_STORAGE_KEY = "dbx-saved-sql-library";
+const LEGACY_STORAGE_KEY = "gauss-horizon-saved-sql-library";
 
 interface SavedSqlState {
   folders: SavedSqlFolder[];
@@ -523,7 +523,7 @@ export const useSavedSqlStore = defineStore("savedSql", () => {
       bumpVersion();
       return saved;
     } catch (error) {
-      console.warn("[DBX][saved-sql:usage:error]", error);
+      console.warn("[Gauss Horizon][saved-sql:usage:error]", error);
       return existing;
     }
   }
@@ -620,7 +620,7 @@ export const useSavedSqlStore = defineStore("savedSql", () => {
     try {
       await syncPromise;
     } catch (error) {
-      console.warn("[DBX][saved-sql:sync:error]", error);
+      console.warn("[Gauss Horizon][saved-sql:sync:error]", error);
     } finally {
       if (pendingSync === syncPromise) {
         pendingSync = null;

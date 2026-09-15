@@ -76,34 +76,34 @@ const MAX_EXPORT_CANVAS_PIXELS = 64 * 1024 * 1024;
 
 /**
  * Self-contained stylesheet embedded in every snapshot DOM. Keep it prefix
- * namespaced (`dbx-code-snapshot`) so it never leaks into the app chrome.
+ * namespaced (`gauss-horizon-code-snapshot`) so it never leaks into the app chrome.
  */
 export const CODE_SNAPSHOT_CSS = `
-.dbx-code-snapshot,
-.dbx-code-snapshot * {
+.gauss-horizon-code-snapshot,
+.gauss-horizon-code-snapshot * {
   border: 0;
   outline: 0;
 }
-.dbx-code-snapshot {
+.gauss-horizon-code-snapshot {
   border-radius: 8px;
   overflow: hidden;
   font-family: "SF Mono", "Cascadia Code", "JetBrains Mono", Consolas, "Courier New", monospace;
   text-align: left;
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
 }
-.dbx-code-snapshot__bar {
+.gauss-horizon-code-snapshot__bar {
   display: flex;
   align-items: center;
   gap: 8px;
   padding: 10px 14px;
 }
-.dbx-code-snapshot__dot {
+.gauss-horizon-code-snapshot__dot {
   width: 12px;
   height: 12px;
   border-radius: 50%;
   flex: none;
 }
-.dbx-code-snapshot__title {
+.gauss-horizon-code-snapshot__title {
   margin-left: 4px;
   font-size: 12px;
   font-weight: 500;
@@ -111,44 +111,44 @@ export const CODE_SNAPSHOT_CSS = `
   text-overflow: ellipsis;
   white-space: nowrap;
 }
-.dbx-code-snapshot__pre {
+.gauss-horizon-code-snapshot__pre {
   margin: 0;
   overflow: hidden;
   line-height: 1.6;
   tab-size: 4;
 }
-.dbx-code-snapshot__pre code {
+.gauss-horizon-code-snapshot__pre code {
   font-family: inherit;
   font-size: inherit;
   background: transparent;
 }
-.dbx-code-snapshot__pre .line {
+.gauss-horizon-code-snapshot__pre .line {
   display: block;
   min-height: 1.6em;
 }
-.dbx-code-snapshot__line-number {
+.gauss-horizon-code-snapshot__line-number {
   display: inline-block;
   min-width: 2.2em;
   margin-right: 1.4em;
   text-align: right;
-  color: var(--dbx-snapshot-line-number, #8b949e);
+  color: var(--gauss-horizon-snapshot-line-number, #8b949e);
   font-variant-numeric: tabular-nums;
   user-select: none;
   -webkit-user-select: none;
 }
-.dbx-code-snapshot__pre--numbered {
-  counter-reset: dbx-snapshot-line;
+.gauss-horizon-code-snapshot__pre--numbered {
+  counter-reset: gauss-horizon-snapshot-line;
 }
-.dbx-code-snapshot__pre--numbered .line {
-  counter-increment: dbx-snapshot-line;
+.gauss-horizon-code-snapshot__pre--numbered .line {
+  counter-increment: gauss-horizon-snapshot-line;
 }
-.dbx-code-snapshot__pre--numbered .line::before {
-  content: counter(dbx-snapshot-line);
+.gauss-horizon-code-snapshot__pre--numbered .line::before {
+  content: counter(gauss-horizon-snapshot-line);
   display: inline-block;
   min-width: 2.2em;
   margin-right: 1.4em;
   text-align: right;
-  color: var(--dbx-snapshot-line-number, #8b949e);
+  color: var(--gauss-horizon-snapshot-line-number, #8b949e);
   font-variant-numeric: tabular-nums;
   user-select: none;
   -webkit-user-select: none;
@@ -179,17 +179,17 @@ function renderEscapedSnapshotLines(value: string): string {
 }
 
 function renderSnapshotBar(title: string | undefined, appearance: AppThemeAppearance, showTrafficLights: boolean): string {
-  const dots = showTrafficLights ? TRAFFIC_LIGHT_COLORS.map((color) => `<span class="dbx-code-snapshot__dot" style="background:${color}"></span>`).join("") : "";
-  const titleHtml = title ? `<span class="dbx-code-snapshot__title" style="color:${SNAPSHOT_BAR_TEXT[appearance]}">${escapeHtml(title)}</span>` : "";
-  return `<div class="dbx-code-snapshot__bar" style="background:${SNAPSHOT_BAR_BACKGROUND[appearance]};color:${SNAPSHOT_BAR_TEXT[appearance]}">${dots}${titleHtml}</div>`;
+  const dots = showTrafficLights ? TRAFFIC_LIGHT_COLORS.map((color) => `<span class="gauss-horizon-code-snapshot__dot" style="background:${color}"></span>`).join("") : "";
+  const titleHtml = title ? `<span class="gauss-horizon-code-snapshot__title" style="color:${SNAPSHOT_BAR_TEXT[appearance]}">${escapeHtml(title)}</span>` : "";
+  return `<div class="gauss-horizon-code-snapshot__bar" style="background:${SNAPSHOT_BAR_BACKGROUND[appearance]};color:${SNAPSHOT_BAR_TEXT[appearance]}">${dots}${titleHtml}</div>`;
 }
 
 function isSnapshotNumberedLineNode(node: Node): node is Element {
-  return node instanceof Element && node.classList.contains("line") && node.closest(".dbx-code-snapshot__pre--numbered") !== null;
+  return node instanceof Element && node.classList.contains("line") && node.closest(".gauss-horizon-code-snapshot__pre--numbered") !== null;
 }
 
 function hasMaterializedLineNumber(line: Element): boolean {
-  return Array.from(line.children).some((child) => child.classList.contains("dbx-code-snapshot__line-number"));
+  return Array.from(line.children).some((child) => child.classList.contains("gauss-horizon-code-snapshot__line-number"));
 }
 
 function legacyWebViewExportFallbackEnabled(): boolean {
@@ -202,20 +202,20 @@ function legacyWebViewExportFallbackEnabled(): boolean {
  * every counter() value to "1", while the live preview still looks correct.
  */
 export function materializeSnapshotCloneLineNumbers(root: ParentNode): void {
-  for (const block of Array.from(root.querySelectorAll<HTMLElement>(".dbx-code-snapshot__pre--numbered"))) {
-    block.classList.remove("dbx-code-snapshot__pre--numbered");
-    const lineNumberColor = block.style.getPropertyValue("--dbx-snapshot-line-number").trim() || SNAPSHOT_LINE_NUMBER.dark;
+  for (const block of Array.from(root.querySelectorAll<HTMLElement>(".gauss-horizon-code-snapshot__pre--numbered"))) {
+    block.classList.remove("gauss-horizon-code-snapshot__pre--numbered");
+    const lineNumberColor = block.style.getPropertyValue("--gauss-horizon-snapshot-line-number").trim() || SNAPSHOT_LINE_NUMBER.dark;
     const lines = Array.from(block.querySelectorAll<HTMLElement>("code > .line"));
     for (const [index, line] of lines.entries()) {
       if (hasMaterializedLineNumber(line)) continue;
       const lineNumber = block.ownerDocument.createElement("span");
-      lineNumber.className = "dbx-code-snapshot__line-number";
+      lineNumber.className = "gauss-horizon-code-snapshot__line-number";
       lineNumber.setAttribute("aria-hidden", "true");
       lineNumber.textContent = String(index + 1);
       lineNumber.style.cssText = ["display:inline-block", "min-width:2.2em", "margin-right:1.4em", "text-align:right", `color:${lineNumberColor}`, "font-variant-numeric:tabular-nums", "user-select:none", "-webkit-user-select:none"].join(";");
 
       const lineContent = block.ownerDocument.createElement("span");
-      lineContent.className = "dbx-code-snapshot__line-content";
+      lineContent.className = "gauss-horizon-code-snapshot__line-content";
       lineContent.style.display = "inline";
       while (line.firstChild) {
         lineContent.append(line.firstChild);
@@ -272,7 +272,7 @@ export function applySnapshotSqlTableColors(highlightedBody: string, rawCode: st
       if (relativeEnd < totalLength) textNode.splitText(relativeEnd);
       const segment = relativeStart > 0 ? textNode.splitText(relativeStart) : textNode;
       const wrapper = textNode.ownerDocument!.createElement("span");
-      wrapper.className = "dbx-code-snapshot__table-name";
+      wrapper.className = "gauss-horizon-code-snapshot__table-name";
       wrapper.setAttribute("data-sql-token", "table");
       // setAttribute (not style.color) keeps the literal color in the DOM;
       // style.color serializes engine-dependently (rgb() in WebKit/Chromium).
@@ -327,14 +327,14 @@ export async function renderCodeSnapshotHtml(source: CodeSnapshotSource, options
   const fontSize = options.fontSize ?? 13;
 
   const bar = showBar ? renderSnapshotBar(source.title, appearance, options.showTrafficLights !== false) : "";
-  const preClass = `dbx-code-snapshot__pre${showLineNumbers ? " dbx-code-snapshot__pre--numbered" : ""}`;
+  const preClass = `gauss-horizon-code-snapshot__pre${showLineNumbers ? " gauss-horizon-code-snapshot__pre--numbered" : ""}`;
   const lineNumberColor = SNAPSHOT_LINE_NUMBER[appearance];
 
   return (
     `<style>${CODE_SNAPSHOT_CSS}</style>` +
-    `<div class="dbx-code-snapshot" data-snapshot-appearance="${appearance}" style="background:${SNAPSHOT_BACKGROUND[appearance]};font-size:${fontSize}px">` +
+    `<div class="gauss-horizon-code-snapshot" data-snapshot-appearance="${appearance}" style="background:${SNAPSHOT_BACKGROUND[appearance]};font-size:${fontSize}px">` +
     bar +
-    `<pre class="${preClass}" style="--dbx-snapshot-line-number:${lineNumberColor};color:${SNAPSHOT_CODE_TEXT[appearance]};padding:0 ${padding}px ${padding}px"><code>${body}</code></pre>` +
+    `<pre class="${preClass}" style="--gauss-horizon-snapshot-line-number:${lineNumberColor};color:${SNAPSHOT_CODE_TEXT[appearance]};padding:0 ${padding}px ${padding}px"><code>${body}</code></pre>` +
     `</div>`
   );
 }

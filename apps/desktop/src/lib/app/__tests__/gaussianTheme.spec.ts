@@ -47,8 +47,8 @@ describe("Gaussian workbench theme", () => {
   it("provides DOM and canvas colors without overwriting corner preferences", () => {
     const css = readFileSync(new URL("../../../styles/gaussian.css", import.meta.url), "utf8");
     expect(css).toContain("html.theme-gaussian.dark");
-    expect(css).toContain("--dbx-primary-rgb: 46, 123, 255");
-    expect(css).toContain("--dbx-content: #070b16");
+    expect(css).toContain("--gauss-horizon-primary-rgb: 46, 123, 255");
+    expect(css).toContain("--gauss-horizon-content: #070b16");
     expect(css).toContain("html.theme-gaussian[data-corner-style='large']");
     expect(css).not.toContain("data-corner-style='none'");
   });

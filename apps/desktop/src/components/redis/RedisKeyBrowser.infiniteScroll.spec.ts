@@ -469,7 +469,7 @@ describe("RedisKeyBrowser infinite scroll auto-continue (issue #6022)", () => {
       }
       expect(host.querySelector(`[data-redis-leaf='${btoa("new")}']`)).not.toBeNull();
       expect(host.textContent).not.toContain("old");
-      window.dispatchEvent(new CustomEvent("dbx-redis-db-flushed", { detail: { connectionId: "connection", db: 1 } }));
+      window.dispatchEvent(new CustomEvent("gauss-horizon-redis-db-flushed", { detail: { connectionId: "connection", db: 1 } }));
       await settleThoroughly();
       expect(host.querySelector(`[data-redis-leaf='${btoa("new")}']`)).toBeNull();
     } finally {
@@ -1001,7 +1001,7 @@ describe("RedisKeyBrowser continuation ownership (issue #7779)", () => {
 
 // `iterations` (aka `max_iterations`) is the 6th positional arg the frontend
 // sends to `redisScanKeysBatch` — the same unit the backend spends as real
-// Redis SCAN calls (see `crates/dbx-core/src/db/redis_driver.rs`).
+// Redis SCAN calls (see `crates/gauss-horizon-core/src/db/redis_driver.rs`).
 function totalIterationsRequested(): number {
   return mocks.redisScanKeysBatch.mock.calls.reduce((sum: number, call: unknown[]) => sum + (call[5] as number), 0);
 }
@@ -1127,7 +1127,7 @@ describe("RedisKeyBrowser loadMore failure handling (PR #6313 review)", () => {
 // A group's `loadedLeafCount` only reflects keys the SCAN happened to return
 // before auto-load stopped (see `redisKeyTree.ts`); when the cursor hasn't
 // reached 0 yet, that count is not the folder's real total. Issue #6392: a
-// user compared DBX's tree against `redis-cli --scan` and saw folder counts
+// user compared Gauss Horizon's tree against `redis-cli --scan` and saw folder counts
 // far below the real per-prefix cardinality, with nothing in the UI hinting
 // the numbers were partial.
 describe("RedisKeyBrowser group key counts reflect incomplete loading (issue #6392)", () => {

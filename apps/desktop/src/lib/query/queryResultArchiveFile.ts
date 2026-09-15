@@ -1,7 +1,7 @@
 import { isTauriRuntime } from "@/lib/backend/tauriRuntime";
 
-const ARCHIVE_MIME_TYPE = "application/vnd.dbx.results";
-const ARCHIVE_EXTENSIONS = ["dbxresults"];
+const ARCHIVE_MIME_TYPE = "application/vnd.gauss.horizon.results";
+const ARCHIVE_EXTENSIONS = ["gauss-horizonresults"];
 
 function downloadArchiveFile(fileName: string, bytes: Uint8Array): string {
   const blob = new Blob([bytes.slice().buffer], { type: ARCHIVE_MIME_TYPE });
@@ -18,7 +18,7 @@ function openArchiveFileInBrowser(): Promise<Uint8Array | undefined> {
   return new Promise((resolve, reject) => {
     const input = document.createElement("input");
     input.type = "file";
-    input.accept = ".dbxresults,application/octet-stream,application/vnd.dbx.results";
+    input.accept = ".gauss-horizonresults,application/octet-stream,application/vnd.gauss.horizon.results";
     input.onchange = async () => {
       try {
         const file = input.files?.[0];
@@ -41,7 +41,7 @@ export async function saveQueryResultArchiveFile(fileName: string, bytes: Uint8A
   const [{ save }, { writeFile }] = await Promise.all([import("@tauri-apps/plugin-dialog"), import("@tauri-apps/plugin-fs")]);
   const path = await save({
     defaultPath: fileName,
-    filters: [{ name: "DBX Result Archive", extensions: ARCHIVE_EXTENSIONS }],
+    filters: [{ name: "Gauss Horizon Result Archive", extensions: ARCHIVE_EXTENSIONS }],
   });
   if (!path) return undefined;
   await writeFile(path, bytes);
@@ -54,7 +54,7 @@ export async function openQueryResultArchiveFile(): Promise<Uint8Array | undefin
   const [{ open }, { readFile }] = await Promise.all([import("@tauri-apps/plugin-dialog"), import("@tauri-apps/plugin-fs")]);
   const selected = await open({
     multiple: false,
-    filters: [{ name: "DBX Result Archive", extensions: ARCHIVE_EXTENSIONS }],
+    filters: [{ name: "Gauss Horizon Result Archive", extensions: ARCHIVE_EXTENSIONS }],
   });
   const path = Array.isArray(selected) ? selected[0] : selected;
   if (!path) return undefined;

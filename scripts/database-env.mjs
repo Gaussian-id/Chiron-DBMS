@@ -9,7 +9,7 @@ const REPO_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 export const DEFAULT_RECIPES_ROOT = join(REPO_ROOT, 'deploy', 'database');
 const DEFAULT_MAKEFILE_PATH = join(REPO_ROOT, 'Makefile');
 const DEFAULT_PASSWORD = '123456';
-const DEFAULT_DATABASE = 'dbx';
+const DEFAULT_DATABASE = 'gauss-horizon';
 const DEFAULT_HOST_PORT_RANGES = {
   mysql: [10100, 10199],
   mariadb: [10200, 10299],
@@ -27,7 +27,7 @@ const DEFAULT_HOST_PORT_RANGES = {
   pulsar: [11400, 11499],
   elasticsearch: [11500, 11599],
 };
-const DBX_DEEP_LINK_TYPES = {
+const GAUSS_HORIZON_DEEP_LINK_TYPES = {
   clickhouse: 'clickhouse',
   consul: 'consul',
   elasticsearch: 'elasticsearch',
@@ -131,9 +131,9 @@ function printQuickStart(recipes) {
 }
 
 function printCompletionSetup() {
-  console.log('Bash:       source deploy/database/completion/dbx-make.bash');
-  console.log('Zsh:        autoload -Uz compinit && compinit && source deploy/database/completion/_dbx-make.zsh');
-  console.log('PowerShell: . .\\deploy\\database\\completion\\Dbx.Make.ps1');
+  console.log('Bash:       source deploy/database/completion/gauss-horizon-make.bash');
+  console.log('Zsh:        autoload -Uz compinit && compinit && source deploy/database/completion/_gauss-horizon-make.zsh');
+  console.log('PowerShell: . .\\deploy\\database\\completion\\GaussHorizon.Make.ps1');
 }
 
 export function resolveRecipe(recipes, database, version) {
@@ -163,7 +163,7 @@ export function assertResetConfirmed(value) {
 }
 
 export function expectedContainerName(recipe) {
-  return `dbx-${recipe.database}-${recipe.displayVersion}`.toLowerCase().replace(/[^a-z0-9_.-]+/g, '-');
+  return `gauss-horizon-${recipe.database}-${recipe.displayVersion}`.toLowerCase().replace(/[^a-z0-9_.-]+/g, '-');
 }
 
 export function defaultHostPortMappings(compose) {
@@ -391,7 +391,7 @@ export function serviceHasNamedVolume(compose, service) {
 }
 
 function composeArgs(recipe, ...args) {
-  const project = (process.env.DB_PROJECT || `dbx-${basename(REPO_ROOT)}-${recipe.database}-${recipe.displayVersion}`).toLowerCase().replace(/[^a-z0-9_-]+/g, '-');
+  const project = (process.env.DB_PROJECT || `gauss-horizon-${basename(REPO_ROOT)}-${recipe.database}-${recipe.displayVersion}`).toLowerCase().replace(/[^a-z0-9_-]+/g, '-');
   return ['compose', '--project-name', project, '--file', join(recipe.directory, 'compose.yaml'), ...args];
 }
 
@@ -423,8 +423,8 @@ export function expandSmokeCommand(command, recipe, environment = process.env) {
   return command.map((value) => value.replace(/\$\{(DB_PASSWORD|DB_PORT)\}/g, (_, name) => values[name]));
 }
 
-export function dbxConnectionDeepLink(recipe, environment = process.env) {
-  const type = recipe.deepLinkType || DBX_DEEP_LINK_TYPES[recipe.database];
+export function gaussHorizonConnectionDeepLink(recipe, environment = process.env) {
+  const type = recipe.deepLinkType || GAUSS_HORIZON_DEEP_LINK_TYPES[recipe.database];
   if (!type) return null;
 
   const { connection } = recipe;
@@ -438,7 +438,7 @@ export function dbxConnectionDeepLink(recipe, environment = process.env) {
   if (connection.username) params.set('user', connection.username);
   if (connection.password) params.set('password', environment.DB_PASSWORD || connection.password);
   if (connection.urlParams) params.set('url_params', connection.urlParams);
-  return `dbx://connection/new?${params}`;
+  return `"gauss-horizon"://connection/new?${params}`;
 }
 
 function ensureBootstrap(recipe) {
@@ -462,9 +462,9 @@ function printConnection(recipe) {
   if (process.env.DB_PASSWORD) connection.password = process.env.DB_PASSWORD;
   console.log(`${recipe.name} (${recipe.version})`);
   for (const [key, value] of Object.entries(connection)) console.log(`${key}: ${value}`);
-  const deepLink = dbxConnectionDeepLink(recipe);
-  if (deepLink) console.log(`DBX connection link: ${deepLink}`);
-  else console.log(`DBX connection link: unavailable (DBX has no compatible ${recipe.name} connection type)`);
+  const deepLink = gaussHorizonConnectionDeepLink(recipe);
+  if (deepLink) console.log(`Gauss Horizon connection link: ${deepLink}`);
+  else console.log(`Gauss Horizon connection link: unavailable (Gauss Horizon has no compatible ${recipe.name} connection type)`);
   if (recipe.notes) console.log(`notes: ${recipe.notes}`);
   const warning = architectureWarning(recipe);
   if (warning) console.warn(`warning: ${warning}`);

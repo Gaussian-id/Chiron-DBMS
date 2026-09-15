@@ -1,10 +1,10 @@
 {
   "id": "jdbc",
-  "name": "DBX JDBC Plugin",
-  "version": "0.1.39",
+  "name": "Gauss Horizon JDBC Plugin",
+  "version": "0.1.0",
   "protocol_version": 1,
-  "description": "Adds optional JDBC driver support to DBX.",
-  "executable": "bin/dbx-jdbc-plugin",
+  "description": "Adds optional JDBC driver support to Gauss Horizon.",
+  "executable": "bin/gauss-horizon-jdbc-plugin",
   "drivers": [
     {
       "id": "jdbc",

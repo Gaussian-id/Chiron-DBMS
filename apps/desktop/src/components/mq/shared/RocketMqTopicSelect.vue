@@ -202,7 +202,7 @@ async function loadTopics() {
     topics.value = loaded;
     emit("loaded", loaded);
   } catch (e: unknown) {
-    console.warn("[DBX] Failed to load RocketMQ topics:", e);
+    console.warn("[Gauss Horizon] Failed to load RocketMQ topics:", e);
   } finally {
     if (requestVersion === loadRequestVersion) loading.value = false;
   }
@@ -361,7 +361,7 @@ defineExpose({
   align-items: center;
   min-height: 34px;
   border: 1px solid var(--color-border);
-  border-radius: var(--dbx-radius-fixed-6);
+  border-radius: var(--gauss-horizon-radius-fixed-6);
   background: var(--color-background);
   transition:
     border-color 0.15s ease,
@@ -458,7 +458,7 @@ defineExpose({
   max-height: 240px;
   overflow: auto;
   border: 1px solid var(--color-border);
-  border-radius: var(--dbx-radius-fixed-6);
+  border-radius: var(--gauss-horizon-radius-fixed-6);
   background: var(--color-background);
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
 }

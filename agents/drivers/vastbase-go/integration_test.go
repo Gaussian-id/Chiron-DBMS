@@ -27,13 +27,13 @@ func TestVastbaseIntegration(t *testing.T) {
 		database = "test"
 	}
 	suffix := strconv.FormatInt(time.Now().UnixNano(), 36)
-	parent := "dbx_go_parent_" + suffix
-	child := "dbx_go_child_" + suffix
-	view := "dbx_go_view_" + suffix
-	function := "dbx_go_fn_" + suffix
-	searchFirst := "dbx_go_first_" + suffix
-	searchSecond := "dbx_go_second_" + suffix
-	searchTable := "DBX_GO_VISIBLE_" + suffix
+	parent := "gauss_horizon_go_parent_" + suffix
+	child := "gauss_horizon_go_child_" + suffix
+	view := "gauss_horizon_go_view_" + suffix
+	function := "gauss_horizon_go_fn_" + suffix
+	searchFirst := "gauss_horizon_go_first_" + suffix
+	searchSecond := "gauss_horizon_go_second_" + suffix
+	searchTable := "GAUSS_HORIZON_GO_VISIBLE_" + suffix
 
 	server := newServer()
 	cp := connectParams{
@@ -66,7 +66,7 @@ func TestVastbaseIntegration(t *testing.T) {
 	mustExecute(t, server, "CREATE INDEX "+quoteIdentifier(child+"_parent_idx")+" ON public."+quoteIdentifier(child)+"(parent_id)")
 	mustExecute(t, server, "CREATE VIEW public."+quoteIdentifier(view)+" AS SELECT id, name FROM public."+quoteIdentifier(parent))
 	if !server.mode.mysqlCompat {
-		mustExecute(t, server, "CREATE FUNCTION public."+quoteIdentifier(function)+"() RETURNS text AS $$ SELECT 'dbx'; $$ LANGUAGE SQL")
+		mustExecute(t, server, "CREATE FUNCTION public."+quoteIdentifier(function)+"() RETURNS text AS $$ SELECT 'gauss-horizon'; $$ LANGUAGE SQL")
 	}
 	mustExecute(t, server, "CREATE SCHEMA "+quoteIdentifier(searchFirst))
 	mustExecute(t, server, "CREATE SCHEMA "+quoteIdentifier(searchSecond))
@@ -198,7 +198,7 @@ func TestVastbaseConstraintsIntegration(t *testing.T) {
 		}
 		t.Run(database, func(t *testing.T) {
 			suffix := strconv.FormatInt(time.Now().UnixNano(), 36)
-			schema := "dbx_constraints_" + suffix
+			schema := "gauss_horizon_constraints_" + suffix
 			parent := schema + ".parent"
 			child := schema + ".child"
 			server := newServer()
@@ -309,7 +309,7 @@ func TestVastbaseCustomTypesIntegration(t *testing.T) {
 		database = "test"
 	}
 	suffix := strconv.FormatInt(time.Now().UnixNano(), 36)
-	schema := "dbx_types_" + suffix
+	schema := "gauss_horizon_types_" + suffix
 	schemaIdent := quoteIdentifier(schema)
 	statusType := schemaIdent + "." + quoteIdentifier("status")
 	emailDomain := schemaIdent + "." + quoteIdentifier("email")
@@ -467,7 +467,7 @@ func TestVastbaseCustomTypeDetailsIntegration(t *testing.T) {
 		database = "test"
 	}
 	suffix := strconv.FormatInt(time.Now().UnixNano(), 36)
-	schema := "dbx_details_" + suffix
+	schema := "gauss_horizon_details_" + suffix
 	schemaIdent := quoteIdentifier(schema)
 	statusType := schemaIdent + "." + quoteIdentifier("status")
 	emailDomain := schemaIdent + "." + quoteIdentifier("email")

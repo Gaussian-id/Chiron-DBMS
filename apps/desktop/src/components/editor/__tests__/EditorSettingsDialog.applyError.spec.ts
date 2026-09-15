@@ -3,7 +3,7 @@ import { describe, expect, it } from "vitest";
 
 const dialogSource = readFileSync(new URL("../EditorSettingsDialog.vue", import.meta.url), "utf8");
 
-// Regression for https://github.com/t8y2/dbx/issues/6485: applying editor
+// Regression for https://github.com/Gaussian-id/Gauss-Horizon/issues/6485: applying editor
 // settings (e.g. the editor font) could appear to "do nothing" because
 // persistSettings() has several awaited persistence steps with no error
 // handling. On a rejected save, "Apply" was completely silent and "Apply &
@@ -13,7 +13,7 @@ describe("EditorSettingsDialog apply persistence error handling", () => {
   it("shares a single apply entrypoint between Apply and Apply & Close", () => {
     // Both buttons must go through one shared persist/apply routine instead of
     // each calling persistSettings() directly with divergent semantics.
-    const block = dialogSource.slice(dialogSource.indexOf("function applySettingsErrorToast"), dialogSource.indexOf("async function restartDbxForDuckDbIsolation()"));
+    const block = dialogSource.slice(dialogSource.indexOf("function applySettingsErrorToast"), dialogSource.indexOf("async function restartGaussHorizonForDuckDbIsolation()"));
     const entrypointCalls = (block.match(/await applySettingsForResult\(\)/g) || []).length;
     // one call in applySettings() + one (guarded) call in applySettingsAndClose()
     expect(entrypointCalls).toBeGreaterThanOrEqual(2);
@@ -26,7 +26,7 @@ describe("EditorSettingsDialog apply persistence error handling", () => {
     // "Apply & Close" must only proceed to closeSettings() after a successful
     // apply. Before the fix, closeSettings() ran unconditionally after
     // `await persistSettings()`, so a rejected save left the dialog stuck open.
-    const block = dialogSource.slice(dialogSource.indexOf("async function applySettingsAndClose()"), dialogSource.indexOf("async function restartDbxForDuckDbIsolation()"));
+    const block = dialogSource.slice(dialogSource.indexOf("async function applySettingsAndClose()"), dialogSource.indexOf("async function restartGaussHorizonForDuckDbIsolation()"));
     expect(block).toMatch(/if \(await applySettingsForResult\(\)\) \{\s*\n\s*closeSettings\(\);/);
   });
 

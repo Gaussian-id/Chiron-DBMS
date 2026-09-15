@@ -198,7 +198,7 @@ watch(allowedPageCount, () => setPanePage("allowed", allowedPage.value));
         :tabindex="scopeMode === 'all' ? 0 : -1"
         variant="outline"
         class="settings-choice-card h-auto justify-center border-0 p-2.5 shadow-none"
-        :class="[scopeMode === 'all' ? 'dbx-choice-selected bg-background shadow-sm' : 'text-muted-foreground hover:bg-background/70', disabled ? 'cursor-not-allowed opacity-50' : '']"
+        :class="[scopeMode === 'all' ? 'gauss-horizon-choice-selected bg-background shadow-sm' : 'text-muted-foreground hover:bg-background/70', disabled ? 'cursor-not-allowed opacity-50' : '']"
         @click="setScopeMode('all')"
         @keydown="onScopeModeKeydown($event, 'all')"
       >
@@ -216,7 +216,7 @@ watch(allowedPageCount, () => setPanePage("allowed", allowedPage.value));
         :tabindex="scopeMode === 'selected' ? 0 : -1"
         variant="outline"
         class="settings-choice-card h-auto justify-center border-0 p-2.5 shadow-none"
-        :class="[scopeMode === 'selected' ? 'dbx-choice-selected bg-background shadow-sm' : 'text-muted-foreground hover:bg-background/70', disabled ? 'cursor-not-allowed opacity-50' : '']"
+        :class="[scopeMode === 'selected' ? 'gauss-horizon-choice-selected bg-background shadow-sm' : 'text-muted-foreground hover:bg-background/70', disabled ? 'cursor-not-allowed opacity-50' : '']"
         @click="setScopeMode('selected')"
         @keydown="onScopeModeKeydown($event, 'selected')"
       >

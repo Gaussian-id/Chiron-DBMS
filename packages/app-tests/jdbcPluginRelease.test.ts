@@ -54,7 +54,7 @@ test("requires JDBC plugin Gradle and manifest versions to match", () => {
 
 test("auto bumps JDBC plugin patch version when runtime files changed for release", () => {
   const result = evaluateJdbcPluginReleaseBump({
-    changedFiles: ["plugins/jdbc/src/main/java/app/dbx/jdbc/DbxJdbcPlugin.java"],
+    changedFiles: ["plugins/jdbc/src/main/java/app/gauss-horizon/jdbc/GaussHorizonJdbcPlugin.java"],
     buildGradle: "version = '0.1.9'\n",
     manifestJson: '{ "version": "0.1.9" }',
   });
@@ -68,7 +68,7 @@ test("auto bumps JDBC plugin patch version when runtime files changed for releas
 
 test("does not auto bump JDBC plugin again when release range already includes a version bump", () => {
   const result = evaluateJdbcPluginReleaseBump({
-    changedFiles: ["plugins/jdbc/src/main/java/app/dbx/jdbc/DbxJdbcPlugin.java", "plugins/jdbc/build.gradle", "plugins/jdbc/manifest.json"],
+    changedFiles: ["plugins/jdbc/src/main/java/app/gauss-horizon/jdbc/GaussHorizonJdbcPlugin.java", "plugins/jdbc/build.gradle", "plugins/jdbc/manifest.json"],
     buildGradle: "version = '0.1.10'\n",
     manifestJson: '{ "version": "0.1.10" }',
   });
@@ -94,7 +94,7 @@ test("auto bump refuses mismatched JDBC plugin source versions", () => {
   assert.throws(
     () =>
       evaluateJdbcPluginReleaseBump({
-        changedFiles: ["plugins/jdbc/src/main/java/app/dbx/jdbc/DbxJdbcPlugin.java"],
+        changedFiles: ["plugins/jdbc/src/main/java/app/gauss-horizon/jdbc/GaussHorizonJdbcPlugin.java"],
         buildGradle: "version = '0.1.9'\n",
         manifestJson: '{ "version": "0.1.8" }',
       }),
@@ -116,7 +116,7 @@ test("adds JDBC plugin metadata to latest.json without disturbing updater fields
     }),
     jdbcVersion: "0.1.3",
     protocolVersion: 1,
-    url: "https://github.com/t8y2/dbx/releases/latest/download/dbx-jdbc-plugin-latest.zip",
+    url: "https://github.com/Gaussian-id/Gauss-Horizon/releases/latest/download/gauss-horizon-jdbc-plugin-latest.zip",
   });
   const parsed = JSON.parse(result);
 
@@ -125,6 +125,6 @@ test("adds JDBC plugin metadata to latest.json without disturbing updater fields
   assert.deepEqual(parsed.jdbc_plugin, {
     version: "0.1.3",
     protocol_version: 1,
-    url: "https://github.com/t8y2/dbx/releases/latest/download/dbx-jdbc-plugin-latest.zip",
+    url: "https://github.com/Gaussian-id/Gauss-Horizon/releases/latest/download/gauss-horizon-jdbc-plugin-latest.zip",
   });
 });

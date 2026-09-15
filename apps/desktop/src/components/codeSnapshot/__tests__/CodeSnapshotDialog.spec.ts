@@ -119,7 +119,7 @@ async function mountDialog() {
 
 beforeEach(() => {
   localStorage.clear();
-  renderCodeSnapshotHtmlMock.mockReset().mockResolvedValue('<div class="dbx-code-snapshot">SELECT 1</div>');
+  renderCodeSnapshotHtmlMock.mockReset().mockResolvedValue('<div class="gauss-horizon-code-snapshot">SELECT 1</div>');
 });
 
 afterEach(() => {
@@ -139,7 +139,7 @@ describe("CodeSnapshotDialog option switches", () => {
     await vi.waitFor(() => {
       expect(renderCodeSnapshotHtmlMock).toHaveBeenLastCalledWith(expect.anything(), expect.objectContaining({ showTrafficLights: false, showLineNumbers: true }));
     });
-    expect(JSON.parse(localStorage.getItem("dbx:code-snapshot-settings") ?? "null")).toMatchObject({ showTrafficLights: false, showLineNumbers: true });
+    expect(JSON.parse(localStorage.getItem("gauss-horizon:code-snapshot-settings") ?? "null")).toMatchObject({ showTrafficLights: false, showLineNumbers: true });
   });
 
   it("rerenders and persists when line numbers are disabled", async () => {
@@ -152,6 +152,6 @@ describe("CodeSnapshotDialog option switches", () => {
     await vi.waitFor(() => {
       expect(renderCodeSnapshotHtmlMock).toHaveBeenLastCalledWith(expect.anything(), expect.objectContaining({ showTrafficLights: true, showLineNumbers: false }));
     });
-    expect(JSON.parse(localStorage.getItem("dbx:code-snapshot-settings") ?? "null")).toMatchObject({ showTrafficLights: true, showLineNumbers: false });
+    expect(JSON.parse(localStorage.getItem("gauss-horizon:code-snapshot-settings") ?? "null")).toMatchObject({ showTrafficLights: true, showLineNumbers: false });
   });
 });

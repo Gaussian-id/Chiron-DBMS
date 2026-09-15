@@ -3,6 +3,10 @@ packages:
 
 allowBuilds:
   better-sqlite3: true
+  # cbor-x falls back to its pure-JavaScript parser when this optional native
+  # addon is not installed. Keeping it disabled makes frozen installs
+  # reproducible on every release runner without a node-gyp toolchain.
+  cbor-extract: false
   esbuild: true
   keytar: true
   vue-demi: false

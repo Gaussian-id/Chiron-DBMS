@@ -1,9 +1,9 @@
 // Live, disposable-data verification. Never accepts a remote server URL.
-// Build dbx-web, then run with CHIRONDB_TEST_BINARY=/absolute/path/to/chirondb.
+// Build gauss-horizon-web, then run with CHIRONDB_TEST_BINARY=/absolute/path/to/chirondb.
 import assert from "node:assert/strict";
 import { spawn } from "node:child_process";
 import { randomUUID } from "node:crypto";
-import { mkdtemp, open, writeFile } from "node:fs/promises";
+import { mkdtemp, open, writeFile, readFile } from "node:fs/promises";
 import { createServer } from "node:net";
 import { createServer as createHttpServer } from "node:http";
 import { tmpdir } from "node:os";
@@ -11,7 +11,7 @@ import { resolve, join } from "node:path";
 import { setTimeout as delay } from "node:timers/promises";
 
 assert(process.env.CHIRONDB_TEST_BINARY, "Set CHIRONDB_TEST_BINARY to a local ChironDB binary");
-const directory = await mkdtemp(join(tmpdir(), "chirondbm-smoke-"));
+const directory = await mkdtemp(join(tmpdir(), "gauss-horizon-smoke-"));
 const children = [];
 const files = [];
 const key = randomUUID();
@@ -27,10 +27,24 @@ const mockProvider = createHttpServer(async (request, response) => {
   for await (const chunk of request) bytes += chunk;
   const body = JSON.parse(bytes);
   providerRequests.push(body);
+  if (interactive) await writeFile(join(directory, "ui-provider-requests.json"), JSON.stringify(providerRequests), { mode: 0o600 });
+  const userContent = body.messages.at(-1).content;
+  const userText = typeof userContent === "string" ? userContent : userContent.filter((part) => part.type === "text").map((part) => part.text).join("\n");
   let query = proposedQuery;
   if (interactive) {
     await delay(8000);
-    const prompt = String(body.messages.at(-1).content).split("Current user request:\n").at(-1).toLowerCase();
+    const prompt = userText.split("Current user request:\n").at(-1).toLowerCase();
+    if (prompt.includes("attachment ui check")) {
+      const received = Array.isArray(userContent) && userContent.some((part) => part.type === "image_url") && userText.includes("ATTACHMENT_UI_TEXT_MARKER");
+      response.writeHead(received ? 200 : 400, { "Content-Type": "application/json" });
+      response.end(JSON.stringify(received ? { choices: [{ message: { role: "assistant", content: "Attachment check passed: text file and PNG received. Nothing was executed." }, finish_reason: "stop" }] } : { error: { message: "Expected explicit text and image attachments" } }));
+      return;
+    }
+    if (prompt.includes("selected action: explain\n")) {
+      response.writeHead(200, { "Content-Type": "application/json" });
+      response.end(JSON.stringify({ choices: [{ message: { role: "assistant", content: "This query counts points in the selected collection. It has not been executed." }, finish_reason: "stop" }] }));
+      return;
+    }
     if (prompt.includes("simulate provider failure")) {
       response.writeHead(429, { "Content-Type": "application/json" });
       response.end(JSON.stringify({ error: { message: "Synthetic rate limit; try another prompt" } }));
@@ -39,7 +53,8 @@ const mockProvider = createHttpServer(async (request, response) => {
     query = prompt.includes("create") ? "CREATE COLLECTION ui_created DIM 3 METRIC cosine;" : prompt.includes("list") || prompt.includes("show collections") ? "SHOW COLLECTIONS;" : prompt.includes("count") ? "COUNT dbm_smoke;" : "SCROLL dbm_smoke LIMIT 20;";
   }
   response.writeHead(200, { "Content-Type": "application/json" });
-  response.end(JSON.stringify({ choices: [{ message: { role: "assistant", content: `\u0060\u0060\u0060chironql\n${query}\n\u0060\u0060\u0060` }, finish_reason: "stop" }] }));
+  const commentary = interactive && userText.includes("Selected action: executeAndExplain\n") ? "This query counts matching points. Results remain local.\n" : "";
+  response.end(JSON.stringify({ choices: [{ message: { role: "assistant", content: `${commentary}\u0060\u0060\u0060chironql\n${query}\n\u0060\u0060\u0060` }, finish_reason: "stop" }] }));
 });
 async function port() {
   const server = createServer();
@@ -120,7 +135,7 @@ try {
     "chiron",
   );
   await ready(`http://127.0.0.1:${httpPort}/health`, chiron);
-  const web = await start(resolve(process.env.DBM_TEST_BINARY || "target/debug/dbx-web"), [], { DBX_DATA_DIR: join(directory, "dbm"), DBX_PORT: String(webPort), DBX_PASSWORD: password }, "dbm");
+  const web = await start(resolve(process.env.DBM_TEST_BINARY || "target/debug/gauss-horizon-web"), [], { GAUSS_HORIZON_DATA_DIR: join(directory, "dbm"), GAUSS_HORIZON_PORT: String(webPort), GAUSS_HORIZON_PASSWORD: password }, "dbm");
   await ready(`${base}/api/auth/check`, web);
   const login = await post("auth/login", { password });
   cookie = login.response.headers.get("set-cookie").split(";")[0];
@@ -164,7 +179,7 @@ try {
   await post("ai/config-item", { config: aiConfig });
   const saved = await (await fetch(`${base}/api/ai/configs`, { headers: { Cookie: cookie } })).json();
   assert(!JSON.stringify(saved).includes(aiConfig.apiKey));
-  assert(saved[0].apiKey.startsWith("dbx-ai-secret:v1:"));
+  assert(saved[0].apiKey.startsWith("gauss-horizon-ai-secret:v1:"));
   const assistant = async (request, expected = true, connectionId = config.id) => (await post("chirondb/request", { connectionId, request: { operation: "assistant", request } }, expected)).value;
   const generate = (prompt, generate_only = false) => assistant({ action: "generate", config_id: aiConfig.id, model: aiConfig.model, prompt, collection: "dbm_smoke", generate_only });
   const approve = (body) => assistant({ action: "approve", run_id: body.run_id, approval_token: body.approval_token });
@@ -270,12 +285,42 @@ try {
   await post("connection/connect", { config });
   assert.equal((await browse()).body.points.length, 0);
   console.log("PASS: reconnect with session-only API key and empty result after deletion");
+  // Execute the actual frontend script controller through native one-statement requests.
+  const ts = await import("typescript");
+  const controller = ts.transpileModule(await readFile("apps/desktop/src/lib/chiron/script.ts", "utf8"), { compilerOptions: { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.ES2022 } }).outputText;
+  const { ChironScriptRun } = await import(`data:text/javascript;base64,${Buffer.from(controller).toString("base64")}`);
+  const statementsSent = [];
+  const approvals = [];
+  const options = {
+    source: "CREATE COLLECTION batch_smoke DIM 3 METRIC cosine; USE batch_smoke; UPSERT INTO batch_smoke {id: 'unicode;α', vector: [1,0,0], payload: {category: 'α;'}}; -- semicolon ; in comment\nCOUNT; DELETE FROM batch_smoke WHERE category = 'α;'; COUNT;",
+    connectionId: config.id, collection: "dbm_smoke", trace: true,
+    request: async (connectionId, request) => { statementsSent.push(request); return (await post("chirondb/request", {connectionId,request})).value; },
+    approve: async (request) => { approvals.push(request); return true; }, changed: () => {},
+  };
+  const batch = await new ChironScriptRun(options).execute();
+  assert(batch.every(r => r.status === "succeeded"), JSON.stringify(batch));
+  assert.equal(approvals.length, 4, "three writes and one server destructive confirmation");
+  assert.equal(options.collection, "dbm_smoke", "Run context must not replace workspace selection");
+  assert.equal(statementsSent.filter(r=>r.operation==="execute" && r.query.includes("USE")).length,0);
+  assert(batch.at(-1).reply.body.query_id);
+  const beforeReject=statementsSent.length;
+  const rejectedBatch=await new ChironScriptRun({...options, source: "UPSERT INTO batch_smoke {id: 'reject', vector: [1,0,0]}; COUNT;", approve:async()=>false}).execute();
+  assert.deepEqual(rejectedBatch.map(r=>r.status),["cancelled","not run"]);
+  assert.equal(statementsSent.length,beforeReject+1,"only parse may be sent before rejected approval");
+  const failed=await new ChironScriptRun({...options,source:"COUNT dbm_smoke; INVALID QUERY; COUNT dbm_smoke;"}).execute();
+  assert.deepEqual(failed.map(r=>r.status),["succeeded","failed","not run"]);
+  assert(failed[0].reply.body.query_id,"earlier results remain inspectable");
+  console.log("PASS: native multi-statement Run, local USE, Unicode/string/comment delimiters, per-write approval, destructive confirmation, rejection and parse failure stop the queue");
   console.log(`Evidence/logs: ${directory}`);
   if (process.env.DBM_SMOKE_UI === "1") {
     interactive = true;
     await post("connection/save", { configs: [{ ...config, save_password: true }] });
+    await post("prompt-templates", { id: "ui-template-selected", name: "Concise Chiron", content: "Use concise Indonesian. TEMPLATE_SELECTED_MARKER" });
+    await post("prompt-templates", { id: "ui-template-unselected", name: "Other template", content: "TEMPLATE_UNSELECTED_MARKER" });
     proposedQuery = "SCROLL dbm_smoke LIMIT 20;";
     await execute("UPSERT INTO dbm_smoke {id: 'visual-only', vector: [1,0,0], payload: {category: 'synthetic-ui'}};");
+    await writeFile(join(directory, "attachment-check.txt"), "ATTACHMENT_UI_TEXT_MARKER\nSynthetic category: fixture\n", { mode: 0o600 });
+    await writeFile(join(directory, "attachment-check.png"), Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAC0lEQVR4nGP4DwQACfsD/fteaysAAAAASUVORK5CYII=", "base64"), { mode: 0o600 });
     await writeFile(join(directory, "ui-handoff.json"), JSON.stringify({ base, password }), { mode: 0o600 });
     console.log(`Temporary UI test ready: ${directory}/ui-handoff.json (20-minute maximum)`);
     await delay(1200000);

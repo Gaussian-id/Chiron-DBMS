@@ -19,22 +19,22 @@
   </head>
   <body>
     <main>
-      <div class="eyebrow" id="eyebrow">DBX frontend plugin</div>
+      <div class="eyebrow" id="eyebrow">Gauss Horizon frontend plugin</div>
       <h1>{{PLUGIN_NAME_HTML}}</h1>
       <p id="description">This universal sandboxed workbench runs without a native sidecar.</p>
       <button id="context" type="button">Show host context</button>
-      <pre id="result">Waiting for DBX plugin host…</pre>
+      <pre id="result">Waiting for Gauss Horizon plugin host…</pre>
     </main>
     <script>
       const result = document.querySelector("#result");
       const button = document.querySelector("#context");
       const copy = {
-        en: { eyebrow: "DBX frontend plugin", description: "This universal sandboxed workbench runs without a native sidecar.", button: "Show host context", ready: "Ready", error: "Error" },
-        zh: { eyebrow: "DBX 前端插件", description: "这个通用沙箱工作台不需要原生 Sidecar。", button: "查看宿主上下文", ready: "已就绪", error: "错误" }
+        en: { eyebrow: "Gauss Horizon frontend plugin", description: "This universal sandboxed workbench runs without a native sidecar.", button: "Show host context", ready: "Ready", error: "Error" },
+        zh: { eyebrow: "Gauss Horizon 前端插件", description: "这个通用沙箱工作台不需要原生 Sidecar。", button: "查看宿主上下文", ready: "已就绪", error: "错误" }
       };
       let text = copy.en;
-      window.dbxPlugin.ready.then((context) => {
-        text = window.dbxPlugin.locale.toLowerCase().startsWith("zh") ? copy.zh : copy.en;
+      window.gaussHorizonPlugin.ready.then((context) => {
+        text = window.gaussHorizonPlugin.locale.toLowerCase().startsWith("zh") ? copy.zh : copy.en;
         document.querySelector("#eyebrow").textContent = text.eyebrow;
         document.querySelector("#description").textContent = text.description;
         button.textContent = text.button;
@@ -43,7 +43,7 @@
       button.addEventListener("click", async () => {
         button.disabled = true;
         try {
-          result.textContent = JSON.stringify(await window.dbxPlugin.request("host.getContext"), null, 2);
+          result.textContent = JSON.stringify(await window.gaussHorizonPlugin.request("host.getContext"), null, 2);
         } catch (error) {
           result.textContent = `${text.error}: ${error.message}`;
         } finally {

@@ -226,7 +226,7 @@ watch(
   width: min(860px, calc(100vw - 32px));
   max-height: calc(100vh - 64px);
   overflow: auto;
-  border-radius: var(--dbx-radius-fixed-6);
+  border-radius: var(--gauss-horizon-radius-fixed-6);
   background: var(--color-background);
   box-shadow: 0 16px 48px rgba(0, 0, 0, 0.18);
   display: flex;
@@ -302,7 +302,7 @@ watch(
 
 .panel-error {
   padding: 12px 14px;
-  border-radius: var(--dbx-radius-fixed-6);
+  border-radius: var(--gauss-horizon-radius-fixed-6);
   background: var(--color-error-bg);
   color: var(--color-error);
   font-size: 13px;
@@ -318,7 +318,7 @@ watch(
 .message-row {
   padding: 10px 12px;
   border: 1px solid var(--color-border);
-  border-radius: var(--dbx-radius-fixed-6);
+  border-radius: var(--gauss-horizon-radius-fixed-6);
   background: var(--color-background-secondary);
 }
 
@@ -336,7 +336,7 @@ watch(
   display: inline-flex;
   align-items: center;
   padding: 1px 8px;
-  border-radius: var(--dbx-radius-fixed-4);
+  border-radius: var(--gauss-horizon-radius-fixed-4);
   font-size: 12px;
   font-weight: 600;
   line-height: 1.4;
@@ -378,7 +378,7 @@ watch(
   padding: 10px;
   max-height: 240px;
   overflow: auto;
-  border-radius: var(--dbx-radius-fixed-6);
+  border-radius: var(--gauss-horizon-radius-fixed-6);
   background: var(--color-background);
   font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
   font-size: 12px;
@@ -396,7 +396,7 @@ watch(
 .message-headers > span {
   padding: 2px 6px;
   border: 1px solid var(--color-border);
-  border-radius: var(--dbx-radius-fixed-4);
+  border-radius: var(--gauss-horizon-radius-fixed-4);
   font-size: 12px;
   color: var(--color-text-secondary);
   word-break: break-all;
@@ -410,7 +410,7 @@ watch(
   width: 100%;
   padding: 4px 6px;
   border: 1px solid var(--color-border);
-  border-radius: var(--dbx-radius-fixed-4);
+  border-radius: var(--gauss-horizon-radius-fixed-4);
   font-size: 12px;
   color: var(--color-text-secondary);
 }
@@ -430,7 +430,7 @@ watch(
 .key-chip {
   padding: 1px 6px;
   border: 1px solid var(--color-border);
-  border-radius: var(--dbx-radius-fixed-4);
+  border-radius: var(--gauss-horizon-radius-fixed-4);
   background: var(--color-background);
   font-size: 11px;
   color: var(--color-text-secondary);
@@ -454,7 +454,7 @@ watch(
 .btn-secondary {
   padding: 7px 16px;
   border: 1px solid var(--color-border);
-  border-radius: var(--dbx-radius-fixed-6);
+  border-radius: var(--gauss-horizon-radius-fixed-6);
   background: var(--color-background);
   color: var(--color-text);
   font-size: 13px;

@@ -4,7 +4,6 @@ import (
 	"errors"
 	"fmt"
 	"net"
-	"os"
 	"strings"
 )
 
@@ -61,7 +60,7 @@ type GSSAPIMechanism struct {
 }
 
 // NewGSSAPIMechanism returns a GSSAPI mechanism backed by pure Go Kerberos, or
-// Windows SSPI when DBX_KRB5_USE_SSPI is enabled.
+// Windows SSPI when GAUSS_HORIZON_KRB5_USE_SSPI is enabled.
 func NewGSSAPIMechanism(service string) (*GSSAPIMechanism, error) {
 	context, err := gssapiBackendFactory()
 	return newGSSAPIMechanism(service, gssapiOptionsFromEnvironment(), context, err)
@@ -223,7 +222,7 @@ func canonicalKerberosHost(host string) string {
 }
 
 func configuredEnvironmentBool(key string) bool {
-	switch strings.ToLower(strings.TrimSpace(os.Getenv(key))) {
+	switch strings.ToLower(strings.TrimSpace(projectEnvironment(key))) {
 	case "1", "true", "yes", "on":
 		return true
 	default:
@@ -233,26 +232,26 @@ func configuredEnvironmentBool(key string) bool {
 
 func gssapiOptionsFromEnvironment() GSSAPIOptions {
 	return GSSAPIOptions{
-		ConfigPath:       os.Getenv("KRB5_CONFIG"),
-		CCachePath:       os.Getenv("KRB5CCNAME"),
+		ConfigPath:       projectEnvironment("KRB5_CONFIG"),
+		CCachePath:       projectEnvironment("KRB5CCNAME"),
 		KeytabPath:       firstConfiguredEnvironment("KRB5_CLIENT_KTNAME", "KRB5_KTNAME"),
-		Principal:        os.Getenv("DBX_KRB5_PRINCIPAL"),
-		Password:         os.Getenv("DBX_KRB5_PASSWORD"),
-		QOP:              os.Getenv("DBX_KRB5_QOP"),
-		AuthorizationID:  os.Getenv("DBX_KRB5_AUTHORIZATION_ID"),
-		ServerName:       os.Getenv("DBX_KRB5_SERVER_NAME"),
-		ServiceHost:      os.Getenv("SERVICE_HOST_QUALIFIED"),
-		UseCCache:        configuredEnvironmentBool("DBX_KRB5_USE_CCACHE"),
-		UseKeytab:        configuredEnvironmentBool("DBX_KRB5_USE_KEYTAB"),
-		UseSSPI:          configuredEnvironmentBool("DBX_KRB5_USE_SSPI"),
-		CanonicalizeHost: configuredEnvironmentBool("DBX_KRB5_CANONICALIZE_HOST"),
-		DisablePAFXFAST:  configuredEnvironmentBool("DBX_KRB5_DISABLE_PAFXFAST"),
+		Principal:        projectEnvironment("GAUSS_HORIZON_KRB5_PRINCIPAL"),
+		Password:         projectEnvironment("GAUSS_HORIZON_KRB5_PASSWORD"),
+		QOP:              projectEnvironment("GAUSS_HORIZON_KRB5_QOP"),
+		AuthorizationID:  projectEnvironment("GAUSS_HORIZON_KRB5_AUTHORIZATION_ID"),
+		ServerName:       projectEnvironment("GAUSS_HORIZON_KRB5_SERVER_NAME"),
+		ServiceHost:      projectEnvironment("SERVICE_HOST_QUALIFIED"),
+		UseCCache:        configuredEnvironmentBool("GAUSS_HORIZON_KRB5_USE_CCACHE"),
+		UseKeytab:        configuredEnvironmentBool("GAUSS_HORIZON_KRB5_USE_KEYTAB"),
+		UseSSPI:          configuredEnvironmentBool("GAUSS_HORIZON_KRB5_USE_SSPI"),
+		CanonicalizeHost: configuredEnvironmentBool("GAUSS_HORIZON_KRB5_CANONICALIZE_HOST"),
+		DisablePAFXFAST:  configuredEnvironmentBool("GAUSS_HORIZON_KRB5_DISABLE_PAFXFAST"),
 	}
 }
 
 func firstConfiguredEnvironment(keys ...string) string {
 	for _, key := range keys {
-		if value := strings.TrimSpace(os.Getenv(key)); value != "" {
+		if value := strings.TrimSpace(projectEnvironment(key)); value != "" {
 			return value
 		}
 	}

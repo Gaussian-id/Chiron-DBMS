@@ -7,7 +7,7 @@ import type { EditorSettings } from "@/stores/settingsStore";
 
 type SettingsStoreLike = { editorSettings: EditorSettings };
 
-export const BACKGROUND_IMAGE_ACTIVE_CLASS = "dbx-bg-active";
+export const BACKGROUND_IMAGE_ACTIVE_CLASS = "gauss-horizon-bg-active";
 
 const SURFACE_VAR_NAMES = new Set<string>(BACKGROUND_IMAGE_SURFACE_VARS);
 
@@ -44,7 +44,7 @@ async function loadBackgroundObjectUrl(settingsStore: SettingsStoreLike) {
     setAndRevokeObjectUrl(null);
     if (!warnedOnce) {
       warnedOnce = true;
-      console.warn("[dbx] failed to load background image; falling back to plain surfaces", error);
+      console.warn("[gauss-horizon] failed to load background image; falling back to plain surfaces", error);
     }
   }
 }

@@ -22,11 +22,11 @@ export interface BackendError {
   helpUrl?: string;
 }
 
-export const MANUAL_TRANSACTION_SESSION_EXPIRED_CODE = "DBX-TXN-1001";
+export const MANUAL_TRANSACTION_SESSION_EXPIRED_CODE = "Gauss Horizon-TXN-1001";
 
 const MAX_FALLBACK_CHARS = 64 * 1024;
 const MAX_ERROR_PARSE_DEPTH = 16;
-const AGENT_RPC_ERROR_DATA_MARKER = "\nDBX_AGENT_ERROR_DATA:";
+const AGENT_RPC_ERROR_DATA_MARKER = "\nGAUSS_HORIZON_AGENT_ERROR_DATA:";
 
 export function sanitizeBackendErrorMessage(message: string): string {
   const markerIndex = message.lastIndexOf(AGENT_RPC_ERROR_DATA_MARKER);
@@ -49,7 +49,7 @@ function isBackendError(value: unknown): value is BackendError {
   if (
     candidate.version !== 1 ||
     typeof candidate.code !== "string" ||
-    !/^DBX-[A-Z][A-Z0-9]*-\d{4}$/.test(candidate.code) ||
+    !/^Gauss Horizon-[A-Z][A-Z0-9]*-\d{4}$/.test(candidate.code) ||
     typeof candidate.messageKey !== "string" ||
     !candidate.messageKey.startsWith("backendErrors.") ||
     !candidate.messageParams ||
@@ -154,7 +154,7 @@ export class BackendErrorException extends Error {
     this.name = "BackendErrorException";
     this.backendError = backendError ?? {
       version: 1,
-      code: "DBX-LEGACY-0001",
+      code: "Gauss Horizon-LEGACY-0001",
       messageKey: "backendErrors.legacy",
       messageParams: {},
       source: "legacyBackend",

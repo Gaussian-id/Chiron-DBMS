@@ -1,0 +1,43 @@
+[package]
+name = "gauss-horizon-web"
+version = "0.1.0"
+edition = "2021"
+license = "Apache-2.0"
+
+[[bin]]
+name = "gauss-horizon-web"
+path = "src/main.rs"
+
+[features]
+default = ["duckdb-sidecar", "dynamodb", "mq-admin", "sqlite-sqlcipher", "system-fonts"]
+duckdb-sidecar = ["gauss-horizon-core/duckdb-sidecar", "gauss-horizon-mcp/duckdb-sidecar"]
+dynamodb = ["gauss-horizon-core/dynamodb"]
+mq-admin = ["gauss-horizon-core/mq-admin", "gauss-horizon-mcp/mq-admin"]
+sqlite-sqlcipher = ["gauss-horizon-core/sqlite-sqlcipher"]
+system-fonts = ["gauss-horizon-core/system-fonts"]
+
+[dependencies]
+gauss-horizon-core = { path = "../gauss-horizon-core", default-features = false, features = ["openapi"] }
+gauss-horizon-mcp = { path = "../gauss-horizon-mcp", default-features = false }
+redis = { version = "0.32", features = ["tokio-comp"] }
+axum = { version = "0.8", features = ["multipart", "ws"] }
+tower-http = { version = "0.6", features = ["cors", "fs", "compression-gzip", "trace"] }
+tokio = { version = "1", features = ["full"] }
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+utoipa = { version = "5.5", features = ["axum_extras"] }
+uuid = { version = "1", features = ["v4"] }
+argon2 = "0.5"
+log = "0.4"
+tracing-subscriber = { version = "0.3", features = ["env-filter", "tracing-log"] }
+tracing = "0.1"
+async-stream = "0.3"
+futures = "0.3"
+rustls = { version = "0.23", features = ["aws-lc-rs"] }
+tokio-util = "0.7"
+reqwest = { version = "0.12", default-features = false, features = ["json", "stream", "rustls-tls"] }
+chrono = "0.4"
+aes-gcm = "0.10"
+base64 = "0.22"
+pbkdf2 = "0.12"
+sha2 = "0.10"

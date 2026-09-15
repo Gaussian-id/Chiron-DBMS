@@ -1,4 +1,4 @@
-// Regression test for t8y2/dbx #6190.
+// Regression test for Gaussian-id/Gauss-Horizon #6190.
 //
 // Local-mode sidebar table search (sidebarTableSearchLocal, the default) only
 // searches the persisted table search index. When that index has never been

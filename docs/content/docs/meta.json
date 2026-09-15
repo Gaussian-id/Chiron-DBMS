@@ -1,9 +1,10 @@
 {
-  "title": "DBX Docs",
+  "title": "Gauss Horizon Docs",
   "pages": [
     "---Introduction---",
-    "what-is-dbx",
+    "what-is-gauss-horizon",
     "getting-started",
+    "user-guide",
     "databases",
     "changelog",
     "faq",

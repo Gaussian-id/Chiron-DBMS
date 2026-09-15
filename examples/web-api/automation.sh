@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# Minimal DBX Web API automation example.
-# Requires a running DBX Web/Docker instance.
+# Minimal Gauss Horizon Web API automation example.
+# Requires a running Gauss Horizon Web/Docker instance.
 
-BASE_URL="${DBX_WEB_URL:-http://localhost:4224}"
-PASSWORD="${DBX_WEB_PASSWORD:-changeme}"
+BASE_URL="${GAUSS_HORIZON_WEB_URL:-http://localhost:4224}"
+PASSWORD="${GAUSS_HORIZON_WEB_PASSWORD:-changeme}"
 COOKIE_JAR="$(mktemp)"
 trap 'rm -f "$COOKIE_JAR"' EXIT
 

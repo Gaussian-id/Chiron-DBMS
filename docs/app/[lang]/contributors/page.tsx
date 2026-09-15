@@ -9,12 +9,12 @@ import { resolveLang } from "@/lib/i18n";
 
 const pageMetadata = {
   en: {
-    title: "DBX Contributors",
-    description: "Explore the people building DBX and download a certificate generated from public GitHub activity.",
+    title: "Gauss Horizon Contributors",
+    description: "Explore the people building Gauss Horizon and download a certificate generated from public GitHub activity.",
   },
   cn: {
-    title: "DBX 贡献者",
-    description: "查看共同建设 DBX 的开源贡献者，并根据公开 GitHub 活动生成贡献证书。",
+    title: "Gauss Horizon 贡献者",
+    description: "查看共同建设 Gauss Horizon 的开源贡献者，并根据公开 GitHub 活动生成贡献证书。",
   },
 };
 

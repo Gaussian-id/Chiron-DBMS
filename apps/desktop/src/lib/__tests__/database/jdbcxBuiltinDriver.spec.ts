@@ -40,7 +40,7 @@ describe("jdbcxBuiltinDriver", () => {
 
   it("canonicalizes whitespace-padded legacy opt-ins across edit round trips", () => {
     const config = jdbcxConfig();
-    config.agent_java_options = [" -Ddbx.jdbcx.allowHighPrivilegeExtensions=false ", "-Xmx512m", "\t-Ddbx.jdbcx.allowHighPrivilegeExtensions=true\t"];
+    config.agent_java_options = [" -Dgauss.horizon.jdbcx.allowHighPrivilegeExtensions=false ", "-Xmx512m", "\t-Dgauss.horizon.jdbcx.allowHighPrivilegeExtensions=true\t"];
 
     expect(jdbcxHighPrivilegeExtensionsEnabled(config)).toBe(true);
 

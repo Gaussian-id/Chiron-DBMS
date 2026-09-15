@@ -47,10 +47,10 @@ func TestLivePublicSynonymScope(t *testing.T) {
 		t.Skip("the live database has no real GUEST schema")
 	}
 
-	const privateTable = "DBX_PUBLIC_SYNONYM_SCOPE_PRIVATE_T"
-	const publicTable = "DBX_PUBLIC_SYNONYM_SCOPE_PUBLIC_T"
-	const privateName = "DBX_PUBLIC_SYNONYM_SCOPE_PRIVATE_ALIAS"
-	const publicName = "DBX_PUBLIC_SYNONYM_SCOPE_PUBLIC_ALIAS"
+	const privateTable = "GAUSS_HORIZON_PUBLIC_SYNONYM_SCOPE_PRIVATE_T"
+	const publicTable = "GAUSS_HORIZON_PUBLIC_SYNONYM_SCOPE_PUBLIC_T"
+	const privateName = "GAUSS_HORIZON_PUBLIC_SYNONYM_SCOPE_PRIVATE_ALIAS"
+	const publicName = "GAUSS_HORIZON_PUBLIC_SYNONYM_SCOPE_PUBLIC_ALIAS"
 	privateScope := params.Username
 	cleanup := []string{
 		"DROP PUBLIC SYNONYM " + publicName,

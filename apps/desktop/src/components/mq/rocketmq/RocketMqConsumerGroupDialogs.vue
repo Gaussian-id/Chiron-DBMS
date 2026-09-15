@@ -417,7 +417,7 @@ watch(
 
 .dialog {
   background: var(--color-background);
-  border-radius: var(--dbx-radius-fixed-6);
+  border-radius: var(--gauss-horizon-radius-fixed-6);
   width: 92%;
   max-width: 560px;
   max-height: 86vh;
@@ -543,7 +543,7 @@ watch(
   width: 100%;
   padding: 8px 12px;
   border: 1px solid var(--color-border);
-  border-radius: var(--dbx-radius-fixed-4);
+  border-radius: var(--gauss-horizon-radius-fixed-4);
   box-sizing: border-box;
   background: var(--color-background);
   color: var(--color-text);
@@ -584,7 +584,7 @@ watch(
   padding: 8px 12px;
   background: var(--color-error-bg);
   color: var(--color-error);
-  border-radius: var(--dbx-radius-fixed-4);
+  border-radius: var(--gauss-horizon-radius-fixed-4);
   font-size: 13px;
 }
 

@@ -31,7 +31,7 @@ NATIVE_ONLY_AGENT_MODULES = {
     "etcd2": "drivers/etcd2-go",
 }
 CRATE_NATIVE_AGENT_MODULES = {
-    "sqlite-worker": Path("..") / "crates" / "dbx-sqlite-worker",
+    "sqlite-worker": Path("..") / "crates" / "gauss-horizon-sqlite-worker",
 }
 AUTO_VERSIONED_NATIVE_MODULES = {"duckdb"}
 JDBC_ARCHITECTURE_ALLOWLIST = {
@@ -149,7 +149,7 @@ def validate_manifest_fields(root: Path, modules: set[str]) -> list[str]:
     problems: list[str] = []
     root_build_text = (root / "build.gradle").read_text(encoding="utf-8") if (root / "build.gradle").exists() else ""
     archive_convention = re.search(
-        r"archiveBaseName\s*=\s*['\"]dbx-agent-\$\{project\.name\}['\"]",
+        r"archiveBaseName\s*=\s*['\"]gauss-horizon-agent-\$\{project\.name\}['\"]",
         root_build_text,
     )
     for module in sorted(modules):
@@ -162,9 +162,9 @@ def validate_manifest_fields(root: Path, modules: set[str]) -> list[str]:
             continue
 
         text = build_file.read_text(encoding="utf-8")
-        expected_archive = f"archiveBaseName = 'dbx-agent-{module}'"
+        expected_archive = f"archiveBaseName = 'gauss-horizon-agent-{module}'"
         archive_pattern = re.compile(
-            rf"archiveBaseName\s*=\s*['\"]dbx-agent-{re.escape(module)}['\"]"
+            rf"archiveBaseName\s*=\s*['\"]gauss-horizon-agent-{re.escape(module)}['\"]"
         )
         if not archive_convention and not archive_pattern.search(text):
             problems.append(f"{relative}: missing {expected_archive}")
@@ -228,7 +228,7 @@ def validate_jdbc_pool_coverage(root: Path, modules: set[str]) -> list[str]:
 
 
 def validate_authoring_template(root: Path) -> list[str]:
-    template = root / "docs/examples/jdbc-agent-template/src/main/java/com/dbx/agent/template/TemplateAgent.java"
+    template = root / "docs/examples/jdbc-agent-template/src/main/java/com/gauss/horizon/agent/template/TemplateAgent.java"
     if not template.exists():
         return []
     text = template.read_text(encoding="utf-8")
@@ -262,6 +262,32 @@ def validate_release_runtime_keys(root: Path) -> list[str]:
     if not workflow.exists():
         return []
     text = workflow.read_text(encoding="utf-8")
+    # 0.1.0 has one tag-only product release workflow. The JRE definition and
+    # registry template deliberately live in versioned helper scripts instead
+    # of a large inline YAML heredoc.
+    if workflow.name == "release.yml" and "name: Gauss Horizon release" in text:
+        repository = root.parent if (root.parent / ".github").exists() else root
+        helper_paths = [
+            repository / "agents/scripts/build_managed_jre.sh",
+            repository / "agents/scripts/create_release_registry.py",
+        ]
+        helper_text = "\n".join(path.read_text(encoding="utf-8") for path in helper_paths if path.exists())
+        required_patterns = [
+            (rf'java-version:\s*"{DEFAULT_AGENT_JRE_KEY}"', f"release workflow must build Java {DEFAULT_AGENT_JRE_KEY}"),
+            (r"build_managed_jre\.sh", "release workflow must build the managed JRE"),
+            (rf'gauss-horizon-jre-{DEFAULT_AGENT_JRE_KEY}-', f"managed JRE assets must use key {DEFAULT_AGENT_JRE_KEY}"),
+            (r"jdk\.security\.auth", "managed JRE must include jdk.security.auth for Kafka Kerberos"),
+            (r"jdk\.security\.jgss", "managed JRE must include jdk.security.jgss for Kafka GSSAPI"),
+            (r"jdk\.crypto\.ec", "managed JRE must include jdk.crypto.ec for TLS"),
+            (r"legacy-placeholder\.jar", "native-only registry entries must retain the compatibility placeholder"),
+        ]
+        problems = [message for pattern, message in required_patterns if not re.search(pattern, text + "\n" + helper_text, flags=re.S)]
+        problems += [
+            "release workflow must target all 0.1.0 desktop platforms"
+            if not all(platform in text + "\n" + helper_text for platform in ("macos-aarch64", "macos-x64", "windows-x64", "linux-x64"))
+            else ""
+        ]
+        return [problem for problem in problems if problem]
     problems: list[str] = []
     required_patterns = [
         (
@@ -298,7 +324,7 @@ def validate_release_runtime_keys(root: Path) -> list[str]:
         ),
         (
             r"legacy-placeholder\.jar",
-            "native-only registry entries must publish a legacy jar placeholder for older DBX clients",
+            "native-only registry entries must publish a legacy jar placeholder for older Gauss Horizon clients",
         ),
     ]
     for pattern, message in required_patterns:

@@ -15,7 +15,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/t8y2/dbx/agents/go-common/gohive"
+	"github.com/Gaussian-id/Gauss-Horizon/agents/go-common/gohive"
 )
 
 var scriptedDriverSequence atomic.Uint64
@@ -232,7 +232,7 @@ func (rows *scriptedRows) isClosed() bool {
 
 func newScriptedServer(t *testing.T, behavior *scriptedBehavior) *server {
 	t.Helper()
-	driverName := fmt.Sprintf("dbx-hive-scripted-%d", scriptedDriverSequence.Add(1))
+	driverName := fmt.Sprintf("gauss-horizon-hive-scripted-%d", scriptedDriverSequence.Add(1))
 	sql.Register(driverName, &scriptedDriver{behavior: behavior})
 	database, err := sql.Open(driverName, "")
 	if err != nil {

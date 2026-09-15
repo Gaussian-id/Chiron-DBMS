@@ -111,9 +111,9 @@ test("query result archives reject invalid files", async () => {
   assert.equal(await decodeQueryResultArchive(new Uint8Array([1, 2, 3, 4])), undefined);
 });
 
-test("query result archive file names are safe and use dbxresults extension", () => {
-  assert.equal(defaultQueryResultArchiveFileName("Revenue / daily check"), "Revenue_daily_check.dbxresults");
-  assert.equal(defaultQueryResultArchiveFileName(""), "query-results.dbxresults");
+test("query result archive file names are safe and use gauss-horizonresults extension", () => {
+  assert.equal(defaultQueryResultArchiveFileName("Revenue / daily check"), "Revenue_daily_check.gauss-horizonresults");
+  assert.equal(defaultQueryResultArchiveFileName(""), "query-results.gauss-horizonresults");
 });
 
 test("query result archives are compact for repeated tabular values", async () => {

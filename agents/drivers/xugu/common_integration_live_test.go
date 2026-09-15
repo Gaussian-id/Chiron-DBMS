@@ -15,7 +15,7 @@ import (
 // certification matrix. The fixture contains only synthetic names and values
 // and is removed on every exit path.
 //
-// Coverage is deliberately limited to the common DBX contract:
+// Coverage is deliberately limited to the common Gauss Horizon contract:
 //   - connection and session reuse;
 //   - table, view, index, key and column metadata;
 //   - comments, source and reconstructed table DDL;
@@ -235,7 +235,7 @@ func TestLiveXuguCommonIntegration(t *testing.T) {
 	})
 
 	t.Run("sql_error_recovery", func(t *testing.T) {
-		_, err := s.executeQuery(queryOptions{SQL: "SELECT * FROM " + quoteIdentifier("DBX_COMMON_MISSING_") + "", MaxRows: 1})
+		_, err := s.executeQuery(queryOptions{SQL: "SELECT * FROM " + quoteIdentifier("GAUSS_HORIZON_COMMON_MISSING_") + "", MaxRows: 1})
 		if err == nil {
 			t.Fatal("missing table query unexpectedly succeeded")
 		}
@@ -266,11 +266,11 @@ func newXuguCommonFixture(schema string) xuguCommonFixture {
 	return xuguCommonFixture{
 		schema:     schema,
 		suffix:     suffix,
-		parent:     "DBX_IT_PARENT_" + suffix,
-		child:      "DBX_IT_CHILD_" + suffix,
-		view:       "DBX_IT_VIEW_" + suffix,
-		childIndex: "DBX_IT_CHILD_I_" + suffix,
-		parentPK:   "DBX_IT_PARENT_PK_" + suffix,
+		parent:     "GAUSS_HORIZON_IT_PARENT_" + suffix,
+		child:      "GAUSS_HORIZON_IT_CHILD_" + suffix,
+		view:       "GAUSS_HORIZON_IT_VIEW_" + suffix,
+		childIndex: "GAUSS_HORIZON_IT_CHILD_I_" + suffix,
+		parentPK:   "GAUSS_HORIZON_IT_PARENT_PK_" + suffix,
 	}
 }
 

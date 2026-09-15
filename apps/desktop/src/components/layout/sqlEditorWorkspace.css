@@ -17,18 +17,18 @@
    owner's side (the divider). No fill mode: the transform is released once
    the animation ends so the pane never becomes a containing block. */
 .sql-editor-workspace .workspace-pane-enter {
-  animation: dbx-workspace-pane-in 220ms var(--sql-workspace-ease-out);
+  animation: gauss-horizon-workspace-pane-in 220ms var(--sql-workspace-ease-out);
 }
 .sql-editor-workspace .workspace-pane-enter--from-left {
-  --dbx-pane-enter-x: -12px;
+  --gauss-horizon-pane-enter-x: -12px;
 }
 .sql-editor-workspace .workspace-pane-enter--from-top {
-  --dbx-pane-enter-y: -12px;
+  --gauss-horizon-pane-enter-y: -12px;
 }
-@keyframes dbx-workspace-pane-in {
+@keyframes gauss-horizon-workspace-pane-in {
   from {
     opacity: 0;
-    transform: translate(var(--dbx-pane-enter-x, 0), var(--dbx-pane-enter-y, 0));
+    transform: translate(var(--gauss-horizon-pane-enter-x, 0), var(--gauss-horizon-pane-enter-y, 0));
   }
 }
 

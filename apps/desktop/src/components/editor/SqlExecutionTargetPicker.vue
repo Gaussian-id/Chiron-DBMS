@@ -35,7 +35,7 @@ function displayLabel(candidate: SqlExecutionCandidate) {
 }
 
 function optionId(index: number) {
-  return `dbx-exec-target-${index}`;
+  return `gauss-horizon-exec-target-${index}`;
 }
 
 watch(

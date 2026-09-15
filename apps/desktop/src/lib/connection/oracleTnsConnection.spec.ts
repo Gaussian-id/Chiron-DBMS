@@ -3,10 +3,10 @@ import { buildOracleTnsConnectionString, normalizeOracleTnsAdminPath, parseOracl
 
 describe("Oracle TNS connection settings", () => {
   it("round-trips an alias and TNS_ADMIN directory", () => {
-    const value = buildOracleTnsConnectionString("DBX_FAILOVER", "C:\\oracle network\\admin");
+    const value = buildOracleTnsConnectionString("GAUSS_HORIZON_FAILOVER", "C:\\oracle network\\admin");
 
     expect(parseOracleTnsConnectionString(value)).toEqual({
-      alias: "DBX_FAILOVER",
+      alias: "GAUSS_HORIZON_FAILOVER",
       tnsAdmin: "C:\\oracle network\\admin",
     });
   });
@@ -24,6 +24,6 @@ describe("Oracle TNS connection settings", () => {
   });
 
   it("ignores malformed encoded aliases instead of breaking connection editing", () => {
-    expect(parseOracleTnsConnectionString("jdbc:oracle:thin:@DBX%ZZ?TNS_ADMIN=%2Fopt%2Foracle")).toBeNull();
+    expect(parseOracleTnsConnectionString("jdbc:oracle:thin:@Gauss Horizon%ZZ?TNS_ADMIN=%2Fopt%2Foracle")).toBeNull();
   });
 });

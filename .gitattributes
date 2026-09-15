@@ -31,5 +31,5 @@ packages/**/*.test.ts linguist-vendored
 # eol conversion on checkout: docs_export_bundle_is_current hashes these two
 # files' raw bytes, and an autocrlf checkout would otherwise change those
 # bytes and fail the guard for a contributor who touched neither file.
-crates/dbx-core/assets/docs-export.js -text -diff linguist-generated
-crates/dbx-core/assets/docs-export.css -text -diff linguist-generated
+crates/gauss-horizon-core/assets/docs-export.js -text -diff linguist-generated
+crates/gauss-horizon-core/assets/docs-export.css -text -diff linguist-generated

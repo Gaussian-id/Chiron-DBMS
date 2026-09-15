@@ -1114,14 +1114,14 @@ function runRowClickAction(clickDetail: number, requestId: number) {
 
 function refreshActiveKvBrowserAfterOpen(mode: "etcd" | "zookeeper" | "consul", connectionId: string) {
   void nextTick(() => {
-    window.dispatchEvent(new CustomEvent("dbx-refresh-active-kv-browser", { detail: { mode, connectionId } }));
+    window.dispatchEvent(new CustomEvent("gauss-horizon-refresh-active-kv-browser", { detail: { mode, connectionId } }));
   });
 }
 
 function openDriverStoreForInstallError(errMsg: string, node: TreeNode = activeNode.value) {
   const config = node.connectionId ? connectionStore.getConfig(node.connectionId) : undefined;
   const focus = driverStoreFocusForInstallError(errMsg, config?.db_type, config?.driver_profile);
-  if (focus) window.dispatchEvent(new CustomEvent("dbx-open-driver-store", { detail: focus }));
+  if (focus) window.dispatchEvent(new CustomEvent("gauss-horizon-open-driver-store", { detail: focus }));
 }
 
 async function loadMoreObjectGroupChildren() {
@@ -1891,7 +1891,7 @@ async function loadTemplateContext(allowView = false, node: TreeNode = activeNod
     const querySchema = connectionObjectTreeQuerySchema(config, node.database, tableSchema);
     columns = await api.getColumns(node.connectionId, node.database, querySchema, node.label, node.catalog);
   } catch (e) {
-    console.warn("[DBX][tableSqlTemplate:getColumns:error]", e);
+    console.warn("[Gauss Horizon][tableSqlTemplate:getColumns:error]", e);
   }
 
   let tableType = node.tableType;
@@ -1902,7 +1902,7 @@ async function loadTemplateContext(allowView = false, node: TreeNode = activeNod
       const matched = tables.find((table) => table.name.toLowerCase() === node.label.toLowerCase());
       if (matched?.table_type) tableType = matched.table_type;
     } catch (e) {
-      console.warn("[DBX][tableSqlTemplate:listTables:error]", e);
+      console.warn("[Gauss Horizon][tableSqlTemplate:listTables:error]", e);
     }
   }
 
@@ -2708,7 +2708,7 @@ async function refreshMutatedTableDataTabsForNode(node: TreeNode) {
   try {
     await queryStore.refreshDataTabsForTable(target);
   } catch (error) {
-    console.warn("[DBX][table-data-refresh-after-mutation:error]", { target, error });
+    console.warn("[Gauss Horizon][table-data-refresh-after-mutation:error]", { target, error });
   }
 }
 

@@ -11,7 +11,7 @@ import (
 	"time"
 
 	"github.com/beltran/gosasl"
-	gohive "github.com/t8y2/dbx/agents/go-common/gohive"
+	gohive "github.com/Gaussian-id/Gauss-Horizon/agents/go-common/gohive"
 )
 
 type connectorFactory func(endpoint) driver.Connector

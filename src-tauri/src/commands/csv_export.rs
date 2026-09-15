@@ -1,7 +1,7 @@
 use std::sync::Arc;
 
 use crate::commands::connection::AppState;
-use dbx_core::csv_export::{
+use gauss_horizon_core::csv_export::{
     export_table_data_csv_core, format_query_result_csv_with_quote_mode, CsvQuoteMode, TableCsvExportOptions,
 };
 use serde::Deserialize;

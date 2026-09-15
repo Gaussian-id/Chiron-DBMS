@@ -114,11 +114,11 @@ test("Oracle JDBC uses schema filtering for visible object selection", () => {
     db_type: "jdbc",
     driver_profile: "jdbc",
     connection_string: "jdbc:oracle:thin:@//127.0.0.1:1521/XE",
-    username: "DBX_TEST",
+    username: "GAUSS_HORIZON_TEST",
   });
 
   assert.equal(connectionUsesVisibleSchemaFilter(connection), true);
-  assert.deepEqual(filterSchemaNamesForConnection(["ANONYMOUS", "DBX_TEST", "SYS", "SYSTEM"], connection, ""), ["DBX_TEST"]);
+  assert.deepEqual(filterSchemaNamesForConnection(["ANONYMOUS", "GAUSS_HORIZON_TEST", "SYS", "SYSTEM"], connection, ""), ["GAUSS_HORIZON_TEST"]);
 });
 
 test("Vastbase schema filters preserve ordinary schemas and explicit empty selections", () => {
@@ -142,7 +142,7 @@ test("Dameng explicit schema filters can keep SYSDBA visible", () => {
 });
 
 test("Oracle keeps an existing DIP user visible", () => {
-  assert.deepEqual(filterSchemaNamesForConnection(["DBX_TEST", "DIP", "SYSTEM"], config({ db_type: "oracle", database: "XE" }), "XE"), ["DBX_TEST", "DIP"]);
+  assert.deepEqual(filterSchemaNamesForConnection(["GAUSS_HORIZON_TEST", "DIP", "SYSTEM"], config({ db_type: "oracle", database: "XE" }), "XE"), ["GAUSS_HORIZON_TEST", "DIP"]);
 });
 
 test("visible database selection is stale when connection target changes", () => {

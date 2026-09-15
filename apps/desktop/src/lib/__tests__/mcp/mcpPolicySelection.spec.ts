@@ -17,7 +17,7 @@ import {
 
 const settingsDialogSource = readFileSync(new URL("../../../components/editor/EditorSettingsDialog.vue", import.meta.url), "utf8");
 const scopePickerSource = readFileSync(new URL("../../../components/settings/McpConnectionScopePicker.vue", import.meta.url), "utf8");
-const mcpServerSource = readFileSync(new URL("../../../../../../crates/dbx-mcp/src/server.rs", import.meta.url), "utf8");
+const mcpServerSource = readFileSync(new URL("../../../../../../crates/gauss-horizon-mcp/src/server.rs", import.meta.url), "utf8");
 
 describe("MCP execution permission selection", () => {
   it("maps the persisted policy to the three UI modes", () => {
@@ -85,29 +85,29 @@ describe("MCP policy connection selection", () => {
 
 describe("MCP tool permission selection", () => {
   it("lists every tool registered by the MCP server", () => {
-    const registeredToolNames = [...mcpServerSource.matchAll(/name\s*=\s*"(dbx_[^"]+)"/g)].map((match) => match[1]).sort();
+    const registeredToolNames = [...mcpServerSource.matchAll(/name\s*=\s*"(gauss_horizon_[^"]+)"/g)].map((match) => match[1]).sort();
 
     expect(MCP_TOOL_OPTIONS.map((tool) => tool.name).sort()).toEqual(registeredToolNames);
   });
 
   it("keeps batch execution allowed when allow-all becomes an explicit allowlist", () => {
-    const next = toggleMcpAllowedToolName(null, "dbx_send_message", false);
+    const next = toggleMcpAllowedToolName(null, "gauss_horizon_send_message", false);
 
-    expect(next).toContain("dbx_execute_batch");
-    expect(next).not.toContain("dbx_send_message");
+    expect(next).toContain("gauss_horizon_execute_batch");
+    expect(next).not.toContain("gauss_horizon_send_message");
   });
 
   it("keeps Kafka reading independent from message sending", () => {
-    const next = toggleMcpAllowedToolName(null, "dbx_send_message", false);
-    expect(next).toContain("dbx_peek_messages");
-    expect(toggleMcpAllowedToolName(next, "dbx_peek_messages", false)).not.toContain("dbx_peek_messages");
-    expect(toggleMcpAllowedToolName([], "dbx_peek_messages", true)).toEqual(["dbx_peek_messages"]);
+    const next = toggleMcpAllowedToolName(null, "gauss_horizon_send_message", false);
+    expect(next).toContain("gauss_horizon_peek_messages");
+    expect(toggleMcpAllowedToolName(next, "gauss_horizon_peek_messages", false)).not.toContain("gauss_horizon_peek_messages");
+    expect(toggleMcpAllowedToolName([], "gauss_horizon_peek_messages", true)).toEqual(["gauss_horizon_peek_messages"]);
   });
 
   it("lets batch execution be enabled and disabled independently", () => {
-    expect(toggleMcpAllowedToolName(["dbx_execute_query"], "dbx_execute_batch", true)).toEqual(["dbx_execute_query", "dbx_execute_batch"]);
-    expect(toggleMcpAllowedToolName(["dbx_execute_query", "dbx_execute_batch"], "dbx_execute_batch", false)).toEqual(["dbx_execute_query"]);
-    expect(MCP_TOOL_OPTIONS.find((tool) => tool.name === "dbx_execute_batch")?.labelKey).toBe("settings.mcpToolExecuteBatch");
+    expect(toggleMcpAllowedToolName(["gauss_horizon_execute_query"], "gauss_horizon_execute_batch", true)).toEqual(["gauss_horizon_execute_query", "gauss_horizon_execute_batch"]);
+    expect(toggleMcpAllowedToolName(["gauss_horizon_execute_query", "gauss_horizon_execute_batch"], "gauss_horizon_execute_batch", false)).toEqual(["gauss_horizon_execute_query"]);
+    expect(MCP_TOOL_OPTIONS.find((tool) => tool.name === "gauss_horizon_execute_batch")?.labelKey).toBe("settings.mcpToolExecuteBatch");
     expect(settingsDialogSource).toContain("const mcpToolOptions = MCP_TOOL_OPTIONS;");
     expect(settingsDialogSource).toContain("toggleMcpAllowedToolName(mcpAllowedToolNames.value, name, allowed)");
   });

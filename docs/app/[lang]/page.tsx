@@ -126,13 +126,13 @@ const testimonials = {
       name: "@cyano",
       role: "PostgreSQL and Redis workflows",
       avatar: "/avatars/cyano.jpg",
-      quote: "DBX keeps query work, schema checks, and Redis inspection in one small app. It feels focused instead of overloaded.",
+      quote: "Gauss Horizon keeps query work, schema checks, and Redis inspection in one small app. It feels focused instead of overloaded.",
     },
     {
       name: "eryajf",
       role: "Database management",
       avatar: "/avatars/eryajf.jpg",
-      quote: "Try it once and you can feel it: DBX is the database management client that ends the competition.",
+      quote: "Try it once and you can feel it: Gauss Horizon is the database management client that ends the competition.",
     },
     {
       name: "@vbvb",
@@ -206,13 +206,13 @@ const testimonials = {
       name: "不剪发的Tony老师",
       role: "PostgreSQL 与 Redis 工作流",
       avatar: "/avatars/dongxuyang85.jpg",
-      quote: "DBX 把查询、结构检查和 Redis 查看放在一个轻量工具里，日常数据库工作不会被复杂界面打断。",
+      quote: "Gauss Horizon 把查询、结构检查和 Redis 查看放在一个轻量工具里，日常数据库工作不会被复杂界面打断。",
     },
     {
       name: "二丫讲梵",
       role: "数据库管理",
       avatar: "/avatars/eryajf.jpg",
-      quote: "只需体验一次你就能感受到，DBX是一个杀死数据库管理客户端比赛的软件",
+      quote: "只需体验一次你就能感受到，Gauss Horizon是一个杀死数据库管理客户端比赛的软件",
     },
     {
       name: "Husky明夋",
@@ -284,8 +284,8 @@ const testimonials = {
 };
 
 const METRICS_LABEL: Record<DocsLang, string> = {
-  en: "DBX key metrics",
-  cn: "DBX 核心指标",
+  en: "Gauss Horizon key metrics",
+  cn: "Gauss Horizon 核心指标",
 };
 
 const localizedTestimonials = testimonials;
@@ -293,25 +293,25 @@ const localizedTestimonials = testimonials;
 const i18nText = {
   en: {
     heroTitle: "25 MB to manage 90+ databases!",
-    heroSubtitle: "DBX brings connections, SQL editing, data grids, schema tools, AI assistance, and self-hosted access into one lightweight product.",
-    download: "Download DBX",
-    downloadName: "Download DBX",
+    heroSubtitle: "Gauss Horizon brings connections, SQL editing, data grids, schema tools, AI assistance, and self-hosted access into one lightweight product.",
+    download: "Download Gauss Horizon",
+    downloadName: "Download Gauss Horizon",
     readDocs: "Read the docs",
     docsStart: "Start here",
-    docsStartDesc: "Install DBX, create your first connection, and learn the main workflow.",
+    docsStartDesc: "Install Gauss Horizon, create your first connection, and learn the main workflow.",
     workflowsTitle: "Core workflows",
     workflowsDesc: "The docs are organized around what you actually do in a database client.",
     supportTitle: "Supports 90+ databases",
     supportDesc: "Connect SQL, NoSQL, vector, time-series, and embedded databases, message queues, and compatible engines in one place.",
     supportLink: "View all",
-    testimonialsTitle: "What DBX is good at",
-    testimonialsDesc: "A closer look at the everyday database workflows DBX is built to make smoother.",
+    testimonialsTitle: "What Gauss Horizon is good at",
+    testimonialsDesc: "A closer look at the everyday database workflows Gauss Horizon is built to make smoother.",
     capabilitiesTitle: "Built for real database work",
     contributorsTitle: "Built by the community",
-    contributorsDesc: "DBX is fully open-source. Every feature, fix, and driver starts with a contributor.",
+    contributorsDesc: "Gauss Horizon is fully open-source. Every feature, fix, and driver starts with a contributor.",
     sponsorsLabel: "❤️ Sponsors",
     partnersLabel: "🤝 Partners",
-    qiniuSponsorDesc: "Qiniu Cloud provides DBX with object storage, CDN, and other cloud infrastructure resources.",
+    qiniuSponsorDesc: "Qiniu Cloud provides Gauss Horizon with object storage, CDN, and other cloud infrastructure resources.",
     qiniuSponsorAction: "Visit",
     rainyunSponsorDesc: "RainYun is a cloud service provider offering cloud servers, physical servers, game hosting, and developer-friendly infrastructure services.",
     rainyunSponsorAction: "Visit",
@@ -319,9 +319,9 @@ const i18nText = {
     easysearchSponsorAction: "Visit",
     atlasCloudSponsorDesc: "Atlas Cloud gives developers one unified API for 400+ AI models across chat, image, video, and audio.",
     atlasCloudSponsorAction: "Visit",
-    trustasiaSponsorDesc: "TrustAsia provides cloud-based code signing service for DBX, enabling trusted software through automated CI/CD builds.",
+    trustasiaSponsorDesc: "TrustAsia provides cloud-based code signing service for Gauss Horizon, enabling trusted software through automated CI/CD builds.",
     trustasiaSponsorAction: "Visit",
-    jalapenoSponsorDesc: "Jalapeño Cloud is an AI infrastructure and token compute platform, with an exclusive DBX entry offering free credits and top-up bonuses.",
+    jalapenoSponsorDesc: "Jalapeño Cloud is an AI infrastructure and token compute platform, with an exclusive Gauss Horizon entry offering free credits and top-up bonuses.",
     jalapenoSponsorAction: "Visit",
     astraflowSponsorDesc: "UCloud is the first public cloud provider listed on China's STAR Market, with 28 global regions for cloud hosting, databases, and CDN; its AstraFlow platform offers one-click access to 200+ mainstream LLMs.",
     astraflowSponsorAction: "Visit",
@@ -329,32 +329,32 @@ const i18nText = {
     onepanelSponsorAction: "Visit",
     hualongSponsorDesc: "HuaLongAI is a model API relay built for heavy AI developers, offering 100% official-source Codex and Claude models with transparent token-level billing, enterprise contracts, and invoicing.",
     hualongSponsorAction: "Visit",
-    footerTitle: "Ready to try DBX?",
+    footerTitle: "Ready to try Gauss Horizon?",
     footerDesc: "Use the desktop app for local work, or deploy the Docker version for browser-based access.",
     release: "Latest release",
     docker: "Docker setup",
   },
   cn: {
     heroTitle: "25MB，管理90+种数据库！",
-    heroSubtitle: "DBX 将连接管理、SQL 编辑、数据表格、结构工具、AI 助手和自托管访问放进一个轻量产品里。",
-    download: "下载 DBX",
-    downloadName: "下载 DBX",
+    heroSubtitle: "Gauss Horizon 将连接管理、SQL 编辑、数据表格、结构工具、AI 助手和自托管访问放进一个轻量产品里。",
+    download: "下载 Gauss Horizon",
+    downloadName: "下载 Gauss Horizon",
     readDocs: "查看文档",
     docsStart: "从这里开始",
-    docsStartDesc: "安装 DBX、创建第一个连接，并了解主要工作流。",
+    docsStartDesc: "安装 Gauss Horizon、创建第一个连接，并了解主要工作流。",
     workflowsTitle: "核心工作流",
     workflowsDesc: "文档围绕数据库客户端里的真实任务组织，而不是堆功能清单。",
     supportTitle: "支持90+种数据库",
     supportDesc: "统一连接和管理 SQL、NoSQL、向量、时序、嵌入式数据库、消息队列及兼容引擎。",
     supportLink: "查看全部",
-    testimonialsTitle: "DBX 适合什么样的工作",
-    testimonialsDesc: "从连接管理、数据浏览到 AI 辅助，DBX 围绕高频数据库工作流打磨体验。",
+    testimonialsTitle: "Gauss Horizon 适合什么样的工作",
+    testimonialsDesc: "从连接管理、数据浏览到 AI 辅助，Gauss Horizon 围绕高频数据库工作流打磨体验。",
     capabilitiesTitle: "面向真实数据库工作的能力",
     contributorsTitle: "社区共建",
-    contributorsDesc: "DBX 因每一位贡献者而生长",
+    contributorsDesc: "Gauss Horizon 因每一位贡献者而生长",
     sponsorsLabel: "❤️ 赞助商",
     partnersLabel: "🤝 合作伙伴",
-    qiniuSponsorDesc: "七牛云为 DBX 提供对象存储、CDN 等云基础设施资源支持。",
+    qiniuSponsorDesc: "七牛云为 Gauss Horizon 提供对象存储、CDN 等云基础设施资源支持。",
     qiniuSponsorAction: "访问",
     rainyunSponsorDesc: "雨云是面向开发者和站长的云服务提供商，提供云服务器、物理服务器、游戏云和配套基础设施服务。",
     rainyunSponsorAction: "访问",
@@ -364,7 +364,7 @@ const i18nText = {
     atlasCloudSponsorAction: "访问",
     trustasiaSponsorDesc: "由 TrustAsia 提供代码签名云签服务，实现 CICD 自动化构建可信软件。",
     trustasiaSponsorAction: "访问",
-    jalapenoSponsorDesc: "Jalapeño Cloud 是 AI 基础设施与 Token 算力平台，通过 DBX 专属入口可享新用户免费额度与充值加赠。",
+    jalapenoSponsorDesc: "Jalapeño Cloud 是 AI 基础设施与 Token 算力平台，通过 Gauss Horizon 专属入口可享新用户免费额度与充值加赠。",
     jalapenoSponsorAction: "访问",
     astraflowSponsorDesc: "UCloud 优刻得是国内首家公有云科创板上市公司，覆盖国内、亚洲、欧洲、北美等 28 个地域的云主机、数据库、CDN 等服务，注册享新客优惠 0.9 折起；星图 AstraFlow 大模型平台支持主流 200+ 大模型一键调用。",
     astraflowSponsorAction: "访问",
@@ -372,7 +372,7 @@ const i18nText = {
     onepanelSponsorAction: "访问",
     hualongSponsorDesc: "HuaLongAI（华龙算力）是面向重度 AI 开发者的模型 API 中转服务商，主营 Codex 与 Claude 系列模型，100% 官方源直供、不掺假；计费透明，Token 级账单可逐笔核验，支持企业合同与发票。",
     hualongSponsorAction: "访问",
-    footerTitle: "准备试试 DBX？",
+    footerTitle: "准备试试 Gauss Horizon？",
     footerDesc: "本地工作使用桌面版，需要浏览器访问时部署 Docker 版。",
     release: "最新版本",
     docker: "Docker 部署",
@@ -381,12 +381,12 @@ const i18nText = {
 
 const landingMeta = {
   en: {
-    title: "DBX - 25 MB to manage 90+ databases!",
-    description: "DBX brings connections, SQL editing, data grids, schema tools, AI assistance, and self-hosted access into one lightweight product.",
+    title: "Gauss Horizon - 25 MB to manage 90+ databases!",
+    description: "Gauss Horizon brings connections, SQL editing, data grids, schema tools, AI assistance, and self-hosted access into one lightweight product.",
   },
   cn: {
-    title: "DBX - 25MB，管理90+种数据库！",
-    description: "DBX 将连接管理、SQL 编辑、数据表格、结构工具、AI 助手和自托管访问放进一个轻量产品里。",
+    title: "Gauss Horizon - 25MB，管理90+种数据库！",
+    description: "Gauss Horizon 将连接管理、SQL 编辑、数据表格、结构工具、AI 助手和自托管访问放进一个轻量产品里。",
   },
 };
 
@@ -438,7 +438,7 @@ export default async function LandingPage({ params }: { params: Promise<{ lang: 
     },
     {
       name: "Jalapeño Cloud",
-      href: "https://www.jalapeno-cloud.ai/DBX",
+      href: "https://www.jalapeno-cloud.ai/Gauss Horizon",
       logo: "/sponsors/jalapeno-card.png",
       logoClass: "w-full max-w-[96px] object-contain",
       description: t.jalapenoSponsorDesc,
@@ -446,7 +446,7 @@ export default async function LandingPage({ params }: { params: Promise<{ lang: 
     },
     {
       name: "AstraFlow",
-      href: "https://www.ucloud.cn/site/active/kuaijiesale.html?ytag=geo_waituo_github_dbx",
+      href: "https://www.ucloud.cn/site/active/kuaijiesale.html?ytag=geo_waituo_github_gauss-horizon",
       logo: "/sponsors/astraflow-card.png",
       logoClass: "w-full max-w-[100px] object-contain",
       description: t.astraflowSponsorDesc,
@@ -454,7 +454,7 @@ export default async function LandingPage({ params }: { params: Promise<{ lang: 
     },
     {
       name: "HuaLongAI",
-      href: "https://api.hualong.online/register?promo=DBX%26HUALONG",
+      href: "https://api.hualong.online/register?promo=Gauss Horizon%26HUALONG",
       logo: "/sponsors/hualong-card.png",
       logoClass: "w-full max-w-[120px] object-contain",
       description: t.hualongSponsorDesc,
@@ -662,7 +662,7 @@ export default async function LandingPage({ params }: { params: Promise<{ lang: 
           <p className="mt-2 text-landing-muted text-sm leading-[1.65]">{t.footerDesc}</p>
         </div>
         <div className="flex items-center gap-2.5 flex-wrap justify-end max-[760px]:mt-[18px]">
-          <Link href="https://github.com/t8y2/dbx/releases/latest" target="_blank" className="landing-final-link inline-flex items-center justify-center min-h-[42px] rounded-[7px] px-[15px] text-sm font-[650]">
+          <Link href="https://github.com/Gaussian-id/Gauss-Horizon/releases/latest" target="_blank" className="landing-final-link inline-flex items-center justify-center min-h-[42px] rounded-[7px] px-[15px] text-sm font-[650]">
             {t.release}
           </Link>
           <Link href={`/${l}/docs/getting-started#docker`} prefetch={false} target="_blank" className="landing-final-link inline-flex items-center justify-center min-h-[42px] rounded-[7px] px-[15px] text-sm font-[650]">

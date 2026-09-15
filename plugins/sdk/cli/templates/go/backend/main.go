@@ -5,7 +5,7 @@ import (
 	"log"
 	"sync"
 
-	dbxpluginsdk "github.com/t8y2/dbx/plugins/sdk/go/dbx-plugin-sdk"
+	gauss-horizonpluginsdk "github.com/Gaussian-id/Gauss-Horizon/plugins/sdk/go/gauss-horizon-plugin-sdk"
 )
 
 type plugin struct {
@@ -14,14 +14,14 @@ type plugin struct {
 }
 
 func (plugin *plugin) Handle(
-	_ dbxpluginsdk.RequestContext,
+	_ gauss-horizonpluginsdk.RequestContext,
 	method string,
 	params json.RawMessage,
-	_ *dbxpluginsdk.Emitter,
-) (any, *dbxpluginsdk.PluginError) {
+	_ *gauss-horizonpluginsdk.Emitter,
+) (any, *gauss-horizonpluginsdk.PluginError) {
 	var values map[string]any
 	if err := json.Unmarshal(params, &values); err != nil {
-		return nil, dbxpluginsdk.NewError(-32602, "Invalid request parameters")
+		return nil, gauss-horizonpluginsdk.NewError(-32602, "Invalid request parameters")
 	}
 	switch method {
 	case "connection/test":
@@ -48,26 +48,26 @@ func (plugin *plugin) Handle(
 	case "{{METHOD_PREFIX}}/ping":
 		return map[string]any{"ok": true, "plugin": "{{PLUGIN_ID}}", "language": "go", "connectionId": values["connectionId"]}, nil
 	default:
-		return nil, dbxpluginsdk.MethodNotFound(method)
+		return nil, gauss-horizonpluginsdk.MethodNotFound(method)
 	}
 }
 
-func requestConnectionID(values map[string]any) (string, *dbxpluginsdk.PluginError) {
+func requestConnectionID(values map[string]any) (string, *gauss-horizonpluginsdk.PluginError) {
 	connection, _ := values["connection"].(map[string]any)
 	connectionID, _ := connection["id"].(string)
 	if connectionID == "" {
-		return "", dbxpluginsdk.NewError(-32602, "Missing connection id")
+		return "", gauss-horizonpluginsdk.NewError(-32602, "Missing connection id")
 	}
 	return connectionID, nil
 }
 
 func main() {
-	metadata := dbxpluginsdk.Metadata{
+	metadata := gauss-horizonpluginsdk.Metadata{
 		ID:           "{{PLUGIN_ID}}",
 		Version:      "{{VERSION}}",
 		Capabilities: []string{"connections"},
 	}
-	server := dbxpluginsdk.NewServer(metadata, &plugin{connections: map[string]struct{}{}})
+	server := gauss-horizonpluginsdk.NewServer(metadata, &plugin{connections: map[string]struct{}{}})
 	if err := server.Serve(); err != nil {
 		log.Fatal(err)
 	}

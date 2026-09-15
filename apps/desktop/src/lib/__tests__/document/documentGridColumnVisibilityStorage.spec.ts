@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { loadDataGridColumnLayout } from "@/lib/dataGrid/dataGridColumnLayoutStorage";
 import { documentGridColumnVisibilityScopeKey, loadDocumentGridHiddenColumnKeys, migrateDocumentGridColumnVisibilityToLayout, saveDocumentGridHiddenColumnKeys } from "@/lib/document/documentGridColumnVisibilityStorage";
 
-const STORAGE_PREFIX = "dbx-document-grid-column-visibility:v1:";
+const STORAGE_PREFIX = "gauss-horizon-document-grid-column-visibility:v1:";
 let storedValues: Map<string, string>;
 
 function installLocalStorage() {
@@ -64,7 +64,7 @@ describe("document grid column visibility storage", () => {
     storedValues.set(`${STORAGE_PREFIX}${ordersScope}`, "{");
 
     expect(loadDocumentGridHiddenColumnKeys(ordersScope)).toEqual([]);
-    expect(warn).toHaveBeenCalledWith(expect.stringContaining("[DBX][document-grid-column-visibility:parse]"), expect.any(SyntaxError));
+    expect(warn).toHaveBeenCalledWith(expect.stringContaining("[Gauss Horizon][document-grid-column-visibility:parse]"), expect.any(SyntaxError));
   });
 
   it("migrates legacy hidden fields into the unified layout once", () => {

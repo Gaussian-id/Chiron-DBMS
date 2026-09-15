@@ -1,6 +1,6 @@
 # Release Checklist
 
-Use this checklist before pushing release tags or publishing DBX agent jars.
+Use this checklist before pushing release tags or publishing Gauss Horizon agent jars.
 
 ## 1. Confirm Scope
 
@@ -24,9 +24,9 @@ git status --short
 On this workspace, use the local JDKs under `/private/tmp`:
 
 ```bash
-env JAVA_HOME=/private/tmp/dbx-jdk/jdk-21.0.11+10/Contents/Home \
+env JAVA_HOME=/private/tmp/gauss-horizon-jdk/jdk-21.0.11+10/Contents/Home \
   ./gradlew \
-  -Dorg.gradle.java.installations.paths=/private/tmp/dbx-jdk/jdk-21.0.11+10/Contents/Home,/private/tmp/dbx-jdk8/jdk8/Contents/Home \
+  -Dorg.gradle.java.installations.paths=/private/tmp/gauss-horizon-jdk/jdk-21.0.11+10/Contents/Home,/private/tmp/gauss-horizon-jdk8/jdk8/Contents/Home \
   test shadowJar --continue
 ```
 
@@ -119,7 +119,7 @@ Java agents are built for the default JRE key `21`, backed by JDK 21 in the rele
 
 If another agent needs a different runtime, update the release workflow JRE detection logic.
 - Document why in the module or release notes.
-- Verify DBX can download the matching runtime artifact.
+- Verify Gauss Horizon can download the matching runtime artifact.
 
 ## 7. CI Expectations
 
@@ -187,7 +187,7 @@ After the GitHub release finishes:
 - Spot-check at least one agent jar manifest:
 
 ```bash
-unzip -p dbx-agent-h2.jar META-INF/MANIFEST.MF
+unzip -p gauss-horizon-agent-h2.jar META-INF/MANIFEST.MF
 ```
 
 ## 10. Known Follow-Ups

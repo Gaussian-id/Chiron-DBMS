@@ -7,30 +7,30 @@ const productImageSizes = "(max-width: 760px) calc(100vw - 36px), (max-width: 10
 const productSlides = [
   {
     src: "/screenshot-light.png",
-    webpSrc: "/screenshots/dbx-light-1280.webp",
-    webpSrcSet: "/screenshots/dbx-light-768.webp 768w, /screenshots/dbx-light-1280.webp 1280w, /screenshots/dbx-light-2560.webp 2560w",
-    alt: "DBX main window light theme",
+    webpSrc: "/screenshots/gauss-horizon-light-1280.webp",
+    webpSrcSet: "/screenshots/gauss-horizon-light-768.webp 768w, /screenshots/gauss-horizon-light-1280.webp 1280w, /screenshots/gauss-horizon-light-2560.webp 2560w",
+    alt: "Gauss Horizon main window light theme",
     label: "Light",
   },
   {
     src: "/screenshot-dark.png",
-    webpSrc: "/screenshots/dbx-dark-1280.webp",
-    webpSrcSet: "/screenshots/dbx-dark-768.webp 768w, /screenshots/dbx-dark-1280.webp 1280w, /screenshots/dbx-dark-2560.webp 2560w",
-    alt: "DBX main window dark theme",
+    webpSrc: "/screenshots/gauss-horizon-dark-1280.webp",
+    webpSrcSet: "/screenshots/gauss-horizon-dark-768.webp 768w, /screenshots/gauss-horizon-dark-1280.webp 1280w, /screenshots/gauss-horizon-dark-2560.webp 2560w",
+    alt: "Gauss Horizon main window dark theme",
     label: "Dark",
   },
   {
     src: "/screenshot-er.png",
-    webpSrc: "/screenshots/dbx-er-1280.webp",
-    webpSrcSet: "/screenshots/dbx-er-768.webp 768w, /screenshots/dbx-er-1280.webp 1280w, /screenshots/dbx-er-2560.webp 2560w",
-    alt: "DBX ER diagram",
+    webpSrc: "/screenshots/gauss-horizon-er-1280.webp",
+    webpSrcSet: "/screenshots/gauss-horizon-er-768.webp 768w, /screenshots/gauss-horizon-er-1280.webp 1280w, /screenshots/gauss-horizon-er-2560.webp 2560w",
+    alt: "Gauss Horizon ER diagram",
     label: "ER Diagram",
   },
   {
     src: "/screenshot-grid.png",
-    webpSrc: "/screenshots/dbx-grid-1280.webp",
-    webpSrcSet: "/screenshots/dbx-grid-768.webp 768w, /screenshots/dbx-grid-1280.webp 1280w, /screenshots/dbx-grid-2560.webp 2560w",
-    alt: "DBX data grid",
+    webpSrc: "/screenshots/gauss-horizon-grid-1280.webp",
+    webpSrcSet: "/screenshots/gauss-horizon-grid-768.webp 768w, /screenshots/gauss-horizon-grid-1280.webp 1280w, /screenshots/gauss-horizon-grid-2560.webp 2560w",
+    alt: "Gauss Horizon data grid",
     label: "Data Grid",
   },
 ];
@@ -66,7 +66,7 @@ export function HeroProductStage() {
           />
         </picture>
       </div>
-      <div className="landing-product-dots absolute right-[18px] bottom-4 z-[5] flex items-center rounded-full p-1 max-[760px]:right-2 max-[760px]:bottom-2" aria-label="DBX product screenshots">
+      <div className="landing-product-dots absolute right-[18px] bottom-4 z-[5] flex items-center rounded-full p-1 max-[760px]:right-2 max-[760px]:bottom-2" aria-label="Gauss Horizon product screenshots">
         {productSlides.map((slide, index) => (
           <button aria-current={index === activeSlide} aria-label={`Show ${slide.label} screenshot`} key={slide.src} onClick={() => setActiveSlide(index)} onFocus={() => preloadSlide(index)} onPointerEnter={() => preloadSlide(index)} title={slide.label} type="button" className="landing-product-dot block size-8 border-0 rounded-full p-0 cursor-pointer">
             <span>{slide.label}</span>

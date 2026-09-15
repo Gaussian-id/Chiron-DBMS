@@ -1392,7 +1392,7 @@ export function useDataGridExport(options: UseDataGridExportOptions) {
       const exportStartedAt = performance.now();
       const logExportStage = (stage: string, details: Record<string, unknown> = {}, sampleNativeMemory = false) => {
         if (!isDebugLoggingEnabled()) return;
-        appendDebugLog("info", `[DBX][export:sql:${stage}]`, {
+        appendDebugLog("info", `[Gauss Horizon][export:sql:${stage}]`, {
           exportId,
           elapsedMs: Math.round(performance.now() - exportStartedAt),
           ...details,

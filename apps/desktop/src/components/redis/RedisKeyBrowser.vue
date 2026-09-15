@@ -2828,13 +2828,13 @@ function onRedisDbFlushed(event: Event) {
 
 function registerRedisDbFlushedListener() {
   if (redisDbFlushedListenerRegistered) return;
-  window.addEventListener("dbx-redis-db-flushed", onRedisDbFlushed);
+  window.addEventListener("gauss-horizon-redis-db-flushed", onRedisDbFlushed);
   redisDbFlushedListenerRegistered = true;
 }
 
 function unregisterRedisDbFlushedListener() {
   if (!redisDbFlushedListenerRegistered) return;
-  window.removeEventListener("dbx-redis-db-flushed", onRedisDbFlushed);
+  window.removeEventListener("gauss-horizon-redis-db-flushed", onRedisDbFlushed);
   redisDbFlushedListenerRegistered = false;
 }
 
@@ -2959,7 +2959,7 @@ onMounted(async () => {
   try {
     await connectionStore.ensureConnected(props.connectionId);
   } catch (e) {
-    console.warn("[DBX] ensureConnected failed for", props.connectionId, e);
+    console.warn("[Gauss Horizon] ensureConnected failed for", props.connectionId, e);
   }
   void loadKeys();
 });
@@ -2973,7 +2973,7 @@ onActivated(async () => {
   try {
     await connectionStore.ensureConnected(props.connectionId);
   } catch (e) {
-    console.warn("[DBX] ensureConnected failed for", props.connectionId, e);
+    console.warn("[Gauss Horizon] ensureConnected failed for", props.connectionId, e);
   }
   // loadKeys resets the cursor before requesting its first page. A nonzero
   // retained cursor therefore distinguishes an applied empty page from a
@@ -3003,7 +3003,7 @@ watch(
     try {
       await connectionStore.ensureConnected(connectionId);
     } catch (error) {
-      console.warn("[DBX] ensureConnected failed for", connectionId, error);
+      console.warn("[Gauss Horizon] ensureConnected failed for", connectionId, error);
     }
     if (connectionId !== props.connectionId || db !== props.db) return;
     void loadKeys();
@@ -3224,7 +3224,7 @@ defineExpose({ focusSearch, insertCommand, executeCommand: executeAiCommand });
                     :key="entry"
                     role="option"
                     data-redis-search-history-item
-                    class="dbx-editor-font-family flex w-full cursor-pointer items-center px-3 py-1.5 text-left text-xs hover:bg-accent hover:text-accent-foreground"
+                    class="gauss-horizon-editor-font-family flex w-full cursor-pointer items-center px-3 py-1.5 text-left text-xs hover:bg-accent hover:text-accent-foreground"
                     :class="searchHistorySelectedIndex === index ? 'bg-accent text-accent-foreground' : ''"
                     :aria-selected="searchHistorySelectedIndex === index"
                     @mousedown.prevent="selectSearchHistory(index)"
@@ -3243,7 +3243,7 @@ defineExpose({ focusSearch, insertCommand, executeCommand: executeAiCommand });
                     :key="template"
                     type="button"
                     role="option"
-                    class="dbx-editor-font-family flex w-full items-center px-3 py-1.5 text-left text-xs hover:bg-accent hover:text-accent-foreground"
+                    class="gauss-horizon-editor-font-family flex w-full items-center px-3 py-1.5 text-left text-xs hover:bg-accent hover:text-accent-foreground"
                     :class="keyTemplateSelectedIndex === index ? 'bg-accent text-accent-foreground' : ''"
                     :aria-selected="keyTemplateSelectedIndex === index"
                     @mousedown.prevent="selectKeyTemplate(index)"
@@ -3373,7 +3373,7 @@ defineExpose({ focusSearch, insertCommand, executeCommand: executeAiCommand });
                       />
                       <component :is="expandedGroupIds.has(row.node.id) ? ChevronDown : ChevronRight" class="w-3 h-3 shrink-0 text-muted-foreground" />
                       <component :is="expandedGroupIds.has(row.node.id) ? FolderOpen : FolderClosed" class="h-3.5 w-3.5 shrink-0 text-amber-500" />
-                      <span class="dbx-editor-font-family truncate">{{ row.node.label }}</span>
+                      <span class="gauss-horizon-editor-font-family truncate">{{ row.node.label }}</span>
                       <span class="text-muted-foreground ml-1" :title="isFuzzyHierarchyView ? t('redis.loadedMatchingKeys', { count: row.node.loadedLeafCount }) : hasMore ? t('redis.loadedGroupKeysPartial', { count: row.node.loadedLeafCount }) : undefined"
                         >({{ row.node.loadedLeafCount }}{{ !isFuzzyHierarchyView && hasMore ? "+" : "" }})</span
                       >
@@ -3391,7 +3391,7 @@ defineExpose({ focusSearch, insertCommand, executeCommand: executeAiCommand });
                           @click="toggleNodeCheck(row.node, $event)"
                         />
                       </span>
-                      <span class="dbx-editor-font-family truncate">{{ row.node.label }}</span>
+                      <span class="gauss-horizon-editor-font-family truncate">{{ row.node.label }}</span>
                     </template>
                   </div>
                   <div class="flex shrink-0 items-center justify-end gap-1">
@@ -3495,7 +3495,7 @@ defineExpose({ focusSearch, insertCommand, executeCommand: executeAiCommand });
             </TabsContent>
 
             <TabsContent value="command" class="m-0 min-h-0 flex-1 flex flex-col">
-              <div class="dbx-editor-font-family relative flex min-h-0 flex-1 flex-col bg-[#171b21] text-[13px] leading-5 text-slate-200" @click="onCommandAreaClick">
+              <div class="gauss-horizon-editor-font-family relative flex min-h-0 flex-1 flex-col bg-[#171b21] text-[13px] leading-5 text-slate-200" @click="onCommandAreaClick">
                 <div ref="commandTerminalRef" class="redis-command-terminal min-h-0 flex-1 overflow-auto px-4 pb-3 pt-4">
                   <div class="mb-4 text-slate-400">
                     <span class="text-slate-200">{{ t("redis.commandWelcome") }}</span>
@@ -3544,7 +3544,7 @@ defineExpose({ focusSearch, insertCommand, executeCommand: executeAiCommand });
                     <input
                       v-model="commandText"
                       data-redis-command-input
-                      class="dbx-editor-font-family min-w-0 w-full border-0 bg-transparent p-0 text-[13px] text-slate-200 caret-[#d7ba7d] outline-none placeholder:text-slate-500"
+                      class="gauss-horizon-editor-font-family min-w-0 w-full border-0 bg-transparent p-0 text-[13px] text-slate-200 caret-[#d7ba7d] outline-none placeholder:text-slate-500"
                       :class="{ 'opacity-50': commandRunning }"
                       :readonly="commandRunning"
                       autocomplete="off"
@@ -3601,7 +3601,7 @@ defineExpose({ focusSearch, insertCommand, executeCommand: executeAiCommand });
             </Select>
             <label v-if="batchExpiryMode === 'ttl'" class="grid gap-1.5 text-xs font-medium">
               <span>{{ t("redis.createKeyTtl") }}</span>
-              <Input v-model="batchExpiryTtl" data-redis-batch-expiry-ttl class="dbx-editor-font-family h-8 text-xs" :disabled="savingBatchExpiry" inputmode="numeric" :placeholder="t('redis.createKeyTtlPlaceholder')" @keydown.enter="saveBatchExpiry" />
+              <Input v-model="batchExpiryTtl" data-redis-batch-expiry-ttl class="gauss-horizon-editor-font-family h-8 text-xs" :disabled="savingBatchExpiry" inputmode="numeric" :placeholder="t('redis.createKeyTtlPlaceholder')" @keydown.enter="saveBatchExpiry" />
             </label>
             <label v-else-if="batchExpiryMode === 'at'" class="grid gap-1.5 text-xs font-medium">
               <span>{{ t("redis.expiryAt") }}</span>
@@ -3631,7 +3631,7 @@ defineExpose({ focusSearch, insertCommand, executeCommand: executeAiCommand });
         <div class="grid gap-3">
           <label class="grid gap-1.5 text-xs font-medium">
             <span>{{ t("redis.createKeyName") }}</span>
-            <Input v-model="createKeyName" class="dbx-editor-font-family h-8 text-xs" :disabled="creatingKey || createKeyPartiallyWritten" :placeholder="t('redis.createKeyNamePlaceholder')" @keydown.enter="createRedisKey" />
+            <Input v-model="createKeyName" class="gauss-horizon-editor-font-family h-8 text-xs" :disabled="creatingKey || createKeyPartiallyWritten" :placeholder="t('redis.createKeyNamePlaceholder')" @keydown.enter="createRedisKey" />
           </label>
 
           <label class="grid gap-1.5 text-xs font-medium">
@@ -3655,12 +3655,12 @@ defineExpose({ focusSearch, insertCommand, executeCommand: executeAiCommand });
 
           <label v-if="createKeyType === 'hash' && createKeyRawMode" class="grid gap-1.5 text-xs font-medium">
             <span>{{ t("redis.createField") }}</span>
-            <Input v-model="createKeyField" class="dbx-editor-font-family h-8 text-xs" :disabled="creatingKey" :placeholder="t('redis.createFieldPlaceholder')" @keydown.enter="createRedisKey" />
+            <Input v-model="createKeyField" class="gauss-horizon-editor-font-family h-8 text-xs" :disabled="creatingKey" :placeholder="t('redis.createFieldPlaceholder')" @keydown.enter="createRedisKey" />
           </label>
 
           <label v-if="createKeyType === 'zset' && createKeyRawMode" class="grid gap-1.5 text-xs font-medium">
             <span>{{ t("redis.createScore") }}</span>
-            <Input v-model="createKeyScore" class="dbx-editor-font-family h-8 text-xs" :disabled="creatingKey" placeholder="0" @keydown.enter="createRedisKey" />
+            <Input v-model="createKeyScore" class="gauss-horizon-editor-font-family h-8 text-xs" :disabled="creatingKey" placeholder="0" @keydown.enter="createRedisKey" />
           </label>
 
           <div class="grid gap-1.5 text-xs font-medium">
@@ -3677,7 +3677,7 @@ defineExpose({ focusSearch, insertCommand, executeCommand: executeAiCommand });
             </Select>
             <label v-if="createKeyExpiryMode === 'ttl'" class="grid gap-1.5 text-xs font-medium">
               <span>{{ t("redis.createKeyTtl") }}</span>
-              <Input v-model="createKeyTtl" class="dbx-editor-font-family h-8 text-xs" :disabled="creatingKey" inputmode="numeric" :placeholder="t('redis.createKeyTtlPlaceholder')" @keydown.enter="createRedisKey" />
+              <Input v-model="createKeyTtl" class="gauss-horizon-editor-font-family h-8 text-xs" :disabled="creatingKey" inputmode="numeric" :placeholder="t('redis.createKeyTtlPlaceholder')" @keydown.enter="createRedisKey" />
             </label>
             <label v-else-if="createKeyExpiryMode === 'at'" class="grid gap-1.5 text-xs font-medium">
               <span>{{ t("redis.expiryAt") }}</span>
@@ -3698,7 +3698,7 @@ defineExpose({ focusSearch, insertCommand, executeCommand: executeAiCommand });
             <!-- Stream entry ID -->
             <label v-if="createKeyType === 'stream'" class="grid gap-1.5 text-xs font-medium">
               <span>{{ t("redis.createKeyEntryId") }}</span>
-              <Input v-model="createKeyEntryId" class="dbx-editor-font-family h-8 text-xs font-mono" :disabled="creatingKey" placeholder="*" />
+              <Input v-model="createKeyEntryId" class="gauss-horizon-editor-font-family h-8 text-xs font-mono" :disabled="creatingKey" placeholder="*" />
             </label>
 
             <div class="grid gap-2">
@@ -3712,17 +3712,17 @@ defineExpose({ focusSearch, insertCommand, executeCommand: executeAiCommand });
               <div v-for="(entry, idx) in createKeyEntries" :key="entry.id" class="flex items-start gap-2">
                 <!-- Hash / Stream: field + value -->
                 <template v-if="createKeyType === 'hash' || createKeyType === 'stream'">
-                  <Input v-model="entry.field" class="dbx-editor-font-family h-8 w-2/5 text-xs" :disabled="creatingKey" :placeholder="t('redis.createFieldPlaceholder')" />
-                  <Input v-model="entry.value" class="dbx-editor-font-family h-8 flex-1 text-xs" :disabled="creatingKey" :placeholder="t('redis.createValuePlaceholder')" />
+                  <Input v-model="entry.field" class="gauss-horizon-editor-font-family h-8 w-2/5 text-xs" :disabled="creatingKey" :placeholder="t('redis.createFieldPlaceholder')" />
+                  <Input v-model="entry.value" class="gauss-horizon-editor-font-family h-8 flex-1 text-xs" :disabled="creatingKey" :placeholder="t('redis.createValuePlaceholder')" />
                 </template>
                 <!-- ZSet: score + member -->
                 <template v-else-if="createKeyType === 'zset'">
-                  <Input v-model="entry.score" class="dbx-editor-font-family h-8 w-20 text-xs" :disabled="creatingKey" type="number" step="any" placeholder="0" />
-                  <Input v-model="entry.value" class="dbx-editor-font-family h-8 flex-1 text-xs" :disabled="creatingKey" :placeholder="t('redis.createMember')" />
+                  <Input v-model="entry.score" class="gauss-horizon-editor-font-family h-8 w-20 text-xs" :disabled="creatingKey" type="number" step="any" placeholder="0" />
+                  <Input v-model="entry.value" class="gauss-horizon-editor-font-family h-8 flex-1 text-xs" :disabled="creatingKey" :placeholder="t('redis.createMember')" />
                 </template>
                 <!-- List / Set: single value -->
                 <template v-else>
-                  <Input v-model="entry.value" class="dbx-editor-font-family h-8 flex-1 text-xs" :disabled="creatingKey" :placeholder="t('redis.createValuePlaceholder')" />
+                  <Input v-model="entry.value" class="gauss-horizon-editor-font-family h-8 flex-1 text-xs" :disabled="creatingKey" :placeholder="t('redis.createValuePlaceholder')" />
                 </template>
                 <Button variant="ghost" size="sm" class="h-8 w-8 shrink-0 p-0 text-muted-foreground hover:text-destructive" :disabled="creatingKey || createKeyEntries.length <= 1" @click="removeEntry(idx)">
                   <Trash2 class="h-3.5 w-3.5" />
@@ -3734,7 +3734,13 @@ defineExpose({ focusSearch, insertCommand, executeCommand: executeAiCommand });
           <!-- Raw value textarea (string, json, or raw mode for other types) -->
           <label v-if="createKeyType === 'string' || createKeyType === 'json' || createKeyRawMode" class="grid gap-1.5 text-xs font-medium">
             <span>{{ t(createKeyType === "set" || createKeyType === "zset" ? "redis.createMember" : "redis.createValue") }}</span>
-            <textarea v-model="createKeyValue" class="dbx-editor-font-family min-h-28 resize-y rounded-md border bg-background p-2 text-xs outline-none focus-visible:ring-1 focus-visible:ring-ring" :disabled="creatingKey" spellcheck="false" :placeholder="t('redis.createValuePlaceholder')" />
+            <textarea
+              v-model="createKeyValue"
+              class="gauss-horizon-editor-font-family min-h-28 resize-y rounded-md border bg-background p-2 text-xs outline-none focus-visible:ring-1 focus-visible:ring-ring"
+              :disabled="creatingKey"
+              spellcheck="false"
+              :placeholder="t('redis.createValuePlaceholder')"
+            />
           </label>
 
           <p v-if="createKeyError" class="text-xs text-destructive">{{ createKeyError }}</p>

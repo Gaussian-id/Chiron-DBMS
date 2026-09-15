@@ -1990,7 +1990,7 @@ async function refreshMutatedTableDataTabsForRows(rows: readonly ObjectBrowserRo
     try {
       await queryStore.refreshDataTabsForTable(target);
     } catch (error) {
-      console.warn("[DBX][table-data-refresh-after-mutation:error]", { target, error });
+      console.warn("[Gauss Horizon][table-data-refresh-after-mutation:error]", { target, error });
     }
   }
 }
@@ -3093,7 +3093,7 @@ watch(
     try {
       await connectionStore.ensureConnected(props.connection.id);
     } catch (e) {
-      console.warn("[DBX] ensureConnected failed for", props.connection.id, e);
+      console.warn("[Gauss Horizon] ensureConnected failed for", props.connection.id, e);
     }
     if (!objectBrowserRowsLoadGuard.isEpochCurrent(contextEpoch)) return;
     void reload({ allowCachedObjects: true, contextEpoch });
@@ -3589,7 +3589,7 @@ function getObjectBrowserMenuItems(item: ObjectBrowserRow): ContextMenuItem[] {
               </div>
             </div>
           </div>
-          <RecycleScroller ref="listScrollerRef" class="object-browser-scroller min-h-0 flex-1" :style="{ '--dbx-object-grid-min-width': `${objectGridMinWidth}px` }" :items="filteredRows" :item-size="34" :buffer="600" :skip-hover="true" key-field="id">
+          <RecycleScroller ref="listScrollerRef" class="object-browser-scroller min-h-0 flex-1" :style="{ '--gauss-horizon-object-grid-min-width': `${objectGridMinWidth}px` }" :items="filteredRows" :item-size="34" :buffer="600" :skip-hover="true" key-field="id">
             <template #default="{ item }">
               <CustomContextMenu :items="() => getObjectBrowserMenuItems(item)" v-slot="{ onContextMenu, isOpen }">
                 <div
@@ -4188,11 +4188,11 @@ function getObjectBrowserMenuItems(item: ObjectBrowserRow): ContextMenuItem[] {
   background: color-mix(in oklch, var(--foreground) 45%, transparent);
 }
 
-html.dbx-legacy-webview.dark .object-browser-scroller::-webkit-scrollbar-thumb {
+html.gauss-horizon-legacy-webview.dark .object-browser-scroller::-webkit-scrollbar-thumb {
   background: rgba(212, 212, 216, 0.28);
 }
 
-html.dbx-legacy-webview.dark .object-browser-scroller:hover::-webkit-scrollbar-thumb {
+html.gauss-horizon-legacy-webview.dark .object-browser-scroller:hover::-webkit-scrollbar-thumb {
   background: rgba(212, 212, 216, 0.45);
 }
 
@@ -4200,7 +4200,7 @@ html.dbx-legacy-webview.dark .object-browser-scroller:hover::-webkit-scrollbar-t
    visible at the right edge; the row content inside scrolls horizontally past
    that width instead (issue #8885). */
 .object-browser-scroller :deep(.vue-recycle-scroller__item-wrapper) {
-  min-width: var(--dbx-object-grid-min-width, 0px);
+  min-width: var(--gauss-horizon-object-grid-min-width, 0px);
 }
 
 .object-browser-scroller :deep(.vue-recycle-scroller__item-view) {

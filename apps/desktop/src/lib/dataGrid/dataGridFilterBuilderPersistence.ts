@@ -17,7 +17,7 @@ export type DataGridStructuredFilterCacheState = {
 };
 
 const STRUCTURED_FILTER_STATE_CACHE_MAX_ENTRIES = 128;
-const STORAGE_KEY = "dbx-data-grid-structured-filters";
+const STORAGE_KEY = "gauss-horizon-data-grid-structured-filters";
 const STORAGE_VERSION = 1;
 const FILTER_MODE_LIST = [
   "equals",

@@ -51,7 +51,7 @@ function sqlServerConn(id: string): ConnectionConfig {
 const THREE_RESULTS = "SELECT 1 AS a; SELECT 2 AS b; SELECT 3 AS c;";
 const TRAILING_MESSAGE = "SELECT 9 AS z; PRINT N'DBCC execution completed.';";
 
-/** Mirrors the shapes crates/dbx-core/src/db/sqlserver.rs:523-542 actually produces. */
+/** Mirrors the shapes crates/gauss-horizon-core/src/db/sqlserver.rs:523-542 actually produces. */
 function resultsFor(sql: string) {
   if (sql.includes("SELECT 3 AS c")) {
     return [
@@ -101,8 +101,8 @@ test("#6189: a later SQL Server execution does not inherit the previously focuse
   const unexpected: string[] = [];
   globalThis.fetch = stubFetch(unexpected);
 
-  connectionStore.addEphemeralConnection({ ...sqlServerConn("conn-1"), database: "dbx" });
-  const tabId = store.createTab("conn-1", "dbx", "Query");
+  connectionStore.addEphemeralConnection({ ...sqlServerConn("conn-1"), database: "gauss-horizon" });
+  const tabId = store.createTab("conn-1", "gauss-horizon", "Query");
 
   try {
     // 1) three data results; the user manually focuses the LAST one.
@@ -136,8 +136,8 @@ test("#6189: a SQL Server batch whose message result is last still focuses the f
   const originalFetch = globalThis.fetch;
   globalThis.fetch = stubFetch([]);
 
-  connectionStore.addEphemeralConnection({ ...sqlServerConn("conn-1"), database: "dbx" });
-  const tabId = store.createTab("conn-1", "dbx", "Query");
+  connectionStore.addEphemeralConnection({ ...sqlServerConn("conn-1"), database: "gauss-horizon" });
+  const tabId = store.createTab("conn-1", "gauss-horizon", "Query");
 
   try {
     await store.executeTabSql(tabId, TRAILING_MESSAGE);

@@ -69,7 +69,7 @@ async function doCopy(): Promise<boolean> {
 // scripts and network access.
 async function saveSafeHtml() {
   try {
-    await saveTextFile(props.document, "dbx-ai-html-preview.html", "HTML", "html");
+    await saveTextFile(props.document, "gauss-horizon-ai-html-preview.html", "HTML", "html");
   } catch {
     toast(t("ai.htmlSaveFailed"));
   }

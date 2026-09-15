@@ -72,7 +72,7 @@ async function submit() {
       <div class="flex flex-col items-center gap-4">
         <AppLogo class="w-20 h-20 rounded-2xl shadow-lg shadow-blue-500/20" />
         <div class="text-center">
-          <h1 class="text-2xl font-bold tracking-tight">ChironDBM</h1>
+          <h1 class="text-2xl font-bold tracking-tight">Gauss Horizon</h1>
           <p class="text-xs text-muted-foreground">by Gaussian</p>
           <p class="text-sm text-muted-foreground mt-1">
             {{ setupMode ? t("auth.setupDescription") : t("auth.loginDescription") }}
@@ -100,7 +100,7 @@ async function submit() {
         </Button>
       </form>
 
-      <p class="text-center text-xs text-muted-foreground">ChironDBM by Gaussian · Built on DBX</p>
+      <p class="text-center text-xs text-muted-foreground">Gauss Horizon by Gaussian</p>
     </div>
   </div>
 </template>

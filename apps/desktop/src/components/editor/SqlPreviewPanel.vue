@@ -57,7 +57,7 @@ async function initHighlighter() {
     highlighterReady.value = true;
     await highlightSql();
   } catch (e) {
-    console.error("[DBX][SqlPreviewPanel] Failed to init shiki:", e);
+    console.error("[Gauss Horizon][SqlPreviewPanel] Failed to init shiki:", e);
   }
 }
 

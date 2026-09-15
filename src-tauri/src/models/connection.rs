@@ -1,1 +1,1 @@
-pub use dbx_core::models::connection::*;
+pub use gauss_horizon_core::models::connection::*;

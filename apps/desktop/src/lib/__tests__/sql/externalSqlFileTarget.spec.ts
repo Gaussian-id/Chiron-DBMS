@@ -30,11 +30,11 @@ describe("external SQL file targets", () => {
     // Reopening a .sql file used to drop the schema, leaving the tab on the
     // connection default: sidebar locate then looked for the table in the wrong
     // namespace and silently did nothing (issue #7648).
-    rememberExternalSqlFileTarget("/work/report.sql", { connectionId: "saved-connection", database: "dbx_test", schema: "analytics" });
+    rememberExternalSqlFileTarget("/work/report.sql", { connectionId: "saved-connection", database: "gauss_horizon_test", schema: "analytics" });
 
     expect(resolveExternalSqlFileTarget("/work/report.sql", () => true, unassociatedExternalSqlFileTarget())).toEqual({
       connectionId: "saved-connection",
-      database: "dbx_test",
+      database: "gauss_horizon_test",
       catalog: undefined,
       schema: "analytics",
     });

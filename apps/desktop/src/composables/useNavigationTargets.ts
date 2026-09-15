@@ -305,7 +305,7 @@ async function openTableTarget(target: NavigationTarget, options: { tableInfoTab
         await queryStore.executeTabSql(tabId, newSql, { pagination: { limit: pageLimit, offset: 0 } });
       }
     } catch (reason) {
-      console.error("[DBX] ERROR fetching table metadata:", reason);
+      console.error("[Gauss Horizon] ERROR fetching table metadata:", reason);
     }
   } catch (e: any) {
     if (firstExecuteStarted ? !isCurrentTarget() : !isPreparationCurrent()) return;

@@ -1,3 +1,4 @@
+import { LEGACY_CONFIG_FORMAT } from "@/lib/compat/legacyProfile";
 import type { ConnectionConfig, SidebarLayout, TunnelProfile } from "@/types/database";
 import { filterSidebarLayoutByConnectionIds as filterLayoutByConnectionIds } from "@/lib/sidebar/sidebarLayout";
 
@@ -86,7 +87,7 @@ export function parseConnectionConfigObject(value: unknown): ConnectionConfigBun
     tunnelProfiles?: unknown;
   };
 
-  if (parsed.format === "dbx-config" && Array.isArray(parsed.connections)) {
+  if ((parsed.format === "gauss-horizon-config" || parsed.format === LEGACY_CONFIG_FORMAT) && Array.isArray(parsed.connections)) {
     return { connections: parsed.connections as ConnectionConfig[] };
   }
 

@@ -21,7 +21,7 @@ defineProps<{
 }>();
 
 const emit = defineEmits<{
-  import: [source: "dbx" | "navicat" | "dbeaver" | "datagrip"];
+  import: [source: "gauss-horizon" | "navicat" | "dbeaver" | "datagrip"];
   export: [];
   startResize: [event: MouseEvent];
   collapse: [];
@@ -29,7 +29,7 @@ const emit = defineEmits<{
   "add-to-ai": [nodes: TreeNode | TreeNode[]];
 }>();
 
-type ImportSource = "dbx" | "navicat" | "dbeaver" | "datagrip";
+type ImportSource = "gauss-horizon" | "navicat" | "dbeaver" | "datagrip";
 
 const { t } = useI18n();
 const connectionStore = useConnectionStore();
@@ -40,7 +40,7 @@ const showCreateSelectedGroupDialog = ref(false);
 const selectedGroupName = ref("");
 const UNGROUPED_GROUP_VALUE = "__ungrouped";
 const importSourceItems = computed(() => [
-  { value: "dbx", label: t("sidebar.importDbx") },
+  { value: "gauss-horizon", label: t("sidebar.importGaussHorizon") },
   { value: "navicat", label: t("sidebar.importNavicat") },
   { value: "dbeaver", label: t("sidebar.importDbeaver") },
   { value: "datagrip", label: t("sidebar.importDatagrip") },
@@ -154,7 +154,7 @@ async function confirmDeleteSelectedConnections() {
     await connectionStore.removeConnections(ids);
     for (const connectionId of ids) {
       connectionStore.disconnect(connectionId).catch((error) => {
-        console.warn("[DBX][connection:delete:disconnect-failed]", { connectionId, error });
+        console.warn("[Gauss Horizon][connection:delete:disconnect-failed]", { connectionId, error });
       });
     }
     clearConnectionMultiSelection();

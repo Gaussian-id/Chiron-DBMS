@@ -1,5 +1,5 @@
 {
-  "name": "dbx",
+  "name": "gauss-horizon",
   "compatibility_date": "2026-05-07",
   "main": "./worker.ts",
   "assets": {
@@ -9,7 +9,7 @@
   "r2_buckets": [
     {
       "binding": "ISSUE_IMAGES",
-      "bucket_name": "dbx"
+      "bucket_name": "gauss-horizon"
     }
   ],
   "durable_objects": {

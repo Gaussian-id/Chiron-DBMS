@@ -13,10 +13,10 @@ export const SQL_BUILTIN_HIGHLIGHT_TAG = tags.standard(tags.name);
 type CodeMirrorStyleSpec = Parameters<typeof import("@codemirror/view").EditorView.theme>[0];
 type LucideIconNode = Array<[string, Record<string, string>]>;
 
-export const EDITOR_FONT_SIZE_CSS_VAR = "--dbx-editor-font-size";
-export const EDITOR_FONT_FAMILY_CSS_VAR = "--dbx-editor-font-family";
-export const SQL_TABLE_COLOR_CSS_VAR = "--dbx-sql-table-color";
-const EDITOR_SELECTION_BACKGROUND_CSS_VAR = "--dbx-editor-selection-background";
+export const EDITOR_FONT_SIZE_CSS_VAR = "--gauss-horizon-editor-font-size";
+export const EDITOR_FONT_FAMILY_CSS_VAR = "--gauss-horizon-editor-font-family";
+export const SQL_TABLE_COLOR_CSS_VAR = "--gauss-horizon-sql-table-color";
+const EDITOR_SELECTION_BACKGROUND_CSS_VAR = "--gauss-horizon-editor-selection-background";
 
 export function createRunStatementButtonDom(ariaLabel = "Execute statement"): HTMLButtonElement {
   const marker = document.createElement("button");
@@ -656,7 +656,7 @@ function encodeSvgIcon(iconNode: LucideIconNode): string {
 function lucideCompletionIconMask(iconNode: LucideIconNode) {
   const mask = encodeSvgIcon(iconNode);
   return {
-    "--dbx-completion-icon-mask": mask,
+    "--gauss-horizon-completion-icon-mask": mask,
   };
 }
 
@@ -733,7 +733,7 @@ export async function loadEditorTheme(theme: EditorTheme, appAppearance: AppThem
         EditorView.theme(
           {
             "&": { backgroundColor: "var(--background)", color: "var(--foreground)" },
-            ".cm-gutters": { backgroundColor: "var(--dbx-gutter)", color: "var(--muted-foreground)", borderColor: "var(--border)" },
+            ".cm-gutters": { backgroundColor: "var(--gauss-horizon-gutter)", color: "var(--muted-foreground)", borderColor: "var(--border)" },
             ".cm-content": { caretColor: "var(--ring)" },
             ".cm-cursor": { borderLeftColor: "var(--ring)" },
             ".cm-activeLine, .cm-activeLineGutter": { backgroundColor: "var(--accent)" },
@@ -803,7 +803,7 @@ export function buildEditorFontThemeRules(opts?: { fixedHeight?: boolean; scroll
       // edited lines by patching individual character spans, and that
       // per-keystroke patching can race the browser's ligature reshaping when
       // the same character is typed repeatedly in place, leaving earlier
-      // characters unpainted until something else forces a repaint (dbx#7900).
+      // characters unpainted until something else forces a repaint (gauss-horizon#7900).
       // Disabling ligatures here avoids the reshaping entirely, matching the
       // same fix already applied to DataGridConditionEditor.vue.
       fontVariantLigatures: "none",
@@ -889,7 +889,7 @@ export function buildEditorFontThemeRules(opts?: { fixedHeight?: boolean; scroll
       alignItems: "center",
       background: "transparent",
       border: "1px solid transparent",
-      borderRadius: "var(--dbx-radius-fixed-6)",
+      borderRadius: "var(--gauss-horizon-radius-fixed-6)",
       boxSizing: "border-box",
       color: "transparent",
       display: "inline-flex",
@@ -978,7 +978,7 @@ export function buildSqlCompletionThemeRules(): CodeMirrorStyleSpec {
       background: "var(--popover)",
       backgroundClip: "padding-box",
       border: colorMixValue("1px solid var(--border)", "1px solid color-mix(in oklch, var(--border) 82%, var(--foreground) 18%)"),
-      borderRadius: "var(--dbx-radius-md)",
+      borderRadius: "var(--gauss-horizon-radius-md)",
       boxShadow: "0 8px 18px rgb(0 0 0 / 0.14)",
       color: "var(--popover-foreground)",
       fontFamily: `var(${EDITOR_FONT_FAMILY_CSS_VAR}, var(--font-mono, monospace))`,
@@ -1007,7 +1007,7 @@ export function buildSqlCompletionThemeRules(): CodeMirrorStyleSpec {
     },
     ".cm-tooltip.cm-tooltip-autocomplete > ul > li": {
       alignItems: "center",
-      borderRadius: "var(--dbx-radius-sm)",
+      borderRadius: "var(--gauss-horizon-radius-sm)",
       color: "var(--popover-foreground)",
       display: "flex",
       fontSize: `clamp(12px, var(${EDITOR_FONT_SIZE_CSS_VAR}, 13px), 14px)`,
@@ -1059,11 +1059,11 @@ export function buildSqlCompletionThemeRules(): CodeMirrorStyleSpec {
       left: "0",
       top: "0",
       position: "absolute",
-      WebkitMaskImage: "var(--dbx-completion-icon-mask)",
+      WebkitMaskImage: "var(--gauss-horizon-completion-icon-mask)",
       WebkitMaskPosition: "center",
       WebkitMaskRepeat: "no-repeat",
       WebkitMaskSize: "14px 14px",
-      maskImage: "var(--dbx-completion-icon-mask)",
+      maskImage: "var(--gauss-horizon-completion-icon-mask)",
       maskPosition: "center",
       maskRepeat: "no-repeat",
       maskSize: "14px 14px",

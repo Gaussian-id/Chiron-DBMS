@@ -1,16 +1,16 @@
-# DBX Hello Workbench plugin
+# Gauss Horizon Hello Workbench plugin
 
 This example exercises the complete manifest v1 path instead of mocking a contribution preview:
 
-- native Rust sidecar built with `dbx-plugin-sdk`;
+- native Rust sidecar built with `gauss-horizon-plugin-sdk`;
 - protocol handshake and concurrent JSON-RPC requests;
 - saved `connection-provider` with common/config/secret field bindings;
 - test, connect, and disconnect lifecycle;
 - per-connection backend registry;
 - asynchronous connection/progress events;
-- sandboxed workbench UI using `window.dbxPlugin`;
-- workbench-to-sidecar RPC plus a read-only filesystem contribution rendered by DBX's host-owned file manager;
-- unsigned `.dbxp` candidate packaging plus separate repository signing;
+- sandboxed workbench UI using `window.gaussHorizonPlugin`;
+- workbench-to-sidecar RPC plus a read-only filesystem contribution rendered by Gauss Horizon's host-owned file manager;
+- unsigned `.gauss-horizonp` candidate packaging plus separate repository signing;
 - automated install-to-uninstall smoke runner.
 
 ## Files
@@ -27,11 +27,11 @@ hello-workbench/
 └── smoke.mjs              # package + lifecycle smoke test
 ```
 
-The reusable smoke executable lives at `crates/dbx-core/examples/plugin_package_smoke.rs` so it shares DBX's workspace lockfile and dependency patches.
+The reusable smoke executable lives at `crates/gauss-horizon-core/examples/plugin_package_smoke.rs` so it shares Gauss Horizon's workspace lockfile and dependency patches.
 
 ## Build an unsigned development package
 
-From the DBX repository root:
+From the Gauss Horizon repository root:
 
 ```bash
 node plugins/examples/hello-workbench/package.mjs
@@ -41,17 +41,17 @@ The package is written to:
 
 ```text
 plugins/examples/hello-workbench/dist/
-  dbx.example.hello-1.0.0-<target>.dbxp
-  dbx.example.hello-1.0.0-<target>.artifact.json
+  gauss.horizon.example.hello-1.0.0-<target>.gauss-horizonp
+  gauss.horizon.example.hello-1.0.0-<target>.artifact.json
 ```
 
 The `.artifact.json` file contains the target, candidate URL, package SHA-256, and size used by review and multi-platform release aggregation. It intentionally contains no `signingKeyId`.
 
-In DBX, open **Plugin Center**, enable **Allow unsigned development package**, and install the `.dbxp`.
+In Gauss Horizon, open **Plugin Center**, enable **Allow unsigned development package**, and install the `.gauss-horizonp`.
 
 ## Use the example
 
-1. Select **DBX Hello Workbench** in the plugin center.
+1. Select **Gauss Horizon Hello Workbench** in the plugin center.
 2. Create a **Hello connection**.
 3. Fill the host, port, greeting, and optional example token.
 4. Click **Test**.
@@ -89,30 +89,30 @@ To reuse an already-built package:
 
 ```bash
 node plugins/examples/hello-workbench/smoke.mjs \
-  plugins/examples/hello-workbench/dist/dbx.example.hello-1.0.0-darwin-arm64.dbxp
+  plugins/examples/hello-workbench/dist/gauss.horizon.example.hello-1.0.0-darwin-arm64.gauss-horizonp
 ```
 
 To verify a repository-signed package with marketplace policy, provide the trusted repository public keys:
 
 ```bash
-DBX_PLUGIN_SMOKE_TRUSTED_KEYS_JSON='{"example-repository":"BASE64_32_BYTE_ED25519_PUBLIC_KEY"}' \
+GAUSS_HORIZON_PLUGIN_SMOKE_TRUSTED_KEYS_JSON='{"example-repository":"BASE64_32_BYTE_ED25519_PUBLIC_KEY"}' \
 node plugins/examples/hello-workbench/smoke.mjs \
-  plugins/examples/hello-workbench/dist/dbx.example.hello-1.0.0-darwin-arm64.signed.dbxp
+  plugins/examples/hello-workbench/dist/gauss.horizon.example.hello-1.0.0-darwin-arm64.signed.gauss-horizonp
 ```
 
 ## Sign as a custom repository operator
 
-Official plugin authors skip this section because DBX Store signs approved candidates. To exercise the custom-repository flow, generate or load a repository key and sign the already-built candidate:
+Official plugin authors skip this section because Gauss Horizon Store signs approved candidates. To exercise the custom-repository flow, generate or load a repository key and sign the already-built candidate:
 
 ```bash
-dbx-plugin keygen example-repository
-source .dbx-repository-signing-key.env
+gauss-horizon-plugin keygen example-repository
+source .gauss-horizon-repository-signing-key.env
 node plugins/examples/hello-workbench/repository-sign.mjs
 ```
 
-The script writes a `.signed.dbxp`, creates final artifact metadata containing `signingKeyId`, and refreshes the example catalog entry. Add the corresponding Base64 public key under **Plugin Center → Custom repository trust** before installing from that catalog.
+The script writes a `.signed.gauss-horizonp`, creates final artifact metadata containing `signingKeyId`, and refreshes the example catalog entry. Add the corresponding Base64 public key under **Plugin Center → Custom repository trust** before installing from that catalog.
 
-Do not put the private seed in the repository or package. Distribute the repository public key through a channel independent from the `.dbxp` download.
+Do not put the private seed in the repository or package. Distribute the repository public key through a channel independent from the `.gauss-horizonp` download.
 
 Run the complete temporary-key flow without modifying the example catalog:
 
@@ -122,23 +122,23 @@ node plugins/examples/hello-workbench/repository-smoke.mjs
 
 This builds an unsigned candidate, generates an ephemeral repository key outside the workspace, signs the reviewed candidate, installs it with strict signature policy, exercises assets/actions/connections/filesystem/events, uninstalls it, and removes temporary keys and Cargo targets.
 
-Set `DBX_PLUGIN_OUTPUT_DIR` when automation should place candidate outputs outside the example `dist/` directory.
+Set `GAUSS_HORIZON_PLUGIN_OUTPUT_DIR` when automation should place candidate outputs outside the example `dist/` directory.
 
 ## Connection request shape
 
-The backend lifecycle receives the hydrated connection and the final DBX transport endpoint:
+The backend lifecycle receives the hydrated connection and the final Gauss Horizon transport endpoint:
 
 ```json
 {
   "provider": {
-    "id": "dbx.example.hello.connection",
+    "id": "gauss.horizon.example.hello.connection",
     "databaseType": "hello"
   },
   "connection": {
     "id": "saved-connection-id",
     "db_type": "plugin",
-    "plugin_id": "dbx.example.hello",
-    "plugin_connection_provider": "dbx.example.hello.connection",
+    "plugin_id": "gauss.horizon.example.hello",
+    "plugin_connection_provider": "gauss.horizon.example.hello.connection",
     "plugin_connection_type": "hello",
     "external_config": {
       "greeting": "Hello"
@@ -159,7 +159,7 @@ The workbench context is intentionally smaller:
 ```json
 {
   "connectionId": "saved-connection-id",
-  "providerId": "dbx.example.hello.connection",
+  "providerId": "gauss.horizon.example.hello.connection",
   "connectionType": "hello"
 }
 ```
@@ -167,5 +167,5 @@ The workbench context is intentionally smaller:
 ## Adapt it for a real plugin
 
 - SSH/SFTP: switch to `stdio-framed`, keep PTY/SFTP sessions in a backend registry, and use binary channels for terminal/transfer data.
-- OpenDAL: keep credentials in the connection provider, implement filesystem methods in the backend, and let DBX own generic file-manager UI.
-- Other tools: add contributions rather than adding a new DBX database enum variant or importing plugin Vue code into the main window.
+- OpenDAL: keep credentials in the connection provider, implement filesystem methods in the backend, and let Gauss Horizon own generic file-manager UI.
+- Other tools: add contributions rather than adding a new Gauss Horizon database enum variant or importing plugin Vue code into the main window.

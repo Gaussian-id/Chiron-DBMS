@@ -991,7 +991,7 @@ export function useSidebarDatabaseSpecificMutationRuntime(options: SidebarDataba
       await api.redisFlushDb(node.connectionId, Number(node.database));
       connectionStore.updateRedisDbKeyStats(node.connectionId, Number(node.database), { loaded: 0, total: 0 });
       window.dispatchEvent(
-        new CustomEvent("dbx-redis-db-flushed", {
+        new CustomEvent("gauss-horizon-redis-db-flushed", {
           detail: { connectionId: node.connectionId, db: Number(node.database) },
         }),
       );

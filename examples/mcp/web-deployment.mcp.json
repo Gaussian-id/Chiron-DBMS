@@ -1,10 +1,10 @@
 {
   "mcpServers": {
-    "dbx": {
-      "command": "dbx-mcp-server",
+    "gauss-horizon": {
+      "command": "gauss-horizon-mcp-server",
       "env": {
-        "DBX_WEB_URL": "http://localhost:4224",
-        "DBX_WEB_PASSWORD": "changeme"
+        "GAUSS_HORIZON_WEB_URL": "http://localhost:4224",
+        "GAUSS_HORIZON_WEB_PASSWORD": "changeme"
       }
     }
   }

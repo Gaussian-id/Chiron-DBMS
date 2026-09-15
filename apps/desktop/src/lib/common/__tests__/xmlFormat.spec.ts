@@ -7,8 +7,8 @@ describe("formatXmlSource", () => {
   });
 
   it("preserves XML declarations, DOCTYPE subsets, comments, and CDATA", () => {
-    const source = `<?xml version="1.0"?><!DOCTYPE root [<!ENTITY name "DBX">]><root><!-- note --><value><![CDATA[a < b]]></value></root>`;
-    expect(formatXmlSource(source)).toBe(`<?xml version="1.0"?>\n<!DOCTYPE root [<!ENTITY name "DBX">]>\n<root>\n  <!-- note -->\n  <value><![CDATA[a < b]]></value>\n</root>`);
+    const source = `<?xml version="1.0"?><!DOCTYPE root [<!ENTITY name "Gauss Horizon">]><root><!-- note --><value><![CDATA[a < b]]></value></root>`;
+    expect(formatXmlSource(source)).toBe(`<?xml version="1.0"?>\n<!DOCTYPE root [<!ENTITY name "Gauss Horizon">]>\n<root>\n  <!-- note -->\n  <value><![CDATA[a < b]]></value>\n</root>`);
   });
 
   it("does not alter mixed content", () => {

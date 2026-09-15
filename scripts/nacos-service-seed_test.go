@@ -64,8 +64,8 @@ func TestSelectedTargetsUseRepositoryPortsAndVersionedAPIs(t *testing.T) {
 
 func TestServiceOwnedBySeedSupportsWrappedAndStringMetadata(t *testing.T) {
 	for name, body := range map[string]string{
-		"wrapped object":   `{"code":0,"data":{"metadata":{"source":"dbx-nacos-service-seed"}}}`,
-		"top-level string": `{"metadata":"{\"source\":\"dbx-nacos-service-seed\"}"}`,
+		"wrapped object":   `{"code":0,"data":{"metadata":{"source":"gauss-horizon-nacos-service-seed"}}}`,
+		"top-level string": `{"metadata":"{\"source\":\"gauss-horizon-nacos-service-seed\"}"}`,
 	} {
 		t.Run(name, func(t *testing.T) {
 			if !serviceOwnedBySeed([]byte(body)) {
@@ -99,7 +99,7 @@ func TestSeedRefusesToReplaceUnownedServiceUnlessForced(t *testing.T) {
 
 		target := &nacosTarget{baseURL: server.URL, servicePath: "/v3/admin/ns/service", instancePath: "/v3/admin/ns/instance", client: server.Client(), tokenInHeader: true}
 		opts := options{
-			namespace: "public", group: "DEFAULT_GROUP", cluster: "DEFAULT", prefix: "dbx-demo-service",
+			namespace: "public", group: "DEFAULT_GROUP", cluster: "DEFAULT", prefix: "gauss-horizon-demo-service",
 			serviceCount: 1, instancesPerSvc: 1, instanceIP: "127.0.0.1", instanceBasePort: 28080, forceExisting: force,
 		}
 		return requests, target.seed(context.Background(), opts)
@@ -142,7 +142,7 @@ func TestCleanupRefusesToDeleteUnownedServiceUnlessForced(t *testing.T) {
 			baseURL: server.URL, servicePath: "/v3/admin/ns/service", instancePath: "/v3/admin/ns/instance", instanceListPath: "/v3/admin/ns/instance/list",
 			client: server.Client(), tokenInHeader: true,
 		}
-		opts := options{namespace: "public", group: "DEFAULT_GROUP", cluster: "DEFAULT", prefix: "dbx-demo-service", serviceCount: 1, instancesPerSvc: 1, forceExisting: force}
+		opts := options{namespace: "public", group: "DEFAULT_GROUP", cluster: "DEFAULT", prefix: "gauss-horizon-demo-service", serviceCount: 1, instancesPerSvc: 1, forceExisting: force}
 		return requests, target.cleanup(context.Background(), opts)
 	}
 
@@ -173,7 +173,7 @@ func TestCleanupUsesActualInstanceIdentities(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		requests = append(requests, request{method: r.Method, path: r.URL.Path, query: r.URL.Query()})
 		if r.Method == http.MethodGet && r.URL.Path == "/v3/admin/ns/service" {
-			_, _ = w.Write([]byte(`{"code":0,"data":{"metadata":{"source":"dbx-nacos-service-seed"}}}`))
+			_, _ = w.Write([]byte(`{"code":0,"data":{"metadata":{"source":"gauss-horizon-nacos-service-seed"}}}`))
 			return
 		}
 		if r.Method == http.MethodGet && r.URL.Path == "/v3/admin/ns/instance/list" {
@@ -188,7 +188,7 @@ func TestCleanupUsesActualInstanceIdentities(t *testing.T) {
 		baseURL: server.URL, servicePath: "/v3/admin/ns/service", instancePath: "/v3/admin/ns/instance", instanceListPath: "/v3/admin/ns/instance/list",
 		client: server.Client(), tokenInHeader: true,
 	}
-	opts := options{namespace: "public", group: "DEFAULT_GROUP", cluster: "DEFAULT", prefix: "dbx-demo-service", serviceCount: 1, instancesPerSvc: 3}
+	opts := options{namespace: "public", group: "DEFAULT_GROUP", cluster: "DEFAULT", prefix: "gauss-horizon-demo-service", serviceCount: 1, instancesPerSvc: 3}
 	if err := target.cleanup(context.Background(), opts); err != nil {
 		t.Fatal(err)
 	}
@@ -212,7 +212,7 @@ func TestV2CleanupUsesPaginatedCatalogAndIncludesDisabledInstances(t *testing.T)
 		requests = append(requests, request{method: r.Method, path: r.URL.Path, query: r.URL.Query()})
 		switch {
 		case r.Method == http.MethodGet && r.URL.Path == "/v1/ns/service":
-			_, _ = w.Write([]byte(`{"metadata":{"source":"dbx-nacos-service-seed"}}`))
+			_, _ = w.Write([]byte(`{"metadata":{"source":"gauss-horizon-nacos-service-seed"}}`))
 		case r.Method == http.MethodGet && r.URL.Path == "/v1/ns/catalog/instances" && r.URL.Query().Get("pageNo") == "1":
 			_, _ = w.Write([]byte(`{"list":[{"ip":"127.0.0.1","port":28080,"clusterName":"manual","enabled":false,"ephemeral":false}],"count":2}`))
 		case r.Method == http.MethodGet && r.URL.Path == "/v1/ns/catalog/instances" && r.URL.Query().Get("pageNo") == "2":
@@ -227,7 +227,7 @@ func TestV2CleanupUsesPaginatedCatalogAndIncludesDisabledInstances(t *testing.T)
 		baseURL: server.URL, servicePath: "/v1/ns/service", instancePath: "/v1/ns/instance", instanceListPath: "/v1/ns/catalog/instances",
 		instanceListCatalog: true, client: server.Client(),
 	}
-	opts := options{namespace: "public", group: "DEFAULT_GROUP", cluster: "manual", prefix: "dbx-demo-service", serviceCount: 1, instancesPerSvc: 2}
+	opts := options{namespace: "public", group: "DEFAULT_GROUP", cluster: "manual", prefix: "gauss-horizon-demo-service", serviceCount: 1, instancesPerSvc: 2}
 	if err := target.cleanup(context.Background(), opts); err != nil {
 		t.Fatal(err)
 	}
@@ -236,7 +236,7 @@ func TestV2CleanupUsesPaginatedCatalogAndIncludesDisabledInstances(t *testing.T)
 	}
 	for index, pageNo := range []string{"1", "2"} {
 		catalog := requests[index+1]
-		if catalog.path != "/v1/ns/catalog/instances" || catalog.query.Get("serviceName") != "DEFAULT_GROUP@@dbx-demo-service-01" || catalog.query.Get("groupName") != "" || catalog.query.Get("clusterName") != "manual" || catalog.query.Get("pageNo") != pageNo || catalog.query.Get("pageSize") != "100" {
+		if catalog.path != "/v1/ns/catalog/instances" || catalog.query.Get("serviceName") != "DEFAULT_GROUP@@gauss-horizon-demo-service-01" || catalog.query.Get("groupName") != "" || catalog.query.Get("clusterName") != "manual" || catalog.query.Get("pageNo") != pageNo || catalog.query.Get("pageSize") != "100" {
 			t.Fatalf("unexpected catalog request: %#v", catalog)
 		}
 	}
@@ -271,7 +271,7 @@ func TestSeedMarksPersistentInstancesHealthyAfterRegistration(t *testing.T) {
 		supportsHealthUpdate: true, client: server.Client(),
 	}
 	opts := options{
-		namespace: "public", group: "DEFAULT_GROUP", cluster: "DEFAULT", prefix: "dbx-demo-service",
+		namespace: "public", group: "DEFAULT_GROUP", cluster: "DEFAULT", prefix: "gauss-horizon-demo-service",
 		serviceCount: 1, instancesPerSvc: 1, instanceIP: "127.0.0.1", instanceBasePort: 28080,
 	}
 	if err := target.seed(context.Background(), opts); err != nil {
@@ -313,7 +313,7 @@ func TestV3SeedSetsHealthDuringRegistrationWithoutAHealthUpdate(t *testing.T) {
 		client: server.Client(), tokenInHeader: true,
 	}
 	opts := options{
-		namespace: "public", group: "DEFAULT_GROUP", cluster: "DEFAULT", prefix: "dbx-demo-service",
+		namespace: "public", group: "DEFAULT_GROUP", cluster: "DEFAULT", prefix: "gauss-horizon-demo-service",
 		serviceCount: 1, instancesPerSvc: 1, instanceIP: "127.0.0.1", instanceBasePort: 28080,
 	}
 	if err := target.seed(context.Background(), opts); err != nil {
@@ -330,7 +330,7 @@ func TestV3SeedSetsHealthDuringRegistrationWithoutAHealthUpdate(t *testing.T) {
 
 func TestServeStartsHTTPServerForEveryGeneratedPort(t *testing.T) {
 	opts := options{
-		prefix: "dbx-demo-service", serviceCount: 1, instancesPerSvc: 1,
+		prefix: "gauss-horizon-demo-service", serviceCount: 1, instancesPerSvc: 1,
 		listenAddress: "127.0.0.1", instanceBasePort: 0,
 	}
 	servers, err := startDemoServers(opts)
@@ -358,14 +358,14 @@ func TestServeStartsHTTPServerForEveryGeneratedPort(t *testing.T) {
 	if err := json.NewDecoder(response.Body).Decode(&payload); err != nil {
 		t.Fatal(err)
 	}
-	if payload["service"] != "dbx-demo-service-01" || payload["status"] != "healthy" {
+	if payload["service"] != "gauss-horizon-demo-service-01" || payload["status"] != "healthy" {
 		t.Fatalf("unexpected health response: %#v", payload)
 	}
 }
 
 func TestValidateOptionsRejectsServeDuringCleanup(t *testing.T) {
 	err := validateOptions(options{
-		target: "v2", action: "cleanup", username: "nacos", password: "123456", namespace: "public", group: "DEFAULT_GROUP", cluster: "DEFAULT", prefix: "dbx-demo-service",
+		target: "v2", action: "cleanup", username: "nacos", password: "123456", namespace: "public", group: "DEFAULT_GROUP", cluster: "DEFAULT", prefix: "gauss-horizon-demo-service",
 		serviceCount: 1, instancesPerSvc: 1, instanceBasePort: 28080, v2URL: "http://127.0.0.1:11000/nacos", v3URL: "http://127.0.0.1:11003/nacos", serve: true,
 	})
 	if err == nil || !strings.Contains(err.Error(), "-serve") {

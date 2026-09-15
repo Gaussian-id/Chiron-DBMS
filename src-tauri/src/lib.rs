@@ -16,9 +16,9 @@ mod webview2_recovery;
 mod window_state_guard;
 
 use commands::connection::AppState;
-use dbx_core::sql_dialect::dialect_loader::{register_core_dialects, DialectPluginLoader, DialectRegistry};
-use dbx_core::sql_dialect::hot_reload::DialectHotReload;
-use dbx_core::storage::{maybe_import_user_data_db, DesktopIconTheme, DesktopSettings, Storage};
+use gauss_horizon_core::sql_dialect::dialect_loader::{register_core_dialects, DialectPluginLoader, DialectRegistry};
+use gauss_horizon_core::sql_dialect::hot_reload::DialectHotReload;
+use gauss_horizon_core::storage::{maybe_import_user_data_db, DesktopIconTheme, DesktopSettings, Storage};
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 use std::time::{Duration, Instant};
@@ -40,7 +40,7 @@ use tauri_plugin_deep_link::DeepLinkExt;
 use tauri_plugin_opener::OpenerExt;
 
 const DESKTOP_TRAY_ID: &str = "main-tray";
-const APP_CLOSE_REQUESTED_EVENT: &str = "dbx-app-close-requested";
+const APP_CLOSE_REQUESTED_EVENT: &str = "gauss-horizon-app-close-requested";
 #[cfg(target_os = "macos")]
 const APP_MENU_QUIT_ID: &str = "app-menu-quit";
 #[cfg(target_os = "macos")]
@@ -204,7 +204,7 @@ fn native_window_decorations_override(target_os: &str) -> Option<bool> {
 #[cfg(target_os = "macos")]
 fn build_app_menu<R: tauri::Runtime>(app_handle: &tauri::AppHandle<R>) -> tauri::Result<Menu<R>> {
     let pkg_info = app_handle.package_info();
-    let app_name = "ChironDBM by Gaussian".to_string();
+    let app_name = "Gauss Horizon by Gaussian".to_string();
     let about_metadata = AboutMetadata {
         name: Some(app_name.clone()),
         version: Some(pkg_info.version.to_string()),
@@ -505,8 +505,8 @@ fn linux_uses_native_wayland(
 #[cfg(target_os = "linux")]
 fn apply_linux_webkit_rendering_workarounds() {
     let render_devices = linux_drm_render_devices();
-    let appimage = std::env::var_os("APPIMAGE");
-    let explicit_device_file = std::env::var_os("WEBKIT_WEB_RENDER_DEVICE_FILE")
+    let appimage = gauss_horizon_core::legacy::var_os("APPIMAGE");
+    let explicit_device_file = gauss_horizon_core::legacy::var_os("WEBKIT_WEB_RENDER_DEVICE_FILE")
         .filter(|path| !path.is_empty())
         .map(std::path::PathBuf::from)
         // Resolve stable /dev/dri/by-path links to the renderD* node used by sysfs.
@@ -520,17 +520,20 @@ fn apply_linux_webkit_rendering_workarounds() {
     let has_hardware_render_device =
         render_devices.iter().any(|device| !linux_drm_driver_is_software_only(device.driver.as_deref()));
     let uses_native_wayland = linux_uses_native_wayland(
-        std::env::var_os("WAYLAND_DISPLAY").as_deref(),
-        std::env::var_os("XDG_SESSION_TYPE").as_deref(),
-        std::env::var_os("GDK_BACKEND").as_deref(),
+        gauss_horizon_core::legacy::var_os("WAYLAND_DISPLAY").as_deref(),
+        gauss_horizon_core::legacy::var_os("XDG_SESSION_TYPE").as_deref(),
+        gauss_horizon_core::legacy::var_os("GDK_BACKEND").as_deref(),
     );
     // AppImages bundle WebKitGTK/GTK but use the host EGL/GL stack. On some
     // combinations, WebKit's DMABUF initialization aborts the WebProcess
     // before it can fall back to software rendering. Keep this opt-out
     // user-overridable and use the stable shared-memory renderer instead.
     if linux_appimage_requires_dmabuf_workaround(appimage.as_deref())
-        && linux_webkit_environment_override(std::env::var_os("WEBKIT_DISABLE_DMABUF_RENDERER").as_deref(), "1")
-            .is_some()
+        && linux_webkit_environment_override(
+            gauss_horizon_core::legacy::var_os("WEBKIT_DISABLE_DMABUF_RENDERER").as_deref(),
+            "1",
+        )
+        .is_some()
     {
         std::env::set_var("WEBKIT_DISABLE_DMABUF_RENDERER", "1");
     }
@@ -540,7 +543,9 @@ fn apply_linux_webkit_rendering_workarounds() {
         selected_device,
         uses_native_wayland,
     ) {
-        if let Some(value) = linux_webkit_environment_override(std::env::var_os(key).as_deref(), value) {
+        if let Some(value) =
+            linux_webkit_environment_override(gauss_horizon_core::legacy::var_os(key).as_deref(), value)
+        {
             std::env::set_var(key, value);
         }
     }
@@ -679,7 +684,7 @@ fn open_connection_deep_links(app: &tauri::AppHandle, links: Vec<String>) {
     if let Some(state) = app.try_state::<commands::deep_link::DeepLinkOpenState>() {
         state.push_connection_links(links.clone());
     }
-    let _ = app.emit("dbx-open-connection-links", links);
+    let _ = app.emit("gauss-horizon-open-connection-links", links);
     show_main_window(app);
 }
 
@@ -690,7 +695,7 @@ fn open_ai_config_deep_links(app: &tauri::AppHandle, links: Vec<String>) {
     if let Some(state) = app.try_state::<commands::deep_link::DeepLinkOpenState>() {
         state.push_ai_config_links(links.clone());
     }
-    let _ = app.emit("dbx-open-ai-config-links", links);
+    let _ = app.emit("gauss-horizon-open-ai-config-links", links);
     show_main_window(app);
 }
 
@@ -744,16 +749,16 @@ fn locale_family(locale: &str) -> LocaleFamily {
 
 fn tray_menu_labels_for_locale(locale: &str) -> (&'static str, &'static str) {
     match locale_family(locale) {
-        LocaleFamily::SimplifiedChinese => ("显示 ChironDBM", "退出 ChironDBM"),
-        LocaleFamily::TraditionalChinese => ("顯示 ChironDBM", "退出 ChironDBM"),
-        LocaleFamily::Japanese => ("ChironDBMを表示", "ChironDBMを終了"),
-        LocaleFamily::Korean => ("ChironDBM 표시", "ChironDBM 종료"),
-        LocaleFamily::Azerbaijani => ("ChironDBM-i göstər", "ChironDBM-dən çıx"),
-        LocaleFamily::Spanish => ("Mostrar ChironDBM", "Salir de ChironDBM"),
-        LocaleFamily::Italian => ("Mostra ChironDBM", "Esci da ChironDBM"),
-        LocaleFamily::Turkish => ("ChironDBM'i Göster", "ChironDBM'ten Çık"),
-        LocaleFamily::Portuguese => ("Mostrar ChironDBM", "Sair do ChironDBM"),
-        LocaleFamily::English => ("Show ChironDBM", "Quit ChironDBM"),
+        LocaleFamily::SimplifiedChinese => ("显示 Gauss Horizon", "退出 Gauss Horizon"),
+        LocaleFamily::TraditionalChinese => ("顯示 Gauss Horizon", "退出 Gauss Horizon"),
+        LocaleFamily::Japanese => ("Gauss Horizonを表示", "Gauss Horizonを終了"),
+        LocaleFamily::Korean => ("Gauss Horizon 표시", "Gauss Horizon 종료"),
+        LocaleFamily::Azerbaijani => ("Gauss Horizon-i göstər", "Gauss Horizon-dən çıx"),
+        LocaleFamily::Spanish => ("Mostrar Gauss Horizon", "Salir de Gauss Horizon"),
+        LocaleFamily::Italian => ("Mostra Gauss Horizon", "Esci da Gauss Horizon"),
+        LocaleFamily::Turkish => ("Gauss Horizon'i Göster", "Gauss Horizon'ten Çık"),
+        LocaleFamily::Portuguese => ("Mostrar Gauss Horizon", "Sair do Gauss Horizon"),
+        LocaleFamily::English => ("Show Gauss Horizon", "Quit Gauss Horizon"),
     }
 }
 
@@ -821,7 +826,7 @@ fn setup_desktop_tray<R: tauri::Runtime, M: Manager<R>>(
 ) -> tauri::Result<()> {
     let menu = build_tray_menu(manager)?;
     let mut tray = TrayIconBuilder::<R>::with_id(DESKTOP_TRAY_ID)
-        .tooltip("ChironDBM by Gaussian")
+        .tooltip("Gauss Horizon by Gaussian")
         .menu(&menu)
         .show_menu_on_left_click(false);
     #[cfg(target_os = "macos")]
@@ -984,36 +989,36 @@ mod tests {
 
     #[test]
     fn tray_menu_labels_follow_locale() {
-        assert_eq!(tray_menu_labels_for_locale("zh-CN"), ("显示 DBX", "退出 DBX"));
-        assert_eq!(tray_menu_labels_for_locale("zh_CN"), ("显示 DBX", "退出 DBX"));
-        assert_eq!(tray_menu_labels_for_locale("zh-Hans-CN"), ("显示 DBX", "退出 DBX"));
-        assert_eq!(tray_menu_labels_for_locale("zh"), ("显示 DBX", "退出 DBX"));
-        assert_eq!(tray_menu_labels_for_locale("zh-TW"), ("顯示 DBX", "退出 DBX"));
-        assert_eq!(tray_menu_labels_for_locale("zh-Hant-HK"), ("顯示 DBX", "退出 DBX"));
-        assert_eq!(tray_menu_labels_for_locale("zh-MO"), ("顯示 DBX", "退出 DBX"));
-        assert_eq!(tray_menu_labels_for_locale("ja-JP"), ("DBXを表示", "DBXを終了"));
-        assert_eq!(tray_menu_labels_for_locale("ko-KR"), ("DBX 표시", "DBX 종료"));
-        assert_eq!(tray_menu_labels_for_locale("az-AZ"), ("DBX-i göstər", "DBX-dən çıx"));
-        assert_eq!(tray_menu_labels_for_locale("es-ES"), ("Mostrar DBX", "Salir de DBX"));
-        assert_eq!(tray_menu_labels_for_locale("it-IT"), ("Mostra DBX", "Esci da DBX"));
-        assert_eq!(tray_menu_labels_for_locale("pt-BR"), ("Mostrar DBX", "Sair do DBX"));
-        assert_eq!(tray_menu_labels_for_locale("tr-TR"), ("DBX'i Göster", "DBX'ten Çık"));
-        assert_eq!(tray_menu_labels_for_locale("en-US"), ("Show DBX", "Quit DBX"));
+        assert_eq!(tray_menu_labels_for_locale("zh-CN"), ("显示 Gauss Horizon", "退出 Gauss Horizon"));
+        assert_eq!(tray_menu_labels_for_locale("zh_CN"), ("显示 Gauss Horizon", "退出 Gauss Horizon"));
+        assert_eq!(tray_menu_labels_for_locale("zh-Hans-CN"), ("显示 Gauss Horizon", "退出 Gauss Horizon"));
+        assert_eq!(tray_menu_labels_for_locale("zh"), ("显示 Gauss Horizon", "退出 Gauss Horizon"));
+        assert_eq!(tray_menu_labels_for_locale("zh-TW"), ("顯示 Gauss Horizon", "退出 Gauss Horizon"));
+        assert_eq!(tray_menu_labels_for_locale("zh-Hant-HK"), ("顯示 Gauss Horizon", "退出 Gauss Horizon"));
+        assert_eq!(tray_menu_labels_for_locale("zh-MO"), ("顯示 Gauss Horizon", "退出 Gauss Horizon"));
+        assert_eq!(tray_menu_labels_for_locale("ja-JP"), ("Gauss Horizonを表示", "Gauss Horizonを終了"));
+        assert_eq!(tray_menu_labels_for_locale("ko-KR"), ("Gauss Horizon 표시", "Gauss Horizon 종료"));
+        assert_eq!(tray_menu_labels_for_locale("az-AZ"), ("Gauss Horizon-i göstər", "Gauss Horizon-dən çıx"));
+        assert_eq!(tray_menu_labels_for_locale("es-ES"), ("Mostrar Gauss Horizon", "Salir de Gauss Horizon"));
+        assert_eq!(tray_menu_labels_for_locale("it-IT"), ("Mostra Gauss Horizon", "Esci da Gauss Horizon"));
+        assert_eq!(tray_menu_labels_for_locale("pt-BR"), ("Mostrar Gauss Horizon", "Sair do Gauss Horizon"));
+        assert_eq!(tray_menu_labels_for_locale("tr-TR"), ("Gauss Horizon'i Göster", "Gauss Horizon'ten Çık"));
+        assert_eq!(tray_menu_labels_for_locale("en-US"), ("Show Gauss Horizon", "Quit Gauss Horizon"));
         // Unknown and empty locales fall back to English; "ita" must not match "it".
-        assert_eq!(tray_menu_labels_for_locale("ita"), ("Show DBX", "Quit DBX"));
-        assert_eq!(tray_menu_labels_for_locale(""), ("Show DBX", "Quit DBX"));
+        assert_eq!(tray_menu_labels_for_locale("ita"), ("Show Gauss Horizon", "Quit Gauss Horizon"));
+        assert_eq!(tray_menu_labels_for_locale(""), ("Show Gauss Horizon", "Quit Gauss Horizon"));
     }
 
     #[test]
     fn app_menu_labels_follow_locale() {
-        assert_eq!(app_menu_quit_label("zh-CN", "DBX"), "退出 DBX");
-        assert_eq!(app_menu_quit_label("zh-TW", "DBX"), "退出 DBX");
-        assert_eq!(app_menu_quit_label("ja-JP", "DBX"), "DBXを終了");
-        assert_eq!(app_menu_quit_label("ko-KR", "DBX"), "DBX 종료");
-        assert_eq!(app_menu_quit_label("tr-TR", "DBX"), "DBX Uygulamasından Çık");
-        assert_eq!(app_menu_quit_label("az-AZ", "DBX"), "DBX-dən çıx");
-        assert_eq!(app_menu_quit_label("en-US", "DBX"), "Quit DBX");
-        assert_eq!(app_menu_quit_label("", "DBX"), "Quit DBX");
+        assert_eq!(app_menu_quit_label("zh-CN", "Gauss Horizon"), "退出 Gauss Horizon");
+        assert_eq!(app_menu_quit_label("zh-TW", "Gauss Horizon"), "退出 Gauss Horizon");
+        assert_eq!(app_menu_quit_label("ja-JP", "Gauss Horizon"), "Gauss Horizonを終了");
+        assert_eq!(app_menu_quit_label("ko-KR", "Gauss Horizon"), "Gauss Horizon 종료");
+        assert_eq!(app_menu_quit_label("tr-TR", "Gauss Horizon"), "Gauss Horizon Uygulamasından Çık");
+        assert_eq!(app_menu_quit_label("az-AZ", "Gauss Horizon"), "Gauss Horizon-dən çıx");
+        assert_eq!(app_menu_quit_label("en-US", "Gauss Horizon"), "Quit Gauss Horizon");
+        assert_eq!(app_menu_quit_label("", "Gauss Horizon"), "Quit Gauss Horizon");
         assert_eq!(app_menu_copy_support_info_label("zh-CN"), "复制支持信息");
         assert_eq!(app_menu_copy_support_info_label("zh-TW"), "複製支援資訊");
         assert_eq!(app_menu_copy_support_info_label("ko-KR"), "지원 정보 복사");
@@ -1059,7 +1064,7 @@ mod tests {
 
     #[test]
     fn startup_data_dir_diagnostics_never_include_paths() {
-        let private_path = PathBuf::from(r"C:\Users\private-user\DBXData");
+        let private_path = PathBuf::from(r"C:\Users\private-user\GaussHorizonData");
         assert_eq!(startup_data_dir_mode(&DataDirMode::Default), "default");
         assert_eq!(startup_data_dir_mode(&DataDirMode::EnvOverride), "env_override");
         let label = startup_data_dir_mode(&DataDirMode::Portable { exe_dir: private_path });
@@ -1175,7 +1180,7 @@ mod tests {
 
     #[test]
     fn discovers_only_usable_linux_drm_render_device_files() {
-        let root = std::env::temp_dir().join(format!("dbx-drm-render-devices-{}", uuid::Uuid::new_v4()));
+        let root = std::env::temp_dir().join(format!("gauss-horizon-drm-render-devices-{}", uuid::Uuid::new_v4()));
         let sys_class_drm = root.join("sys/class/drm");
         let dev_dri = root.join("dev/dri");
         std::fs::create_dir_all(sys_class_drm.join("renderD128/device")).unwrap();
@@ -1205,7 +1210,7 @@ mod tests {
         assert_eq!(linux_pci_id_from_sysfs_value("0x10000"), None);
         assert_eq!(linux_pci_id_from_sysfs_value("not-a-device"), None);
 
-        let root = std::env::temp_dir().join(format!("dbx-drm-pci-ids-{}", uuid::Uuid::new_v4()));
+        let root = std::env::temp_dir().join(format!("gauss-horizon-drm-pci-ids-{}", uuid::Uuid::new_v4()));
         let sys_class_drm = root.join("sys/class/drm");
         let dev_dri = root.join("dev/dri");
         for node in ["renderD128", "renderD129"] {
@@ -1297,7 +1302,7 @@ mod tests {
 
     #[test]
     fn enables_appimage_dmabuf_workaround_only_for_real_appimage_values() {
-        assert!(linux_appimage_requires_dmabuf_workaround(Some(OsStr::new("/opt/DBX.AppImage"))));
+        assert!(linux_appimage_requires_dmabuf_workaround(Some(OsStr::new("/opt/Gauss Horizon.AppImage"))));
         assert!(!linux_appimage_requires_dmabuf_workaround(Some(OsStr::new(""))));
         assert!(!linux_appimage_requires_dmabuf_workaround(None));
     }
@@ -1400,6 +1405,16 @@ mod tests {
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
+    gauss_horizon_core::legacy::install_environment_compatibility();
+    if let Err(error) = gauss_horizon_core::legacy::migrate_default_profile() {
+        eprintln!("{error}");
+        rfd::MessageDialog::new()
+            .set_title("Gauss Horizon profile migration")
+            .set_description(&error)
+            .set_level(rfd::MessageLevel::Error)
+            .show();
+        return;
+    }
     startup_recovery::initialize();
     rustls::crypto::aws_lc_rs::default_provider().install_default().expect("Failed to install rustls crypto provider");
     append_startup_probe("runtime prerequisites configured");
@@ -1427,7 +1442,7 @@ pub fn run() {
                 if let Some(state) = app.try_state::<commands::external_sql::ExternalSqlOpenState>() {
                     state.push(paths.clone());
                 }
-                let _ = app.emit("dbx-open-sql-files", paths);
+                let _ = app.emit("gauss-horizon-open-sql-files", paths);
             }
 
             let db_paths = commands::external_db::db_file_paths_from_args(args, std::path::Path::new(&cwd));
@@ -1435,7 +1450,7 @@ pub fn run() {
                 if let Some(state) = app.try_state::<commands::external_db::ExternalDbOpenState>() {
                     state.push(db_paths.clone());
                 }
-                let _ = app.emit("dbx-open-db-files", db_paths);
+                let _ = app.emit("gauss-horizon-open-db-files", db_paths);
             }
             // This runs inside the *existing* instance: a second launch has already
             // handed over its arguments and exited. If we cannot reveal a window here
@@ -1455,7 +1470,6 @@ pub fn run() {
     let builder = builder
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_shell::init())
-        .plugin(tauri_plugin_updater::Builder::new().build())
         .plugin(tauri_plugin_process::init())
         .plugin(
             tauri_plugin_window_state::Builder::default()
@@ -1513,10 +1527,10 @@ pub fn run() {
                 Ok(result) => eprintln!("[STARTUP] data db fallback import: {result:?}"),
                 Err(err) => eprintln!("[STARTUP] data db fallback import failed: {err}"),
             }
-            let db_path = data_dir.join("dbx.db");
+            let db_path = gauss_horizon_core::legacy::storage_db_path(&data_dir);
 
             let t = Instant::now();
-            append_startup_probe(format!("opening storage file=dbx.db data_dir_mode={data_dir_mode}"));
+            append_startup_probe(format!("opening storage file=gauss-horizon.db data_dir_mode={data_dir_mode}"));
             let storage = tauri::async_runtime::block_on(async {
                 let s = Storage::open(&db_path).await.expect("Failed to open storage");
                 eprintln!("[STARTUP]   Storage::open in {:?}", t.elapsed());
@@ -1594,7 +1608,7 @@ pub fn run() {
             } else {
                 AppState::new_with_plugin_dir_and_app_version(storage, plugin_dir, env!("CARGO_PKG_VERSION"))
             };
-            dbx_core::db::sqlite_worker::enable_sqlite_ssh_runtime(env!("CARGO_PKG_VERSION"));
+            gauss_horizon_core::db::sqlite_worker::enable_sqlite_ssh_runtime(env!("CARGO_PKG_VERSION"));
             state.set_duckdb_worker_process_isolation_enabled(desktop_settings.duckdb_worker_process_isolation);
             state.set_duckdb_worker_max_processes(desktop_settings.duckdb_worker_max_processes);
             let oidc_app_handle = app.handle().clone();
@@ -1670,7 +1684,7 @@ pub fn run() {
         .on_window_event(|window, event| {
             if let tauri::WindowEvent::Destroyed = event {
                 if let Some(tab_id) = window.label().strip_prefix("detached-tab-") {
-                    let _ = window.emit("dbx:detached-tab-lost", serde_json::json!({ "tabId": tab_id }));
+                    let _ = window.emit("gauss-horizon:detached-tab-lost", serde_json::json!({ "tabId": tab_id }));
                 }
                 return;
             }
@@ -1683,7 +1697,8 @@ pub fn run() {
                     // Broadcast with the tabId payload: JS listeners registered
                     // with the default `listen()` target receive events emitted
                     // to any window, so the frontend must filter by tabId.
-                    let _ = window.emit("dbx:detached-tab-close-requested", serde_json::json!({ "tabId": tab_id }));
+                    let _ = window
+                        .emit("gauss-horizon:detached-tab-close-requested", serde_json::json!({ "tabId": tab_id }));
                     return;
                 }
                 if !should_hide_window_on_close(std::env::consts::OS) {
@@ -2637,7 +2652,7 @@ pub fn run() {
                     if let Some(state) = app_handle.try_state::<commands::external_sql::ExternalSqlOpenState>() {
                         state.push(paths.clone());
                     }
-                    let _ = app_handle.emit("dbx-open-sql-files", paths);
+                    let _ = app_handle.emit("gauss-horizon-open-sql-files", paths);
                     if let Some(window) = app_handle.get_webview_window("main") {
                         let _ = window.show();
                         let _ = window.set_focus();
@@ -2654,7 +2669,7 @@ pub fn run() {
                     if let Some(state) = app_handle.try_state::<commands::external_db::ExternalDbOpenState>() {
                         state.push(db_paths.clone());
                     }
-                    let _ = app_handle.emit("dbx-open-db-files", db_paths);
+                    let _ = app_handle.emit("gauss-horizon-open-db-files", db_paths);
                     if let Some(window) = app_handle.get_webview_window("main") {
                         let _ = window.show();
                         let _ = window.set_focus();

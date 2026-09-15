@@ -1,4 +1,4 @@
-rootProject.name = 'dbx-agents'
+rootProject.name = 'gauss-horizon-agents'
 
 def infrastructureModules = ['common', 'test-support']
 def driverModules = [

@@ -8,7 +8,7 @@ describe("Xugu public synonym scope", () => {
     expect(XUGU_PUBLIC_SYNONYM_SCOPE.startsWith("\u0000")).toBe(true);
     expect(isXuguPublicSynonymScope(XUGU_PUBLIC_SYNONYM_SCOPE)).toBe(true);
     expect(isXuguPublicSynonymScope("GUEST")).toBe(false);
-    expect(isXuguPublicSynonymScope("__DBX_XUGU_PUBLIC_SYNONYMS__")).toBe(false);
+    expect(isXuguPublicSynonymScope("__GAUSS_HORIZON_XUGU_PUBLIC_SYNONYMS__")).toBe(false);
   });
 
   it("only replaces the reserved key for display", () => {
@@ -19,7 +19,7 @@ describe("Xugu public synonym scope", () => {
 
   it("identifies only the synthetic Xugu schema tree node", () => {
     expect(isXuguPublicSynonymTreeNode("xugu", "schema", XUGU_PUBLIC_SYNONYM_SCOPE)).toBe(true);
-    expect(isXuguPublicSynonymTreeNode("xugu", "schema", "__DBX_XUGU_PUBLIC_SYNONYMS__")).toBe(false);
+    expect(isXuguPublicSynonymTreeNode("xugu", "schema", "__GAUSS_HORIZON_XUGU_PUBLIC_SYNONYMS__")).toBe(false);
     expect(isXuguPublicSynonymTreeNode("postgres", "schema", XUGU_PUBLIC_SYNONYM_SCOPE)).toBe(false);
     expect(isXuguPublicSynonymTreeNode("xugu", "database", XUGU_PUBLIC_SYNONYM_SCOPE)).toBe(false);
   });

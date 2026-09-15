@@ -3,15 +3,15 @@
 version = 4
 
 [[package]]
-name = "dbx-example-hello"
-version = "1.0.0"
+name = "gauss-horizon-example-hello"
+version = "0.1.0"
 dependencies = [
- "dbx-plugin-sdk",
+ "gauss-horizon-plugin-sdk",
  "serde_json",
 ]
 
 [[package]]
-name = "dbx-plugin-sdk"
+name = "gauss-horizon-plugin-sdk"
 version = "0.1.0"
 dependencies = [
  "serde",

@@ -12,7 +12,7 @@ additionalProperties:
       rule: paramPort
       type: number
 
-    - default: dbx_password
+    - default: gauss_horizon_password
       edit: true
       envKey: PANEL_DB_PASSWORD
       labelZh: 访问密码

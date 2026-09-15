@@ -5,7 +5,7 @@ import { i18n } from "@/lib/i18n";
 import { docs } from "@/.source/server";
 
 const pageIcons: Record<string, keyof typeof icons> = {
-  "what-is-dbx": "BookOpen",
+  "what-is-gauss-horizon": "BookOpen",
   changelog: "History",
   "getting-started": "Rocket",
   "1panel": "PanelsTopLeft",
@@ -49,7 +49,7 @@ export const source = loader({
   i18n,
   plugins: [
     {
-      name: "dbx-sidebar-icons",
+      name: "gauss-horizon-sidebar-icons",
       transformPageTree: {
         file(node) {
           const slug = node.url.split("/").filter(Boolean).at(-1);

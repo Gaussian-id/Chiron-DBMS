@@ -7,7 +7,7 @@ import { connectionTypesPlugin } from "./viteConnectionTypesPlugin.ts";
 
 const host = process.env.TAURI_DEV_HOST;
 const isTauri = !!host || !!process.env.TAURI_ENV_ARCH;
-const configuredBasePath = process.env.VITE_DBX_BASE_PATH || process.env.DBX_PUBLIC_BASE_PATH;
+const configuredBasePath = process.env.VITE_GAUSS_HORIZON_BASE_PATH || process.env.GAUSS_HORIZON_PUBLIC_BASE_PATH;
 const manualChunks: Record<string, string[]> = {
   codemirror: ["codemirror", "@codemirror/lang-sql", "@codemirror/view", "@codemirror/state", "@codemirror/autocomplete", "@codemirror/commands", "@codemirror/theme-one-dark"],
   "vue-echarts": ["vue-echarts"],
@@ -60,7 +60,7 @@ function normalizeViteBase(value: string | undefined): string {
 const viteBase = normalizeViteBase(configuredBasePath);
 const publicBasePath = viteBase.startsWith("/") ? viteBase.replace(/\/+$/, "") : "";
 const apiProxyPath = publicBasePath ? `${publicBasePath}/api` : "/api";
-const backendUrl = process.env.DBX_BACKEND_URL || "http://localhost:4224";
+const backendUrl = process.env.GAUSS_HORIZON_BACKEND_URL || "http://localhost:4224";
 
 export default defineConfig(async () => ({
   root: import.meta.dirname,
@@ -70,7 +70,7 @@ export default defineConfig(async () => ({
     alias: {
       "@": path.resolve(import.meta.dirname, "./src"),
       // Prefer package source during app dev so shell parse changes need no rebuild.
-      "@dbx-app/mongo-shell": path.resolve(import.meta.dirname, "../../packages/mongo-shell/src/index.ts"),
+      "@gauss-horizon/mongo-shell": path.resolve(import.meta.dirname, "../../packages/mongo-shell/src/index.ts"),
     },
   },
   clearScreen: false,

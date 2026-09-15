@@ -32,7 +32,7 @@ const resizing = ref(false);
 const MQTT_PAYLOAD_MIN_HEIGHT_PX = 60;
 const MQTT_PAYLOAD_MAX_PANEL_RATIO = 0.5;
 const MQTT_PAYLOAD_KEYBOARD_STEP_PX = 10;
-const MQTT_PAYLOAD_HEIGHT_STORAGE_KEY = "dbx-mqtt-payload-height";
+const MQTT_PAYLOAD_HEIGHT_STORAGE_KEY = "gauss-horizon-mqtt-payload-height";
 let resizeStartY = 0;
 let resizeStartHeight = 0;
 let panelResizeObserver: ResizeObserver | undefined;

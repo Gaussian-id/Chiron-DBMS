@@ -39,7 +39,7 @@ import { nextRedisCommandDb } from "@/lib/redis/redisCommandSession";
 import { isRedisMutatingCommand } from "@/lib/redis/redisCommandTable";
 import { usesAgentCursorForQuery } from "@/lib/database/databaseDriverManifest";
 import { defaultAutoCommitForDbType, supportsClearableQuerySchema, supportsTransaction } from "@/lib/database/databaseFeatureSupport";
-import { canInsertTableRows, canUseKeylessRowPredicate, DBX_ROWID_COLUMN, editablePrimaryKeys, shouldIncludeSyntheticRowId, usesSyntheticRowIdKey } from "@/lib/table/tableEditing";
+import { canInsertTableRows, canUseKeylessRowPredicate, GAUSS_HORIZON_ROWID_COLUMN, editablePrimaryKeys, shouldIncludeSyntheticRowId, usesSyntheticRowIdKey } from "@/lib/table/tableEditing";
 import { TABLE_DATA_EXPORT_PAGE_SIZE } from "@/lib/table/tableDataExport";
 import { tableMetaForDataTab } from "@/lib/table/tableDataTabMeta";
 import { isDataTabMetadataLifecycleStale } from "@/lib/sidebar/dataTabOpenPolicy";
@@ -99,7 +99,7 @@ import type { SqlExecutionTargetContext } from "@/lib/database/sqlExecutionTarge
 import type { DriverProfileWorkspaceScope } from "@/lib/database/driverProfileExtensions";
 import type { MultiDbExecutionTarget, MultiDbResultRunExecution } from "@/types/sqlExecution";
 
-const QUERY_SURFACE_ACTIVATION_EVENT = "dbx:activate-query-surface";
+const QUERY_SURFACE_ACTIVATION_EVENT = "gauss-horizon:activate-query-surface";
 
 const ORACLE_LIKE_METADATA_TYPES = new Set<string>(["oracle", "dameng", "oceanbase-oracle"]);
 const ORACLE_DEFERRED_LOB_TYPES = new Set<string>(["CLOB", "NCLOB", "BLOB", "BFILE", "XMLTYPE", "SYS.XMLTYPE"]);
@@ -110,7 +110,7 @@ const ORACLE_DEFERRED_LOB_TYPES = new Set<string>(["CLOB", "NCLOB", "BLOB", "BFI
 const GROUPED_DISPLAY_METADATA_CONCURRENCY = 2;
 const GROUPED_DISPLAY_LIMITER_SCOPE_PREFIX = "query-column-comments:";
 const groupedDisplayMetadataLimiter = new MetadataTaskLimiter(GROUPED_DISPLAY_METADATA_CONCURRENCY, (event) => {
-  console.debug("[DBX][metadata-load:grouped-display-limiter]", event);
+  console.debug("[Gauss Horizon][metadata-load:grouped-display-limiter]", event);
 });
 const UPPERCASE_FOLDED_METADATA_TYPES = new Set<string>([...ORACLE_LIKE_METADATA_TYPES, "saphana"]);
 const HIDDEN_QUERY_KEY_DATABASE_TYPES = new Set<DatabaseType>(["mysql", "postgres", "sqlserver", "oracle", "xugu"]);
@@ -454,7 +454,7 @@ function finishBatchSqlExecution(tab: QueryTab, executionId: string, cancelled: 
   const batch = batchSqlExecutionFor(tab, executionId);
   if (!batch) return;
   if (cancelled) {
-    const cancelledError = [...batch.items].reverse().find((item) => item.status === "error" && (item.errorDetails?.code === "DBX-JDBC-2003" || /cancel|取消/i.test(item.error ?? "")));
+    const cancelledError = [...batch.items].reverse().find((item) => item.status === "error" && (item.errorDetails?.code === "Gauss Horizon-JDBC-2003" || /cancel|取消/i.test(item.error ?? "")));
     if (cancelledError) {
       cancelledError.status = "cancelled";
       cancelledError.error = undefined;
@@ -625,7 +625,7 @@ function oracleQueryProjectsDeferredLob(analysis: EditableQueryInfo, sourceKey: 
 }
 
 function oracleColumnsAllowDeferredLobMarkers(columns: readonly { name: string }[]): boolean {
-  return !columns.some((column) => column.name.toUpperCase().startsWith("__DBX_LARGE_VALUE_BYTES_"));
+  return !columns.some((column) => column.name.toUpperCase().startsWith("__GAUSS_HORIZON_LARGE_VALUE_BYTES_"));
 }
 
 function cloneAnalysisForSource(analysis: EditableQueryInfo, source: EditableQuerySource): EditableQueryInfo {
@@ -1260,7 +1260,7 @@ export const useQueryStore = defineStore("query", () => {
   const MAX_CACHED_RESULT_BYTES = 128 * 1024 * 1024;
 
   function queryExecutionLog(level: "debug" | "info" | "warn" | "error", event: string, details: Record<string, unknown>) {
-    appendDebugLog(level, `[DBX][executeTabSql:${event}]`, details);
+    appendDebugLog(level, `[Gauss Horizon][executeTabSql:${event}]`, details);
   }
 
   function findExecutionTab(id: string): QueryTab | undefined {
@@ -1389,7 +1389,7 @@ export const useQueryStore = defineStore("query", () => {
       if (location.catalog) await api.closeQuerySession(location.connectionId, executionDatabase, sessionId, clientSessionId, location.catalog);
       else await api.closeQuerySession(location.connectionId, executionDatabase, sessionId, clientSessionId);
     } catch (error) {
-      console.warn("[DBX][query-session:close:error]", { tabId: tab.id, sessionId, error });
+      console.warn("[Gauss Horizon][query-session:close:error]", { tabId: tab.id, sessionId, error });
       if (throwOnError) throw error;
     } finally {
       if (tab.resultSessionId === sessionId) tab.resultSessionId = undefined;
@@ -1410,7 +1410,7 @@ export const useQueryStore = defineStore("query", () => {
       if (catalog) await api.closeClientConnectionSession(connectionId, database, clientSessionId, catalog);
       else await api.closeClientConnectionSession(connectionId, database, clientSessionId);
     } catch (error) {
-      console.warn("[DBX][client-session:close:error]", { ...logContext, clientSessionId, error });
+      console.warn("[Gauss Horizon][client-session:close:error]", { ...logContext, clientSessionId, error });
       if (throwOnError) throw error;
     }
   }
@@ -2227,7 +2227,7 @@ export const useQueryStore = defineStore("query", () => {
         await adoptDetachedTab(handoff);
         await api.deleteDetachedTabHandoff(handoff.tabId);
       } catch (error) {
-        console.warn("[DBX][detached-tab:restore:error]", error);
+        console.warn("[Gauss Horizon][detached-tab:restore:error]", error);
       }
     }
   }
@@ -2235,7 +2235,7 @@ export const useQueryStore = defineStore("query", () => {
   function scheduleResultCacheMaintenance() {
     const maintain = () => {
       const liveKeys = tabs.value.flatMap((tab) => [tab.resultCacheKey, ...(tab.resultRuns?.map((run) => run.resultCacheKey) ?? [])]).filter((key): key is string => !!key);
-      void pruneTabResultSnapshots(liveKeys).catch((error) => console.warn("[DBX][result-cache:maintenance:error]", error));
+      void pruneTabResultSnapshots(liveKeys).catch((error) => console.warn("[Gauss Horizon][result-cache:maintenance:error]", error));
     };
     if (typeof requestIdleCallback !== "undefined") requestIdleCallback(maintain, { timeout: 5000 });
     else if (typeof window !== "undefined") window.setTimeout(maintain, 0);
@@ -4391,7 +4391,7 @@ export const useQueryStore = defineStore("query", () => {
       const existing = savedSqlStore.getFile(tab.savedSqlId);
       if (existing && existing.name !== normalizedTitle) {
         void savedSqlStore.renameFile(tab.savedSqlId, normalizedTitle).catch((error) => {
-          console.warn("[DBX][saved-sql:rename:error]", error);
+          console.warn("[Gauss Horizon][saved-sql:rename:error]", error);
           tab.title = previousTitle;
         });
       }
@@ -4551,7 +4551,7 @@ export const useQueryStore = defineStore("query", () => {
         catalog: tab.catalog,
         schema: tab.schema,
       })
-      .catch((error) => console.warn("[DBX][saved-sql:target:error]", error));
+      .catch((error) => console.warn("[Gauss Horizon][saved-sql:target:error]", error));
   }
 
   function updateDatabase(id: string, database: string, options: UpdateExecutionTargetOptions = {}) {
@@ -4719,7 +4719,7 @@ export const useQueryStore = defineStore("query", () => {
   }
 
   function toErrorResult(e: any): NonNullable<QueryTab["result"]> {
-    // Single funnel for every query execution failure, so backend messages DBX
+    // Single funnel for every query execution failure, so backend messages Gauss Horizon
     // knows about are shown in the active locale rather than as raw English.
     const error = normalizeBackendError(e) ?? undefined;
     const message = translateBackendError(i18n.global.t, e, e instanceof Error ? e.message : undefined);
@@ -5067,7 +5067,7 @@ export const useQueryStore = defineStore("query", () => {
     const selectedColumns = new Set(
       analysis.columns.flatMap((column) => {
         if (!column.sourceName || column.sourceKey !== sourceKey) return [];
-        if (databaseType === "oracle" && !column.sourceNameQuoted && column.sourceName.toUpperCase() === "ROWID") return [DBX_ROWID_COLUMN, column.sourceName];
+        if (databaseType === "oracle" && !column.sourceNameQuoted && column.sourceName.toUpperCase() === "ROWID") return [GAUSS_HORIZON_ROWID_COLUMN, column.sourceName];
         return [column.sourceName];
       }),
     );
@@ -5129,7 +5129,7 @@ export const useQueryStore = defineStore("query", () => {
     const unchanged = { sql, metadataSql: sql, hiddenPrimaryKeys: [], oracleLobPreview };
     const missingPrimaryKeys =
       declaredPrimaryKeys.length === 0
-        ? primaryKeys.filter((primaryKey) => !(databaseType === "oracle" && primaryKey === DBX_ROWID_COLUMN && metadataAnalysis.columns.some((column) => column.sourceKey === loaded.source.key && !column.sourceNameQuoted && column.sourceName?.toUpperCase() === "ROWID")))
+        ? primaryKeys.filter((primaryKey) => !(databaseType === "oracle" && primaryKey === GAUSS_HORIZON_ROWID_COLUMN && metadataAnalysis.columns.some((column) => column.sourceKey === loaded.source.key && !column.sourceNameQuoted && column.sourceName?.toUpperCase() === "ROWID")))
         : missingPrimaryKeysForSource(databaseType, primaryKeys, metadataAnalysis, loaded.source.key);
     if (missingPrimaryKeys.length === 0) return unchanged;
     const primaryKeySet = new Set(primaryKeys);
@@ -5141,7 +5141,7 @@ export const useQueryStore = defineStore("query", () => {
       databaseType,
       primaryKeys: missingPrimaryKeys,
       existingResultNames: metadataAnalysis.selectStar ? loaded.tableMeta.columns.map((column) => column.name) : metadataAnalysis.columns.map((column) => column.resultName),
-      sourceExpressions: missingPrimaryKeys.includes(DBX_ROWID_COLUMN) && (databaseType === "oracle" || databaseType === "xugu") ? { [DBX_ROWID_COLUMN]: databaseType === "oracle" ? "ROWIDTOCHAR(ROWID)" : "ROWID" } : undefined,
+      sourceExpressions: missingPrimaryKeys.includes(GAUSS_HORIZON_ROWID_COLUMN) && (databaseType === "oracle" || databaseType === "xugu") ? { [GAUSS_HORIZON_ROWID_COLUMN]: databaseType === "oracle" ? "ROWIDTOCHAR(ROWID)" : "ROWID" } : undefined,
     });
     if (!rewritten) return unchanged;
     queryExecutionLog("info", "hidden-primary-keys", {
@@ -5314,7 +5314,7 @@ export const useQueryStore = defineStore("query", () => {
         queryDisplaySourceColumns: displayInfo.mapping,
       };
     } catch (err) {
-      console.error("[DBX] ERROR fetching columns for grouped query metadata:", err);
+      console.error("[Gauss Horizon] ERROR fetching columns for grouped query metadata:", err);
       return undefined;
     }
   }
@@ -5397,13 +5397,13 @@ export const useQueryStore = defineStore("query", () => {
       if (loadedSources.length === 1) {
         const loaded = loadedSources[0]!;
         const metadataAnalysis = expandStarProjectionColumnsForSource(bindColumnsForSource(dbType, loaded.analysis, loaded.source, loaded.tableMeta.columns, allSourceColumns), loaded.source, loaded.tableMeta.columns);
-        const syntheticRowIdProjection = hiddenPrimaryKeys.find((projection) => projection.sourceName.toUpperCase() === DBX_ROWID_COLUMN);
-        const primaryKeys = loaded.tableMeta.primaryKeys.length === 0 && syntheticRowIdProjection ? [DBX_ROWID_COLUMN] : loaded.tableMeta.primaryKeys;
+        const syntheticRowIdProjection = hiddenPrimaryKeys.find((projection) => projection.sourceName.toUpperCase() === GAUSS_HORIZON_ROWID_COLUMN);
+        const primaryKeys = loaded.tableMeta.primaryKeys.length === 0 && syntheticRowIdProjection ? [GAUSS_HORIZON_ROWID_COLUMN] : loaded.tableMeta.primaryKeys;
         const displaySourceInfo = resolveResultColumnInfo(dbType, analysis, tab.result.columns, loadedSources);
         const sourceColumns = sourceColumnsForResult(metadataAnalysis, tab.result.columns, loaded.source.key, dbType as DatabaseType, primaryKeys);
         if (sourceColumns && syntheticRowIdProjection) {
           const resultIndex = tab.result.columns.findIndex((column) => column.toLowerCase() === syntheticRowIdProjection.alias.toLowerCase());
-          if (resultIndex >= 0) sourceColumns[resultIndex] = DBX_ROWID_COLUMN;
+          if (resultIndex >= 0) sourceColumns[resultIndex] = GAUSS_HORIZON_ROWID_COLUMN;
         }
         if (primaryKeys.length === 0 && !canUseQueryKeylessRowPredicate(dbType as DatabaseType, loaded)) {
           return {
@@ -5416,7 +5416,7 @@ export const useQueryStore = defineStore("query", () => {
           };
         }
 
-        const primaryKeysPresent = syntheticRowIdProjection ? sourceColumns?.some((column) => column?.toUpperCase() === DBX_ROWID_COLUMN) === true : primaryKeysPresentForSource(dbType, primaryKeys, tab.result.columns, metadataAnalysis, loaded.source.key, loaded.tableMeta.columns);
+        const primaryKeysPresent = syntheticRowIdProjection ? sourceColumns?.some((column) => column?.toUpperCase() === GAUSS_HORIZON_ROWID_COLUMN) === true : primaryKeysPresentForSource(dbType, primaryKeys, tab.result.columns, metadataAnalysis, loaded.source.key, loaded.tableMeta.columns);
         if (!primaryKeysPresent) {
           return {
             queryAnalysis: undefined,
@@ -5501,7 +5501,7 @@ export const useQueryStore = defineStore("query", () => {
         queryDisplaySourceColumns: multiSourceInfo?.mapping,
       };
     } catch (err) {
-      console.error("[DBX] ERROR fetching columns for query metadata:", err);
+      console.error("[Gauss Horizon] ERROR fetching columns for query metadata:", err);
       return {
         queryAnalysis: undefined,
         querySourceColumns: undefined,
@@ -6041,7 +6041,7 @@ export const useQueryStore = defineStore("query", () => {
           };
           try {
             // The frontend parser remains responsible for editor ranges, while
-            // dbx-core is authoritative for command semantics at execution time.
+            // gauss-horizon-core is authoritative for command semantics at execution time.
             mongoCommand = await api.mongoParseShellCommand(sourceStatement);
             switch (mongoCommand.kind) {
               case "find": {
@@ -6396,7 +6396,7 @@ export const useQueryStore = defineStore("query", () => {
 
       const elasticsearchRequests = elasticsearchRestRequestRanges(sqlToExecute, effectiveDbType);
       if (elasticsearchRequests.length > 0) {
-        console.info("[DBX][executeTabSql:elasticsearch-rest-batch:start]", {
+        console.info("[Gauss Horizon][executeTabSql:elasticsearch-rest-batch:start]", {
           traceId,
           requestCount: elasticsearchRequests.length,
           sql,
@@ -6421,7 +6421,7 @@ export const useQueryStore = defineStore("query", () => {
           }
         }
 
-        console.info("[DBX][executeTabSql:elasticsearch-rest-batch:done]", {
+        console.info("[Gauss Horizon][executeTabSql:elasticsearch-rest-batch:done]", {
           traceId,
           requestCount: elasticsearchRequests.length,
           resultCount: allResults.length,
@@ -6699,7 +6699,7 @@ export const useQueryStore = defineStore("query", () => {
           });
           resolvedSapHanaSchema = sapHanaCurrentSchemaFromResult(schemaResult);
         } catch (error) {
-          console.warn("[DBX] Failed to resolve SAP HANA CURRENT_SCHEMA", error);
+          console.warn("[Gauss Horizon] Failed to resolve SAP HANA CURRENT_SCHEMA", error);
         }
       }
       const current = findExecutionTab(id);
@@ -7311,7 +7311,7 @@ export const useQueryStore = defineStore("query", () => {
               executionMode: "simple",
             });
           } catch (error) {
-            console.warn("[DBX][sqlserver-explain:cleanup:error]", { tabId: tab.id, error });
+            console.warn("[Gauss Horizon][sqlserver-explain:cleanup:error]", { tabId: tab.id, error });
           }
         }
         const current = tabs.value.find((t) => t.id === id);

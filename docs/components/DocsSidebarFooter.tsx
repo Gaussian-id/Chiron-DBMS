@@ -55,10 +55,10 @@ export function DocsSidebarLanguageButton() {
 
 export function DocsSidebarFooter() {
   return (
-    <div className="dbx-docs-sidebar-footer">
-      <div className="dbx-docs-sidebar-tools">
+    <div className="gauss-horizon-docs-sidebar-footer">
+      <div className="gauss-horizon-docs-sidebar-tools">
         <div className="flex items-center gap-1">
-          <a className={iconButton} href="https://github.com/t8y2/dbx" target="_blank" rel="noreferrer" aria-label="GitHub">
+          <a className={iconButton} href="https://github.com/Gaussian-id/Gauss-Horizon" target="_blank" rel="noreferrer" aria-label="GitHub">
             <GithubIcon />
           </a>
           <a className={iconButton} href="https://discord.gg/W7NyVDRt6a" target="_blank" rel="noreferrer" aria-label="Discord">
@@ -71,7 +71,7 @@ export function DocsSidebarFooter() {
             <WeChatIcon />
           </a>
         </div>
-        <ThemeSwitch mode="light-dark" className="dbx-docs-theme-switch" />
+        <ThemeSwitch mode="light-dark" className="gauss-horizon-docs-theme-switch" />
       </div>
     </div>
   );

@@ -182,11 +182,11 @@ function ReleaseCard({ release, lang, isLoading, errorMessage }: { release: Chan
               {release.tag.replace(/^v/, "")}
             </span>
             <span className="text-[15px] text-[#71717a] max-[760px]:text-[13px]">
-              {text.publishedOn} {formatDate(release.date, lang)}
+              {release.unreleased ? "Unreleased development baseline" : `${text.publishedOn} ${formatDate(release.date, lang)}`}
             </span>
           </div>
-          <a href={`https://github.com/t8y2/dbx/releases/tag/${release.tag}`} target="_blank" rel="noopener noreferrer" className="flex min-h-9 items-center px-4 rounded-full border border-[rgba(173,176,182,0.25)] text-sm text-[#e4e7ea] hover:border-[rgba(173,176,182,0.4)] transition-colors">
-            {text.download}
+          <a href={release.unreleased ? "https://github.com/Gaussian-id/Gauss-Horizon/blob/main/CHANGELOG.md" : `https://github.com/Gaussian-id/Gauss-Horizon/releases/tag/${release.tag}`} target="_blank" rel="noopener noreferrer" className="flex min-h-9 items-center px-4 rounded-full border border-[rgba(173,176,182,0.25)] text-sm text-[#e4e7ea] hover:border-[rgba(173,176,182,0.4)] transition-colors">
+            {release.unreleased ? "Source changelog" : text.download}
           </a>
         </div>
 

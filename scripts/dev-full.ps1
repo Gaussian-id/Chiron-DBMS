@@ -1,6 +1,6 @@
 param(
   [string]$RustLog = "info",
-  [string]$DbxPassword = "test",
+  [string]$GaussHorizonPassword = "test",
   [switch]$NoWatch,
   [switch]$DryRun,
   [Parameter(ValueFromRemainingArguments = $true)]
@@ -19,10 +19,10 @@ for ($i = 0; $i -lt $RemainingArgs.Count; $i++) {
       if ($i -ge $RemainingArgs.Count) { throw "Missing value for -RustLog" }
       $RustLog = $RemainingArgs[$i]
     }
-    "-DbxPassword" {
+    "-GaussHorizonPassword" {
       $i++
-      if ($i -ge $RemainingArgs.Count) { throw "Missing value for -DbxPassword" }
-      $DbxPassword = $RemainingArgs[$i]
+      if ($i -ge $RemainingArgs.Count) { throw "Missing value for -GaussHorizonPassword" }
+      $GaussHorizonPassword = $RemainingArgs[$i]
     }
     default { throw "Unknown argument: $($RemainingArgs[$i])" }
   }
@@ -44,7 +44,7 @@ $backendArgs = @(
   "-ExecutionPolicy", "Bypass",
   "-File", $backendScript,
   "-RustLog", $RustLog,
-  "-DbxPassword", $DbxPassword
+  "-GaussHorizonPassword", $GaussHorizonPassword
 )
 if ($NoWatch) {
   $backendArgs += "-NoWatch"
@@ -58,18 +58,18 @@ $frontendArgs = @(
 )
 
 if ($DryRun) {
-  Write-Host "[dbx-dev] repo: $repoRoot" -ForegroundColor Cyan
-  Write-Host "[dbx-dev] shell: $shell" -ForegroundColor Cyan
-  Write-Host "[dbx-dev] backend window: $shell $($backendArgs -join ' ')" -ForegroundColor Yellow
-  Write-Host "[dbx-dev] frontend window: $shell $($frontendArgs -join ' ')" -ForegroundColor Yellow
-  & $shell -NoProfile -ExecutionPolicy Bypass -File $backendScript -RustLog $RustLog -DbxPassword $DbxPassword -NoWatch:$NoWatch -DryRun
+  Write-Host "[gauss-horizon-dev] repo: $repoRoot" -ForegroundColor Cyan
+  Write-Host "[gauss-horizon-dev] shell: $shell" -ForegroundColor Cyan
+  Write-Host "[gauss-horizon-dev] backend window: $shell $($backendArgs -join ' ')" -ForegroundColor Yellow
+  Write-Host "[gauss-horizon-dev] frontend window: $shell $($frontendArgs -join ' ')" -ForegroundColor Yellow
+  & $shell -NoProfile -ExecutionPolicy Bypass -File $backendScript -RustLog $RustLog -GaussHorizonPassword $GaussHorizonPassword -NoWatch:$NoWatch -DryRun
   & $shell -NoProfile -ExecutionPolicy Bypass -File $frontendScript -DryRun
   exit 0
 }
 
-Write-Host "[dbx-dev] starting backend and frontend in separate windows..." -ForegroundColor Green
-Write-Host "[dbx-dev] backend: RUST_LOG=$RustLog DBX_PASSWORD=$DbxPassword" -ForegroundColor DarkCyan
-Write-Host "[dbx-dev] frontend: http://127.0.0.1:5173" -ForegroundColor DarkCyan
+Write-Host "[gauss-horizon-dev] starting backend and frontend in separate windows..." -ForegroundColor Green
+Write-Host "[gauss-horizon-dev] backend: RUST_LOG=$RustLog GAUSS_HORIZON_PASSWORD=$GaussHorizonPassword" -ForegroundColor DarkCyan
+Write-Host "[gauss-horizon-dev] frontend: http://127.0.0.1:5173" -ForegroundColor DarkCyan
 
 Start-Process -FilePath $shell -ArgumentList $backendArgs -WorkingDirectory $repoRoot
 Start-Process -FilePath $shell -ArgumentList $frontendArgs -WorkingDirectory $repoRoot

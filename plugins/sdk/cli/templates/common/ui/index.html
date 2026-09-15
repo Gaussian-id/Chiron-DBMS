@@ -19,22 +19,22 @@
   </head>
   <body>
     <main>
-      <div class="eyebrow" id="eyebrow">DBX plugin workbench</div>
+      <div class="eyebrow" id="eyebrow">Gauss Horizon plugin workbench</div>
       <h1>{{PLUGIN_NAME_HTML}}</h1>
-      <p id="description">This sandboxed page talks to the {{LANGUAGE_LABEL}} sidecar only through the DBX Host Bridge.</p>
+      <p id="description">This sandboxed page talks to the {{LANGUAGE_LABEL}} sidecar only through the Gauss Horizon Host Bridge.</p>
       <button id="ping" type="button">Invoke sidecar</button>
-      <pre id="result">Waiting for DBX plugin host…</pre>
+      <pre id="result">Waiting for Gauss Horizon plugin host…</pre>
     </main>
     <script>
       const result = document.querySelector("#result");
       const button = document.querySelector("#ping");
       const copy = {
-        en: { eyebrow: "DBX plugin workbench", description: "This sandboxed page talks to the {{LANGUAGE_LABEL}} sidecar only through the DBX Host Bridge.", button: "Invoke sidecar", ready: "Ready", calling: "Calling sidecar…", error: "Error" },
-        zh: { eyebrow: "DBX 插件工作台", description: "此沙箱页面仅通过 DBX Host Bridge 与 {{LANGUAGE_LABEL}} Sidecar 通信。", button: "调用 Sidecar", ready: "已就绪", calling: "正在调用 Sidecar…", error: "错误" }
+        en: { eyebrow: "Gauss Horizon plugin workbench", description: "This sandboxed page talks to the {{LANGUAGE_LABEL}} sidecar only through the Gauss Horizon Host Bridge.", button: "Invoke sidecar", ready: "Ready", calling: "Calling sidecar…", error: "Error" },
+        zh: { eyebrow: "Gauss Horizon 插件工作台", description: "此沙箱页面仅通过 Gauss Horizon Host Bridge 与 {{LANGUAGE_LABEL}} Sidecar 通信。", button: "调用 Sidecar", ready: "已就绪", calling: "正在调用 Sidecar…", error: "错误" }
       };
       let text = copy.en;
-      window.dbxPlugin.ready.then(() => {
-        text = window.dbxPlugin.locale.toLowerCase().startsWith("zh") ? copy.zh : copy.en;
+      window.gaussHorizonPlugin.ready.then(() => {
+        text = window.gaussHorizonPlugin.locale.toLowerCase().startsWith("zh") ? copy.zh : copy.en;
         document.querySelector("#eyebrow").textContent = text.eyebrow;
         document.querySelector("#description").textContent = text.description;
         button.textContent = text.button;
@@ -44,7 +44,7 @@
         button.disabled = true;
         result.textContent = text.calling;
         try {
-          result.textContent = JSON.stringify(await window.dbxPlugin.invoke("{{METHOD_PREFIX}}/ping", { connectionId: window.dbxPlugin.context?.connectionId }), null, 2);
+          result.textContent = JSON.stringify(await window.gaussHorizonPlugin.invoke("{{METHOD_PREFIX}}/ping", { connectionId: window.gaussHorizonPlugin.context?.connectionId }), null, 2);
         } catch (error) {
           result.textContent = `${text.error}: ${error.message}`;
         } finally {

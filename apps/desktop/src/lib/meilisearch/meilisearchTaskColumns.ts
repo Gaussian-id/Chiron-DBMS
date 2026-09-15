@@ -1,6 +1,6 @@
 import { safeLocalStorageGet, safeLocalStorageSet } from "@/lib/backend/safeStorage";
 
-export const MEILISEARCH_TASK_COLUMN_STORAGE_KEY = "dbx:meilisearch:task-columns:v1";
+export const MEILISEARCH_TASK_COLUMN_STORAGE_KEY = "gauss-horizon:meilisearch:task-columns:v1";
 
 export const MEILISEARCH_TASK_COLUMN_KEYS = ["uid", "index", "type", "status", "details", "enqueuedAt", "startedAt", "finishedAt", "duration"] as const;
 

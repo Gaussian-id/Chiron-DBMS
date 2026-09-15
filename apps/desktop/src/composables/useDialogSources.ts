@@ -33,7 +33,7 @@ const configConnectionSelectMode = ref<"export" | "import">("export");
 const configConnectionSelectList = ref<ConnectionConfig[]>([]);
 const pendingExportConnectionIds = ref<string[]>([]);
 const pendingImportPreview = ref<ConnectionConfigBundle | null>(null);
-const pendingImportSource = ref<"dbx" | "navicat" | "dbeaver" | "datagrip">("dbx");
+const pendingImportSource = ref<"gauss-horizon" | "navicat" | "dbeaver" | "datagrip">("gauss-horizon");
 const applyingImportSelection = ref(false);
 
 const transferPrefillConnectionId = ref("");
@@ -326,7 +326,7 @@ export function useDialogSources() {
   function clearPendingImportState() {
     pendingImportContent.value = "";
     pendingImportPreview.value = null;
-    pendingImportSource.value = "dbx";
+    pendingImportSource.value = "gauss-horizon";
     configConnectionSelectList.value = [];
     configPassphraseError.value = "";
   }
@@ -343,7 +343,7 @@ export function useDialogSources() {
     showConfigConnectionSelectDialog.value = true;
   }
 
-  function importSuccessMessage(source: "dbx" | "navicat" | "dbeaver" | "datagrip", count: number, keychainFilled = 0) {
+  function importSuccessMessage(source: "gauss-horizon" | "navicat" | "dbeaver" | "datagrip", count: number, keychainFilled = 0) {
     if (count <= 0) return t("configExport.importNone");
     if (source === "navicat") return t("configExport.importNavicatSuccess", { count });
     if (source === "dbeaver") return t("configExport.importDbeaverSuccess", { count });
@@ -351,12 +351,12 @@ export function useDialogSources() {
     return t("configExport.importSuccess", { count });
   }
 
-  async function finishImport(source: "dbx" | "navicat" | "dbeaver" | "datagrip", count: number, layout?: SidebarLayout) {
+  async function finishImport(source: "gauss-horizon" | "navicat" | "dbeaver" | "datagrip", count: number, layout?: SidebarLayout) {
     let keychainFilled = 0;
     if (source === "datagrip" && count > 0) {
       keychainFilled = await connectionStore.applyDataGripKeychainPasswords();
     }
-    toast(importSuccessMessage(source, count, keychainFilled), source === "dbx" ? 2000 : 4000);
+    toast(importSuccessMessage(source, count, keychainFilled), source === "gauss-horizon" ? 2000 : 4000);
     if (hasSidebarLayoutEntries(layout)) {
       pendingImportLayout.value = layout;
       showImportLayoutConfirm.value = true;
@@ -432,7 +432,7 @@ export function useDialogSources() {
     if (!open) showConfigPassphraseDialog.value = true;
   }
 
-  async function onImportClick(source: "dbx" | "navicat" | "dbeaver" | "datagrip" = "dbx") {
+  async function onImportClick(source: "gauss-horizon" | "navicat" | "dbeaver" | "datagrip" = "gauss-horizon") {
     try {
       const result = await connectionStore.readImportFile(source);
       if (!result) return;
@@ -447,7 +447,7 @@ export function useDialogSources() {
       }
       const preview = await connectionStore.parseConnectionsImport(result.content, null);
       pendingImportPreview.value = preview;
-      if (source === "dbx") {
+      if (source === "gauss-horizon") {
         openConnectionSelect("import", preview.connections);
         return;
       }

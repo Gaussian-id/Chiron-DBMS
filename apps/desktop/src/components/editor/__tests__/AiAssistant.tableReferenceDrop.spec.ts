@@ -2,7 +2,7 @@
 
 import { afterEach, describe, expect, it } from "vitest";
 import { handleAiTableReferenceDropEvent, type AiTableReferenceDropContext } from "@/lib/ai/aiTableReferenceDrop";
-import { createTableReferenceDropEvent, createTableReferencePayload, DBX_TABLE_REFERENCE_DROP_EVENT, type QueryEditorTableReferencePayload } from "@/lib/editor/queryEditorTableDrop";
+import { createTableReferenceDropEvent, createTableReferencePayload, GAUSS_HORIZON_TABLE_REFERENCE_DROP_EVENT, type QueryEditorTableReferencePayload } from "@/lib/editor/queryEditorTableDrop";
 
 function dispatchTableReferenceDrop(payload: QueryEditorTableReferencePayload, context: AiTableReferenceDropContext) {
   const assistantRoot = document.createElement("div");
@@ -18,9 +18,9 @@ function dispatchTableReferenceDrop(payload: QueryEditorTableReferencePayload, c
       onMention: (mention) => mentions.push(mention.raw),
     });
   };
-  window.addEventListener(DBX_TABLE_REFERENCE_DROP_EVENT, listener);
+  window.addEventListener(GAUSS_HORIZON_TABLE_REFERENCE_DROP_EVENT, listener);
   window.dispatchEvent(createTableReferenceDropEvent({ payload, clientX: 12, clientY: 24 }));
-  window.removeEventListener(DBX_TABLE_REFERENCE_DROP_EVENT, listener);
+  window.removeEventListener(GAUSS_HORIZON_TABLE_REFERENCE_DROP_EVENT, listener);
   return mentions;
 }
 

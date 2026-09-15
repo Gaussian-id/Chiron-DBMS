@@ -1,18 +1,18 @@
 # Agent Authoring Guide
 
-This guide defines the expected shape of a DBX agent. Treat it as the checklist for adding or reviewing an agent.
+This guide defines the expected shape of a Gauss Horizon agent. Treat it as the checklist for adding or reviewing an agent.
 
 ## Agent Contract
 
 Every agent is a standalone JVM process that:
 
-- Implements `com.dbx.agent.DatabaseAgent`.
-- Prefer extending `com.dbx.agent.ConfiguredJdbcAgent` for standard JDBC agents.
-- Extend `com.dbx.agent.AbstractJdbcAgent` when the database needs custom metadata SQL but can still share lifecycle and execution behavior.
+- Implements `com.gauss.horizon.agent.DatabaseAgent`.
+- Prefer extending `com.gauss.horizon.agent.ConfiguredJdbcAgent` for standard JDBC agents.
+- Extend `com.gauss.horizon.agent.AbstractJdbcAgent` when the database needs custom metadata SQL but can still share lifecycle and execution behavior.
 - Starts with `new JsonRpcServer(new <Agent>()).run()` in its `main` method.
-- Talks to DBX over stdin/stdout JSON-RPC 2.0.
+- Talks to Gauss Horizon over stdin/stdout JSON-RPC 2.0.
 - Uses JDBC for database access unless the module is explicitly designed around a non-JDBC protocol.
-- Produces one shadow JAR named `dbx-agent-<agent-name>.jar`.
+- Produces one shadow JAR named `gauss-horizon-agent-<agent-name>.jar`.
 
 The public behavior should be consistent across agents even when each database has different SQL dialects.
 
@@ -136,7 +136,7 @@ dependencies {
 }
 ```
 
-The root Gradle convention supplies `project(':common')`, `project(':test-support')`, JUnit, Java toolchains, the Shadow plugin, and the `dbx-agent-<module>` archive name for included agent modules.
+The root Gradle convention supplies `project(':common')`, `project(':test-support')`, JUnit, Java toolchains, the Shadow plugin, and the `gauss-horizon-agent-<module>` archive name for included agent modules.
 
 No manifest flag is needed.
 
@@ -154,7 +154,7 @@ tasks.named('shadowJar') {
         attributes(
             'Agent-Label': 'Example DB',
             'Agent-External-Driver': 'true',
-            'Main-Class': 'com.dbx.agent.example.ExampleAgent'
+            'Main-Class': 'com.gauss.horizon.agent.example.ExampleAgent'
         )
     }
 }
@@ -170,10 +170,10 @@ When adding an agent named `exampledb`:
 - Add `exampledb` to `driverModules` in `settings.gradle`.
 - Add `"exampledb": "0.1.0"` to `versions.json`.
 - Set `Agent-Label` to the user-facing database name.
-- Set `Main-Class` to the Java agent class, usually `com.dbx.agent.exampledb.ExampledbAgent`.
+- Set `Main-Class` to the Java agent class, usually `com.gauss.horizon.agent.exampledb.ExampledbAgent`.
 - Add the database to the README support table.
 
-The root `build.gradle` convention derives the archive name from the module name, so `exampledb` builds `dbx-agent-exampledb.jar` without per-module archive configuration.
+The root `build.gradle` convention derives the archive name from the module name, so `exampledb` builds `gauss-horizon-agent-exampledb.jar` without per-module archive configuration.
 
 `versions.json` must contain only modules included in `settings.gradle`, excluding infrastructure modules such as `common` and `test-support`.
 

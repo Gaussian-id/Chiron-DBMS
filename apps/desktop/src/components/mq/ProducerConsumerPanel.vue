@@ -793,7 +793,7 @@ watch(
   flex: 1;
   height: 32px;
   border: 1px solid var(--color-border);
-  border-radius: var(--dbx-radius-fixed-4);
+  border-radius: var(--gauss-horizon-radius-fixed-4);
   background: var(--color-background);
   color: var(--color-text);
   font-size: 13px;
@@ -849,7 +849,7 @@ watch(
   min-height: 24px;
   padding: 2px 8px;
   border: 1px solid var(--color-border);
-  border-radius: var(--dbx-radius-fixed-4);
+  border-radius: var(--gauss-horizon-radius-fixed-4);
   background: var(--color-background-secondary);
   color: var(--color-text-secondary);
   overflow: hidden;
@@ -869,7 +869,7 @@ watch(
   max-width: 320px;
   height: 30px;
   border: 1px solid var(--color-border);
-  border-radius: var(--dbx-radius-fixed-4);
+  border-radius: var(--gauss-horizon-radius-fixed-4);
   background: var(--color-background);
   color: var(--color-text);
   font-size: 13px;

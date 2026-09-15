@@ -33,7 +33,7 @@ import { BackendErrorException } from "@/lib/backend/errorUtils";
 
 const envelope = {
   version: 1,
-  code: "DBX-JDBC-4001",
+  code: "Gauss Horizon-JDBC-4001",
   messageKey: "backendErrors.jdbc.sqlFailed",
   messageParams: { stage: "execute" },
   source: "jdbcAgent",
@@ -52,14 +52,14 @@ describe("HTTP backend error parsing", () => {
     if (expected) {
       expect(error.backendError).toEqual(expected);
     } else {
-      expect(error.backendError.code).toBe("DBX-LEGACY-0001");
+      expect(error.backendError.code).toBe("Gauss Horizon-LEGACY-0001");
       expect(error.backendError.detail).toBe(body);
     }
   });
 
   test("uses a stable summary for an empty body", async () => {
     const error = await backendResponseError(new Response("", { status: 503 }));
-    expect(error.backendError.code).toBe("DBX-LEGACY-0001");
+    expect(error.backendError.code).toBe("Gauss Horizon-LEGACY-0001");
     expect(error.backendError.detail).toBeUndefined();
     expect(error.message).toBe("Backend request failed");
   });
@@ -104,8 +104,8 @@ describe("HTTP query transport diagnostics", () => {
   test("records timing and payload sizes without logging query contents", async () => {
     vi.stubGlobal("localStorage", new MemoryStorage());
     const sql = "SELECT 'private-query-marker'";
-    localStorage.setItem("dbx-debug-logging-enabled", "1");
-    localStorage.removeItem("dbx-debug-log-entries");
+    localStorage.setItem("gauss-horizon-debug-logging-enabled", "1");
+    localStorage.removeItem("gauss-horizon-debug-log-entries");
     vi.stubGlobal(
       "fetch",
       vi.fn().mockResolvedValue(
@@ -113,8 +113,8 @@ describe("HTTP query transport diagnostics", () => {
           status: 200,
           headers: {
             "content-type": "application/json",
-            "x-dbx-core-ms": "41",
-            "x-dbx-serialize-ms": "7",
+            "x-gauss-horizon-core-ms": "41",
+            "x-gauss-horizon-serialize-ms": "7",
           },
         }),
       ),
@@ -123,7 +123,7 @@ describe("HTTP query transport diagnostics", () => {
     await executeMulti("private-connection-marker", "private-database-marker", sql, undefined, "trace-12345678");
 
     const logs = getDebugLogText();
-    expect(logs).toContain("[DBX][query-transport:http]");
+    expect(logs).toContain("[Gauss Horizon][query-transport:http]");
     expect(logs).toContain('"backendCoreMs":"41"');
     expect(logs).toContain('"backendSerializeMs":"7"');
     expect(logs).toContain('"requestBytes":');
@@ -139,8 +139,8 @@ describe("HTTP query transport diagnostics", () => {
 
   test("preserves structured backend errors while logging only safe failure metadata", async () => {
     vi.stubGlobal("localStorage", new MemoryStorage());
-    localStorage.setItem("dbx-debug-logging-enabled", "1");
-    localStorage.removeItem("dbx-debug-log-entries");
+    localStorage.setItem("gauss-horizon-debug-logging-enabled", "1");
+    localStorage.removeItem("gauss-horizon-debug-log-entries");
     vi.stubGlobal("fetch", vi.fn().mockResolvedValue(new Response(JSON.stringify(envelope), { status: 400 })));
 
     const error = await executeMulti("connection-1", "database-1", "SELECT 'failed-query-marker'", undefined, "trace-87654321").catch((value: unknown) => value);
@@ -148,7 +148,7 @@ describe("HTTP query transport diagnostics", () => {
     expect(error).toBeInstanceOf(BackendErrorException);
     expect(error).toMatchObject({ backendError: expect.objectContaining({ code: envelope.code }) });
     const logs = getDebugLogText();
-    expect(logs).toContain("[DBX][query-transport:http:error]");
+    expect(logs).toContain("[Gauss Horizon][query-transport:http:error]");
     expect(logs).toContain('"status":400');
     expect(logs).not.toContain("failed-query-marker");
     expect(logs).not.toContain(envelope.detail);

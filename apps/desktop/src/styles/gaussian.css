@@ -14,7 +14,7 @@ html.theme-gaussian {
   --primary: #1456c7;
   --primary-foreground: #ffffff;
   --primary-hover: #0b3c8c;
-  --dbx-primary-rgb: 20, 86, 199;
+  --gauss-horizon-primary-rgb: 20, 86, 199;
   --secondary: #eef3ff;
   --secondary-foreground: #0b1220;
   --muted: #f3f5fa;
@@ -41,12 +41,12 @@ html.theme-gaussian {
   --sidebar-accent-foreground: #0b1220;
   --sidebar-border: #e3e8f0;
   --sidebar-ring: #2e7bff;
-  --dbx-chrome: #f3f5fa;
-  --dbx-chrome-muted: #eef3ff;
-  --dbx-content: #ffffff;
-  --dbx-editor-toolbar: #fafbff;
-  --dbx-gutter: #f3f5fa;
-  --dbx-sidebar-header: #eef3ff;
+  --gauss-horizon-chrome: #f3f5fa;
+  --gauss-horizon-chrome-muted: #eef3ff;
+  --gauss-horizon-content: #ffffff;
+  --gauss-horizon-editor-toolbar: #fafbff;
+  --gauss-horizon-gutter: #f3f5fa;
+  --gauss-horizon-sidebar-header: #eef3ff;
   --chart-1: #1456c7;
   --chart-2: #059669;
   --chart-3: #7c3aed;
@@ -64,7 +64,7 @@ html.theme-gaussian.dark {
   --primary: #2e7bff;
   --primary-foreground: #070b16;
   --primary-hover: #4da3ff;
-  --dbx-primary-rgb: 46, 123, 255;
+  --gauss-horizon-primary-rgb: 46, 123, 255;
   --secondary: #122244;
   --secondary-foreground: #e6ecf7;
   --muted: #101a30;
@@ -91,12 +91,12 @@ html.theme-gaussian.dark {
   --sidebar-accent-foreground: #e6ecf7;
   --sidebar-border: #1b2742;
   --sidebar-ring: #4da3ff;
-  --dbx-chrome: #0b1326;
-  --dbx-chrome-muted: #101a30;
-  --dbx-content: #070b16;
-  --dbx-editor-toolbar: #0b1326;
-  --dbx-gutter: #101a30;
-  --dbx-sidebar-header: #101a30;
+  --gauss-horizon-chrome: #0b1326;
+  --gauss-horizon-chrome-muted: #101a30;
+  --gauss-horizon-content: #070b16;
+  --gauss-horizon-editor-toolbar: #0b1326;
+  --gauss-horizon-gutter: #101a30;
+  --gauss-horizon-sidebar-header: #101a30;
   --chart-1: #4da3ff;
   --chart-2: #34d399;
   --chart-3: #a78bfa;
@@ -105,17 +105,17 @@ html.theme-gaussian.dark {
 }
 
 html.theme-gaussian[data-corner-style='large'] {
-  --dbx-radius-default: 10px;
-  --dbx-radius-sm: 8px;
-  --dbx-radius-md: 10px;
-  --dbx-radius-lg: 12px;
-  --dbx-radius-xl: 16px;
+  --gauss-horizon-radius-default: 10px;
+  --gauss-horizon-radius-sm: 8px;
+  --gauss-horizon-radius-md: 10px;
+  --gauss-horizon-radius-lg: 12px;
+  --gauss-horizon-radius-xl: 16px;
 }
 
 .gaussian-welcome-brand {
   background: linear-gradient(115deg, var(--card), var(--secondary));
   border: 1px solid var(--border);
-  border-radius: var(--dbx-radius-xl);
+  border-radius: var(--gauss-horizon-radius-xl);
   padding: 20px;
 }
 
@@ -131,7 +131,7 @@ html.theme-gaussian:not(.dark) [data-grid-root] {
   --data-grid-cell-selected-single-bg: var(--sidebar-accent);
   --data-grid-cell-selected-border: var(--ring);
   --data-grid-cell-hover-bg: var(--secondary);
-  --data-grid-row-number-default-bg: var(--dbx-gutter);
+  --data-grid-row-number-default-bg: var(--gauss-horizon-gutter);
   --data-grid-row-number-active-bg: var(--accent);
   --data-grid-row-number-selected-bg: var(--sidebar-accent);
   background-color: var(--background);

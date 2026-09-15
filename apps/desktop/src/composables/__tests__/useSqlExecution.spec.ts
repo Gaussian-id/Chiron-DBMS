@@ -411,7 +411,7 @@ BEGIN
   PRINT 'y';
 END
 GO`;
-    const activeTab = ref<QueryTab | undefined>({ ...queryTab("dbx_sqlserver_demo"), sql });
+    const activeTab = ref<QueryTab | undefined>({ ...queryTab("gauss_horizon_sqlserver_demo"), sql });
     const activeConnection = ref<ConnectionConfig | undefined>(connection("sqlserver"));
     const activeOutputView = ref<"result" | "summary" | "explain" | "chart">("result");
     const queryStore = useQueryStore();
@@ -435,7 +435,7 @@ GO`;
 
   it("keeps a SQL Server data result selected when a trailing message result exists", async () => {
     const sql = "SELECT 1 AS value; PRINT N'x';";
-    const activeTab = ref<QueryTab | undefined>({ ...queryTab("dbx_sqlserver_demo"), sql });
+    const activeTab = ref<QueryTab | undefined>({ ...queryTab("gauss_horizon_sqlserver_demo"), sql });
     const activeConnection = ref<ConnectionConfig | undefined>(connection("sqlserver"));
     const activeOutputView = ref<"result" | "summary" | "explain" | "chart">("result");
     const queryStore = useQueryStore();
@@ -472,7 +472,7 @@ GO`;
 
   it("selects a SQL Server data result after an earlier message result", async () => {
     const sql = "PRINT N'x'; SELECT 1 AS value;";
-    const activeTab = ref<QueryTab | undefined>({ ...queryTab("dbx_sqlserver_demo"), sql });
+    const activeTab = ref<QueryTab | undefined>({ ...queryTab("gauss_horizon_sqlserver_demo"), sql });
     const activeConnection = ref<ConnectionConfig | undefined>(connection("sqlserver"));
     const activeOutputView = ref<"result" | "summary" | "explain" | "chart">("result");
     const queryStore = useQueryStore();
@@ -508,7 +508,7 @@ GO`;
 
   it("keeps a SQL Server execution error selected when a message result also exists", async () => {
     const sql = "SELECT missing_column FROM demo;";
-    const activeTab = ref<QueryTab | undefined>({ ...queryTab("dbx_sqlserver_demo"), sql });
+    const activeTab = ref<QueryTab | undefined>({ ...queryTab("gauss_horizon_sqlserver_demo"), sql });
     const activeConnection = ref<ConnectionConfig | undefined>(connection("sqlserver"));
     const activeOutputView = ref<"result" | "summary" | "explain" | "chart">("result");
     const queryStore = useQueryStore();
@@ -539,7 +539,7 @@ GO`;
 
   it("opens ordinary SQL Server multi-result batches in the result table by default", async () => {
     const sql = "SELECT 1 AS first_value; SELECT 2 AS second_value;";
-    const activeTab = ref<QueryTab | undefined>({ ...queryTab("dbx_sqlserver_demo"), sql });
+    const activeTab = ref<QueryTab | undefined>({ ...queryTab("gauss_horizon_sqlserver_demo"), sql });
     const activeConnection = ref<ConnectionConfig | undefined>(connection("sqlserver"));
     const activeOutputView = ref<"result" | "summary" | "explain" | "chart">("result");
     const queryStore = useQueryStore();
@@ -571,7 +571,7 @@ GO`;
   it("opens ordinary SQL Server data aliased as Message in the result table by default", async () => {
     const sql = `DECLARE @value nvarchar(1) = N'x';
 SELECT @value AS Message;`;
-    const activeTab = ref<QueryTab | undefined>({ ...queryTab("dbx_sqlserver_demo"), sql });
+    const activeTab = ref<QueryTab | undefined>({ ...queryTab("gauss_horizon_sqlserver_demo"), sql });
     const activeConnection = ref<ConnectionConfig | undefined>(connection("sqlserver"));
     const activeOutputView = ref<"result" | "summary" | "explain" | "chart">("result");
     const queryStore = useQueryStore();
@@ -1074,7 +1074,7 @@ SELECT @value AS Message;`;
           execution_error: true,
           error: {
             version: 1,
-            code: "DBX-LEGACY-0001",
+            code: "Gauss Horizon-LEGACY-0001",
             messageKey: "backendErrors.legacy",
             messageParams: {},
             source: "legacyBackend",

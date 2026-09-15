@@ -383,7 +383,7 @@ watch(
 
 .readonly-hint {
   padding: 10px 14px;
-  border-radius: var(--dbx-radius-fixed-6);
+  border-radius: var(--gauss-horizon-radius-fixed-6);
   background: var(--color-warning-alpha);
   color: var(--color-warning);
   font-size: 13px;
@@ -391,7 +391,7 @@ watch(
 
 .panel-error {
   padding: 10px 14px;
-  border-radius: var(--dbx-radius-fixed-6);
+  border-radius: var(--gauss-horizon-radius-fixed-6);
   background: var(--color-error-bg);
   color: var(--color-error);
   font-size: 13px;
@@ -404,7 +404,7 @@ watch(
   padding: 14px 18px;
   border: 1px solid color-mix(in srgb, var(--color-success) 34%, transparent);
   border-left: 4px solid var(--color-success);
-  border-radius: var(--dbx-radius-fixed-6);
+  border-radius: var(--gauss-horizon-radius-fixed-6);
   background: color-mix(in srgb, var(--color-success) 13%, var(--color-background));
   color: var(--color-success);
   font-size: 15px;
@@ -464,7 +464,7 @@ watch(
   flex: 1;
   padding: 7px 10px;
   border: 1px solid var(--color-border);
-  border-radius: var(--dbx-radius-fixed-6);
+  border-radius: var(--gauss-horizon-radius-fixed-6);
   background: var(--color-background);
   color: var(--color-text);
   font-size: 13px;
@@ -495,7 +495,7 @@ input[type="text"],
 input[type="number"] {
   padding: 7px 10px;
   border: 1px solid var(--color-border);
-  border-radius: var(--dbx-radius-fixed-6);
+  border-radius: var(--gauss-horizon-radius-fixed-6);
   background: var(--color-background);
   color: var(--color-text);
   font-size: 13px;
@@ -514,7 +514,7 @@ input[type="number"]:focus {
   width: 100%;
   padding: 8px 10px;
   border: 1px solid var(--color-border);
-  border-radius: var(--dbx-radius-fixed-6);
+  border-radius: var(--gauss-horizon-radius-fixed-6);
   background: var(--color-background);
   color: var(--color-text);
   font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;

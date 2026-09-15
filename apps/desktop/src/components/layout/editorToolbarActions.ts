@@ -55,7 +55,7 @@ export interface EditorToolbarActions {
   closePluginCenter(): void;
 }
 
-export const EDITOR_TOOLBAR_ACTIONS: InjectionKey<EditorToolbarActions> = Symbol("dbx:editor-toolbar-actions");
+export const EDITOR_TOOLBAR_ACTIONS: InjectionKey<EditorToolbarActions> = Symbol("gauss-horizon:editor-toolbar-actions");
 
 /**
  * No-op fallback so a group mounted outside the workspace (tests, future

@@ -23,7 +23,7 @@ function batch(): BatchSqlExecution {
         error: "bad SQL",
         errorDetails: {
           version: 1,
-          code: "DBX-JDBC-4001",
+          code: "Gauss Horizon-JDBC-4001",
           messageKey: "backendErrors.jdbc.sqlFailed",
           messageParams: { stage: "execute" },
           source: "jdbcAgent",
@@ -43,13 +43,13 @@ describe("batchSqlRecovery", () => {
     expect(batchSqlRecoveryState({ autoCommit: true, isExecuting: true, batchSqlExecution: batch() })).toBeUndefined();
 
     const unsafe = batch();
-    unsafe.items[1]!.errorDetails = { ...unsafe.items[1]!.errorDetails!, code: "DBX-JDBC-2002", diagnostics: { category: "timeout" } };
+    unsafe.items[1]!.errorDetails = { ...unsafe.items[1]!.errorDetails!, code: "Gauss Horizon-JDBC-2002", diagnostics: { category: "timeout" } };
     expect(batchSqlRecoveryState({ autoCommit: true, isExecuting: false, batchSqlExecution: unsafe })).toBeUndefined();
 
     const legacy = batch();
     legacy.items[1]!.errorDetails = {
       ...legacy.items[1]!.errorDetails!,
-      code: "DBX-LEGACY-0001",
+      code: "Gauss Horizon-LEGACY-0001",
       messageKey: "backendErrors.legacy",
       source: "legacyBackend",
       diagnostics: undefined,

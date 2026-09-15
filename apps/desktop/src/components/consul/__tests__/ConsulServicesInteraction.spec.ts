@@ -19,7 +19,7 @@ const mocks = vi.hoisted(() => {
           Notes: "test",
           Output: "",
           ServiceID: id,
-          ServiceName: "dbx-demo-api",
+          ServiceName: "gauss-horizon-demo-api",
           ServiceTags: ["demo"],
           Type: "maintenance",
           ExposedPort: 0,
@@ -48,7 +48,7 @@ const mocks = vi.hoisted(() => {
           ServiceTags: ["demo"],
           ServiceAddress: "127.0.0.1",
           ServicePort: 19080,
-          ServiceMeta: { owner: "DBX" },
+          ServiceMeta: { owner: "Gauss Horizon" },
           ServiceTaggedAddresses: {},
           ServiceWeights: { Passing: 1, Warning: 1 },
           CreateIndex: 1,
@@ -62,7 +62,7 @@ const mocks = vi.hoisted(() => {
 
 vi.mock("@/lib/backend/api", () => ({
   consulCatalogServices: vi.fn(async () => ({
-    items: { consul: [], "dbx-demo-api": ["v1", "demo", "api"] },
+    items: { consul: [], "gauss-horizon-demo-api": ["v1", "demo", "api"] },
     metadata: { index: "1", knownLeader: true, lastContact: 0, queryBackend: null },
   })),
   consulCatalogNodes: vi.fn(async () => ({
@@ -74,13 +74,13 @@ vi.mock("@/lib/backend/api", () => ({
     items: {
       Node: { ID: "node-1", Node: "node-1", Address: "127.0.0.1", Datacenter: "dc1", TaggedAddresses: {}, NodeMeta: {}, CreateIndex: 1, ModifyIndex: 1 },
       Services: {
-        "dbx-demo-node-service-1": {
-          ID: "dbx-demo-node-service-1",
-          Service: "dbx-demo-node-service",
+        "gauss-horizon-demo-node-service-1": {
+          ID: "gauss-horizon-demo-node-service-1",
+          Service: "gauss-horizon-demo-node-service",
           Tags: ["demo", "node"],
           Address: "127.0.0.1",
           TaggedAddresses: { lan: { Address: "127.0.0.1", Port: 19090 } },
-          Meta: { owner: "DBX" },
+          Meta: { owner: "Gauss Horizon" },
           Port: 19090,
           Weights: { Passing: 2, Warning: 1 },
         },
@@ -90,15 +90,15 @@ vi.mock("@/lib/backend/api", () => ({
   })),
   consulAgentSelf: vi.fn(async () => ({ node: "node-1", address: "127.0.0.1", datacenter: "dc1", version: "2.0.2", server: true, revision: null, segment: null })),
   consulAgentServices: vi.fn(async () => ({
-    "dbx-demo-api-1": { Kind: "", ID: "dbx-demo-api-1", Service: "dbx-demo-api", Tags: ["demo"], Meta: {}, Port: 19080, Address: "127.0.0.1", TaggedAddresses: {}, Weights: { Passing: 1, Warning: 1 }, EnableTagOverride: false, Datacenter: "dc1" },
+    "gauss-horizon-demo-api-1": { Kind: "", ID: "gauss-horizon-demo-api-1", Service: "gauss-horizon-demo-api", Tags: ["demo"], Meta: {}, Port: 19080, Address: "127.0.0.1", TaggedAddresses: {}, Weights: { Passing: 1, Warning: 1 }, EnableTagOverride: false, Datacenter: "dc1" },
   })),
   consulAgentChecks: vi.fn(async () => ({ ...mocks.agentChecks })),
   consulAgentService: vi.fn(async (_connectionId: string, id: string) => ({
     Kind: "",
     ID: id,
-    Service: "dbx-demo-api",
+    Service: "gauss-horizon-demo-api",
     Tags: ["demo"],
-    Meta: { owner: "DBX" },
+    Meta: { owner: "Gauss Horizon" },
     Port: 19080,
     Address: "127.0.0.1",
     TaggedAddresses: {},
@@ -173,15 +173,15 @@ describe("ConsulServices interactions", () => {
     mountedApps.push({ unmount: () => app.unmount(), host });
     await settle();
 
-    const serviceButton = Array.from(host.querySelectorAll("button")).find((button) => button.textContent?.includes("dbx-demo-api"));
+    const serviceButton = Array.from(host.querySelectorAll("button")).find((button) => button.textContent?.includes("gauss-horizon-demo-api"));
     expect(serviceButton).toBeTruthy();
-    expect(serviceButton!.textContent).toBe("dbx-demo-api");
+    expect(serviceButton!.textContent).toBe("gauss-horizon-demo-api");
     serviceButton!.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true }));
     await settle();
 
-    expect(host.querySelector("h2")?.textContent).toContain("dbx-demo-api");
-    expect(host.textContent).toContain("dbx-demo-api-1");
-    expect(mocks.catalogServiceNodes).toHaveBeenLastCalledWith("connection-1", "dbx-demo-api");
+    expect(host.querySelector("h2")?.textContent).toContain("gauss-horizon-demo-api");
+    expect(host.textContent).toContain("gauss-horizon-demo-api-1");
+    expect(mocks.catalogServiceNodes).toHaveBeenLastCalledWith("connection-1", "gauss-horizon-demo-api");
 
     const catalogRow = host.querySelector('tr[role="button"]');
     expect(catalogRow).toBeTruthy();
@@ -215,7 +215,7 @@ describe("ConsulServices interactions", () => {
     expect(deregisterButton!.disabled).toBe(true);
     expect(deregisterButton!.title).toBe("consul.ui.agentWriteBlocked.targetRequired");
 
-    const localServiceButton = Array.from(host.querySelectorAll("button")).find((button) => button.textContent?.includes("dbx-demo-api-1"));
+    const localServiceButton = Array.from(host.querySelectorAll("button")).find((button) => button.textContent?.includes("gauss-horizon-demo-api-1"));
     expect(localServiceButton).toBeTruthy();
     expect(localServiceButton!.hasAttribute("disabled")).toBe(false);
     localServiceButton!.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true }));
@@ -253,14 +253,14 @@ describe("ConsulServices interactions", () => {
     enableButton!.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true }));
     await settle();
 
-    expect(mocks.serviceMaintenance).toHaveBeenLastCalledWith("connection-1", "dbx-demo-api-1", true, "consul.ui.maintenanceReason");
+    expect(mocks.serviceMaintenance).toHaveBeenLastCalledWith("connection-1", "gauss-horizon-demo-api-1", true, "consul.ui.maintenanceReason");
     expect(host.textContent).toContain("consul.ui.maintenance");
     const disableButton = Array.from(host.querySelectorAll("button")).find((button) => button.textContent?.includes("consul.ui.disableMaintenance"));
     expect(disableButton).toBeTruthy();
     disableButton!.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true }));
     await settle();
 
-    expect(mocks.serviceMaintenance).toHaveBeenLastCalledWith("connection-1", "dbx-demo-api-1", false, "consul.ui.maintenanceReason");
+    expect(mocks.serviceMaintenance).toHaveBeenLastCalledWith("connection-1", "gauss-horizon-demo-api-1", false, "consul.ui.maintenanceReason");
     expect(host.textContent).not.toContain("consul.ui.maintenance");
     expect(host.textContent).toContain("consul.ui.enableMaintenance");
   });
@@ -278,11 +278,11 @@ describe("ConsulServices interactions", () => {
     nodeTab!.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true }));
     await settle();
 
-    const nodeServiceButton = Array.from(host.querySelectorAll("button")).find((button) => button.textContent?.includes("dbx-demo-node-service-1"));
+    const nodeServiceButton = Array.from(host.querySelectorAll("button")).find((button) => button.textContent?.includes("gauss-horizon-demo-node-service-1"));
     expect(nodeServiceButton).toBeTruthy();
     nodeServiceButton!.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true }));
     await settle();
-    expect(host.textContent).toContain("owner=DBX");
+    expect(host.textContent).toContain("owner=Gauss Horizon");
     expect(host.textContent).toContain("consul.ui.serviceWeights");
     expect(host.textContent).toContain("lan=127.0.0.1:19090");
     expect(nodeServiceButton!.getAttribute("aria-expanded")).toBe("true");

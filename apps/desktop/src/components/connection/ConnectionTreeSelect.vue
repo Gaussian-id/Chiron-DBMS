@@ -150,7 +150,7 @@ function handleKeydown(event: KeyboardEvent) {
           <span v-if="!searchText" class="pointer-events-none absolute left-[25px] top-1/2 -translate-y-1/2 text-sm text-muted-foreground">{{ searchPlaceholder }}</span>
           <Input ref="searchInput" :model-value="searchText" class="h-6 border-0 pl-6 pr-2 text-sm caret-foreground shadow-none focus-visible:ring-0" @update:model-value="(value) => (searchText = String(value))" @keydown="handleKeydown" />
         </div>
-        <div ref="listContainer" class="dbx-connection-tree-select-list max-h-64 overflow-y-auto py-1">
+        <div ref="listContainer" class="gauss-horizon-connection-tree-select-list max-h-64 overflow-y-auto py-1">
           <template v-if="rows.length">
             <template v-for="row in rows" :key="row.key">
               <button
@@ -199,41 +199,41 @@ function handleKeydown(event: KeyboardEvent) {
 </template>
 
 <style>
-.dbx-connection-tree-select-list {
+.gauss-horizon-connection-tree-select-list {
   scrollbar-width: thin;
   scrollbar-color: color-mix(in oklch, var(--foreground) 30%, transparent) transparent;
 }
 
-.dbx-connection-tree-select-list::-webkit-scrollbar {
+.gauss-horizon-connection-tree-select-list::-webkit-scrollbar {
   width: 6px;
   height: 6px;
 }
 
-.dbx-connection-tree-select-list::-webkit-scrollbar-track {
+.gauss-horizon-connection-tree-select-list::-webkit-scrollbar-track {
   background: transparent;
 }
 
-.dbx-connection-tree-select-list::-webkit-scrollbar-thumb {
+.gauss-horizon-connection-tree-select-list::-webkit-scrollbar-thumb {
   border: 1px solid transparent;
   border-radius: 999px;
   background: color-mix(in oklch, var(--foreground) 30%, transparent);
   background-clip: padding-box;
 }
 
-.dbx-connection-tree-select-list:hover::-webkit-scrollbar-thumb {
+.gauss-horizon-connection-tree-select-list:hover::-webkit-scrollbar-thumb {
   border: 0;
   background: color-mix(in oklch, var(--foreground) 48%, transparent);
 }
 
-.dark .dbx-connection-tree-select-list {
+.dark .gauss-horizon-connection-tree-select-list {
   scrollbar-color: rgb(82, 82, 91) transparent;
 }
 
-.dark .dbx-connection-tree-select-list::-webkit-scrollbar-thumb {
+.dark .gauss-horizon-connection-tree-select-list::-webkit-scrollbar-thumb {
   background: rgb(82, 82, 91);
 }
 
-.dark .dbx-connection-tree-select-list:hover::-webkit-scrollbar-thumb {
+.dark .gauss-horizon-connection-tree-select-list:hover::-webkit-scrollbar-thumb {
   background: rgb(113, 113, 122);
 }
 </style>

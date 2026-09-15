@@ -94,7 +94,7 @@ test("lifecycle failures do not report success or discard a live connection", as
 
 test("page reconnects preserve frames, abandoned pages release their last connection", async (t) => {
   const { host, request, headers } = await fixture(t, false, { pageGraceMs: 150 });
-  const page = { "X-DBX-Page": "browser-page" };
+  const page = { "X-Gauss Horizon-Page": "browser-page" };
   const events = async () => {
     const response = await fetch(`${host.origin}/api/events?page=browser-page`, { headers });
     const reader = response.body.getReader();
@@ -121,8 +121,8 @@ test("page reconnects preserve frames, abandoned pages release their last connec
 });
 test("pages sharing a cookie have independent workbench generations", async (t) => {
   const { request } = await fixture(t, true);
-  const a = { "X-DBX-Page": "page-a" },
-    b = { "X-DBX-Page": "page-b" };
+  const a = { "X-Gauss Horizon-Page": "page-a" },
+    b = { "X-Gauss Horizon-Page": "page-b" };
   const open = (headers) => request("workbenches/open", { contributionId: "example.main" }, headers);
   const first = (await open(a)).value.frame;
   const second = (await open(b)).value.frame;
@@ -151,25 +151,25 @@ test("refresh cleanup does not disconnect a connection still used by another pag
   t.after(() => reader.cancel());
   await reader.read();
   const saved = (await request("connections/save", { providerId: "example.connection", values })).value;
-  const old = (await request("connections/connect", { id: saved.id }, { "X-DBX-Page": "old" })).value.frame;
-  const fresh = (await request("connections/connect", { id: saved.id }, { "X-DBX-Page": "fresh" })).value.frame;
+  const old = (await request("connections/connect", { id: saved.id }, { "X-Gauss Horizon-Page": "old" })).value.frame;
+  const fresh = (await request("connections/connect", { id: saved.id }, { "X-Gauss Horizon-Page": "fresh" })).value.frame;
   await reader.cancel();
   let status = 200;
   for (let i = 0; i < 100 && status === 200; i++) {
     await new Promise((resolve) => setTimeout(resolve, 20));
-    status = (await request("frame-document", { frameId: old.id }, { "X-DBX-Page": "old" })).status;
+    status = (await request("frame-document", { frameId: old.id }, { "X-Gauss Horizon-Page": "old" })).status;
   }
   assert.equal(status, 400);
   const bootstrap = await (await fetch(`${host.origin}/api/bootstrap`)).json();
   assert.equal(bootstrap.connections[0].connected, true);
   assert.deepEqual(bootstrap.manifest, manifest);
   assert.equal(Object.hasOwn(bootstrap, "rawManifest"), false);
-  const closed = await request("frames/close", { id: fresh.id }, { "X-DBX-Page": "fresh" });
+  const closed = await request("frames/close", { id: fresh.id }, { "X-Gauss Horizon-Page": "fresh" });
   assert.equal(closed.value.connections[0].connected, false);
 });
 async function fixture(t, frontend = false, overrides = {}) {
   const { pluginManifest = manifest, ...hostOverrides } = overrides;
-  const root = await mkdtemp(join(tmpdir(), "dbx-mock-test-"));
+  const root = await mkdtemp(join(tmpdir(), "gauss-horizon-mock-test-"));
   await mkdir(join(root, "ui"));
   await writeFile(join(root, "ui/index.html"), "<html><head></head><body>Test</body></html>");
   const actual = frontend ? { ...pluginManifest, entrypoints: { ui: pluginManifest.entrypoints.ui }, contributions: pluginManifest.contributions.filter((c) => c.type === "workbench") } : pluginManifest;
@@ -333,7 +333,7 @@ test("save, reload, iframe isolation, generic RPC and close lifecycle", async (t
   assert.equal(JSON.stringify(f).includes("test-password"), false);
   const document = (await request("frame-document", { frameId: f.id })).value;
   assert.match(document.html, /Content-Security-Policy/);
-  assert.match(document.html, /window.dbxPlugin/);
+  assert.match(document.html, /window.gaussHorizonPlugin/);
   const call = (method, params) => request("bridge", { frameId: f.id, channel: document.channel, method, params });
   assert.deepEqual((await call("backend.invoke", { method: "echo", params: { anyBusiness: 123 } })).value, { anyBusiness: 123 });
   assert.equal((await call("host.openWorkbench", { contributionId: "example.main" })).status, 400);
@@ -422,7 +422,7 @@ test("icon reads reject unsafe paths, missing files, non-images, symlink escapes
     contributions: paths.map((icon, index) => ({ type: "workbench", id: `example.icon-${index}`, label: "Icon", icon })),
   };
   const { root, request, host } = await fixture(t, true, { pluginManifest });
-  const outside = await mkdtemp(join(tmpdir(), "dbx-icon-outside-"));
+  const outside = await mkdtemp(join(tmpdir(), "gauss-horizon-icon-outside-"));
   t.after(() => rm(outside, { recursive: true, force: true }));
   await mkdir(join(root, "assets"));
   await writeFile(join(outside, "private.svg"), "private-icon-content");

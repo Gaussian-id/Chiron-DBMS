@@ -191,11 +191,11 @@ describe("DatabaseUserAdmin MySQL grant loading", () => {
       db_type: "doris",
       driver_profile: "doris",
       port: 9030,
-      username: "dbx_limited",
+      username: "gauss_horizon_limited",
     };
     const currentUserGrant = {
       columns: ["UserIdentity", "Comment", "Password", "Roles", "GlobalPrivs", "DatabasePrivs", "TablePrivs"],
-      rows: [["'dbx_limited'@'%'", "", "Yes", null, null, "internal.analytics: Select_priv", null]],
+      rows: [["'gauss_horizon_limited'@'%'", "", "Yes", null, null, "internal.analytics: Select_priv", null]],
     };
     mocks.ensureConnected.mockResolvedValue(undefined);
     mocks.executeQuery.mockRejectedValueOnce(new Error("Access denied; you need the (GRANT) privilege"));
@@ -209,8 +209,8 @@ describe("DatabaseUserAdmin MySQL grant loading", () => {
     await vi.waitFor(() => expect(mocks.executeQuery).toHaveBeenCalledTimes(3));
     await nextTick();
 
-    expect(mocks.executeQuery.mock.calls.map((call) => call[2])).toEqual(["SHOW ALL GRANTS;", "SHOW GRANTS;", "SHOW GRANTS FOR 'dbx_limited'@'%';"]);
-    expect(root.textContent).toContain("dbx_limited@%");
+    expect(mocks.executeQuery.mock.calls.map((call) => call[2])).toEqual(["SHOW ALL GRANTS;", "SHOW GRANTS;", "SHOW GRANTS FOR 'gauss_horizon_limited'@'%';"]);
+    expect(root.textContent).toContain("gauss_horizon_limited@%");
     expect(root.textContent).not.toContain("Access denied");
   });
 });

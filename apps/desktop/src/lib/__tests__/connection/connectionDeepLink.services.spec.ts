@@ -11,7 +11,7 @@ describe("service connection deep links", () => {
   });
 
   it("builds a Consul endpoint and keeps the ACL token in the password field", () => {
-    const draft = parseConnectionDeepLink("dbx://connection/new?type=consul&host=consul.internal&password=acl-token");
+    const draft = parseConnectionDeepLink("gauss-horizon://connection/new?type=consul&host=consul.internal&password=acl-token");
     expect(draft).toMatchObject({
       dbType: "consul",
       driverProfile: "consul",
@@ -31,7 +31,7 @@ describe("service connection deep links", () => {
       ["r-nacos", "rnacos"],
     ] as const;
     for (const [type, profile] of cases) {
-      const draft = parseConnectionDeepLink(`dbx://connection/new?type=${type}&host=127.0.0.1&user=nacos&password=secret`);
+      const draft = parseConnectionDeepLink(`"gauss-horizon"://connection/new?type=${type}&host=127.0.0.1&user=nacos&password=secret`);
       expect(draft?.dbType).toBe("nacos");
       expect(draft?.driverProfile).toBe("nacos");
       expect(draft?.serviceConfig).toMatchObject({
@@ -45,7 +45,7 @@ describe("service connection deep links", () => {
   });
 
   it("preserves URL paths and lets top-level host, port and SSL fields override them", () => {
-    const link = new URL("dbx://connection/new");
+    const link = new URL("gauss-horizon://connection/new");
     link.searchParams.set("type", "nacos-v3");
     link.searchParams.set("url", "https://nacos:secret@old.example:9443/proxy/nacos");
     link.searchParams.set("host", "[2001:db8::8]");
@@ -65,7 +65,7 @@ describe("service connection deep links", () => {
   });
 
   it("accepts service-specific URL schemes and unwrapped IPv6 hosts", () => {
-    const link = new URL("dbx://connection/new");
+    const link = new URL("gauss-horizon://connection/new");
     link.searchParams.set("type", "nacos-v3");
     link.searchParams.set("url", "nacos-v3://nacos:secret@old.example:8848/proxy/nacos");
     link.searchParams.set("host", "2001:db8::9");
@@ -76,7 +76,7 @@ describe("service connection deep links", () => {
       serverAddr: "http://[2001:db8::9]:8848/proxy/nacos",
     });
 
-    const inferred = new URL("dbx://connection/new");
+    const inferred = new URL("gauss-horizon://connection/new");
     inferred.searchParams.set("url", "consul://127.0.0.1:8500/proxy");
     expect(parseConnectionDeepLink(inferred.toString())?.serviceConfig).toEqual({
       kind: "consul",
@@ -106,19 +106,19 @@ describe("service connection deep links", () => {
   });
 
   it("accepts missing v and v=1, but rejects unsupported versions", () => {
-    expect(parseConnectionDeepLink("dbx://connection/new?type=consul&host=127.0.0.1")).not.toBeNull();
-    expect(parseConnectionDeepLink("dbx://connection/new?v=1&type=consul&host=127.0.0.1")).not.toBeNull();
-    expect(() => parseConnectionDeepLink("dbx://connection/new?v=2&type=consul&host=127.0.0.1")).toThrow(/Unsupported connection deep-link version/);
+    expect(parseConnectionDeepLink("gauss-horizon://connection/new?type=consul&host=127.0.0.1")).not.toBeNull();
+    expect(parseConnectionDeepLink("gauss-horizon://connection/new?v=1&type=consul&host=127.0.0.1")).not.toBeNull();
+    expect(() => parseConnectionDeepLink("gauss-horizon://connection/new?v=2&type=consul&host=127.0.0.1")).toThrow(/Unsupported connection deep-link version/);
   });
 
   it("parses explicit false values and rejects invalid booleans", () => {
-    expect(parseConnectionDeepLink("dbx://connection/new?type=consul&ssl=false&one_time=false")).toMatchObject({
+    expect(parseConnectionDeepLink("gauss-horizon://connection/new?type=consul&ssl=false&one_time=false")).toMatchObject({
       ssl: false,
       oneTime: false,
       serviceConfig: { kind: "consul", serverAddr: "http://127.0.0.1:8500" },
     });
-    expect(() => parseConnectionDeepLink("dbx://connection/new?type=consul&ssl=maybe")).toThrow(/Invalid boolean value/);
-    expect(() => parseConnectionDeepLink("dbx://connection/new?type=consul&one_time=2")).toThrow(/Invalid boolean value/);
+    expect(() => parseConnectionDeepLink("gauss-horizon://connection/new?type=consul&ssl=maybe")).toThrow(/Invalid boolean value/);
+    expect(() => parseConnectionDeepLink("gauss-horizon://connection/new?type=consul&one_time=2")).toThrow(/Invalid boolean value/);
   });
 
   it("maps service drafts to the exact specialized form hydration values", () => {
@@ -155,10 +155,10 @@ describe("service connection deep links", () => {
   });
 
   it("rejects invalid ports, targets and incomplete Nacos credentials", () => {
-    expect(() => parseConnectionDeepLink("dbx://connection/new?type=consul&port=0")).toThrow(/Invalid connection port/);
-    expect(() => parseConnectionDeepLink("dbx://connection/new?type=consul&port=70000")).toThrow(/Invalid connection port/);
-    expect(() => parseConnectionDeepLink("dbx://connection/new?type=nacos-v2&password=secret")).toThrow(/username is required/);
-    expect(() => parseConnectionDeepLink("dbx://connection/new?type=consul&host=bad%2Fhost")).toThrow(/Invalid service connection host/);
-    expect(parseConnectionDeepLink("dbx://connection/edit?type=consul")).toBeNull();
+    expect(() => parseConnectionDeepLink("gauss-horizon://connection/new?type=consul&port=0")).toThrow(/Invalid connection port/);
+    expect(() => parseConnectionDeepLink("gauss-horizon://connection/new?type=consul&port=70000")).toThrow(/Invalid connection port/);
+    expect(() => parseConnectionDeepLink("gauss-horizon://connection/new?type=nacos-v2&password=secret")).toThrow(/username is required/);
+    expect(() => parseConnectionDeepLink("gauss-horizon://connection/new?type=consul&host=bad%2Fhost")).toThrow(/Invalid service connection host/);
+    expect(parseConnectionDeepLink("gauss-horizon://connection/edit?type=consul")).toBeNull();
   });
 });

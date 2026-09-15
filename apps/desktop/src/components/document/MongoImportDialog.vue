@@ -293,7 +293,7 @@ function requestClose() {
       }
     "
   >
-    <DialogScrollContent class="flex max-h-[calc(var(--dbx-viewport-height)-6rem)] min-h-0 flex-col overflow-hidden sm:max-w-[980px]" aria-labelledby="mongo-import-title">
+    <DialogScrollContent class="flex max-h-[calc(var(--gauss-horizon-viewport-height)-6rem)] min-h-0 flex-col overflow-hidden sm:max-w-[980px]" aria-labelledby="mongo-import-title">
       <DialogHeader class="shrink-0 pr-8">
         <DialogTitle id="mongo-import-title" class="flex items-center gap-2 text-base">
           <FileUp class="h-4 w-4" />

@@ -128,14 +128,14 @@ interface EmptyLineProtection {
 /**
  * Replaces blank source lines with unique line comments while the third-party
  * formatter runs. sql-formatter intentionally normalizes whitespace, whereas
- * the optional DBX setting needs to retain visual paragraph boundaries such as
+ * the optional Gauss Horizon setting needs to retain visual paragraph boundaries such as
  * the blank line between a heading comment and a query. Line comments are
- * valid at every SQL code boundary and are restored only after all DBX layout
+ * valid at every SQL code boundary and are restored only after all Gauss Horizon layout
  * post-processing is complete.
  */
 function protectEmptyLines(sql: string): EmptyLineProtection {
   let namespace = 0;
-  while (sql.includes(`__DBX_PRESERVE_EMPTY_LINE_${namespace}_`)) namespace += 1;
+  while (sql.includes(`__GAUSS_HORIZON_PRESERVE_EMPTY_LINE_${namespace}_`)) namespace += 1;
 
   const markers: string[] = [];
   const lineBreakPattern = /\r\n|\r|\n/g;
@@ -146,7 +146,7 @@ function protectEmptyLines(sql: string): EmptyLineProtection {
   while ((match = lineBreakPattern.exec(sql))) {
     const line = sql.slice(lineStart, match.index);
     if (line.trim().length === 0) {
-      const marker = `-- __DBX_PRESERVE_EMPTY_LINE_${namespace}_${markers.length}__`;
+      const marker = `-- __GAUSS_HORIZON_PRESERVE_EMPTY_LINE_${namespace}_${markers.length}__`;
       markers.push(marker);
       output += marker;
     } else {
@@ -161,7 +161,7 @@ function protectEmptyLines(sql: string): EmptyLineProtection {
   // turn the normal EOF sentinel into an additional preserved blank line.
   const finalLine = sql.slice(lineStart);
   if (finalLine.length > 0 && finalLine.trim().length === 0) {
-    const marker = `-- __DBX_PRESERVE_EMPTY_LINE_${namespace}_${markers.length}__`;
+    const marker = `-- __GAUSS_HORIZON_PRESERVE_EMPTY_LINE_${namespace}_${markers.length}__`;
     markers.push(marker);
     output += marker;
   } else {
@@ -232,7 +232,7 @@ function protectDuckDbPrefixAliasSeparators(sql: string): { sql: string; marker:
   let markerIndex = 0;
   let marker = "";
   do {
-    marker = `/*__DBX_DUCKDB_PREFIX_ALIAS_COLON_${markerIndex}__*/`;
+    marker = `/*__GAUSS_HORIZON_DUCKDB_PREFIX_ALIAS_COLON_${markerIndex}__*/`;
     markerIndex += 1;
   } while (sql.includes(marker));
 
@@ -311,7 +311,7 @@ function protectDuckDbPrefixAliasSeparators(sql: string): { sql: string; marker:
     if (prefixAlias) {
       // sql-formatter tokenizes a compact DuckDB prefix alias as a named
       // parameter and inserts a space before `:`. Keeping an opaque separator
-      // through formatting preserves the boundary used by DBX's parameter scan.
+      // through formatting preserves the boundary used by Gauss Horizon's parameter scan.
       protectedSql += marker;
       replaced = true;
       index += 1;

@@ -44,7 +44,7 @@ $runId = if ([string]::IsNullOrWhiteSpace($env:GITHUB_RUN_ID)) { "local" } else 
 $runAttempt = if ([string]::IsNullOrWhiteSpace($env:GITHUB_RUN_ATTEMPT)) { "1" } else { $env:GITHUB_RUN_ATTEMPT }
 $workDir = Join-Path $env:RUNNER_TEMP "vsign-$runId-$runAttempt"
 $operatorDir = Join-Path $workDir "operator"
-$operatorFile = Join-Path $operatorDir "dbx-github-ci@ssigncode.pfx"
+$operatorFile = Join-Path $operatorDir "gauss-horizon-github-ci@ssigncode.pfx"
 $toolPath = Join-Path $workDir "ssigncode.exe"
 $toolUrl = "https://github.com/g5wsg/vsign-github-test1/releases/download/vsign-cli-v1/ssigncode.exe"
 

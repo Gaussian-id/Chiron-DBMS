@@ -83,8 +83,8 @@ func TestRocketMQIntegration(t *testing.T) {
 	}
 
 	suffix := fmt.Sprintf("%s_%d", strings.ReplaceAll(version, ".", "_"), time.Now().UnixNano())
-	topic := "DBX_GO_INTEGRATION_" + suffix
-	groupID := "GID_DBX_GO_" + suffix
+	topic := "GAUSS_HORIZON_GO_INTEGRATION_" + suffix
+	groupID := "GID_GAUSS_HORIZON_GO_" + suffix
 	t.Cleanup(func() {
 		integrationCleanupCall(agent, "mq_delete_consumer_group", map[string]any{"groupId": groupID})
 		integrationCleanupCall(agent, "mq_delete_topic", map[string]any{"name": topic})
@@ -161,7 +161,7 @@ func TestRocketMQIntegration(t *testing.T) {
 		Offset    int64 `json:"offset"`
 	}
 	integrationCall(t, agent, "mq_send_message", map[string]any{
-		"topic": topic, "partition": 0, "key": "dbx-integration-key", "tag": "dbx-integration",
+		"topic": topic, "partition": 0, "key": "gauss-horizon-integration-key", "tag": "gauss-horizon-integration",
 		"payloadBase64": base64.StdEncoding.EncodeToString([]byte(payload)),
 		"headers":       map[string]any{"source": "integration", "empty": "", "nil": nil},
 	}, &sendResult)
@@ -197,7 +197,7 @@ func TestRocketMQIntegration(t *testing.T) {
 	}
 
 	queried := waitForIntegrationMessages(t, agent, "mq_query_message_by_key", map[string]any{
-		"topic": topic, "key": "dbx-integration-key", "maxNum": 10,
+		"topic": topic, "key": "gauss-horizon-integration-key", "maxNum": 10,
 		"begin": 0, "end": time.Now().Add(time.Minute).UnixMilli(),
 	})
 	if queried.Messages[0].PayloadText != payload {

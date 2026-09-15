@@ -211,7 +211,7 @@ describe("EditorGroupTabBar vertical placement", () => {
     expect(sharedStyles).toContain("padding-inline: 0.2rem 0.25rem !important;");
     expect(sharedStyles).toMatch(/\.vertical-tab-layout \.tab-group-entry\s*\{[^}]*flex:\s*none;/s);
     expect(sharedStyles).toMatch(/\.vertical-tab-layout \.app-tab-scroll\s*\{[^}]*overflow-x:\s*hidden;/s);
-    expect(sharedStyles).toMatch(/\.vertical-tab-layout \.app-tab-pill\s*\{[^}]*border-radius:\s*var\(--dbx-radius-md\);/s);
+    expect(sharedStyles).toMatch(/\.vertical-tab-layout \.app-tab-pill\s*\{[^}]*border-radius:\s*var\(--gauss-horizon-radius-md\);/s);
     expect(sharedStyles).toMatch(/\.vertical-tab-layout \.tab-group-entry\s*\{[^}]*max-height:\s*2rem;/s);
     expect(sharedStyles).toContain("max-height 140ms ease,");
     expect(sharedStyles).toMatch(/\.vertical-tab-layout \.tab-group-entry--collapsed\s*\{[^}]*max-height:\s*0;[^}]*opacity:\s*0;/s);
@@ -635,7 +635,7 @@ describe("EditorGroupTabBar group behavior", () => {
     pgPill.dispatchEvent(new MouseEvent("contextmenu", { bubbles: true, cancelable: true, clientX: 10, clientY: 10 }));
     await settle();
 
-    const menu = document.body.querySelector<HTMLElement>("[data-dbx-context-menu]")!;
+    const menu = document.body.querySelector<HTMLElement>("[data-gauss-horizon-context-menu]")!;
     expect(menu).not.toBeNull();
     const closeGroupItem = Array.from(menu.querySelectorAll<HTMLButtonElement>("button")).find((button) => button.textContent?.includes("Close group"));
     expect(closeGroupItem).toBeDefined();
@@ -668,7 +668,7 @@ describe("EditorGroupTabBar group behavior", () => {
     const pgPill = host.querySelector<HTMLElement>(`[data-tab-id="${pgA}"]`)!;
     pgPill.dispatchEvent(new MouseEvent("contextmenu", { bubbles: true, cancelable: true, clientX: 10, clientY: 10 }));
     await settle();
-    const menu = document.body.querySelector<HTMLElement>("[data-dbx-context-menu]")!;
+    const menu = document.body.querySelector<HTMLElement>("[data-gauss-horizon-context-menu]")!;
     const closeGroupItem = Array.from(menu.querySelectorAll<HTMLButtonElement>("button")).find((button) => button.textContent?.includes("Close group"));
     expect(closeGroupItem).toBeDefined();
     closeGroupItem!.click();
@@ -694,7 +694,7 @@ describe("EditorGroupTabBar group behavior", () => {
     const openMenu = async (tabId: string) => {
       host.querySelector<HTMLElement>(`[data-tab-id="${tabId}"]`)!.dispatchEvent(new MouseEvent("contextmenu", { bubbles: true, cancelable: true, clientX: 10, clientY: 10 }));
       await settle();
-      const menu = document.body.querySelector<HTMLElement>("[data-dbx-context-menu]")!;
+      const menu = document.body.querySelector<HTMLElement>("[data-gauss-horizon-context-menu]")!;
       return Array.from(menu.querySelectorAll<HTMLButtonElement>("button"));
     };
 
@@ -831,7 +831,7 @@ describe("EditorGroupTabBar special page navigation", () => {
     expect(events).toEqual(["close-settings"]);
     tab.dispatchEvent(new MouseEvent("contextmenu", { bubbles: true, cancelable: true, clientX: 10, clientY: 10 }));
     await settle();
-    const menu = document.body.querySelector<HTMLElement>("[data-dbx-context-menu]")!;
+    const menu = document.body.querySelector<HTMLElement>("[data-gauss-horizon-context-menu]")!;
     const closeOther = Array.from(menu.querySelectorAll<HTMLButtonElement>("button")).find((button) => button.textContent?.includes("Close other tabs"))!;
     expect(closeOther).toBeDefined();
     closeOther.click();

@@ -682,7 +682,7 @@ async function fetchDbVersion(connectionId: string, database: string, schema: st
             :placeholder="t('diff.selectConnection')"
             :search-placeholder="t('diff.searchConnection')"
             :empty-text="t('common.noResults')"
-            trigger-class="dbx-diff-connection-trigger h-8 w-full max-w-none justify-between gap-1.5 rounded-md border border-input bg-transparent px-2.5 text-xs shadow-none hover:bg-muted/40 focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 dark:bg-input/30 dark:hover:bg-input/50"
+            trigger-class="gauss-horizon-diff-connection-trigger h-8 w-full max-w-none justify-between gap-1.5 rounded-md border border-input bg-transparent px-2.5 text-xs shadow-none hover:bg-muted/40 focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 dark:bg-input/30 dark:hover:bg-input/50"
             list-class="w-[var(--reka-popover-trigger-width)]"
           />
         </div>
@@ -758,7 +758,7 @@ async function fetchDbVersion(connectionId: string, database: string, schema: st
             :placeholder="t('diff.selectConnection')"
             :search-placeholder="t('diff.searchConnection')"
             :empty-text="t('common.noResults')"
-            trigger-class="dbx-diff-connection-trigger h-8 w-full max-w-none justify-between gap-1.5 rounded-md border border-input bg-transparent px-2.5 text-xs shadow-none hover:bg-muted/40 focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 dark:bg-input/30 dark:hover:bg-input/50"
+            trigger-class="gauss-horizon-diff-connection-trigger h-8 w-full max-w-none justify-between gap-1.5 rounded-md border border-input bg-transparent px-2.5 text-xs shadow-none hover:bg-muted/40 focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 dark:bg-input/30 dark:hover:bg-input/50"
             list-class="w-[var(--reka-popover-trigger-width)]"
           />
         </div>

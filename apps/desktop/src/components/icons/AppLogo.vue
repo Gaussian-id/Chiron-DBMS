@@ -9,5 +9,5 @@ const logoSrc = computed(() => webPath(isBlackLogo.value ? "/logo-black.png" : "
 </script>
 
 <template>
-  <img :src="logoSrc" alt="ChironDBM by Gaussian" class="object-contain" />
+  <img :src="logoSrc" alt="Gauss Horizon by Gaussian" class="object-contain" />
 </template>

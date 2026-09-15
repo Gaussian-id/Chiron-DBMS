@@ -244,7 +244,7 @@ async function loadRabbitMqVhosts() {
     const namespaces = await mqListNamespaces(props.connectionId, RABBITMQ_MQ_TENANT);
     rabbitMqVhosts.value = namespaces.map((ns) => ns.namespace);
   } catch (e: unknown) {
-    console.warn("[DBX] Failed to load RabbitMQ vhosts:", e);
+    console.warn("[Gauss Horizon] Failed to load RabbitMQ vhosts:", e);
   }
 }
 
@@ -426,7 +426,7 @@ onMounted(async () => {
   try {
     await connectionStore.ensureConnected(props.connectionId);
   } catch (e) {
-    console.warn("[DBX] ensureConnected failed for", props.connectionId, e);
+    console.warn("[Gauss Horizon] ensureConnected failed for", props.connectionId, e);
   }
   loadClusterInfo();
 });
@@ -666,7 +666,7 @@ onMounted(async () => {
 
 .breadcrumb-button {
   border: none;
-  border-radius: var(--dbx-radius-fixed-4);
+  border-radius: var(--gauss-horizon-radius-fixed-4);
   background: transparent;
   color: var(--color-text);
   cursor: pointer;
@@ -694,7 +694,7 @@ onMounted(async () => {
 .readonly-badge {
   padding: 2px 8px;
   border: 1px solid var(--color-warning);
-  border-radius: var(--dbx-radius-fixed-4);
+  border-radius: var(--gauss-horizon-radius-fixed-4);
   color: var(--color-warning);
   font-size: 12px;
   font-weight: 500;
@@ -703,7 +703,7 @@ onMounted(async () => {
 .prod-badge {
   padding: 2px 8px;
   border: 1px solid rgb(220 38 38 / 0.55);
-  border-radius: var(--dbx-radius-fixed-4);
+  border-radius: var(--gauss-horizon-radius-fixed-4);
   color: rgb(185 28 28);
   font-size: 12px;
   font-weight: 600;
@@ -790,7 +790,7 @@ onMounted(async () => {
 
 .dialog {
   background: var(--color-background);
-  border-radius: var(--dbx-radius-fixed-6);
+  border-radius: var(--gauss-horizon-radius-fixed-6);
   width: 90%;
   max-width: 500px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
@@ -836,7 +836,7 @@ onMounted(async () => {
   width: 100%;
   padding: 8px 12px;
   border: 1px solid var(--color-border);
-  border-radius: var(--dbx-radius-fixed-4);
+  border-radius: var(--gauss-horizon-radius-fixed-4);
   font-size: 14px;
   box-sizing: border-box;
   background: var(--color-background);

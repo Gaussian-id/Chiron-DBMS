@@ -28,7 +28,7 @@ function profileSwitchHarness(selectedProfile: string, editing = false) {
   const form: ProfileDraft = {
     port: 15432,
     username: "draft-user",
-    url_params: "sslmode=require&application_name=dbx",
+    url_params: "sslmode=require&application_name=gauss-horizon",
     agent_java_options: ["-Xms256m", "-Xmx1g"],
   };
   const editingId: { value: string | null } = { value: editing ? "connection-1" : null };

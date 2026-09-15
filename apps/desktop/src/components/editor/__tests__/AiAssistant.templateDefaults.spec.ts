@@ -1,7 +1,7 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 
-// Regression coverage for https://github.com/t8y2/dbx/issues/7649: per-db_type
+// Regression coverage for https://github.com/Gaussian-id/Gauss-Horizon/issues/7649: per-db_type
 // prompt template defaults + last-used fallback. The resolution rules live in
 // lib/ai/promptTemplateDefaults.ts (unit-tested separately); this file pins
 // that AiAssistant.vue wires them into the panel lifecycle:

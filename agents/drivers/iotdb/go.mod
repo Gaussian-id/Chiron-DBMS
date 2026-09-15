@@ -1,4 +1,4 @@
-module github.com/t8y2/dbx/agents/drivers/iotdb
+module github.com/Gaussian-id/Gauss-Horizon/agents/drivers/iotdb
 
 go 1.25
 

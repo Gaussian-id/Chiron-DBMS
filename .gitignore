@@ -66,7 +66,7 @@ Thumbs.db
 .env
 .env.*
 !.env.example
-.dbx-plugin-signing-key.env
+.gauss-horizon-plugin-signing-key.env
 
 # Temp
 tmp/
@@ -83,7 +83,7 @@ review_classified.json
 
 # Logs
 *.log
-/.dbx-dev/
+/.gauss-horizon-dev/
 
 
 # Generated changelog data
@@ -92,12 +92,12 @@ latest-en.json
 
 test.pdb
 portable/
-DBX_*_x64-portable.zip
+GAUSS_HORIZON_*_x64-portable.zip
 .agents/skills
 .pnpm-store/*
-.dbx-web
+.gauss-horizon-web
 # Local devtest connections (contains credentials; do not commit)
-dbx-devtest-connections.json
+gauss-horizon-devtest-connections.json
 .npmrc
 
 # Real database integration credentials (see docs/TEST_ENVIRONMENTS.md)

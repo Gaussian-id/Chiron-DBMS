@@ -46,14 +46,14 @@ const STRUCTURED_BACKEND_ERROR_KEYS = [
   "backendErrors.unknown",
 ] as const;
 
-// Reproduces the exact string crates/dbx-core/src/agent_service.rs builds on
+// Reproduces the exact string crates/gauss-horizon-core/src/agent_service.rs builds on
 // Windows: `\` line continuations strip the newline plus the following indent.
 const WINDOWS_JRE_REMOVE_ERROR = [
-  "Failed to remove the old JRE directory: C:\\dbx\\jre21",
+  "Failed to remove the old JRE directory: C:\\gauss-horizon\\jre21",
   "Possible causes:",
-  "  - a dbx Agent / java process still holds the directory",
+  "  - a gauss-horizon Agent / java process still holds the directory",
   "  - antivirus software is scanning it",
-  "Close any process that may hold the directory, or restart dbx and try again.",
+  "Close any process that may hold the directory, or restart gauss-horizon and try again.",
   "(original error: Access is denied. (os error 5))",
 ].join("\n");
 
@@ -110,13 +110,13 @@ const CASES: { name: string; message: string; key: string; params?: Record<strin
     name: "JRE directory remove failure (Windows)",
     message: WINDOWS_JRE_REMOVE_ERROR,
     key: "driverStore.jreDirRemoveFailedWindows",
-    params: { path: "C:\\dbx\\jre21", error: "Access is denied. (os error 5)" },
+    params: { path: "C:\\gauss-horizon\\jre21", error: "Access is denied. (os error 5)" },
   },
   {
     name: "JRE directory remove failure (POSIX)",
-    message: "Failed to remove the old JRE directory: /home/u/.dbx/jre21 (original error: Permission denied (os error 13))",
+    message: "Failed to remove the old JRE directory: /home/u/.gauss-horizon/jre21 (original error: Permission denied (os error 13))",
     key: "driverStore.jreDirRemoveFailed",
-    params: { path: "/home/u/.dbx/jre21", error: "Permission denied (os error 13)" },
+    params: { path: "/home/u/.gauss-horizon/jre21", error: "Permission denied (os error 13)" },
   },
   {
     name: "JRE still in use",
@@ -215,7 +215,7 @@ describe("backend error translation", () => {
 
   test("hides internal Agent error data from user-facing messages", () => {
     const t = translatorFor("zh-CN");
-    const message = 'Agent RPC error (-1): driver: bad connection\nDBX_AGENT_ERROR_DATA:{"category":null,"retryable":null,"sessionDisposition":null,"stage":null,"operationOutcome":null,"agentSessionId":"e1a4d0a2907947b8adf31abb10c4dff9"}';
+    const message = 'Agent RPC error (-1): driver: bad connection\nGAUSS_HORIZON_AGENT_ERROR_DATA:{"category":null,"retryable":null,"sessionDisposition":null,"stage":null,"operationOutcome":null,"agentSessionId":"e1a4d0a2907947b8adf31abb10c4dff9"}';
     const expected = "Agent RPC error (-1): driver: bad connection";
 
     expect(sanitizeBackendErrorMessage(message)).toBe(expected);
@@ -225,7 +225,7 @@ describe("backend error translation", () => {
   });
 
   test("preserves marker-like database messages without valid internal data", () => {
-    const message = "database returned\nDBX_AGENT_ERROR_DATA:not-json";
+    const message = "database returned\nGAUSS_HORIZON_AGENT_ERROR_DATA:not-json";
 
     expect(sanitizeBackendErrorMessage(message)).toBe(message);
   });
@@ -243,12 +243,12 @@ describe("backend error translation", () => {
     const t = translatorFor("zh-CN");
     const error = {
       version: 1,
-      code: "DBX-JDBC-2002",
+      code: "Gauss Horizon-JDBC-2002",
       messageKey: "backendErrors.jdbc.operationTimedOut",
       messageParams: { stage: "execute" },
       source: "jdbcAgent",
       operationOutcome: "unknown",
-      detail: "relation dbx_table_that_does_not_exist does not exist",
+      detail: "relation gauss_horizon_table_that_does_not_exist does not exist",
     } as const;
 
     expect(normalizeBackendError(error)).toEqual(error);
@@ -261,12 +261,12 @@ describe("backend error translation", () => {
     const t = translatorFor("zh-CN");
     const error = {
       version: 1,
-      code: "DBX-JDBC-9001",
+      code: "Gauss Horizon-JDBC-9001",
       messageKey: "backendErrors.jdbc.legacyFailure",
       messageParams: {},
       source: "jdbcAgentLegacy",
       operationOutcome: "unknown",
-      detail: "Table dbx_table_that_does_not_exist does not exist",
+      detail: "Table gauss_horizon_table_that_does_not_exist does not exist",
     } as const;
 
     expect(translateBackendError(t, error)).toBe(`${t(error.messageKey)}\n\n${error.detail}`);
@@ -276,7 +276,7 @@ describe("backend error translation", () => {
     const t = translatorFor("en");
     const error = {
       version: 1,
-      code: "DBX-JDBC-4001",
+      code: "Gauss Horizon-JDBC-4001",
       messageKey: "backendErrors.jdbc.sqlFailed",
       messageParams: { stage: "execute" },
       source: "jdbcAgent",
@@ -291,10 +291,10 @@ describe("backend error translation", () => {
 
   test("hides internal Agent error data from structured error details", () => {
     const t = translatorFor("zh-CN");
-    const detail = 'driver: bad connection\nDBX_AGENT_ERROR_DATA:{"category":null,"agentSessionId":"session-1"}';
+    const detail = 'driver: bad connection\nGAUSS_HORIZON_AGENT_ERROR_DATA:{"category":null,"agentSessionId":"session-1"}';
     const error = {
       version: 1,
-      code: "DBX-JDBC-9001",
+      code: "Gauss Horizon-JDBC-9001",
       messageKey: "backendErrors.jdbc.legacyFailure",
       messageParams: {},
       source: "jdbcAgentLegacy",
@@ -317,7 +317,7 @@ describe("backend error translation", () => {
     expect(
       normalizeBackendError({
         version: 1,
-        code: "DBX-JDBC-2002",
+        code: "Gauss Horizon-JDBC-2002",
         messageKey: "backendErrors.jdbc.operationTimedOut",
         messageParams: { stage: "execute" },
         source: "jdbcAgent",
@@ -330,7 +330,7 @@ describe("backend error translation", () => {
   test("accepts unknown compatibility sources and extensible origins", () => {
     const error = normalizeBackendError({
       version: 1,
-      code: "DBX-DB-4001",
+      code: "Gauss Horizon-DB-4001",
       messageKey: "backendErrors.jdbc.sqlFailed",
       messageParams: { stage: "execute" },
       source: "nativeDatabase",
@@ -345,7 +345,7 @@ describe("backend error translation", () => {
   test("falls back to legacy text for plain HTTP and Tauri failures", () => {
     const t = translatorFor("zh-CN");
     const error = new BackendErrorException("legacy backend failure");
-    expect(error.backendError.code).toBe("DBX-LEGACY-0001");
+    expect(error.backendError.code).toBe("Gauss Horizon-LEGACY-0001");
     expect(translateBackendError(t, error)).toBe(`${t("backendErrors.legacy")}\n\nlegacy backend failure`);
   });
 
@@ -353,7 +353,7 @@ describe("backend error translation", () => {
     const t = translatorFor("zh-CN");
     const error = {
       version: 1 as const,
-      code: "DBX-LEGACY-0001",
+      code: "Gauss Horizon-LEGACY-0001",
       messageKey: "backendErrors.legacy",
       messageParams: {},
       source: "legacyBackend",
@@ -367,7 +367,7 @@ describe("backend error translation", () => {
     const t = translatorFor("zh-CN");
     const error = {
       version: 1 as const,
-      code: "DBX-LEGACY-0001",
+      code: "Gauss Horizon-LEGACY-0001",
       messageKey: "backendErrors.legacy",
       messageParams: {},
       source: "legacyBackend",
@@ -381,7 +381,7 @@ describe("backend error translation", () => {
     const t = translatorFor("zh-CN");
     const error = {
       version: 1 as const,
-      code: "DBX-LEGACY-0001",
+      code: "Gauss Horizon-LEGACY-0001",
       messageKey: "backendErrors.legacy",
       messageParams: {},
       source: "legacyBackend",
@@ -395,7 +395,7 @@ describe("backend error translation", () => {
   test("preserves JSON envelopes carried by strings and Error messages", () => {
     const envelope = {
       version: 1,
-      code: "DBX-JDBC-4001",
+      code: "Gauss Horizon-JDBC-4001",
       messageKey: "backendErrors.jdbc.sqlFailed",
       messageParams: { stage: "execute" },
       source: "jdbcAgent",
@@ -408,7 +408,7 @@ describe("backend error translation", () => {
 
   test("retains bounded diagnostics from unknown rejection objects", () => {
     const error = new BackendErrorException({ reason: "database worker returned a vendor diagnostic" });
-    expect(error.backendError.code).toBe("DBX-LEGACY-0001");
+    expect(error.backendError.code).toBe("Gauss Horizon-LEGACY-0001");
     expect(error.backendError.detail).toBe("database worker returned a vendor diagnostic");
     expect(new BackendErrorException({ reason: "x".repeat(70_000) }).backendError.detail).toHaveLength(64 * 1024);
   });
@@ -416,7 +416,7 @@ describe("backend error translation", () => {
   test("normalizes structured errors across Error realms and module copies", () => {
     const envelope = {
       version: 1,
-      code: "DBX-JDBC-5001",
+      code: "Gauss Horizon-JDBC-5001",
       messageKey: "backendErrors.jdbc.protocolFailed",
       messageParams: {},
       source: "jdbcAgent" as const,
@@ -458,13 +458,13 @@ describe("backend error translation", () => {
     expect(
       formatError({
         version: 1,
-        code: "DBX-JDBC-5001",
+        code: "Gauss Horizon-JDBC-5001",
         messageKey: "backendErrors.jdbc.protocolFailed",
         messageParams: {},
         source: "jdbcAgent",
         operationOutcome: "unknown",
       }),
-    ).toBe("DBX-JDBC-5001");
+    ).toBe("Gauss Horizon-JDBC-5001");
   });
 });
 
@@ -475,14 +475,14 @@ describe("backend error wording is pinned to the Rust sources", () => {
   const rust = (path: string) => readFileSync(new URL(`../../../../../${path}`, import.meta.url), "utf8");
 
   test.each([
-    ["crates/dbx-core/src/query_result_export.rs", "Streaming export is unsupported for this query. Simplify it or use a supported driver."],
-    ["crates/dbx-core/src/query_result_export.rs", "Streaming export needs a result-set session, but this driver returned no session_id."],
-    ["crates/dbx-core/src/agent_service.rs", "Failed to remove the old JRE directory: "],
-    ["crates/dbx-core/src/agent_service.rs", "is in use by drivers: "],
-    ["crates/dbx-core/src/agent_service.rs", "agent-registry.json not found in the ZIP; not a valid offline driver package."],
-    ["crates/dbx-core/src/mq/adapters/kafka.rs", "Kafka does not support unloading topics"],
-    ["crates/dbx-web/src/auth.rs", "Please try again in {remaining}s"],
-    ["crates/dbx-web/src/routes/agents.rs", "Close these database connections before updating drivers: "],
+    ["crates/gauss-horizon-core/src/query_result_export.rs", "Streaming export is unsupported for this query. Simplify it or use a supported driver."],
+    ["crates/gauss-horizon-core/src/query_result_export.rs", "Streaming export needs a result-set session, but this driver returned no session_id."],
+    ["crates/gauss-horizon-core/src/agent_service.rs", "Failed to remove the old JRE directory: "],
+    ["crates/gauss-horizon-core/src/agent_service.rs", "is in use by drivers: "],
+    ["crates/gauss-horizon-core/src/agent_service.rs", "agent-registry.json not found in the ZIP; not a valid offline driver package."],
+    ["crates/gauss-horizon-core/src/mq/adapters/kafka.rs", "Kafka does not support unloading topics"],
+    ["crates/gauss-horizon-web/src/auth.rs", "Please try again in {remaining}s"],
+    ["crates/gauss-horizon-web/src/routes/agents.rs", "Close these database connections before updating drivers: "],
     ["src-tauri/src/commands/agents.rs", "Close these database connections before updating drivers: "],
     ["src-tauri/src/commands/fs_open.rs", "file does not exist: "],
   ])("%s still emits %j", (path, fragment) => {

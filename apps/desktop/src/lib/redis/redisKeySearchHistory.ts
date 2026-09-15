@@ -1,6 +1,6 @@
 import { safeLocalStorageGet, safeLocalStorageSet } from "@/lib/backend/safeStorage";
 
-const STORAGE_KEY = "dbx-redis-key-search-history";
+const STORAGE_KEY = "gauss-horizon-redis-key-search-history";
 const MAX_HISTORY_PER_SCOPE = 20;
 
 export interface RedisKeySearchHistoryScope {

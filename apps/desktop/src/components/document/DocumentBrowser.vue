@@ -926,7 +926,7 @@ async function closeElasticsearchCursor(cursor?: string) {
   try {
     await api.closeQuerySession(props.connectionId, props.database, cursor);
   } catch (error) {
-    console.warn("[DBX] failed to close Elasticsearch cursor", error);
+    console.warn("[Gauss Horizon] failed to close Elasticsearch cursor", error);
   }
 }
 
@@ -1295,7 +1295,7 @@ function buildElasticsearchPartialUpdateDocument(changes: Map<number, MongoInput
 
 function formatDynamoDbOperationPreview(action: "insert" | "put" | "delete", id: unknown, document?: Record<string, unknown>): string {
   const operation = action === "insert" ? "INSERT ITEM" : action === "put" ? "PUT ITEM" : "DELETE ITEM";
-  const lines = [`DBX DYNAMODB ${operation}`, `table: ${JSON.stringify(props.collection)}`];
+  const lines = [`Gauss Horizon DYNAMODB ${operation}`, `table: ${JSON.stringify(props.collection)}`];
   if (id !== undefined) lines.push("key:", stringifyDocumentStoreValue(id, "dynamodb", 2));
   if (document) lines.push("item:", stringifyDocumentStoreValue(document, "dynamodb", 2));
   return lines.join("\n");
@@ -2274,7 +2274,7 @@ onMounted(async () => {
     // the only round trip left on the switch.
     await connectionStore.ensureConnected(props.connectionId, restoredDocumentData ? { verifyHealth: false } : {});
   } catch (e) {
-    console.warn("[DBX] ensureConnected failed for", props.connectionId, e);
+    console.warn("[Gauss Horizon] ensureConnected failed for", props.connectionId, e);
   }
   await loadDynamoDbTableDescription();
   // Mapping metadata enriches the filter builder, but it must not delay the
@@ -2952,8 +2952,8 @@ defineExpose({ focusSearch });
 }
 
 .json-edit {
-  font-family: var(--dbx-editor-font-family);
-  font-size: var(--dbx-editor-font-size);
+  font-family: var(--gauss-horizon-editor-font-family);
+  font-size: var(--gauss-horizon-editor-font-size);
   line-height: 1.6;
   tab-size: 2;
   color: var(--foreground);
@@ -2975,7 +2975,7 @@ defineExpose({ focusSearch });
   min-height: 0;
   resize: none;
   border: 1px solid var(--border);
-  border-radius: var(--dbx-radius-fixed-4);
+  border-radius: var(--gauss-horizon-radius-fixed-4);
   background: var(--background);
   color: var(--foreground);
   padding: 14px 16px;

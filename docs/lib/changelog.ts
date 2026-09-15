@@ -1,3 +1,4 @@
+import bundled from "../../crates/gauss-horizon-core/assets/changelog.json";
 import { requestJson } from "./httpJson";
 import type { DocsLang } from "@/lib/i18n";
 
@@ -16,6 +17,7 @@ export type ChangelogRelease = {
   tag: string;
   name: string;
   date: string;
+  unreleased?: boolean;
   markdown?: string;
   sections: ChangelogSection[];
 };
@@ -29,6 +31,7 @@ export type ChangelogIndexEntry = {
   tag: string;
   name: string;
   date: string;
+  unreleased?: boolean;
 };
 
 export type ChangelogIndex = {
@@ -44,62 +47,26 @@ export type ChangelogBootstrap = {
   fallbackReleases: ChangelogRelease[] | null;
 };
 
-const DEFAULT_BASE_URL = "https://dl.dbxio.com/changelog";
-
-/**
- * Release notes are published to R2 as `releases-en.json` / `releases-cn.json`
- * only, so locales without their own feed read the English one while the page
- * chrome around them stays localized.
- */
+const CHANGELOG_URL = "https://raw.githubusercontent.com/Gaussian-id/Gauss-Horizon/main/crates/gauss-horizon-core/assets/changelog.json";
 export type ChangelogLang = "en" | "cn";
-
-export function changelogDataLang(lang: DocsLang): ChangelogLang {
-  return lang === "cn" ? "cn" : "en";
-}
-
-function changelogBaseUrl() {
-  return (typeof process !== "undefined" && (process.env.NEXT_PUBLIC_CHANGELOG_BASE_URL || process.env.CHANGELOG_BASE_URL)) || DEFAULT_BASE_URL;
-}
-
-export function changelogUrl(lang: ChangelogLang) {
-  return `${changelogBaseUrl()}/releases-${lang}.json`;
-}
-
-export function changelogIndexUrl(lang: ChangelogLang) {
-  return `${changelogBaseUrl()}/index-${lang}.json`;
-}
-
-export function changelogReleaseUrl(lang: ChangelogLang, tag: string) {
-  return `${changelogBaseUrl()}/releases-${lang}/${tag}.json`;
-}
-
+export function changelogDataLang(lang: DocsLang): ChangelogLang { return lang === "cn" ? "cn" : "en"; }
+export function changelogUrl(_lang: ChangelogLang) { return CHANGELOG_URL; }
+export function changelogIndexUrl(lang: ChangelogLang) { return changelogUrl(lang); }
+export function changelogReleaseUrl(lang: ChangelogLang, _tag: string) { return changelogUrl(lang); }
 export async function fetchChangelog(lang: ChangelogLang): Promise<ChangelogData> {
-  return requestJson<ChangelogData>(changelogUrl(lang), { cache: "force-cache" });
-}
-
-export async function fetchChangelogIndex(lang: ChangelogLang): Promise<ChangelogIndex> {
-  return requestJson<ChangelogIndex>(changelogIndexUrl(lang), { cache: "force-cache" });
-}
-
-export async function fetchChangelogRelease(lang: ChangelogLang, tag: string): Promise<ChangelogRelease> {
-  return requestJson<ChangelogRelease>(changelogReleaseUrl(lang, tag), { cache: "force-cache" });
-}
-
-export async function loadChangelogBootstrap(lang: ChangelogLang): Promise<ChangelogBootstrap> {
   try {
-    const index = await fetchChangelogIndex(lang);
-    if (index.releases.length > 0) {
-      const initialRelease = await fetchChangelogRelease(lang, index.releases[0].tag);
-      return { index: index.releases, initialRelease, fallbackReleases: null };
-    }
-  } catch {
-    // fall through to the full listing
-  }
-
-  const full = await fetchChangelog(lang);
-  return {
-    index: full.releases.map(({ tag, name, date }) => ({ tag, name, date })),
-    initialRelease: full.releases[0] ?? null,
-    fallbackReleases: full.releases,
-  };
+    const remote=await requestJson<ChangelogData>(changelogUrl(lang),{cache:"force-cache"});
+    if (Array.isArray(remote.releases) && remote.releases.some(r=>r.tag==="v0.1.0")) return remote;
+  } catch { /* Offline builds retain the bundled Gaussian changelog. */ }
+  return bundled;
+}
+export async function fetchChangelogIndex(lang: ChangelogLang): Promise<ChangelogIndex> { return fetchChangelog(lang); }
+export async function fetchChangelogRelease(lang: ChangelogLang, tag: string): Promise<ChangelogRelease> {
+  const release=(await fetchChangelog(lang)).releases.find(r=>r.tag===tag);
+  if (!release) throw new Error("Unknown Gaussian version");
+  return release;
+}
+export async function loadChangelogBootstrap(lang: ChangelogLang): Promise<ChangelogBootstrap> {
+  const full=await fetchChangelog(lang);
+  return {index:full.releases,initialRelease:full.releases[0]??null,fallbackReleases:full.releases};
 }

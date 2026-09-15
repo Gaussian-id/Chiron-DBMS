@@ -1,6 +1,6 @@
 # Vastbase Native Agent
 
-This module implements the DBX agent protocol for Vastbase with the pure-Go
+This module implements the Gauss Horizon agent protocol for Vastbase with the pure-Go
 `openGauss-connector-go-pq` driver.
 
 ## Build
@@ -10,17 +10,17 @@ go test ./...
 CGO_ENABLED=0 go build -trimpath -ldflags="-s -w" -o agent .
 ```
 
-## Local DBX Test
+## Local Gauss Horizon Test
 
-Build the binary, then copy it into DBX's installed Vastbase driver directory:
+Build the binary, then copy it into Gauss Horizon's installed Vastbase driver directory:
 
 ```bash
-mkdir -p ~/.dbx/agents/drivers/vastbase
-cp agent ~/.dbx/agents/drivers/vastbase/agent
-chmod +x ~/.dbx/agents/drivers/vastbase/agent
+mkdir -p ~/.gauss-horizon/agents/drivers/vastbase
+cp agent ~/.gauss-horizon/agents/drivers/vastbase/agent
+chmod +x ~/.gauss-horizon/agents/drivers/vastbase/agent
 ```
 
-DBX prefers `agent` over `agent.jar`. Remove the native binary to restore a
+Gauss Horizon prefers `agent` over `agent.jar`. Remove the native binary to restore a
 previously installed JDBC agent.
 
 ## Integration Test

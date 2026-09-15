@@ -9,7 +9,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/t8y2/dbx/agents/go-common/gohive"
+	"github.com/Gaussian-id/Gauss-Horizon/agents/go-common/gohive"
 )
 
 func TestShowTablesRowName(t *testing.T) {
@@ -29,7 +29,7 @@ func TestConnectionInfoReportsArgoIdentity(t *testing.T) {
 			case "SELECT VERSION()":
 				return newScriptedRows(ctx, []string{"version"}, []string{"STRING"}, [][]driver.Value{{"3.5.8"}}), nil
 			case "SELECT CURRENT_USER()":
-				return newScriptedRows(ctx, []string{"current_user"}, []string{"STRING"}, [][]driver.Value{{"dbx"}}), nil
+				return newScriptedRows(ctx, []string{"current_user"}, []string{"STRING"}, [][]driver.Value{{"gauss-horizon"}}), nil
 			default:
 				return nil, errors.New("unexpected query: " + query)
 			}
@@ -43,11 +43,11 @@ func TestConnectionInfoReportsArgoIdentity(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if info["compatibilityMode"] != "argo" || info["username"] != "dbx" || info["version"] != "3.5.8" {
+	if info["compatibilityMode"] != "argo" || info["username"] != "gauss-horizon" || info["version"] != "3.5.8" {
 		t.Fatalf("unexpected Argo connection info: %#v", info)
 	}
 	databaseInfo, ok := info["databaseInfo"].(map[string]string)
-	if !ok || databaseInfo["productName"] != "ArgoDB (Transwarp)" || databaseInfo["driverName"] != "DBX ArgoDB Go Agent" {
+	if !ok || databaseInfo["productName"] != "ArgoDB (Transwarp)" || databaseInfo["driverName"] != "Gauss Horizon ArgoDB Go Agent" {
 		t.Fatalf("unexpected Argo database identity: %#v", info["databaseInfo"])
 	}
 }
@@ -55,7 +55,7 @@ func TestConnectionInfoReportsArgoIdentity(t *testing.T) {
 func TestGetObjectSourceReturnsProtocolObject(t *testing.T) {
 	behavior := &scriptedBehavior{
 		query: func(ctx context.Context, query string) (driver.Rows, error) {
-			if query != "SHOW CREATE TABLE `dbx_kyuubi_demo`.`high_value_orders`" {
+			if query != "SHOW CREATE TABLE `gauss_horizon_kyuubi_demo`.`high_value_orders`" {
 				t.Fatalf("unexpected query: %q", query)
 			}
 			return newScriptedRows(
@@ -63,8 +63,8 @@ func TestGetObjectSourceReturnsProtocolObject(t *testing.T) {
 				[]string{"createtab_stmt"},
 				[]string{"STRING"},
 				[][]driver.Value{
-					{"CREATE VIEW dbx_kyuubi_demo.high_value_orders"},
-					{"AS SELECT id, customer, amount FROM dbx_kyuubi_demo.orders WHERE amount >= 50"},
+					{"CREATE VIEW gauss_horizon_kyuubi_demo.high_value_orders"},
+					{"AS SELECT id, customer, amount FROM gauss_horizon_kyuubi_demo.orders WHERE amount >= 50"},
 				},
 			), nil
 		},
@@ -73,7 +73,7 @@ func TestGetObjectSourceReturnsProtocolObject(t *testing.T) {
 	defer server.disconnect()
 
 	result, _, err := server.dispatch("get_object_source", map[string]json.RawMessage{
-		"schema":      json.RawMessage(`"dbx_kyuubi_demo"`),
+		"schema":      json.RawMessage(`"gauss_horizon_kyuubi_demo"`),
 		"name":        json.RawMessage(`"high_value_orders"`),
 		"object_type": json.RawMessage(`"VIEW"`),
 	})
@@ -84,10 +84,10 @@ func TestGetObjectSourceReturnsProtocolObject(t *testing.T) {
 	if !ok {
 		t.Fatalf("get_object_source returned %T instead of objectSource", result)
 	}
-	if source.Name != "high_value_orders" || source.ObjectType != "VIEW" || source.Schema == nil || *source.Schema != "dbx_kyuubi_demo" {
+	if source.Name != "high_value_orders" || source.ObjectType != "VIEW" || source.Schema == nil || *source.Schema != "gauss_horizon_kyuubi_demo" {
 		t.Fatalf("unexpected object source metadata: %#v", source)
 	}
-	expected := "CREATE VIEW dbx_kyuubi_demo.high_value_orders\nAS SELECT id, customer, amount FROM dbx_kyuubi_demo.orders WHERE amount >= 50\n"
+	expected := "CREATE VIEW gauss_horizon_kyuubi_demo.high_value_orders\nAS SELECT id, customer, amount FROM gauss_horizon_kyuubi_demo.orders WHERE amount >= 50\n"
 	if source.Source != expected {
 		t.Fatalf("unexpected object source DDL: %q", source.Source)
 	}

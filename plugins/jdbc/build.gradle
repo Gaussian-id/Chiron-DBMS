@@ -3,8 +3,8 @@ plugins {
     id 'com.gradleup.shadow' version '9.0.0-beta12'
 }
 
-group = 'app.dbx'
-version = '0.1.39'
+group = 'app.gauss-horizon'
+version = '0.1.0'
 
 java {
     toolchain {
@@ -51,12 +51,12 @@ tasks.named('test') {
 }
 
 tasks.named('shadowJar') {
-    archiveBaseName = 'dbx-jdbc-plugin'
+    archiveBaseName = 'gauss-horizon-jdbc-plugin'
     archiveVersion = ''
     archiveClassifier = 'all'
     mergeServiceFiles()
     manifest {
-        attributes 'Main-Class': 'app.dbx.jdbc.DbxJdbcPlugin'
+        attributes 'Main-Class': 'app.gauss.horizon.jdbc.GaussHorizonJdbcPlugin'
     }
 }
 

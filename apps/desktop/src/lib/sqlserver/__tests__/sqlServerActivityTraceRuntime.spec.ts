@@ -166,7 +166,7 @@ describe("SQL Server activity trace runtime", () => {
     const activeExpiresAt = Date.now() + 60_000;
     const activeSessionName = buildSqlServerTraceSessionName(activeExpiresAt, 0.5);
     data.set(
-      "dbx:sqlserver-trace:pending-sessions:v1",
+      "gauss-horizon:sqlserver-trace:pending-sessions:v1",
       JSON.stringify([
         { connectionId: "sqlserver-1", database: "app", sessionName, expiresAt },
         { connectionId: "sqlserver-1", database: "app", sessionName: activeSessionName, expiresAt: activeExpiresAt },
@@ -181,6 +181,6 @@ describe("SQL Server activity trace runtime", () => {
     expect(await cleanupStaleSqlServerTraceSessions("sqlserver-1", "app")).toBe(1);
     expect(mocks.executeQuery.mock.calls.some((call) => String(call[2]).includes(`DROP EVENT SESSION [${sessionName}]`))).toBe(true);
     expect(mocks.executeQuery.mock.calls.some((call) => String(call[2]).includes(`DROP EVENT SESSION [${activeSessionName}]`))).toBe(false);
-    expect(JSON.parse(data.get("dbx:sqlserver-trace:pending-sessions:v1") || "[]")).toEqual([{ connectionId: "sqlserver-1", database: "app", sessionName: activeSessionName, expiresAt: activeExpiresAt }]);
+    expect(JSON.parse(data.get("gauss-horizon:sqlserver-trace:pending-sessions:v1") || "[]")).toEqual([{ connectionId: "sqlserver-1", database: "app", sessionName: activeSessionName, expiresAt: activeExpiresAt }]);
   });
 });

@@ -12,7 +12,7 @@ describe("native Chiron chat lifecycle wiring", () => {
     expect(nativeSend).toContain("conversation_id: chatId");
   });
   it("blocks duplicate sends and exposes real phase plus elapsed time", () => {
-    expect(nativeSend).toContain("if (chironBusy.value || !prompt.value.trim()) return;");
+    expect(nativeSend).toContain("chironBusy.value || isAttachmentProcessing.value");
     expect(source).toContain('aria-label="ChironQL request in progress"');
     expect(source).toContain("{{ chironPhase }}");
     expect(source).toContain("{{ chironElapsed }}s");
@@ -35,9 +35,12 @@ describe("native Chiron chat lifecycle wiring", () => {
     expect(source).toContain("run_id: undefined");
     expect(source).toContain("chiron: m.chiron");
   });
-  it("offers a composer switch, concise context and saved-chat rename/delete", () => {
-    expect(source).toContain('<Switch v-model="chironGenerateOnly"');
-    expect(source).toContain("ChironQL · {{ connection.name }}</p>");
+  it("shares composer context and Ask/Agent controls while retaining saved-chat actions", () => {
+    expect(nativeSend).toContain("generate_only: requestPrompt.generateOnly");
+    expect(nativeSend).toContain("buildChironPrompt({");
+    expect(source).not.toContain('<Popover v-if="connection?.db_type !== \'chirondb\'" v-model:open="modeActionOpen"');
+    expect(source.slice(source.indexOf("data-ai-composer-context-row"))).toContain('v-model="chironCollection"');
+    expect(source).not.toContain("ChironQL · {{ connection.name }}</p>");
     expect(source).toContain("More options for ${conv.title}");
     expect(source).toContain("Rename chat</DropdownMenuItem>");
     expect(source).toContain("Delete chat</DropdownMenuItem>");

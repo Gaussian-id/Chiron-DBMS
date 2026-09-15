@@ -205,7 +205,7 @@ export function parseConnectionDeepLink(value: string): ConnectionDeepLinkDraft 
     return null;
   }
 
-  if (url.protocol !== "dbx:") return null;
+  if (url.protocol !== "gauss-horizon:") return null;
   if (normalizePath(url) !== CONNECTION_DEEP_LINK_TARGET) return null;
 
   const params = url.searchParams;
@@ -271,7 +271,7 @@ export function parseServiceConnectionUrl(value: string): ConnectionDeepLinkDraf
   const serviceType = normalizeServiceType(url.protocol.replace(/:$/, ""));
   if (!serviceType) return null;
 
-  const deepLink = new URL("dbx://connection/new");
+  const deepLink = new URL("gauss-horizon://connection/new");
   deepLink.searchParams.set("type", serviceType);
   deepLink.searchParams.set("url", value);
   return parseConnectionDeepLink(deepLink.toString());

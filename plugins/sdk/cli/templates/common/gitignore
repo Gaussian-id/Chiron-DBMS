@@ -1,5 +1,5 @@
 /dist/
-/.dbx-dev/
-.dbx-repository-signing-key.env
+/.gauss-horizon-dev/
+.gauss-horizon-repository-signing-key.env
 .DS_Store
 *.log

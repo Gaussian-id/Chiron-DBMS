@@ -1,11 +1,11 @@
 {
-  "name": "@dbx-app/cli-linux-x64-gnu",
-  "version": "0.4.86",
-  "description": "Precompiled DBX CLI binary for Linux x64 glibc",
+  "name": "@gauss-horizon/cli-linux-x64-gnu",
+  "version": "0.1.0",
+  "description": "Precompiled Gauss Horizon CLI binary for Linux x64 glibc",
   "license": "Apache-2.0",
   "repository": {
     "type": "git",
-    "url": "https://github.com/t8y2/dbx",
+    "url": "https://github.com/Gaussian-id/Gauss-Horizon",
     "directory": "packages/cli-linux-x64-gnu"
   },
   "os": [
@@ -18,7 +18,7 @@
     "glibc"
   ],
   "bin": {
-    "dbx-native": "bin/dbx"
+    "gauss-horizon-native": "bin/gauss-horizon"
   },
   "files": [
     "bin"

@@ -2,7 +2,7 @@ use std::sync::Arc;
 use tauri::State;
 
 use crate::commands::connection::{ensure_connection_writable, AppState};
-use dbx_core::db::redis_driver::{
+use gauss_horizon_core::db::redis_driver::{
     classify_command, parse_command_argv, RedisCollectionPage, RedisCommandResult, RedisCommandSafety,
     RedisDatabaseInfo, RedisKeysExpiryResult, RedisScanResult, RedisStreamConsumer, RedisStreamGroup, RedisStreamPage,
     RedisStreamPendingPage, RedisValue,
@@ -13,7 +13,7 @@ pub async fn redis_list_databases(
     state: State<'_, Arc<AppState>>,
     connection_id: String,
 ) -> Result<Vec<RedisDatabaseInfo>, String> {
-    dbx_core::redis_ops::redis_list_databases_core(&state, &connection_id).await
+    gauss_horizon_core::redis_ops::redis_list_databases_core(&state, &connection_id).await
 }
 
 #[tauri::command]
@@ -25,7 +25,7 @@ pub async fn redis_scan_keys(
     pattern: String,
     count: usize,
 ) -> Result<RedisScanResult, String> {
-    dbx_core::redis_ops::redis_scan_keys_core(&state, &connection_id, db, cursor, &pattern, count).await
+    gauss_horizon_core::redis_ops::redis_scan_keys_core(&state, &connection_id, db, cursor, &pattern, count).await
 }
 
 #[tauri::command]
@@ -39,7 +39,7 @@ pub async fn redis_scan_keys_batch(
     max_iterations: usize,
     include_types: Option<bool>,
 ) -> Result<RedisScanResult, String> {
-    dbx_core::redis_ops::redis_scan_keys_batch_core(
+    gauss_horizon_core::redis_ops::redis_scan_keys_batch_core(
         &state,
         &connection_id,
         db,
@@ -64,7 +64,7 @@ pub async fn redis_scan_values(
     include_key_matches: Option<bool>,
     count: usize,
 ) -> Result<RedisScanResult, String> {
-    dbx_core::redis_ops::redis_scan_values_core(
+    gauss_horizon_core::redis_ops::redis_scan_values_core(
         &state,
         &connection_id,
         db,
@@ -84,7 +84,7 @@ pub async fn redis_get_value(
     db: u32,
     key_raw: String,
 ) -> Result<RedisValue, String> {
-    dbx_core::redis_ops::redis_get_value_in_db_core(&state, &connection_id, db, &key_raw).await
+    gauss_horizon_core::redis_ops::redis_get_value_in_db_core(&state, &connection_id, db, &key_raw).await
 }
 
 #[tauri::command]
@@ -94,7 +94,7 @@ pub async fn redis_get_ttl(
     db: u32,
     key_raw: String,
 ) -> Result<i64, String> {
-    dbx_core::redis_ops::redis_get_ttl_in_db_core(&state, &connection_id, db, &key_raw).await
+    gauss_horizon_core::redis_ops::redis_get_ttl_in_db_core(&state, &connection_id, db, &key_raw).await
 }
 
 #[tauri::command]
@@ -105,7 +105,14 @@ pub async fn redis_get_stream_entries(
     key_raw: String,
     cursor: Option<String>,
 ) -> Result<RedisStreamPage, String> {
-    dbx_core::redis_ops::redis_stream_entries_in_db_core(&state, &connection_id, db, &key_raw, cursor.as_deref()).await
+    gauss_horizon_core::redis_ops::redis_stream_entries_in_db_core(
+        &state,
+        &connection_id,
+        db,
+        &key_raw,
+        cursor.as_deref(),
+    )
+    .await
 }
 
 #[tauri::command]
@@ -115,7 +122,7 @@ pub async fn redis_get_stream_groups(
     db: u32,
     key_raw: String,
 ) -> Result<Vec<RedisStreamGroup>, String> {
-    dbx_core::redis_ops::redis_stream_groups_in_db_core(&state, &connection_id, db, &key_raw).await
+    gauss_horizon_core::redis_ops::redis_stream_groups_in_db_core(&state, &connection_id, db, &key_raw).await
 }
 
 #[tauri::command]
@@ -126,7 +133,8 @@ pub async fn redis_get_stream_consumers(
     key_raw: String,
     group_raw: String,
 ) -> Result<Vec<RedisStreamConsumer>, String> {
-    dbx_core::redis_ops::redis_stream_consumers_in_db_core(&state, &connection_id, db, &key_raw, &group_raw).await
+    gauss_horizon_core::redis_ops::redis_stream_consumers_in_db_core(&state, &connection_id, db, &key_raw, &group_raw)
+        .await
 }
 
 #[tauri::command]
@@ -139,7 +147,7 @@ pub async fn redis_get_stream_pending(
     cursor: Option<String>,
     consumer_raw: Option<String>,
 ) -> Result<RedisStreamPendingPage, String> {
-    dbx_core::redis_ops::redis_stream_pending_in_db_core(
+    gauss_horizon_core::redis_ops::redis_stream_pending_in_db_core(
         &state,
         &connection_id,
         db,
@@ -161,7 +169,7 @@ pub async fn redis_set_string(
     ttl: Option<i64>,
 ) -> Result<(), String> {
     ensure_connection_writable(&state, &connection_id, "SET").await?;
-    dbx_core::redis_ops::redis_set_string_in_db_core(&state, &connection_id, db, &key_raw, &value, ttl).await
+    gauss_horizon_core::redis_ops::redis_set_string_in_db_core(&state, &connection_id, db, &key_raw, &value, ttl).await
 }
 
 #[tauri::command]
@@ -172,7 +180,7 @@ pub async fn redis_delete_key(
     key_raw: String,
 ) -> Result<(), String> {
     ensure_connection_writable(&state, &connection_id, "Delete key").await?;
-    dbx_core::redis_ops::redis_delete_key_in_db_core(&state, &connection_id, db, &key_raw).await
+    gauss_horizon_core::redis_ops::redis_delete_key_in_db_core(&state, &connection_id, db, &key_raw).await
 }
 
 #[tauri::command]
@@ -184,7 +192,7 @@ pub async fn redis_rename_key(
     new_key_raw: String,
 ) -> Result<(), String> {
     ensure_connection_writable(&state, &connection_id, "RENAMENX").await?;
-    dbx_core::redis_ops::redis_rename_key_in_db_core(&state, &connection_id, db, &key_raw, &new_key_raw).await
+    gauss_horizon_core::redis_ops::redis_rename_key_in_db_core(&state, &connection_id, db, &key_raw, &new_key_raw).await
 }
 
 #[tauri::command]
@@ -198,7 +206,8 @@ pub async fn redis_hash_set(
     ttl: Option<i64>,
 ) -> Result<(), String> {
     ensure_connection_writable(&state, &connection_id, "HSET").await?;
-    dbx_core::redis_ops::redis_hash_set_in_db_core(&state, &connection_id, db, &key_raw, &field, &value, ttl).await
+    gauss_horizon_core::redis_ops::redis_hash_set_in_db_core(&state, &connection_id, db, &key_raw, &field, &value, ttl)
+        .await
 }
 
 #[tauri::command]
@@ -210,7 +219,7 @@ pub async fn redis_hash_del(
     field: String,
 ) -> Result<(), String> {
     ensure_connection_writable(&state, &connection_id, "HDEL").await?;
-    dbx_core::redis_ops::redis_hash_del_in_db_core(&state, &connection_id, db, &key_raw, &field).await
+    gauss_horizon_core::redis_ops::redis_hash_del_in_db_core(&state, &connection_id, db, &key_raw, &field).await
 }
 
 #[tauri::command]
@@ -224,7 +233,7 @@ pub async fn redis_hash_field_update(
     value: String,
 ) -> Result<(), String> {
     ensure_connection_writable(&state, &connection_id, "Atomic hash field update").await?;
-    dbx_core::redis_ops::redis_hash_field_update_in_db_core(
+    gauss_horizon_core::redis_ops::redis_hash_field_update_in_db_core(
         &state,
         &connection_id,
         db,
@@ -246,7 +255,15 @@ pub async fn redis_hash_field_set_ttl(
     ttl: i64,
 ) -> Result<(), String> {
     ensure_connection_writable(&state, &connection_id, "HEXPIRE").await?;
-    dbx_core::redis_ops::redis_hash_field_set_ttl_in_db_core(&state, &connection_id, db, &key_raw, &field, ttl).await
+    gauss_horizon_core::redis_ops::redis_hash_field_set_ttl_in_db_core(
+        &state,
+        &connection_id,
+        db,
+        &key_raw,
+        &field,
+        ttl,
+    )
+    .await
 }
 
 #[tauri::command]
@@ -259,7 +276,7 @@ pub async fn redis_hash_field_set_expire_at(
     expire_at: i64,
 ) -> Result<(), String> {
     ensure_connection_writable(&state, &connection_id, "HEXPIREAT").await?;
-    dbx_core::redis_ops::redis_hash_field_set_expire_at_in_db_core(
+    gauss_horizon_core::redis_ops::redis_hash_field_set_expire_at_in_db_core(
         &state,
         &connection_id,
         db,
@@ -280,7 +297,7 @@ pub async fn redis_list_push(
     ttl: Option<i64>,
 ) -> Result<(), String> {
     ensure_connection_writable(&state, &connection_id, "LPUSH").await?;
-    dbx_core::redis_ops::redis_list_push_in_db_core(&state, &connection_id, db, &key_raw, &value, ttl).await
+    gauss_horizon_core::redis_ops::redis_list_push_in_db_core(&state, &connection_id, db, &key_raw, &value, ttl).await
 }
 
 #[tauri::command]
@@ -293,7 +310,7 @@ pub async fn redis_list_set(
     value: String,
 ) -> Result<(), String> {
     ensure_connection_writable(&state, &connection_id, "LSET").await?;
-    dbx_core::redis_ops::redis_list_set_in_db_core(&state, &connection_id, db, &key_raw, index, &value).await
+    gauss_horizon_core::redis_ops::redis_list_set_in_db_core(&state, &connection_id, db, &key_raw, index, &value).await
 }
 
 #[tauri::command]
@@ -305,7 +322,7 @@ pub async fn redis_list_remove(
     index: i64,
 ) -> Result<(), String> {
     ensure_connection_writable(&state, &connection_id, "LREM").await?;
-    dbx_core::redis_ops::redis_list_remove_in_db_core(&state, &connection_id, db, &key_raw, index).await
+    gauss_horizon_core::redis_ops::redis_list_remove_in_db_core(&state, &connection_id, db, &key_raw, index).await
 }
 
 #[tauri::command]
@@ -318,7 +335,7 @@ pub async fn redis_set_add(
     ttl: Option<i64>,
 ) -> Result<(), String> {
     ensure_connection_writable(&state, &connection_id, "SADD").await?;
-    dbx_core::redis_ops::redis_set_add_in_db_core(&state, &connection_id, db, &key_raw, &member, ttl).await
+    gauss_horizon_core::redis_ops::redis_set_add_in_db_core(&state, &connection_id, db, &key_raw, &member, ttl).await
 }
 
 #[tauri::command]
@@ -330,7 +347,7 @@ pub async fn redis_set_remove(
     member: String,
 ) -> Result<(), String> {
     ensure_connection_writable(&state, &connection_id, "SREM").await?;
-    dbx_core::redis_ops::redis_set_remove_in_db_core(&state, &connection_id, db, &key_raw, &member).await
+    gauss_horizon_core::redis_ops::redis_set_remove_in_db_core(&state, &connection_id, db, &key_raw, &member).await
 }
 
 #[tauri::command]
@@ -344,7 +361,8 @@ pub async fn redis_zadd(
     ttl: Option<i64>,
 ) -> Result<(), String> {
     ensure_connection_writable(&state, &connection_id, "ZADD").await?;
-    dbx_core::redis_ops::redis_zadd_in_db_core(&state, &connection_id, db, &key_raw, &member, score, ttl).await
+    gauss_horizon_core::redis_ops::redis_zadd_in_db_core(&state, &connection_id, db, &key_raw, &member, score, ttl)
+        .await
 }
 
 #[tauri::command]
@@ -356,7 +374,7 @@ pub async fn redis_zrem(
     member: String,
 ) -> Result<(), String> {
     ensure_connection_writable(&state, &connection_id, "ZREM").await?;
-    dbx_core::redis_ops::redis_zrem_in_db_core(&state, &connection_id, db, &key_raw, &member).await
+    gauss_horizon_core::redis_ops::redis_zrem_in_db_core(&state, &connection_id, db, &key_raw, &member).await
 }
 
 #[tauri::command]
@@ -371,7 +389,7 @@ pub async fn redis_zset_update(
     score: String,
 ) -> Result<bool, String> {
     ensure_connection_writable(&state, &connection_id, "ZADD/ZREM").await?;
-    dbx_core::redis_ops::redis_zset_update_in_db_core(
+    gauss_horizon_core::redis_ops::redis_zset_update_in_db_core(
         &state,
         &connection_id,
         db,
@@ -395,7 +413,16 @@ pub async fn redis_stream_add(
     ttl: Option<i64>,
 ) -> Result<(), String> {
     ensure_connection_writable(&state, &connection_id, "XADD").await?;
-    dbx_core::redis_ops::redis_stream_add_in_db_core(&state, &connection_id, db, &key_raw, &entry_id, fields, ttl).await
+    gauss_horizon_core::redis_ops::redis_stream_add_in_db_core(
+        &state,
+        &connection_id,
+        db,
+        &key_raw,
+        &entry_id,
+        fields,
+        ttl,
+    )
+    .await
 }
 
 #[tauri::command]
@@ -408,7 +435,7 @@ pub async fn redis_json_set(
     ttl: Option<i64>,
 ) -> Result<(), String> {
     ensure_connection_writable(&state, &connection_id, "JSON.SET").await?;
-    dbx_core::redis_ops::redis_json_set_in_db_core(&state, &connection_id, db, &key_raw, &value, ttl).await
+    gauss_horizon_core::redis_ops::redis_json_set_in_db_core(&state, &connection_id, db, &key_raw, &value, ttl).await
 }
 
 #[tauri::command]
@@ -417,7 +444,7 @@ pub async fn redis_check_json_module(
     connection_id: String,
     db: u32,
 ) -> Result<bool, String> {
-    dbx_core::redis_ops::redis_check_json_module_in_db_core(&state, &connection_id, db).await
+    gauss_horizon_core::redis_ops::redis_check_json_module_in_db_core(&state, &connection_id, db).await
 }
 
 #[tauri::command]
@@ -429,7 +456,7 @@ pub async fn redis_set_ttl(
     ttl: i64,
 ) -> Result<(), String> {
     ensure_connection_writable(&state, &connection_id, "EXPIRE").await?;
-    dbx_core::redis_ops::redis_set_ttl_in_db_core(&state, &connection_id, db, &key_raw, ttl).await
+    gauss_horizon_core::redis_ops::redis_set_ttl_in_db_core(&state, &connection_id, db, &key_raw, ttl).await
 }
 
 #[tauri::command]
@@ -441,7 +468,7 @@ pub async fn redis_set_expire_at(
     expire_at: i64,
 ) -> Result<(), String> {
     ensure_connection_writable(&state, &connection_id, "EXPIREAT").await?;
-    dbx_core::redis_ops::redis_set_expire_at_in_db_core(&state, &connection_id, db, &key_raw, expire_at).await
+    gauss_horizon_core::redis_ops::redis_set_expire_at_in_db_core(&state, &connection_id, db, &key_raw, expire_at).await
 }
 
 #[tauri::command]
@@ -453,7 +480,7 @@ pub async fn redis_set_keys_ttl(
     ttl: i64,
 ) -> Result<RedisKeysExpiryResult, String> {
     ensure_connection_writable(&state, &connection_id, "EXPIRE").await?;
-    dbx_core::redis_ops::redis_set_keys_ttl_in_db_core(&state, &connection_id, db, &key_raws, ttl).await
+    gauss_horizon_core::redis_ops::redis_set_keys_ttl_in_db_core(&state, &connection_id, db, &key_raws, ttl).await
 }
 
 #[tauri::command]
@@ -465,7 +492,8 @@ pub async fn redis_set_keys_expire_at(
     expire_at: i64,
 ) -> Result<RedisKeysExpiryResult, String> {
     ensure_connection_writable(&state, &connection_id, "EXPIREAT").await?;
-    dbx_core::redis_ops::redis_set_keys_expire_at_in_db_core(&state, &connection_id, db, &key_raws, expire_at).await
+    gauss_horizon_core::redis_ops::redis_set_keys_expire_at_in_db_core(&state, &connection_id, db, &key_raws, expire_at)
+        .await
 }
 
 #[tauri::command]
@@ -476,13 +504,13 @@ pub async fn redis_delete_keys(
     key_raws: Vec<String>,
 ) -> Result<u64, String> {
     ensure_connection_writable(&state, &connection_id, "Delete keys").await?;
-    dbx_core::redis_ops::redis_delete_keys_in_db_core(&state, &connection_id, db, &key_raws).await
+    gauss_horizon_core::redis_ops::redis_delete_keys_in_db_core(&state, &connection_id, db, &key_raws).await
 }
 
 #[tauri::command]
 pub async fn redis_flush_db(state: State<'_, Arc<AppState>>, connection_id: String, db: u32) -> Result<(), String> {
     ensure_connection_writable(&state, &connection_id, "FLUSHDB").await?;
-    dbx_core::redis_ops::redis_flush_db_core(&state, &connection_id, db).await
+    gauss_horizon_core::redis_ops::redis_flush_db_core(&state, &connection_id, db).await
 }
 
 #[tauri::command]
@@ -497,7 +525,7 @@ pub async fn redis_execute_command(
     let cmd_name = argv[0].to_ascii_uppercase();
     let safety = classify_command(&cmd_name);
     // In read-only mode, only allow safe read commands through the raw command interface
-    if let Some(name) = dbx_core::query::connection_readonly_name(&state, &connection_id).await {
+    if let Some(name) = gauss_horizon_core::query::connection_readonly_name(&state, &connection_id).await {
         if safety != RedisCommandSafety::Allowed {
             return Err(format!(
                 "Read-only mode: connection '{}' has read-only protection enabled. Command '{}' blocked.",
@@ -505,7 +533,7 @@ pub async fn redis_execute_command(
             ));
         }
     }
-    dbx_core::redis_ops::redis_execute_command_core(
+    gauss_horizon_core::redis_ops::redis_execute_command_core(
         &state,
         &connection_id,
         db,
@@ -527,7 +555,7 @@ pub async fn redis_load_more(
     filter: Option<String>,
     sort_direction: Option<String>,
 ) -> Result<RedisCollectionPage, String> {
-    dbx_core::redis_ops::redis_load_more_in_db_core(
+    gauss_horizon_core::redis_ops::redis_load_more_in_db_core(
         &state,
         &connection_id,
         db,
@@ -550,7 +578,7 @@ pub async fn redis_pubsub_publish(
     message: String,
 ) -> Result<u64, String> {
     ensure_connection_writable(&state, &connection_id, "PUBLISH").await?;
-    dbx_core::redis_ops::redis_publish_core(&state, &connection_id, db, &channel, &message).await
+    gauss_horizon_core::redis_ops::redis_publish_core(&state, &connection_id, db, &channel, &message).await
 }
 
 #[tauri::command]
@@ -560,14 +588,14 @@ pub async fn redis_slowlog_get(
     count: usize,
     node_host: Option<String>,
     node_port: Option<u16>,
-) -> Result<Vec<dbx_core::db::redis_driver::RedisSlowlogEntry>, String> {
-    dbx_core::redis_ops::redis_slowlog_get_core(&state, &connection_id, count, node_host, node_port).await
+) -> Result<Vec<gauss_horizon_core::db::redis_driver::RedisSlowlogEntry>, String> {
+    gauss_horizon_core::redis_ops::redis_slowlog_get_core(&state, &connection_id, count, node_host, node_port).await
 }
 
 #[tauri::command]
 pub async fn redis_cluster_master_nodes(
     state: State<'_, Arc<AppState>>,
     connection_id: String,
-) -> Result<Vec<dbx_core::db::redis_driver::RedisNodeEndpoint>, String> {
-    dbx_core::redis_ops::redis_cluster_master_nodes_core(&state, &connection_id).await
+) -> Result<Vec<gauss_horizon_core::db::redis_driver::RedisNodeEndpoint>, String> {
+    gauss_horizon_core::redis_ops::redis_cluster_master_nodes_core(&state, &connection_id).await
 }

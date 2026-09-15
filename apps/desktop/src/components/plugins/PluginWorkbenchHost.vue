@@ -37,13 +37,13 @@ let loadGeneration = 0;
 
 const title = computed(() => `${props.plugin.manifest.name} · ${props.contribution.label}`);
 
-/** Collect resolved DBX design tokens so the sandbox can theme itself with the same values. */
+/** Collect resolved Gauss Horizon design tokens so the sandbox can theme itself with the same values. */
 function currentBridgeTheme(): PluginBridgeTheme {
   const tokens: Record<string, string> = {};
   if (typeof document !== "undefined") {
     const style = getComputedStyle(document.documentElement);
     for (const name of style) {
-      if (!name.startsWith("--") || name.startsWith("--dbx-")) continue;
+      if (!name.startsWith("--") || name.startsWith("--gauss-horizon-")) continue;
       if (/^--(color|radius|font)/.test(name)) {
         const value = style.getPropertyValue(name).trim();
         if (value) tokens[name] = value;
@@ -77,8 +77,8 @@ function localUiAssetPath(source: string): string | undefined {
   const trimmed = source.trim();
   if (!trimmed || /^(?:blob:|data:|https?:|\/\/)/i.test(trimmed)) return undefined;
   try {
-    const resolved = new URL(trimmed, "https://dbx-plugin.invalid/");
-    if (resolved.origin !== "https://dbx-plugin.invalid") return undefined;
+    const resolved = new URL(trimmed, "https://gauss-horizon-plugin.invalid/");
+    if (resolved.origin !== "https://gauss-horizon-plugin.invalid") return undefined;
     const path = decodeURIComponent(resolved.pathname).replace(/^\/+/, "");
     if (!path || path.split("/").some((segment) => segment === "..")) return undefined;
     return path;

@@ -16,9 +16,9 @@ describe("DataGrid large-value reload SQL", () => {
   it("projects the synthetic rowid through the rowid-wrapped select on full-value reloads", () => {
     const fetchChunkSource = functionSource("fetchLargeValueRequestChunk", "resolveLargeValueCells");
 
-    // Keyless Oracle tables address rows via the hidden __DBX_ROWID alias; the
+    // Keyless Oracle tables address rows via the hidden __GAUSS_HORIZON_ROWID alias; the
     // reload must opt into the ROWIDTOCHAR inline view so the generated SQL
-    // never references __DBX_ROWID as a base-table column (ORA-00904).
+    // never references __GAUSS_HORIZON_ROWID as a base-table column (ORA-00904).
     expect(fetchChunkSource).toContain("includeRowId: shouldIncludeSyntheticRowId(options.databaseType.value, tableMeta.primaryKeys, tableMeta.tableType)");
   });
 

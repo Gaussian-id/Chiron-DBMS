@@ -37,7 +37,7 @@ describe("usePanelResize", () => {
   });
 
   it("lets the AI panel consume the available editor width beyond the legacy 800px cap", () => {
-    localStorage.setItem("dbx-ai-panel-width", "360");
+    localStorage.setItem("gauss-horizon-ai-panel-width", "360");
 
     const editor = document.createElement("div");
     const panel = document.createElement("div");
@@ -55,11 +55,11 @@ describe("usePanelResize", () => {
     document.dispatchEvent(new MouseEvent("mouseup"));
 
     expect(aiPanelWidth.value).toBe(1060);
-    expect(localStorage.getItem("dbx-ai-panel-width")).toBe("1060");
+    expect(localStorage.getItem("gauss-horizon-ai-panel-width")).toBe("1060");
   });
 
   it("resizes from the flex-shrunk width after a wide panel is restored in a narrow window", () => {
-    localStorage.setItem("dbx-ai-panel-width", "1060");
+    localStorage.setItem("gauss-horizon-ai-panel-width", "1060");
 
     const editor = document.createElement("div");
     const panel = document.createElement("div");
@@ -77,7 +77,7 @@ describe("usePanelResize", () => {
     document.dispatchEvent(new MouseEvent("mouseup"));
 
     expect(aiPanelWidth.value).toBe(600);
-    expect(localStorage.getItem("dbx-ai-panel-width")).toBe("600");
+    expect(localStorage.getItem("gauss-horizon-ai-panel-width")).toBe("600");
   });
 
   it("persists the collapsed vertical tab bar state across composable instances", () => {
@@ -86,12 +86,12 @@ describe("usePanelResize", () => {
 
     first.setTabBarCollapsed(true);
     expect(first.tabBarCollapsed.value).toBe(true);
-    expect(localStorage.getItem("dbx-tab-bar-collapsed")).toBe("true");
+    expect(localStorage.getItem("gauss-horizon-tab-bar-collapsed")).toBe("true");
 
     const restored = usePanelResize();
     expect(restored.tabBarCollapsed.value).toBe(true);
 
     restored.setTabBarCollapsed(false);
-    expect(localStorage.getItem("dbx-tab-bar-collapsed")).toBe("false");
+    expect(localStorage.getItem("gauss-horizon-tab-bar-collapsed")).toBe("false");
   });
 });

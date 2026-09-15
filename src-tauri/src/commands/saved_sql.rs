@@ -8,15 +8,15 @@ use std::{
 use sha2::{Digest, Sha256};
 use tauri::State;
 
-use dbx_core::connection::AppState;
-use dbx_core::saved_sql::{SavedSqlFile, SavedSqlFolder, SavedSqlLibrary};
+use gauss_horizon_core::connection::AppState;
+use gauss_horizon_core::saved_sql::{SavedSqlFile, SavedSqlFolder, SavedSqlLibrary};
 
 #[derive(Clone)]
 pub struct SavedSqlStorageState {
     pub data_dir: PathBuf,
 }
 
-const SYNC_MANIFEST_FILE: &str = ".dbx-sql-library-sync.json";
+const SYNC_MANIFEST_FILE: &str = ".gauss-horizon-sql-library-sync.json";
 const SYNC_MANIFEST_VERSION: u32 = 1;
 
 #[derive(serde::Deserialize)]
@@ -131,7 +131,7 @@ pub async fn sync_saved_sql_directory(request: SavedSqlSyncRequest) -> Result<()
 }
 
 fn sync_saved_sql_directory_blocking(target_dir: &Path, entries: &[SavedSqlSyncEntry]) -> Result<(), String> {
-    let sync_root = target_dir.join("dbx-sql-library");
+    let sync_root = target_dir.join("gauss-horizon-sql-library");
     let previous_manifest = load_previous_sync_manifest(&sync_root)?;
 
     let previous_by_path =
@@ -281,7 +281,7 @@ fn verify_previous_sync_files<'a>(
         let contents = std::fs::read(&file_path)
             .map_err(|error| sync_conflict(&file.path, &format!("managed file cannot be read: {error}")))?;
         if !sha256_hex(&contents).eq_ignore_ascii_case(&file.sha256) {
-            return Err(sync_conflict(&file.path, "managed file was edited outside DBX"));
+            return Err(sync_conflict(&file.path, "managed file was edited outside Gauss Horizon"));
         }
     }
     Ok(())
@@ -333,7 +333,7 @@ fn sync_conflict(path: &str, reason: &str) -> String {
 fn write_sync_file(file_path: &Path, contents: &[u8], replace: bool) -> Result<(), String> {
     let parent = file_path.parent().ok_or_else(|| "Saved SQL sync target has no parent directory".to_string())?;
     std::fs::create_dir_all(parent).map_err(|e| e.to_string())?;
-    let temporary_path = parent.join(format!(".dbx-sql-sync.{}.tmp", uuid::Uuid::new_v4()));
+    let temporary_path = parent.join(format!(".gauss-horizon-sql-sync.{}.tmp", uuid::Uuid::new_v4()));
     if let Err(error) = std::fs::write(&temporary_path, contents) {
         return Err(error.to_string());
     }
@@ -445,21 +445,21 @@ fn unique_sync_relative_path(
 fn open_path(path: &Path) -> Result<(), String> {
     #[cfg(target_os = "macos")]
     let mut command = {
-        let mut command = dbx_core::process::new_std_command("open");
+        let mut command = gauss_horizon_core::process::new_std_command("open");
         command.arg(path);
         command
     };
 
     #[cfg(target_os = "windows")]
     let mut command = {
-        let mut command = dbx_core::process::new_std_command("explorer");
+        let mut command = gauss_horizon_core::process::new_std_command("explorer");
         command.arg(path);
         command
     };
 
     #[cfg(all(not(target_os = "macos"), not(target_os = "windows")))]
     let mut command = {
-        let mut command = dbx_core::process::new_std_command("xdg-open");
+        let mut command = gauss_horizon_core::process::new_std_command("xdg-open");
         command.arg(path);
         command
     };
@@ -475,8 +475,10 @@ mod tests {
 
     impl TestDirectory {
         fn new(name: &str) -> Self {
-            let task_tmp = std::env::var_os("DBX_TEST_TMP_DIR").map(PathBuf::from).unwrap_or_else(std::env::temp_dir);
-            let path = task_tmp.join(format!("dbx-saved-sql-{name}-{}", uuid::Uuid::new_v4()));
+            let task_tmp = gauss_horizon_core::legacy::var_os("GAUSS_HORIZON_TEST_TMP_DIR")
+                .map(PathBuf::from)
+                .unwrap_or_else(std::env::temp_dir);
+            let path = task_tmp.join(format!("gauss-horizon-saved-sql-{name}-{}", uuid::Uuid::new_v4()));
             std::fs::create_dir_all(&path).unwrap();
             Self(path)
         }
@@ -505,7 +507,7 @@ mod tests {
     }
 
     fn sync_root(target: &TestDirectory) -> PathBuf {
-        target.0.join("dbx-sql-library")
+        target.0.join("gauss-horizon-sql-library")
     }
 
     #[test]
@@ -609,28 +611,28 @@ mod tests {
         let target = TestDirectory::new("external-edit");
         sync_saved_sql_directory_blocking(&target.0, &[entry("SELECT 1;")]).unwrap();
 
-        let managed_file = target.0.join("dbx-sql-library/reports/daily.sql");
-        std::fs::write(&managed_file, "SELECT 'edited outside DBX';").unwrap();
+        let managed_file = target.0.join("gauss-horizon-sql-library/reports/daily.sql");
+        std::fs::write(&managed_file, "SELECT 'edited outside Gauss Horizon';").unwrap();
 
         let error = sync_saved_sql_directory_blocking(&target.0, &[entry("SELECT 2;")]).unwrap_err();
         assert!(error.contains("reports/daily.sql"), "unexpected error: {error}");
-        assert_eq!(std::fs::read_to_string(managed_file).unwrap(), "SELECT 'edited outside DBX';");
+        assert_eq!(std::fs::read_to_string(managed_file).unwrap(), "SELECT 'edited outside Gauss Horizon';");
     }
 
     #[test]
-    fn unchanged_external_edit_is_left_untouched_until_dbx_needs_the_path() {
+    fn unchanged_external_edit_is_left_untouched_until_gauss_horizon_needs_the_path() {
         let target = TestDirectory::new("external-edit-unchanged");
         sync_saved_sql_directory_blocking(&target.0, &[entry("SELECT 1;")]).unwrap();
 
-        let managed_file = target.0.join("dbx-sql-library/reports/daily.sql");
-        std::fs::write(&managed_file, "SELECT 'edited outside DBX';").unwrap();
+        let managed_file = target.0.join("gauss-horizon-sql-library/reports/daily.sql");
+        std::fs::write(&managed_file, "SELECT 'edited outside Gauss Horizon';").unwrap();
 
         sync_saved_sql_directory_blocking(&target.0, &[entry("SELECT 1;")]).unwrap();
-        assert_eq!(std::fs::read_to_string(&managed_file).unwrap(), "SELECT 'edited outside DBX';");
+        assert_eq!(std::fs::read_to_string(&managed_file).unwrap(), "SELECT 'edited outside Gauss Horizon';");
 
         let error = sync_saved_sql_directory_blocking(&target.0, &[entry("SELECT 2;")]).unwrap_err();
-        assert!(error.contains("managed file was edited outside DBX"), "unexpected error: {error}");
-        assert_eq!(std::fs::read_to_string(managed_file).unwrap(), "SELECT 'edited outside DBX';");
+        assert!(error.contains("managed file was edited outside Gauss Horizon"), "unexpected error: {error}");
+        assert_eq!(std::fs::read_to_string(managed_file).unwrap(), "SELECT 'edited outside Gauss Horizon';");
     }
 
     #[test]
@@ -751,7 +753,7 @@ mod tests {
             .filter(|entry| {
                 let name = entry.file_name();
                 let name = name.to_string_lossy();
-                name.starts_with(".dbx-sql-sync.") && name.ends_with(".tmp")
+                name.starts_with(".gauss-horizon-sql-sync.") && name.ends_with(".tmp")
             })
             .count();
         assert_eq!(temporary_files, 0);

@@ -1,8 +1,8 @@
 import type { QueryTab, TabOutputView } from "@/types/database";
 import { sanitizeTabUiState } from "@/lib/tabs/tabUiState";
 
-export const OPEN_TABS_STORAGE_KEY = "dbx-open-tabs";
-export const ACTIVE_TAB_STORAGE_KEY = "dbx-active-tab";
+export const OPEN_TABS_STORAGE_KEY = "gauss-horizon-open-tabs";
+export const ACTIVE_TAB_STORAGE_KEY = "gauss-horizon-active-tab";
 
 export interface SavedQueryResultRun {
   id: string;

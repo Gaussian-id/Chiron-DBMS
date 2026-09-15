@@ -26,7 +26,7 @@ else
 fi
 appimage=$(realpath "$appimage")
 
-work_dir=$(mktemp -d "${TMPDIR:-/tmp}/dbx-appimage-input-methods.XXXXXX")
+work_dir=$(mktemp -d "${TMPDIR:-/tmp}/gauss-horizon-appimage-input-methods.XXXXXX")
 trap 'rm -rf "$work_dir"' EXIT
 
 (

@@ -72,7 +72,7 @@ function detectUserLocale(): Locale {
   }
 }
 
-const savedLocale = normalizeLocale(safeLocalStorageGet("dbx-locale"));
+const savedLocale = normalizeLocale(safeLocalStorageGet("gauss-horizon-locale"));
 const initialLocale = savedLocale ?? detectUserLocale();
 let persistedLocale = initialLocale;
 let localeRequestId = 0;
@@ -102,7 +102,7 @@ async function syncLocaleToBackend(locale: Locale) {
     const { invoke } = await import("@tauri-apps/api/core");
     await invoke("set_app_locale", { locale });
   } catch (error) {
-    console.warn("[DBX][i18n] failed to sync locale to backend", error);
+    console.warn("[Gauss Horizon][i18n] failed to sync locale to backend", error);
   }
 }
 
@@ -136,7 +136,7 @@ export async function setLocale(locale: Locale) {
   ++localeRequestId;
   // An explicit selection is durable immediately; only the visible locale
   // waits for its lazy message bundle. Preview paths never reach this branch.
-  safeLocalStorageSet("dbx-locale", locale);
+  safeLocalStorageSet("gauss-horizon-locale", locale);
   void syncLocaleToBackend(locale);
   await loadLocaleMessages(locale);
   // A later explicit selection wins; hover/restore requests must not undo it.

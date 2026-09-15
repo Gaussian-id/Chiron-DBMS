@@ -23,7 +23,7 @@ describe("tab result cache statement execution metadata", () => {
   });
 
   it("uses explicit browser runtime configuration", () => {
-    expect(resultCacheRuntimeConfig(false, { VITE_DBX_RESULT_CACHE_BACKEND: "http", VITE_DBX_RESULT_CACHE_FALLBACK: "true" } as ImportMetaEnv)).toEqual({
+    expect(resultCacheRuntimeConfig(false, { VITE_GAUSS_HORIZON_RESULT_CACHE_BACKEND: "http", VITE_GAUSS_HORIZON_RESULT_CACHE_FALLBACK: "true" } as ImportMetaEnv)).toEqual({
       primary: "runtime",
       fallbackEnabled: true,
     });

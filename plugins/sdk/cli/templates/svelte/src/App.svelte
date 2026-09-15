@@ -1,23 +1,23 @@
 <script>
   let context = $state({});
-  let message = $state("Waiting for DBX plugin host…");
+  let message = $state("Waiting for Gauss Horizon plugin host…");
 
   const copy = {
-    en: { eyebrow: "DBX Svelte plugin", description: "A Svelte-powered sandboxed workbench.", action: "Show host context", ready: "Ready" },
-    zh: { eyebrow: "DBX Svelte 插件", description: "由 Svelte 驱动的沙箱工作台。", action: "查看宿主上下文", ready: "已就绪" },
+    en: { eyebrow: "Gauss Horizon Svelte plugin", description: "A Svelte-powered sandboxed workbench.", action: "Show host context", ready: "Ready" },
+    zh: { eyebrow: "Gauss Horizon Svelte 插件", description: "由 Svelte 驱动的沙箱工作台。", action: "查看宿主上下文", ready: "已就绪" },
   };
   let text = $state(copy.en);
 
   $effect(() => {
-    window.dbxPlugin.ready.then((value) => {
+    window.gaussHorizonPlugin.ready.then((value) => {
       context = value || {};
-      text = window.dbxPlugin.locale.toLowerCase().startsWith("zh") ? copy.zh : copy.en;
+      text = window.gaussHorizonPlugin.locale.toLowerCase().startsWith("zh") ? copy.zh : copy.en;
       message = text.ready;
     });
   });
 
   async function showContext() {
-    context = await window.dbxPlugin.request("host.getContext");
+    context = await window.gaussHorizonPlugin.request("host.getContext");
     message = JSON.stringify(context, null, 2);
   }
 </script>

@@ -4,8 +4,8 @@ import { describe, expect, it } from "vitest";
 const dialogSource = readFileSync(new URL("../EditorSettingsDialog.vue", import.meta.url), "utf8");
 const appSource = readFileSync(new URL("../../../App.vue", import.meta.url), "utf8");
 
-// Regression for https://github.com/t8y2/dbx/issues/7874: after using an AI
-// config deep link (dbx://settings/ai/new?...) once, every later "open
+// Regression for https://github.com/Gaussian-id/Gauss-Horizon/issues/7874: after using an AI
+// config deep link ("gauss-horizon"://settings/ai/new?...) once, every later "open
 // Settings" (even a plain click on the gear icon) got forcibly yanked back to
 // the AI tab. Root cause: `settingsAiConfigDraft`/`settingsAiConfigRequestId`
 // in App.vue are set once by `openAiConfigDeepLink` and never cleared, while

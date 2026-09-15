@@ -1,7 +1,7 @@
 {
   "mcpServers": {
-    "dbx": {
-      "command": "dbx-mcp-server"
+    "gauss-horizon": {
+      "command": "gauss-horizon-mcp-server"
     }
   }
 }

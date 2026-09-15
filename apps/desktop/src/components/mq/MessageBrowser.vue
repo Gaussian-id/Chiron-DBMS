@@ -62,8 +62,8 @@ const filteredMessages = computed(() => {
 const displayedMessages = computed(() => (isKafka.value ? sortKafkaMessagesByPublishTime(filteredMessages.value, kafkaMessageDisplayOrder.value) : filteredMessages.value));
 
 function peekGroupName(): string {
-  if (props.mqSystemKind === "rocketmq") return "__dbx_rocketmq_viewer__";
-  return "__dbx_kafka_viewer__";
+  if (props.mqSystemKind === "rocketmq") return "__gauss_horizon_rocketmq_viewer__";
+  return "__gauss_horizon_kafka_viewer__";
 }
 
 async function loadMessages() {
@@ -320,7 +320,7 @@ watch(kafkaStartPosition, () => {
   margin-top: 4px;
   padding: 14px;
   border: 1px solid var(--color-border);
-  border-radius: var(--dbx-radius-fixed-6);
+  border-radius: var(--gauss-horizon-radius-fixed-6);
   background: var(--color-background-secondary);
 }
 
@@ -358,7 +358,7 @@ watch(kafkaStartPosition, () => {
 .peek-default-hint {
   margin: 0 0 12px;
   padding: 8px 10px;
-  border-radius: var(--dbx-radius-fixed-6);
+  border-radius: var(--gauss-horizon-radius-fixed-6);
   background: color-mix(in srgb, var(--color-primary) 8%, transparent);
   color: var(--color-text-secondary);
   font-size: 12px;
@@ -369,7 +369,7 @@ watch(kafkaStartPosition, () => {
   margin: 0 0 12px;
   padding: 8px 10px;
   border: 1px solid var(--color-warning-border, #d99a22);
-  border-radius: var(--dbx-radius-fixed-6);
+  border-radius: var(--gauss-horizon-radius-fixed-6);
   background: var(--color-warning-background, #fff6df);
   color: var(--color-warning-text, #7a4a00);
   font-size: 12px;
@@ -398,7 +398,7 @@ watch(kafkaStartPosition, () => {
   padding: 7px 10px;
   box-sizing: border-box;
   border: 1px solid var(--color-border);
-  border-radius: var(--dbx-radius-fixed-6);
+  border-radius: var(--gauss-horizon-radius-fixed-6);
   background: var(--color-background);
   color: var(--color-text);
   font-size: 13px;
@@ -462,7 +462,7 @@ watch(kafkaStartPosition, () => {
 
 .panel-error {
   padding: 10px 14px;
-  border-radius: var(--dbx-radius-fixed-6);
+  border-radius: var(--gauss-horizon-radius-fixed-6);
   background: var(--color-error-bg);
   color: var(--color-error);
   font-size: 13px;
@@ -471,7 +471,7 @@ watch(kafkaStartPosition, () => {
 .message-empty {
   padding: 18px;
   border: 1px dashed var(--color-border);
-  border-radius: var(--dbx-radius-fixed-6);
+  border-radius: var(--gauss-horizon-radius-fixed-6);
   color: var(--color-text-tertiary);
   text-align: center;
   font-size: 13px;
@@ -494,7 +494,7 @@ watch(kafkaStartPosition, () => {
 .message-row {
   padding: 10px 12px;
   border: 1px solid var(--color-border);
-  border-radius: var(--dbx-radius-fixed-6);
+  border-radius: var(--gauss-horizon-radius-fixed-6);
   background: var(--color-background);
 }
 
@@ -547,7 +547,7 @@ watch(kafkaStartPosition, () => {
   padding: 10px;
   max-height: 160px;
   overflow: auto;
-  border-radius: var(--dbx-radius-fixed-6);
+  border-radius: var(--gauss-horizon-radius-fixed-6);
   background: var(--color-background-tertiary, var(--color-background-secondary));
   color: var(--color-text);
   font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
@@ -564,7 +564,7 @@ watch(kafkaStartPosition, () => {
 .message-headers-values span {
   padding: 2px 6px;
   border: 1px solid var(--color-border);
-  border-radius: var(--dbx-radius-fixed-4);
+  border-radius: var(--gauss-horizon-radius-fixed-4);
   color: var(--color-text-secondary);
   background: var(--color-background-secondary);
   font-size: 12px;
