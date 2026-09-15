@@ -35,7 +35,7 @@ for (const file of files) {
   const text = bytes.toString("utf8");
   checked++;
   for (const [index, line] of text.split("\n").entries()) {
-    const normalized = line.replace(/data:[^\s"<>;]+;base64,[A-Za-z0-9+/=]+/g, "").replace(/integrity:.*$/, "");
+    const normalized = line.replace(/data:[^\s"<>;]+;base64,[A-Za-z0-9+/=]+/g, "").replace(/integrity:.*\r?$/, "");
     if (/dbx|dbxio/i.test(normalized)) failures.push(`${file}:${index + 1}: legacy product reference`);
     if (/https?:\/\/[^\s"'<>]*(?:gauss-horizonio\.com|t8y2\/(?:dbx|scoop-bucket|tap))/i.test(line)) failures.push(`${file}:${index + 1}: obsolete distribution URL`);
   }

@@ -18,6 +18,7 @@ jobs:
     env:
       CARGO_INCREMENTAL: "0"
       CARGO_TARGET_DIR: ${{ github.workspace }}/.release-target-preflight
+      NODE_OPTIONS: --max-old-space-size=6144
     steps:
       - uses: actions/checkout@v4
         with:
@@ -109,6 +110,7 @@ jobs:
       CARGO_BUILD_JOBS: "3"
       CARGO_PROFILE_RELEASE_DEBUG: "0"
       CARGO_TARGET_DIR: ${{ github.workspace }}/.release-target-desktop
+      NODE_OPTIONS: --max-old-space-size=6144
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
