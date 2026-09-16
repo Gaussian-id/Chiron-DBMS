@@ -3,7 +3,7 @@ use tauri::{AppHandle, Emitter, State};
 
 use crate::commands::connection::AppState;
 
-pub use gauss_horizon_core::database_export::{
+pub use chiron_horizon_core::database_export::{
     DatabaseBackupSnapshot, DatabaseExportRequest, ExportProgress, ExportStatus,
 };
 
@@ -18,7 +18,7 @@ pub async fn begin_database_backup_snapshot(
     database: String,
     export_id: Option<String>,
 ) -> Result<DatabaseBackupSnapshot, String> {
-    gauss_horizon_core::database_export::begin_database_backup_snapshot_core_for_export(
+    chiron_horizon_core::database_export::begin_database_backup_snapshot_core_for_export(
         &state,
         &connection_id,
         &database,
@@ -38,13 +38,13 @@ pub async fn export_database_sql(
 
     // Exports interleave async fetches with synchronous row formatting and
     // buffered disk writes; run them off the async workers (see spawn_export_task).
-    gauss_horizon_core::export_runtime::spawn_export_task(async move {
-        let result = gauss_horizon_core::database_export::export_database_sql_core(&state, &request, |progress| {
+    chiron_horizon_core::export_runtime::spawn_export_task(async move {
+        let result = chiron_horizon_core::database_export::export_database_sql_core(&state, &request, |progress| {
             emit_progress(&app, progress)
         })
         .await;
 
-        let client_session_id = gauss_horizon_core::database_export::database_export_client_session_id(&export_id);
+        let client_session_id = chiron_horizon_core::database_export::database_export_client_session_id(&export_id);
         let _ =
             state.close_client_session_pool(&request.connection_id, Some(&request.database), &client_session_id).await;
 
@@ -67,7 +67,7 @@ pub async fn export_database_sql(
             );
         }
 
-        gauss_horizon_core::database_export::clear_export_cancelled(&export_id).await;
+        chiron_horizon_core::database_export::clear_export_cancelled(&export_id).await;
     });
 
     Ok(())
@@ -75,24 +75,24 @@ pub async fn export_database_sql(
 
 #[tauri::command]
 pub async fn cancel_database_export(export_id: String) -> Result<(), String> {
-    gauss_horizon_core::database_export::set_export_cancelled(&export_id).await;
+    chiron_horizon_core::database_export::set_export_cancelled(&export_id).await;
     Ok(())
 }
 
 #[tauri::command]
 pub async fn clear_database_export_cancellation(export_id: String) -> Result<(), String> {
-    gauss_horizon_core::database_export::clear_export_cancelled(&export_id).await;
+    chiron_horizon_core::database_export::clear_export_cancelled(&export_id).await;
     Ok(())
 }
 
 /// Returns whether a scheduled backup destination must be explicitly selected
-/// again before Gauss Horizon can replace a legacy macOS filesystem identity.
+/// again before Chiron Horizon can replace a legacy macOS filesystem identity.
 #[tauri::command]
 pub async fn database_export_destination_needs_confirmation(
     state: State<'_, Arc<AppState>>,
     directory: String,
 ) -> Result<bool, String> {
-    gauss_horizon_core::database_export::export_destination_identity_needs_confirmation(
+    chiron_horizon_core::database_export::export_destination_identity_needs_confirmation(
         &state,
         std::path::Path::new(&directory),
     )
@@ -109,6 +109,6 @@ pub async fn record_database_export_destination(
     state: State<'_, Arc<AppState>>,
     directory: String,
 ) -> Result<(), String> {
-    gauss_horizon_core::database_export::record_export_destination_identity(&state, std::path::Path::new(&directory))
+    chiron_horizon_core::database_export::record_export_destination_identity(&state, std::path::Path::new(&directory))
         .await
 }

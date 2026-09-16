@@ -193,7 +193,7 @@ describe("AI schema selector visibility", () => {
       db_type: "gbase",
       host: "localhost",
       port: 5258,
-      username: "gauss-horizon",
+      username: "chiron-horizon",
       password: "",
       database: "app",
     };

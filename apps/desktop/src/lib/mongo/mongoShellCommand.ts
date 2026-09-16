@@ -13,7 +13,7 @@ import {
   quoteUnquotedObjectKeys,
   splitTopLevel,
   type MongoAggregateCommand,
-} from "@gauss-horizon/mongo-shell";
+} from "@chiron-horizon/mongo-shell";
 
 export type { MongoAggregateCommand };
 export { describeMongoCommandParseFailure, MONGO_SHELL_COMMAND_HINT, parseMongoAggregateCommand, quoteUnquotedObjectKeys };
@@ -639,7 +639,7 @@ export function parseMongoCommand(input: string): ParsedMongoCommand | null {
     },
     (source) => {
       // Legacy Mongo shell uses count()/find().count(); keep accepting it
-      // while mapping to Gauss Horizon's countDocuments-compatible result path.
+      // while mapping to Chiron Horizon's countDocuments-compatible result path.
       const count = parseMongoCountDocumentsCommand(source);
       return count ? { kind: "countDocuments", ...count } : null;
     },
@@ -720,7 +720,7 @@ export function evaluateMongoWriteSafety(command: MongoWriteCommand, options: Mo
   if (!options.allowWrites) {
     return {
       allowed: false,
-      reason: "MCP MongoDB execution is read-only under the current Gauss Horizon policy.",
+      reason: "MCP MongoDB execution is read-only under the current Chiron Horizon policy.",
     };
   }
   const filter = mongoWriteFilter(command);
@@ -728,7 +728,7 @@ export function evaluateMongoWriteSafety(command: MongoWriteCommand, options: Mo
   if (!options.allowDangerous && highRisk) {
     return {
       allowed: false,
-      reason: `MongoDB ${command.kind} requires high-risk operations to be enabled in Gauss Horizon MCP settings.`,
+      reason: `MongoDB ${command.kind} requires high-risk operations to be enabled in Chiron Horizon MCP settings.`,
     };
   }
   return { allowed: true };
@@ -755,13 +755,13 @@ export function evaluateMongoAggregateSafety(command: MongoAggregateCommand, opt
   if (!options.allowWrites) {
     return {
       allowed: false,
-      reason: `MongoDB aggregate stage "${writeStage}" is blocked by the current Gauss Horizon MCP read-only policy.`,
+      reason: `MongoDB aggregate stage "${writeStage}" is blocked by the current Chiron Horizon MCP read-only policy.`,
     };
   }
   if (!options.allowDangerous) {
     return {
       allowed: false,
-      reason: `MongoDB aggregate stage "${writeStage}" requires high-risk operations to be enabled in Gauss Horizon MCP settings.`,
+      reason: `MongoDB aggregate stage "${writeStage}" requires high-risk operations to be enabled in Chiron Horizon MCP settings.`,
     };
   }
   return { allowed: true };

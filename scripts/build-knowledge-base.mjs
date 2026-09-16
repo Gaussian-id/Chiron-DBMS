@@ -2,7 +2,7 @@ import fs from "node:fs/promises";
 import path from "node:path";
 
 const DEFAULT_INPUT = "docs/content/docs";
-const DEFAULT_OUTPUT = "outputs/knowledge-base/GAUSS_HORIZON_knowledge_base_cn.md";
+const DEFAULT_OUTPUT = "outputs/knowledge-base/CHIRON_HORIZON_knowledge_base_cn.md";
 const DEFAULT_LANG = "cn";
 
 await main();
@@ -177,23 +177,23 @@ function chunkText(text, maxLength = 2200) {
 }
 
 function questionFor(category, heading, text) {
-  if (heading === "概览") return `Gauss Horizon 的${category}是什么？`;
+  if (heading === "概览") return `Chiron Horizon 的${category}是什么？`;
   if (/安装|配置|导入|导出|创建|连接|使用流程|快速开始|启动|构建|下载|打开|执行|添加|删除|更新/.test(heading)) {
-    return `Gauss Horizon 中如何${heading.replace(/^(第一步|第二步|第三步|第四步|第五步)：/, "")}？`;
+    return `Chiron Horizon 中如何${heading.replace(/^(第一步|第二步|第三步|第四步|第五步)：/, "")}？`;
   }
   if (/常见|问题|故障|错误|诊断|冲突|无法/.test(heading) || /失败|报错|检查/.test(text)) {
-    return `Gauss Horizon ${heading}时应该检查什么？`;
+    return `Chiron Horizon ${heading}时应该检查什么？`;
   }
   if (/支持|覆盖|矩阵|类型|数据库|文件|供应商|快捷键|命令|端口/.test(heading)) {
-    return `Gauss Horizon ${heading}支持哪些内容？`;
+    return `Chiron Horizon ${heading}支持哪些内容？`;
   }
-  return `Gauss Horizon 的${heading}是什么？`;
+  return `Chiron Horizon 的${heading}是什么？`;
 }
 
 function keywordsFor(category, heading, description, text) {
   const pool = `${category} ${heading} ${description} ${text}`;
   const candidates = [
-    "Gauss Horizon",
+    "Chiron Horizon",
     "AI",
     "SQL",
     "MCP",
@@ -235,7 +235,7 @@ function keywordsFor(category, heading, description, text) {
 
 function renderMarkdown(documents) {
   const lines = [
-    "# Gauss Horizon 中文知识库",
+    "# Chiron Horizon 中文知识库",
     "",
     "> 从 `docs/content/docs/*.cn.mdx` 生成的纯 Markdown 知识库内容。",
     "",

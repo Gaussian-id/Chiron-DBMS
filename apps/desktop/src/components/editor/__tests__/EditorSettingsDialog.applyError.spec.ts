@@ -13,7 +13,7 @@ describe("EditorSettingsDialog apply persistence error handling", () => {
   it("shares a single apply entrypoint between Apply and Apply & Close", () => {
     // Both buttons must go through one shared persist/apply routine instead of
     // each calling persistSettings() directly with divergent semantics.
-    const block = dialogSource.slice(dialogSource.indexOf("function applySettingsErrorToast"), dialogSource.indexOf("async function restartGaussHorizonForDuckDbIsolation()"));
+    const block = dialogSource.slice(dialogSource.indexOf("function applySettingsErrorToast"), dialogSource.indexOf("async function restartChironHorizonForDuckDbIsolation()"));
     const entrypointCalls = (block.match(/await applySettingsForResult\(\)/g) || []).length;
     // one call in applySettings() + one (guarded) call in applySettingsAndClose()
     expect(entrypointCalls).toBeGreaterThanOrEqual(2);
@@ -26,7 +26,7 @@ describe("EditorSettingsDialog apply persistence error handling", () => {
     // "Apply & Close" must only proceed to closeSettings() after a successful
     // apply. Before the fix, closeSettings() ran unconditionally after
     // `await persistSettings()`, so a rejected save left the dialog stuck open.
-    const block = dialogSource.slice(dialogSource.indexOf("async function applySettingsAndClose()"), dialogSource.indexOf("async function restartGaussHorizonForDuckDbIsolation()"));
+    const block = dialogSource.slice(dialogSource.indexOf("async function applySettingsAndClose()"), dialogSource.indexOf("async function restartChironHorizonForDuckDbIsolation()"));
     expect(block).toMatch(/if \(await applySettingsForResult\(\)\) \{\s*\n\s*closeSettings\(\);/);
   });
 

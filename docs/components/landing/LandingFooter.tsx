@@ -4,11 +4,11 @@ import type { DocsLang } from "@/lib/i18n";
 const i18n = {
   en: {
     tagline: "25 MB to manage 90+ databases.",
-    copyright: `© ${new Date().getFullYear()} Gauss Horizon. All rights reserved.`,
+    copyright: `© ${new Date().getFullYear()} Chiron Horizon. All rights reserved.`,
   },
   cn: {
     tagline: "25MB，管理90+种数据库。",
-    copyright: `© ${new Date().getFullYear()} Gauss Horizon.`,
+    copyright: `© ${new Date().getFullYear()} Chiron Horizon.`,
   },
 };
 
@@ -30,7 +30,7 @@ export function LandingFooter({ lang }: { lang: DocsLang }) {
           {/* Logo */}
           <Link href={`/${lang}`} prefetch={false} className="flex min-h-11 items-center gap-2.5 text-[var(--color-landing-ink)] text-lg font-[820] shrink-0">
             <img src="/logo-64.png" alt="" aria-hidden="true" width={22} height={22} />
-            <span>Gauss Horizon</span>
+            <span>Chiron Horizon</span>
           </Link>
 
           {/* Tagline */}

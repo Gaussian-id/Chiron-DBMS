@@ -1,8 +1,8 @@
 {
   "mcpServers": {
-    "gauss-horizon": {
+    "chiron-horizon": {
       "command": "npx",
-      "args": ["-y", "@gauss-horizon/mcp-server"]
+      "args": ["-y", "@chiron-horizon/mcp-server"]
     }
   }
 }

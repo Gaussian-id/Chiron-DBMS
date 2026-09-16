@@ -5,7 +5,7 @@ import (
 	"log"
 	"sync"
 
-	gauss-horizonpluginsdk "github.com/Gaussian-id/Gauss-Horizon/plugins/sdk/go/gauss-horizon-plugin-sdk"
+	chiron_horizonpluginsdk "github.com/Gaussian-id/Gauss-Horizon/plugins/sdk/go/chiron-horizon-plugin-sdk"
 )
 
 type plugin struct {
@@ -14,14 +14,14 @@ type plugin struct {
 }
 
 func (plugin *plugin) Handle(
-	_ gauss-horizonpluginsdk.RequestContext,
+	_ chiron_horizonpluginsdk.RequestContext,
 	method string,
 	params json.RawMessage,
-	_ *gauss-horizonpluginsdk.Emitter,
-) (any, *gauss-horizonpluginsdk.PluginError) {
+	_ *chiron_horizonpluginsdk.Emitter,
+) (any, *chiron_horizonpluginsdk.PluginError) {
 	var values map[string]any
 	if err := json.Unmarshal(params, &values); err != nil {
-		return nil, gauss-horizonpluginsdk.NewError(-32602, "Invalid request parameters")
+		return nil, chiron_horizonpluginsdk.NewError(-32602, "Invalid request parameters")
 	}
 	switch method {
 	case "connection/test":
@@ -48,26 +48,26 @@ func (plugin *plugin) Handle(
 	case "{{METHOD_PREFIX}}/ping":
 		return map[string]any{"ok": true, "plugin": "{{PLUGIN_ID}}", "language": "go", "connectionId": values["connectionId"]}, nil
 	default:
-		return nil, gauss-horizonpluginsdk.MethodNotFound(method)
+		return nil, chiron_horizonpluginsdk.MethodNotFound(method)
 	}
 }
 
-func requestConnectionID(values map[string]any) (string, *gauss-horizonpluginsdk.PluginError) {
+func requestConnectionID(values map[string]any) (string, *chiron_horizonpluginsdk.PluginError) {
 	connection, _ := values["connection"].(map[string]any)
 	connectionID, _ := connection["id"].(string)
 	if connectionID == "" {
-		return "", gauss-horizonpluginsdk.NewError(-32602, "Missing connection id")
+		return "", chiron_horizonpluginsdk.NewError(-32602, "Missing connection id")
 	}
 	return connectionID, nil
 }
 
 func main() {
-	metadata := gauss-horizonpluginsdk.Metadata{
+	metadata := chiron_horizonpluginsdk.Metadata{
 		ID:           "{{PLUGIN_ID}}",
 		Version:      "{{VERSION}}",
 		Capabilities: []string{"connections"},
 	}
-	server := gauss-horizonpluginsdk.NewServer(metadata, &plugin{connections: map[string]struct{}{}})
+	server := chiron_horizonpluginsdk.NewServer(metadata, &plugin{connections: map[string]struct{}{}})
 	if err := server.Serve(); err != nil {
 		log.Fatal(err)
 	}

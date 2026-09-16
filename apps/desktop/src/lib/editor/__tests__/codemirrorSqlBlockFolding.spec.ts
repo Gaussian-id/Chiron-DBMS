@@ -2,13 +2,13 @@ import * as langSql from "@codemirror/lang-sql";
 import { ensureSyntaxTree, foldable } from "@codemirror/language";
 import { Compartment, EditorState } from "@codemirror/state";
 import { describe, expect, it } from "vitest";
-import { createGaussHorizonCodeMirrorSqlDialect } from "@/lib/editor/codemirrorSqlDialect";
+import { createChironHorizonCodeMirrorSqlDialect } from "@/lib/editor/codemirrorSqlDialect";
 import { collectUnionBranchFoldRanges, createSqlBlockFoldService, sqlBlockFoldService } from "@/lib/editor/codemirrorSqlBlockFolding";
 
 function stateFor(doc: string, dialectName: "mysql" | "postgres" | "sqlserver" = "mysql", folding = sqlBlockFoldService): EditorState {
   const state = EditorState.create({
     doc,
-    extensions: [langSql.sql({ dialect: createGaussHorizonCodeMirrorSqlDialect(langSql, dialectName) }), folding],
+    extensions: [langSql.sql({ dialect: createChironHorizonCodeMirrorSqlDialect(langSql, dialectName) }), folding],
   });
   ensureSyntaxTree(state, doc.length, 5_000);
   return state;
@@ -303,7 +303,7 @@ SELECT * FROM (SELECT 1 AS value) one_line;`;
     const sql = "BEGIN\n  BEGIN TRY\n    SELECT 1;\n  END TRY\nEND";
     let state = EditorState.create({
       doc: sql,
-      extensions: [languageComp.of(langSql.sql({ dialect: createGaussHorizonCodeMirrorSqlDialect(langSql, "mysql") })), sqlBlockFoldService],
+      extensions: [languageComp.of(langSql.sql({ dialect: createChironHorizonCodeMirrorSqlDialect(langSql, "mysql") })), sqlBlockFoldService],
     });
     ensureSyntaxTree(state, sql.length, 5_000);
     expect(foldedTextAtLine(state, 1)).toContain("END TRY");
@@ -311,7 +311,7 @@ SELECT * FROM (SELECT 1 AS value) one_line;`;
     // Reconfigure only -- no `changes`, so `state.doc` (the `Text` instance) stays identical.
     const before = state.doc;
     state = state.update({
-      effects: languageComp.reconfigure(langSql.sql({ dialect: createGaussHorizonCodeMirrorSqlDialect(langSql, "sqlserver") })),
+      effects: languageComp.reconfigure(langSql.sql({ dialect: createChironHorizonCodeMirrorSqlDialect(langSql, "sqlserver") })),
     }).state;
     expect(state.doc).toBe(before);
     ensureSyntaxTree(state, sql.length, 5_000);

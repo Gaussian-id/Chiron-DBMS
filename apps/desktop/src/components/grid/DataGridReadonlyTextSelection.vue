@@ -67,7 +67,7 @@ function onKeydown(event: KeyboardEvent) {
   background-color: var(--background);
   color: var(--foreground);
   font-family: inherit;
-  font-size: var(--gauss-horizon-table-font-size, 13px);
+  font-size: var(--chiron-horizon-table-font-size, 13px);
   cursor: text;
   user-select: text;
 }
@@ -83,7 +83,7 @@ function onKeydown(event: KeyboardEvent) {
   overflow-wrap: anywhere;
   border-width: 1px;
   border-color: color-mix(in oklab, var(--primary) 62%, var(--border));
-  border-radius: var(--gauss-horizon-radius-fixed-6);
+  border-radius: var(--chiron-horizon-radius-fixed-6);
   box-shadow: 0 12px 30px rgb(0 0 0 / 24%);
 }
 </style>

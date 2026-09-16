@@ -33,13 +33,13 @@ export function useWebDavAutoUpload() {
     uploading = true;
     try {
       const summary = await webdavSyncUpload(config.webDavConfig, settingsStore.editorSettings);
-      appendDebugLog("info", "[Gauss Horizon][webdav:auto-upload:success]", {
+      appendDebugLog("info", "[Chiron Horizon][webdav:auto-upload:success]", {
         bytes: summary.bytes,
         remotePath: summary.remotePath,
         exportedAt: summary.exportedAt,
       });
     } catch (error) {
-      appendDebugLog("error", "[Gauss Horizon][webdav:auto-upload:error]", error);
+      appendDebugLog("error", "[Chiron Horizon][webdav:auto-upload:error]", error);
     } finally {
       uploading = false;
     }
@@ -53,13 +53,13 @@ export function useWebDavAutoUpload() {
   onMounted(() => {
     schedule();
     window.addEventListener("storage", onStorage);
-    window.addEventListener("gauss-horizon:webdav-auto-upload-config-changed", schedule);
+    window.addEventListener("chiron-horizon:webdav-auto-upload-config-changed", schedule);
   });
 
   onUnmounted(() => {
     clearTimer();
     window.removeEventListener("storage", onStorage);
-    window.removeEventListener("gauss-horizon:webdav-auto-upload-config-changed", schedule);
+    window.removeEventListener("chiron-horizon:webdav-auto-upload-config-changed", schedule);
   });
 
   return {

@@ -1,14 +1,14 @@
 {
-  "name": "@gauss-horizon/cli",
+  "name": "@chiron-horizon/cli",
   "version": "0.1.0",
-  "description": "Command line interface for Gauss Horizon database connections, schema, and safe queries",
+  "description": "Command line interface for Chiron Horizon database connections, schema, and safe queries",
   "keywords": [
     "ai-agent",
     "automation",
     "cli",
     "codex",
     "database",
-    "gauss-horizon",
+    "chiron-horizon",
     "mysql",
     "postgresql",
     "terminal"
@@ -21,25 +21,25 @@
     "directory": "packages/cli"
   },
   "bin": {
-    "gauss-horizon": "bin/gauss-horizon.js"
+    "chiron-horizon": "bin/chiron-horizon.js"
   },
   "files": [
     "bin"
   ],
   "type": "module",
   "scripts": {
-    "start": "cargo run -p gauss-horizon-cli --no-default-features --",
-    "test": "cargo test -p gauss-horizon-cli --no-default-features",
-    "build": "cargo build -p gauss-horizon-cli --release --no-default-features",
-    "prepublishOnly": "node --check bin/gauss-horizon.js"
+    "start": "cargo run -p chiron-horizon-cli --no-default-features --",
+    "test": "cargo test -p chiron-horizon-cli --no-default-features",
+    "build": "cargo build -p chiron-horizon-cli --release --no-default-features",
+    "prepublishOnly": "node --check bin/chiron-horizon.js"
   },
   "optionalDependencies": {
-    "@gauss-horizon/cli-darwin-arm64": "workspace:*",
-    "@gauss-horizon/cli-darwin-x64": "workspace:*",
-    "@gauss-horizon/cli-linux-arm64-gnu": "workspace:*",
-    "@gauss-horizon/cli-linux-x64-gnu": "workspace:*",
-    "@gauss-horizon/cli-win32-arm64": "workspace:*",
-    "@gauss-horizon/cli-win32-x64": "workspace:*"
+    "@chiron-horizon/cli-darwin-arm64": "workspace:*",
+    "@chiron-horizon/cli-darwin-x64": "workspace:*",
+    "@chiron-horizon/cli-linux-arm64-gnu": "workspace:*",
+    "@chiron-horizon/cli-linux-x64-gnu": "workspace:*",
+    "@chiron-horizon/cli-win32-arm64": "workspace:*",
+    "@chiron-horizon/cli-win32-x64": "workspace:*"
   },
   "engines": {
     "node": ">=18.18.0"

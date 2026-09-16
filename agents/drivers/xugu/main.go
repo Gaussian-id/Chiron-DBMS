@@ -32,12 +32,12 @@ const maxAgentSessions = 256
 // xuguPublicSynonymScope is a protocol-only namespace for database-global
 // synonyms. It is deliberately not a real schema name (and must never be
 // interpreted as one by metadata queries).
-const xuguPublicSynonymScope = "\x00GAUSS_HORIZON_XUGU_PUBLIC_SYNONYMS"
+const xuguPublicSynonymScope = "\x00CHIRON_HORIZON_XUGU_PUBLIC_SYNONYMS"
 
 // xuguSchedulerJobScope is a protocol-only namespace for database-scoped
 // scheduler jobs. Jobs are not schema objects in Xugu, so keeping them out of
 // a user schema prevents an owner from being implied where none exists.
-const xuguSchedulerJobScope = "\x00GAUSS_HORIZON_XUGU_SCHEDULER_JOBS"
+const xuguSchedulerJobScope = "\x00CHIRON_HORIZON_XUGU_SCHEDULER_JOBS"
 const xuguListDatabasesSQL = `
 SELECT DB_NAME
 FROM ALL_DATABASES
@@ -490,7 +490,7 @@ type indexInfo struct {
 	IndexType       *string  `json:"index_type"`
 	IncludedColumns []string `json:"included_columns"`
 	Comment         *string  `json:"comment"`
-	// Partition fields are intentionally internal. The generic Gauss Horizon index
+	// Partition fields are intentionally internal. The generic Chiron Horizon index
 	// protocol does not yet model Xugu-specific index partition clauses, but
 	// the DDL exporter must retain them to avoid changing index semantics.
 	IsLocal             bool                `json:"-"`
@@ -1411,7 +1411,7 @@ func appendURLParam(raw, key, value string) string {
 
 func xuguSessionAppName(agentSessionID string) string {
 	digest := sha256.Sum256([]byte(agentSessionID))
-	return fmt.Sprintf("GAUSS_HORIZON_%x", digest[:8])
+	return fmt.Sprintf("CHIRON_HORIZON_%x", digest[:8])
 }
 
 func xuguIdentifiedSessionParams(params connectParams, agentSessionID string) connectParams {
@@ -1430,7 +1430,7 @@ func xuguControlSessionEligible(params connectParams) bool {
 func xuguControlParams(params connectParams) connectParams {
 	params.Database = "SYSTEM"
 	params.ConnectionString = ""
-	params.URLParams = appendURLParam(params.URLParams, "APP_NAME", "GAUSS_HORIZON_CONTROL")
+	params.URLParams = appendURLParam(params.URLParams, "APP_NAME", "CHIRON_HORIZON_CONTROL")
 	return params
 }
 
@@ -2650,14 +2650,14 @@ func xuguConstrainedMetadataListQuery(baseSQL, selectList, nameColumn, typeColum
 	if constraints.Limit > 0 {
 		args = append(args, constraints.Offset+constraints.Limit, constraints.Offset)
 		sqlText = fmt.Sprintf(
-			"SELECT %s\nFROM (\n  SELECT GAUSS_HORIZON_Q.*, ROWNUM AS GAUSS_HORIZON_RN\n  FROM (\n%s\n  ) GAUSS_HORIZON_Q\n  WHERE ROWNUM <= ?\n)\nWHERE GAUSS_HORIZON_RN > ?",
+			"SELECT %s\nFROM (\n  SELECT CHIRON_HORIZON_Q.*, ROWNUM AS CHIRON_HORIZON_RN\n  FROM (\n%s\n  ) CHIRON_HORIZON_Q\n  WHERE ROWNUM <= ?\n)\nWHERE CHIRON_HORIZON_RN > ?",
 			selectList,
 			sqlText,
 		)
 	} else if constraints.Offset > 0 {
 		args = append(args, constraints.Offset)
 		sqlText = fmt.Sprintf(
-			"SELECT %s\nFROM (\n  SELECT GAUSS_HORIZON_Q.*, ROWNUM AS GAUSS_HORIZON_RN\n  FROM (\n%s\n  ) GAUSS_HORIZON_Q\n)\nWHERE GAUSS_HORIZON_RN > ?",
+			"SELECT %s\nFROM (\n  SELECT CHIRON_HORIZON_Q.*, ROWNUM AS CHIRON_HORIZON_RN\n  FROM (\n%s\n  ) CHIRON_HORIZON_Q\n)\nWHERE CHIRON_HORIZON_RN > ?",
 			selectList,
 			sqlText,
 		)
@@ -2923,7 +2923,7 @@ func (s *server) listIndexes(schema, table string) ([]indexInfo, error) {
 }
 
 // loadIndexPartitionMetadata enriches the stable index list with Xugu's
-// partition scope and partition definitions. The generic Gauss Horizon index payload
+// partition scope and partition definitions. The generic Chiron Horizon index payload
 // does not expose these Xugu-specific fields, so they remain internal and are
 // consumed by table DDL reconstruction only.
 func (s *server) loadIndexPartitionMetadata(schema, table string, indexes []indexInfo) {

@@ -7,8 +7,8 @@
   "platforms": ["linux/amd64", "linux/arm64"],
   "service": "database",
   "defaultPort": 27017,
-  "connection": { "host": "127.0.0.1", "port": 10401, "username": "root", "password": "123456", "database": "gauss-horizon", "authSource": "admin" },
+  "connection": { "host": "127.0.0.1", "port": 10401, "username": "root", "password": "123456", "database": "chiron-horizon", "authSource": "admin" },
   "hostPorts": { "DB_PORT": 10401 },
-  "shell": ["mongosh", "--quiet", "--host", "127.0.0.1", "--port", "27017", "--username", "root", "--password", "${DB_PASSWORD}", "--authenticationDatabase", "admin", "gauss-horizon"],
-  "smoke": { "steps": [{ "name": "query initialized document over TCP", "command": ["mongosh", "--quiet", "--host", "127.0.0.1", "--port", "27017", "--username", "root", "--password", "${DB_PASSWORD}", "--authenticationDatabase", "admin", "gauss-horizon", "--eval", "db.gauss_horizon_smoke.findOne({_id: 1}).note"], "expect": "Gauss Horizon smoke" }] }
+  "shell": ["mongosh", "--quiet", "--host", "127.0.0.1", "--port", "27017", "--username", "root", "--password", "${DB_PASSWORD}", "--authenticationDatabase", "admin", "chiron-horizon"],
+  "smoke": { "steps": [{ "name": "query initialized document over TCP", "command": ["mongosh", "--quiet", "--host", "127.0.0.1", "--port", "27017", "--username", "root", "--password", "${DB_PASSWORD}", "--authenticationDatabase", "admin", "chiron-horizon", "--eval", "db.chiron_horizon_smoke.findOne({_id: 1}).note"], "expect": "Chiron Horizon smoke" }] }
 }

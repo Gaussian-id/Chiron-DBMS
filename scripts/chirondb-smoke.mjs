@@ -1,5 +1,5 @@
 // Live, disposable-data verification. Never accepts a remote server URL.
-// Build gauss-horizon-web, then run with CHIRONDB_TEST_BINARY=/absolute/path/to/chirondb.
+// Build chiron-horizon-web, then run with CHIRONDB_TEST_BINARY=/absolute/path/to/chirondb.
 import assert from "node:assert/strict";
 import { spawn } from "node:child_process";
 import { randomUUID } from "node:crypto";
@@ -11,7 +11,7 @@ import { resolve, join } from "node:path";
 import { setTimeout as delay } from "node:timers/promises";
 
 assert(process.env.CHIRONDB_TEST_BINARY, "Set CHIRONDB_TEST_BINARY to a local ChironDB binary");
-const directory = await mkdtemp(join(tmpdir(), "gauss-horizon-smoke-"));
+const directory = await mkdtemp(join(tmpdir(), "chiron-horizon-smoke-"));
 const children = [];
 const files = [];
 const key = randomUUID();
@@ -135,7 +135,7 @@ try {
     "chiron",
   );
   await ready(`http://127.0.0.1:${httpPort}/health`, chiron);
-  const web = await start(resolve(process.env.DBM_TEST_BINARY || "target/debug/gauss-horizon-web"), [], { GAUSS_HORIZON_DATA_DIR: join(directory, "dbm"), GAUSS_HORIZON_PORT: String(webPort), GAUSS_HORIZON_PASSWORD: password }, "dbm");
+  const web = await start(resolve(process.env.DBM_TEST_BINARY || "target/debug/chiron-horizon-web"), [], { CHIRON_HORIZON_DATA_DIR: join(directory, "dbm"), CHIRON_HORIZON_PORT: String(webPort), CHIRON_HORIZON_PASSWORD: password }, "dbm");
   await ready(`${base}/api/auth/check`, web);
   const login = await post("auth/login", { password });
   cookie = login.response.headers.get("set-cookie").split(";")[0];
@@ -179,7 +179,7 @@ try {
   await post("ai/config-item", { config: aiConfig });
   const saved = await (await fetch(`${base}/api/ai/configs`, { headers: { Cookie: cookie } })).json();
   assert(!JSON.stringify(saved).includes(aiConfig.apiKey));
-  assert(saved[0].apiKey.startsWith("gauss-horizon-ai-secret:v1:"));
+  assert(saved[0].apiKey.startsWith("chiron-horizon-ai-secret:v1:"));
   const assistant = async (request, expected = true, connectionId = config.id) => (await post("chirondb/request", { connectionId, request: { operation: "assistant", request } }, expected)).value;
   const generate = (prompt, generate_only = false) => assistant({ action: "generate", config_id: aiConfig.id, model: aiConfig.model, prompt, collection: "dbm_smoke", generate_only });
   const approve = (body) => assistant({ action: "approve", run_id: body.run_id, approval_token: body.approval_token });

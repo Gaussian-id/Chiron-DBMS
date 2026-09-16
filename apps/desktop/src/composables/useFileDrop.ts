@@ -47,7 +47,7 @@ export function useFileDrop() {
       const { getCurrentWebview } = await import("@tauri-apps/api/webview");
       const webview = getCurrentWebview();
       await webview.onDragDropEvent(async (event) => {
-        const routedEvent = new CustomEvent("gauss-horizon:tauri-file-drop", {
+        const routedEvent = new CustomEvent("chiron-horizon:tauri-file-drop", {
           detail: event.payload,
           cancelable: true,
         });

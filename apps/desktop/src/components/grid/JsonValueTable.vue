@@ -47,7 +47,7 @@ const containerLabel = computed(() => (Array.isArray(props.value) ? `Array (${pr
   width: auto;
   max-width: 100%;
   border-collapse: collapse;
-  font-family: var(--gauss-horizon-editor-font-family);
+  font-family: var(--chiron-horizon-editor-font-family);
   font-size: 0.75rem;
 }
 .json-value-table th,

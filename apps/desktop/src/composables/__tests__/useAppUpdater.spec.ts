@@ -69,7 +69,7 @@ afterEach(() => {
   app?.unmount();
   vi.useRealTimers();
 });
-describe("Gaussian 0.1.0 distribution disabled", () => {
+describe("Chiron Horizon distribution disabled", () => {
   it("does not check, schedule or restore cached updates on startup", async () => {
     vi.useFakeTimers();
     mocks.getDownloadedUpdate.mockResolvedValue(cache);

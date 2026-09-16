@@ -148,7 +148,7 @@ describe("MonitoringPanel Kafka message browser", () => {
     loadButton.click();
     await flushUi();
 
-    expect(backend.mqPeekMessages).toHaveBeenCalledWith("mq-1", expect.objectContaining({ topic: "test" }), "__gauss_horizon_kafka_viewer__", 20, { startPosition: "latest" });
+    expect(backend.mqPeekMessages).toHaveBeenCalledWith("mq-1", expect.objectContaining({ topic: "test" }), "__chiron_horizon_kafka_viewer__", 20, { startPosition: "latest" });
   });
 
   it("keeps automatic monitoring refresh separate from message browsing", async () => {

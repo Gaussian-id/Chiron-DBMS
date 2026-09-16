@@ -5,6 +5,6 @@ dependencies {
 
 tasks.named('shadowJar') {
     manifest {
-        attributes('Agent-Label': 'SAP HANA', 'Main-Class': 'com.gauss.horizon.agent.saphana.SapHanaAgent')
+        attributes('Agent-Label': 'SAP HANA', 'Main-Class': 'com.chiron.horizon.agent.saphana.SapHanaAgent')
     }
 }

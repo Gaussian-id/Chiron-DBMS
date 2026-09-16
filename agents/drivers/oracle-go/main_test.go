@@ -310,8 +310,8 @@ func TestNormalizeValueKeepsOracleZonedDateTimeOffsets(t *testing.T) {
 }
 
 func TestExecuteOracleSelectRetriesXMLTypeDecodeFailures(t *testing.T) {
-	originalSQL := `SELECT * FROM (SELECT * FROM "Gauss Horizon"."TEST_LOBS") WHERE ROWNUM <= 100`
-	rewrittenSQL := `SELECT * FROM (SELECT "ID", XMLSERIALIZE(CONTENT "XML_CONTENT" AS CLOB) AS "XML_CONTENT" FROM "Gauss Horizon"."TEST_LOBS") WHERE ROWNUM <= 100`
+	originalSQL := `SELECT * FROM (SELECT * FROM "Chiron Horizon"."TEST_LOBS") WHERE ROWNUM <= 100`
+	rewrittenSQL := `SELECT * FROM (SELECT "ID", XMLSERIALIZE(CONTENT "XML_CONTENT" AS CLOB) AS "XML_CONTENT" FROM "Chiron Horizon"."TEST_LOBS") WHERE ROWNUM <= 100`
 	calls := []string{}
 
 	result, err := executeOracleSelectWithXMLTypeRetry(
@@ -954,7 +954,7 @@ func TestListForeignKeysAndTriggersPreserveQuotedCloneTableName(t *testing.T) {
 
 func TestIsQuerySQLSkipsLeadingComments(t *testing.T) {
 	tests := []string{
-		"-- 测试\nSELECT * FROM (SELECT * FROM \"GAUSS_HORIZON_TEST\".\"ORDERS_10K\") WHERE ROWNUM <= 100",
+		"-- 测试\nSELECT * FROM (SELECT * FROM \"CHIRON_HORIZON_TEST\".\"ORDERS_10K\") WHERE ROWNUM <= 100",
 		"/* explain */\nSELECT * FROM dual",
 		"-- comment\r\nWITH rows AS (SELECT 1 FROM dual) SELECT * FROM rows",
 	}
@@ -1161,7 +1161,7 @@ func TestBuildDSNUsesConnectionStringWhenProvided(t *testing.T) {
 		t.Fatal(err)
 	}
 	if parsed.Query().Get("PREFETCH_ROWS") != oracleDefaultPrefetchRows {
-		t.Fatalf("raw Oracle DSN should use the Gauss Horizon prefetch default, got: %s", dsn)
+		t.Fatalf("raw Oracle DSN should use the Chiron Horizon prefetch default, got: %s", dsn)
 	}
 }
 
@@ -1179,7 +1179,7 @@ func TestBuildDSNUsesStableDefaultPrefetchRows(t *testing.T) {
 		t.Fatal(err)
 	}
 	if parsed.Query().Get("PREFETCH_ROWS") != oracleDefaultPrefetchRows {
-		t.Fatalf("generated Oracle DSN should use the Gauss Horizon prefetch default, got: %s", dsn)
+		t.Fatalf("generated Oracle DSN should use the Chiron Horizon prefetch default, got: %s", dsn)
 	}
 }
 
@@ -1238,7 +1238,7 @@ func TestBuildDSNPreservesBastionUsernameAndEncodesCredentials(t *testing.T) {
 		Port:     1521,
 		Database: "XE",
 		Username: "9008888:reader",
-		Password: "gauss-horizon:pass",
+		Password: "chiron-horizon:pass",
 	})
 
 	parsed, err := url.Parse(dsn)
@@ -1246,7 +1246,7 @@ func TestBuildDSNPreservesBastionUsernameAndEncodesCredentials(t *testing.T) {
 		t.Fatal(err)
 	}
 	password, _ := parsed.User.Password()
-	if parsed.User.Username() != "9008888:reader" || password != "gauss-horizon:pass" {
+	if parsed.User.Username() != "9008888:reader" || password != "chiron-horizon:pass" {
 		t.Fatalf("credentials should survive URL parsing, dsn=%s username=%q password=%q", dsn, parsed.User.Username(), password)
 	}
 	if !strings.HasPrefix(parsed.User.String(), "9008888%3Areader:") {
@@ -1257,7 +1257,7 @@ func TestBuildDSNPreservesBastionUsernameAndEncodesCredentials(t *testing.T) {
 func TestBuildDSNEncodesColonInCredentialsFromJDBCServiceURL(t *testing.T) {
 	dsn := buildDSN(connectParams{
 		Username:         "9008888:reader",
-		Password:         "gauss-horizon:pass",
+		Password:         "chiron-horizon:pass",
 		ConnectionString: "jdbc:oracle:thin:@//db.example.com:1521/XE",
 	})
 
@@ -1266,7 +1266,7 @@ func TestBuildDSNEncodesColonInCredentialsFromJDBCServiceURL(t *testing.T) {
 		t.Fatal(err)
 	}
 	password, _ := parsed.User.Password()
-	if parsed.User.Username() != "9008888:reader" || password != "gauss-horizon:pass" {
+	if parsed.User.Username() != "9008888:reader" || password != "chiron-horizon:pass" {
 		t.Fatalf("credentials should survive JDBC URL conversion, dsn=%s username=%q password=%q", dsn, parsed.User.Username(), password)
 	}
 	if parsed.Host != "db.example.com:1521" || strings.TrimPrefix(parsed.Path, "/") != "XE" {
@@ -1280,7 +1280,7 @@ func TestBuildDSNPreservesExplicitlyQuotedUsername(t *testing.T) {
 		Port:     1521,
 		Database: "XE",
 		Username: `"abc:def"`,
-		Password: "gauss-horizon:pass",
+		Password: "chiron-horizon:pass",
 	})
 
 	parsed, err := url.Parse(dsn)
@@ -1582,7 +1582,7 @@ func TestOracleMethodMayReadLOB(t *testing.T) {
 
 func TestOracleGB18030ConverterRoundTrip(t *testing.T) {
 	converter := oracleGB18030Converter{}
-	input := "Gauss Horizon \u4e2d\u6587 \U00020000"
+	input := "Chiron Horizon \u4e2d\u6587 \U00020000"
 
 	encoded := converter.Encode(input)
 	if string(encoded) == input {
@@ -1604,7 +1604,7 @@ func TestOpenDBUsesIndependentOracleDrivers(t *testing.T) {
 		Host:     "127.0.0.1",
 		Port:     1521,
 		Database: "ORCL",
-		Username: "gauss-horizon",
+		Username: "chiron-horizon",
 		Password: "secret",
 	}
 	first, err := openDB(params)
@@ -1854,7 +1854,7 @@ func TestListTablesQueryAppliesMetadataConstraints(t *testing.T) {
 	if !strings.Contains(sqlText, "TABLE_TYPE IN (:5,:6)") {
 		t.Fatalf("table listing should push table type predicate, got: %s", query.SQL)
 	}
-	if !strings.Contains(sqlText, "ROWNUM <= :7") || !strings.Contains(sqlText, "GAUSS_HORIZON_RN > :8") {
+	if !strings.Contains(sqlText, "ROWNUM <= :7") || !strings.Contains(sqlText, "CHIRON_HORIZON_RN > :8") {
 		t.Fatalf("table listing should use rownum pagination, got: %s", query.SQL)
 	}
 	if len(query.Args) != 8 {
@@ -1889,7 +1889,7 @@ func TestListSessionUserTablesQueryUsesUserDictionary(t *testing.T) {
 	if !strings.Contains(sqlText, "TABLE_TYPE IN (:2,:3)") {
 		t.Fatalf("table listing should push table type predicate, got: %s", query.SQL)
 	}
-	if !strings.Contains(sqlText, "ROWNUM <= :4") || !strings.Contains(sqlText, "GAUSS_HORIZON_RN > :5") {
+	if !strings.Contains(sqlText, "ROWNUM <= :4") || !strings.Contains(sqlText, "CHIRON_HORIZON_RN > :5") {
 		t.Fatalf("table listing should use rownum pagination, got: %s", query.SQL)
 	}
 	if len(query.Args) != 5 {
@@ -1944,7 +1944,7 @@ func TestListObjectsQueryAppliesMetadataConstraints(t *testing.T) {
 	if !strings.Contains(sqlText, "OBJECT_TYPE IN (:5,:6)") {
 		t.Fatalf("object listing should push object type predicate, got: %s", query.SQL)
 	}
-	if !strings.Contains(sqlText, "ROWNUM <= :7") || !strings.Contains(sqlText, "GAUSS_HORIZON_RN > :8") {
+	if !strings.Contains(sqlText, "ROWNUM <= :7") || !strings.Contains(sqlText, "CHIRON_HORIZON_RN > :8") {
 		t.Fatalf("object listing should use rownum pagination, got: %s", query.SQL)
 	}
 	if len(query.Args) != 8 {
@@ -1981,7 +1981,7 @@ func TestListSessionUserObjectsQueryUsesUserDictionary(t *testing.T) {
 	if !strings.Contains(sqlText, "OBJECT_TYPE IN (:2,:3)") {
 		t.Fatalf("object listing should push object type predicate, got: %s", query.SQL)
 	}
-	if !strings.Contains(sqlText, "ROWNUM <= :4") || !strings.Contains(sqlText, "GAUSS_HORIZON_RN > :5") {
+	if !strings.Contains(sqlText, "ROWNUM <= :4") || !strings.Contains(sqlText, "CHIRON_HORIZON_RN > :5") {
 		t.Fatalf("object listing should use rownum pagination, got: %s", query.SQL)
 	}
 	if len(query.Args) != 5 {
@@ -2030,16 +2030,16 @@ func TestOracleListTriggersSQLLoadsSourceWithoutLongColumns(t *testing.T) {
 }
 
 func TestOracleTriggerBodyStripsDictionaryDeclaration(t *testing.T) {
-	source := "TRIGGER GAUSS_HORIZON_TRIGGER_4320_AUDIT\n" +
-		"AFTER INSERT OR UPDATE OR DELETE ON GAUSS_HORIZON_TRIGGER_4320\n" +
+	source := "TRIGGER CHIRON_HORIZON_TRIGGER_4320_AUDIT\n" +
+		"AFTER INSERT OR UPDATE OR DELETE ON CHIRON_HORIZON_TRIGGER_4320\n" +
 		"FOR EACH ROW\n" +
 		"DECLARE\n" +
 		"  V_EVENT VARCHAR2(10);\n" +
 		"BEGIN\n" +
 		"  V_EVENT := CASE WHEN INSERTING THEN 'INSERT' WHEN UPDATING THEN 'UPDATE' ELSE 'DELETE' END;\n" +
 		"END;\n"
-	description := "GAUSS_HORIZON_TRIGGER_4320_AUDIT\n" +
-		"AFTER INSERT OR UPDATE OR DELETE ON GAUSS_HORIZON_TRIGGER_4320\n" +
+	description := "CHIRON_HORIZON_TRIGGER_4320_AUDIT\n" +
+		"AFTER INSERT OR UPDATE OR DELETE ON CHIRON_HORIZON_TRIGGER_4320\n" +
 		"FOR EACH ROW\n"
 
 	body, ok := oracleTriggerBody(source, description)
@@ -2105,13 +2105,13 @@ func TestOracleCompletionTablesQuerySearchesAcrossSchemasWithPriority(t *testing
 }
 
 func TestOracleCompletionSynonymTargetsQueryIsBoundedToCandidates(t *testing.T) {
-	query := oracleCompletionSynonymTargetsQuery([]oracleCompletionSynonymTarget{{Owner: "GAUSS_HORIZON_TEST", Name: "DEPT_DICT"}, {Owner: "HR", Name: "EMP_VIEW"}}, []string{"'TABLE'", "'VIEW'"})
+	query := oracleCompletionSynonymTargetsQuery([]oracleCompletionSynonymTarget{{Owner: "CHIRON_HORIZON_TEST", Name: "DEPT_DICT"}, {Owner: "HR", Name: "EMP_VIEW"}}, []string{"'TABLE'", "'VIEW'"})
 	sqlText := strings.ToUpper(query.SQL)
 
 	if !strings.Contains(sqlText, "O.OBJECT_TYPE IN ('TABLE','VIEW')") || !strings.Contains(sqlText, "(O.OWNER = :1 AND O.OBJECT_NAME = :2)") || !strings.Contains(sqlText, "(O.OWNER = :3 AND O.OBJECT_NAME = :4)") {
 		t.Fatalf("synonym target validation should query only returned targets: %s", query.SQL)
 	}
-	wantArgs := []any{"GAUSS_HORIZON_TEST", "DEPT_DICT", "HR", "EMP_VIEW"}
+	wantArgs := []any{"CHIRON_HORIZON_TEST", "DEPT_DICT", "HR", "EMP_VIEW"}
 	if !reflect.DeepEqual(query.Args, wantArgs) {
 		t.Fatalf("unexpected synonym target args: %#v", query.Args)
 	}
@@ -2282,7 +2282,7 @@ func TestRewriteOracleXMLTypeExplicitColumn(t *testing.T) {
 
 func TestRewriteOracleXMLTypeNestedRownumQuery(t *testing.T) {
 	sqlText, err := rewriteOracleXMLTypeSelectSQL(
-		`SELECT * FROM (SELECT "ID", "XML_CONTENT" FROM "Gauss Horizon"."TEST_LOBS") WHERE ROWNUM <= 100`,
+		`SELECT * FROM (SELECT "ID", "XML_CONTENT" FROM "Chiron Horizon"."TEST_LOBS") WHERE ROWNUM <= 100`,
 		fakeOracleColumnLoader([]oracleColumnMeta{
 			{Name: "ID", DataType: "NUMBER"},
 			{Name: "XML_CONTENT", DataType: "XMLTYPE"},
@@ -2348,7 +2348,7 @@ func TestRewriteOracleSTGeometryAsDeferredValue(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	want := `SELECT t.ID, CASE WHEN t."GEOM" IS NULL THEN NULL ELSE '<ST_GEOMETRY>' END AS "GEOM", CASE WHEN t."GEOM" IS NULL THEN NULL ELSE 'D:1' END AS "__GAUSS_HORIZON_LARGE_VALUE_BYTES_C_1" FROM TEST_GEOM t`
+	want := `SELECT t.ID, CASE WHEN t."GEOM" IS NULL THEN NULL ELSE '<ST_GEOMETRY>' END AS "GEOM", CASE WHEN t."GEOM" IS NULL THEN NULL ELSE 'D:1' END AS "__CHIRON_HORIZON_LARGE_VALUE_BYTES_C_1" FROM TEST_GEOM t`
 	if sqlText != want {
 		t.Fatalf("rewriteOracleSelectSQL() = %s, want %s", sqlText, want)
 	}
@@ -2435,7 +2435,7 @@ func TestRewriteOracleSDOGeometryAsDeferredValue(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	want := `SELECT t.ID, CASE WHEN t."GEOM" IS NULL THEN NULL ELSE '<SDO_GEOMETRY>' END AS "GEOM", CASE WHEN t."GEOM" IS NULL THEN NULL ELSE 'D:1' END AS "__GAUSS_HORIZON_LARGE_VALUE_BYTES_C_1" FROM TEST_GEOM t`
+	want := `SELECT t.ID, CASE WHEN t."GEOM" IS NULL THEN NULL ELSE '<SDO_GEOMETRY>' END AS "GEOM", CASE WHEN t."GEOM" IS NULL THEN NULL ELSE 'D:1' END AS "__CHIRON_HORIZON_LARGE_VALUE_BYTES_C_1" FROM TEST_GEOM t`
 	if sqlText != want {
 		t.Fatalf("rewriteOracleSelectSQL() = %s, want %s", sqlText, want)
 	}
@@ -2608,7 +2608,7 @@ func TestRewriteOracleLOBSelectStarAsDeferredValues(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	want := `SELECT t."ID", CASE WHEN t."PAYLOAD" IS NULL THEN NULL ELSE '<CLOB>' END AS "PAYLOAD", CASE WHEN t."PAYLOAD" IS NULL THEN NULL ELSE 'D:1' END AS "__GAUSS_HORIZON_LARGE_VALUE_BYTES_C_1", CASE WHEN t."NATIONAL_TEXT" IS NULL THEN NULL ELSE '<NCLOB>' END AS "NATIONAL_TEXT", CASE WHEN t."NATIONAL_TEXT" IS NULL THEN NULL ELSE 'D:1' END AS "__GAUSS_HORIZON_LARGE_VALUE_BYTES_N_2", CASE WHEN t."BINARY_DATA" IS NULL THEN NULL ELSE '<BLOB>' END AS "BINARY_DATA", CASE WHEN t."BINARY_DATA" IS NULL THEN NULL ELSE 'D:1' END AS "__GAUSS_HORIZON_LARGE_VALUE_BYTES_L_3", CASE WHEN t."FILE_DATA" IS NULL THEN NULL ELSE '<BFILE>' END AS "FILE_DATA", CASE WHEN t."FILE_DATA" IS NULL THEN NULL ELSE 'D:1' END AS "__GAUSS_HORIZON_LARGE_VALUE_BYTES_F_4" FROM TEST_LOBS t ORDER BY t.ID DESC`
+	want := `SELECT t."ID", CASE WHEN t."PAYLOAD" IS NULL THEN NULL ELSE '<CLOB>' END AS "PAYLOAD", CASE WHEN t."PAYLOAD" IS NULL THEN NULL ELSE 'D:1' END AS "__CHIRON_HORIZON_LARGE_VALUE_BYTES_C_1", CASE WHEN t."NATIONAL_TEXT" IS NULL THEN NULL ELSE '<NCLOB>' END AS "NATIONAL_TEXT", CASE WHEN t."NATIONAL_TEXT" IS NULL THEN NULL ELSE 'D:1' END AS "__CHIRON_HORIZON_LARGE_VALUE_BYTES_N_2", CASE WHEN t."BINARY_DATA" IS NULL THEN NULL ELSE '<BLOB>' END AS "BINARY_DATA", CASE WHEN t."BINARY_DATA" IS NULL THEN NULL ELSE 'D:1' END AS "__CHIRON_HORIZON_LARGE_VALUE_BYTES_L_3", CASE WHEN t."FILE_DATA" IS NULL THEN NULL ELSE '<BFILE>' END AS "FILE_DATA", CASE WHEN t."FILE_DATA" IS NULL THEN NULL ELSE 'D:1' END AS "__CHIRON_HORIZON_LARGE_VALUE_BYTES_F_4" FROM TEST_LOBS t ORDER BY t.ID DESC`
 	if sqlText != want {
 		t.Fatalf("rewriteOracleSelectSQL() = %s, want %s", sqlText, want)
 	}
@@ -2626,7 +2626,7 @@ func TestRewriteOracleXMLTypeAsDeferredValue(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	want := `SELECT t.ID, CASE WHEN t."XML_CONTENT" IS NULL THEN NULL ELSE '<XMLTYPE>' END AS "XML_CONTENT", CASE WHEN t."XML_CONTENT" IS NULL THEN NULL ELSE 'D:1' END AS "__GAUSS_HORIZON_LARGE_VALUE_BYTES_C_1" FROM TEST_LOBS t WHERE t.ID = 1`
+	want := `SELECT t.ID, CASE WHEN t."XML_CONTENT" IS NULL THEN NULL ELSE '<XMLTYPE>' END AS "XML_CONTENT", CASE WHEN t."XML_CONTENT" IS NULL THEN NULL ELSE 'D:1' END AS "__CHIRON_HORIZON_LARGE_VALUE_BYTES_C_1" FROM TEST_LOBS t WHERE t.ID = 1`
 	if sqlText != want {
 		t.Fatalf("rewriteOracleSelectSQL() = %s, want %s", sqlText, want)
 	}
@@ -2644,7 +2644,7 @@ func TestRewriteOracleLOBExplicitColumnUsesVisibleResultIndex(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	want := `SELECT t.ID, CASE WHEN t."PAYLOAD" IS NULL THEN NULL ELSE '<CLOB>' END AS body, CASE WHEN t."PAYLOAD" IS NULL THEN NULL ELSE 'D:1' END AS "__GAUSS_HORIZON_LARGE_VALUE_BYTES_C_1", LENGTH(t.PAYLOAD) AS payload_length FROM TEST_LOBS t`
+	want := `SELECT t.ID, CASE WHEN t."PAYLOAD" IS NULL THEN NULL ELSE '<CLOB>' END AS body, CASE WHEN t."PAYLOAD" IS NULL THEN NULL ELSE 'D:1' END AS "__CHIRON_HORIZON_LARGE_VALUE_BYTES_C_1", LENGTH(t.PAYLOAD) AS payload_length FROM TEST_LOBS t`
 	if sqlText != want {
 		t.Fatalf("rewriteOracleSelectSQL() = %s, want %s", sqlText, want)
 	}
@@ -2663,7 +2663,7 @@ func TestRewriteOracleLOBNestedRownumQuery(t *testing.T) {
 		t.Fatal(err)
 	}
 	if !strings.Contains(sqlText, `CASE WHEN "PAYLOAD" IS NULL THEN NULL ELSE '<CLOB>' END AS "PAYLOAD"`) ||
-		!strings.Contains(sqlText, `"__GAUSS_HORIZON_LARGE_VALUE_BYTES_C_1"`) {
+		!strings.Contains(sqlText, `"__CHIRON_HORIZON_LARGE_VALUE_BYTES_C_1"`) {
 		t.Fatalf("expected nested CLOB column to be deferred, got: %s", sqlText)
 	}
 }
@@ -2715,7 +2715,7 @@ func TestRewriteOracleLOBRequiresDeferredModeAndSafeMarkerNames(t *testing.T) {
 		columns   []oracleColumnMeta
 	}{
 		{deferLOBs: false, columns: []oracleColumnMeta{{Name: "ID", DataType: "NUMBER"}, {Name: "PAYLOAD", DataType: "CLOB"}}},
-		{deferLOBs: true, columns: []oracleColumnMeta{{Name: "PAYLOAD", DataType: "CLOB"}, {Name: "__GAUSS_HORIZON_LARGE_VALUE_BYTES_C_0", DataType: "VARCHAR2"}}},
+		{deferLOBs: true, columns: []oracleColumnMeta{{Name: "PAYLOAD", DataType: "CLOB"}, {Name: "__CHIRON_HORIZON_LARGE_VALUE_BYTES_C_0", DataType: "VARCHAR2"}}},
 	}
 	for _, test := range tests {
 		sqlText, err := rewriteOracleSelectSQL(input, fakeOracleColumnLoader(test.columns), test.deferLOBs)
@@ -2881,18 +2881,18 @@ func TestGetObjectSourcePropagatesMaterializedViewMetadataError(t *testing.T) {
 }
 
 func TestGetObjectSourceAggregatesProcedureSourceInOracle(t *testing.T) {
-	const source = "PROCEDURE GAUSS_HORIZON_LARGE_SOURCE AS\nBEGIN\n  -- preserve <xml> & special characters\n  NULL;\nEND;"
+	const source = "PROCEDURE CHIRON_HORIZON_LARGE_SOURCE AS\nBEGIN\n  -- preserve <xml> & special characters\n  NULL;\nEND;"
 	db, scripted := openOracleViewSourceTestDB(t, []oracleViewSourceQueryStep{
 		{
 			queryContains: "DBMS_XMLGEN.CONVERT",
-			args:          []driver.Value{"GAUSS_HORIZON_TEST", "GAUSS_HORIZON_LARGE_SOURCE", "PROCEDURE"},
+			args:          []driver.Value{"CHIRON_HORIZON_TEST", "CHIRON_HORIZON_LARGE_SOURCE", "PROCEDURE"},
 			rows:          [][]driver.Value{{source}},
 		},
 	})
 	s := newServer()
 	s.db = db
 
-	result, err := s.getObjectSource("GAUSS_HORIZON_TEST", "GAUSS_HORIZON_LARGE_SOURCE", "PROCEDURE")
+	result, err := s.getObjectSource("CHIRON_HORIZON_TEST", "CHIRON_HORIZON_LARGE_SOURCE", "PROCEDURE")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -2908,14 +2908,14 @@ func TestGetObjectSourceReturnsEmptyWhenAggregatedSourceIsNull(t *testing.T) {
 	db, scripted := openOracleViewSourceTestDB(t, []oracleViewSourceQueryStep{
 		{
 			queryContains: "DBMS_XMLGEN.CONVERT",
-			args:          []driver.Value{"GAUSS_HORIZON_TEST", "MISSING_PROC", "PROCEDURE"},
+			args:          []driver.Value{"CHIRON_HORIZON_TEST", "MISSING_PROC", "PROCEDURE"},
 			rows:          [][]driver.Value{{nil}},
 		},
 	})
 	s := newServer()
 	s.db = db
 
-	result, err := s.getObjectSource("GAUSS_HORIZON_TEST", "MISSING_PROC", "PROCEDURE")
+	result, err := s.getObjectSource("CHIRON_HORIZON_TEST", "MISSING_PROC", "PROCEDURE")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -2928,24 +2928,24 @@ func TestGetObjectSourceReturnsEmptyWhenAggregatedSourceIsNull(t *testing.T) {
 }
 
 func TestGetObjectSourceFallsBackWhenOracleAggregationFails(t *testing.T) {
-	const firstLine = "PROCEDURE GAUSS_HORIZON_SOURCE_FALLBACK AS\n"
+	const firstLine = "PROCEDURE CHIRON_HORIZON_SOURCE_FALLBACK AS\n"
 	const secondLine = "BEGIN NULL; END;"
 	db, scripted := openOracleViewSourceTestDB(t, []oracleViewSourceQueryStep{
 		{
 			queryContains: "DBMS_XMLGEN.CONVERT",
-			args:          []driver.Value{"GAUSS_HORIZON_TEST", "GAUSS_HORIZON_SOURCE_FALLBACK", "PROCEDURE"},
+			args:          []driver.Value{"CHIRON_HORIZON_TEST", "CHIRON_HORIZON_SOURCE_FALLBACK", "PROCEDURE"},
 			err:           errors.New("ORA-19011: Character string buffer too small"),
 		},
 		{
 			queryContains: "SELECT TEXT",
-			args:          []driver.Value{"GAUSS_HORIZON_TEST", "GAUSS_HORIZON_SOURCE_FALLBACK", "PROCEDURE"},
+			args:          []driver.Value{"CHIRON_HORIZON_TEST", "CHIRON_HORIZON_SOURCE_FALLBACK", "PROCEDURE"},
 			rows:          [][]driver.Value{{firstLine}, {secondLine}},
 		},
 	})
 	s := newServer()
 	s.db = db
 
-	result, err := s.getObjectSource("GAUSS_HORIZON_TEST", "GAUSS_HORIZON_SOURCE_FALLBACK", "PROCEDURE")
+	result, err := s.getObjectSource("CHIRON_HORIZON_TEST", "CHIRON_HORIZON_SOURCE_FALLBACK", "PROCEDURE")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -3421,7 +3421,7 @@ func TestOracleQueryRowsFallsBackToPlaceholderOnExtprocFailure(t *testing.T) {
 		{
 			queryContains: "'<ST_GEOMETRY>'",
 			args:          []driver.Value{},
-			columns:       []string{"ID", "GEOM", "__GAUSS_HORIZON_LARGE_VALUE_BYTES_C_1"},
+			columns:       []string{"ID", "GEOM", "__CHIRON_HORIZON_LARGE_VALUE_BYTES_C_1"},
 			rows:          [][]driver.Value{{int64(1), "<ST_GEOMETRY>", "D:1"}},
 		},
 	})
@@ -3436,7 +3436,7 @@ func TestOracleQueryRowsFallsBackToPlaceholderOnExtprocFailure(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if !reflect.DeepEqual(columns, []string{"ID", "GEOM", "__GAUSS_HORIZON_LARGE_VALUE_BYTES_C_1"}) {
+	if !reflect.DeepEqual(columns, []string{"ID", "GEOM", "__CHIRON_HORIZON_LARGE_VALUE_BYTES_C_1"}) {
 		t.Fatalf("unexpected placeholder columns: %v", columns)
 	}
 	if !rows.Next() {
@@ -3515,7 +3515,7 @@ func TestExecuteQueryPageRetriesWithPlaceholderOnRowIterationPanic(t *testing.T)
 		{
 			queryContains: "'<ST_GEOMETRY>'",
 			args:          []driver.Value{},
-			columns:       []string{"ID", "GEOM", "__GAUSS_HORIZON_LARGE_VALUE_BYTES_C_1"},
+			columns:       []string{"ID", "GEOM", "__CHIRON_HORIZON_LARGE_VALUE_BYTES_C_1"},
 			rows:          [][]driver.Value{{int64(1), "<ST_GEOMETRY>", "D:1"}},
 		},
 	})

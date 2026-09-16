@@ -1,7 +1,7 @@
-//! Bridges gauss-horizon-core's backend-driven SSH prompt gateway to the frontend.
+//! Bridges chiron-horizon-core's backend-driven SSH prompt gateway to the frontend.
 //!
-//! gauss-horizon-core suspends the SSH handshake / auth on a `oneshot` and ships the
-//! request through a process-wide mpsc gateway (see `gauss_horizon_core::db::ssh_prompt`).
+//! chiron-horizon-core suspends the SSH handshake / auth on a `oneshot` and ships the
+//! request through a process-wide mpsc gateway (see `chiron_horizon_core::db::ssh_prompt`).
 //! This module installs that gateway at app startup, forwards each request to
 //! the UI via the `ssh-prompt` event, remembers the `oneshot` responder keyed
 //! by request id, and the `resolve_ssh_prompt` command answers it when the
@@ -12,7 +12,7 @@ use std::mem;
 use std::sync::Mutex;
 use std::time::Duration;
 
-use gauss_horizon_core::db::ssh_prompt::{
+use chiron_horizon_core::db::ssh_prompt::{
     self, SshHostKeyNotice, SshPromptAnswer, SshPromptEnvelope, SshPromptRequest,
 };
 use serde::Deserialize;
@@ -95,7 +95,7 @@ impl SshPromptState {
     }
 }
 
-/// Install the gauss-horizon-core SSH prompt gateway and spawn the forwarding task that
+/// Install the chiron-horizon-core SSH prompt gateway and spawn the forwarding task that
 /// bridges backend prompts to the frontend. Must be called *after*
 /// `SshPromptState` has been registered with `app.manage(...)`. Call once
 /// during app setup.
@@ -158,7 +158,7 @@ pub fn install_ssh_prompt_bridge(app: &AppHandle) {
     });
 }
 
-/// Install the gauss-horizon-core SSH host-key *notice* gateway and spawn the forwarding
+/// Install the chiron-horizon-core SSH host-key *notice* gateway and spawn the forwarding
 /// task that delivers out-of-band host-key events (key changed => possible
 /// MITM, or the user rejected the host) to the frontend via the
 /// `ssh-host-key-notice` event. The frontend shows these as toasts so the user
@@ -255,7 +255,7 @@ pub async fn resolve_ssh_prompt(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use gauss_horizon_core::db::ssh_prompt::SshPromptKind;
+    use chiron_horizon_core::db::ssh_prompt::SshPromptKind;
 
     fn request(id: &str) -> SshPromptRequest {
         SshPromptRequest {

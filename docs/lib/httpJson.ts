@@ -18,7 +18,7 @@ function requestJsonWithXhr<T>(url: string): Promise<T> {
 }
 
 export async function requestJson<T>(url: string, init?: RequestInit): Promise<T> {
-  if (url.includes("distribution-disabled.invalid")) throw new Error("Distribution is not available in Gauss Horizon 0.1.0.");
+  if (url.includes("distribution-disabled.invalid")) throw new Error("Distribution is not available in Chiron Horizon 0.1.0.");
   if (typeof fetch === "function") {
     const res = await fetch(url, init);
     if (!res.ok) {

@@ -437,5 +437,5 @@ function fileToken(value: string): string {
 export function diagramSvgFileName(connectionName: string, databaseName: string, mode: DiagramSvgMode): string {
   const context = [connectionName, databaseName].map(fileToken).filter(Boolean);
   const suffix = mode === "engineering" ? "engineering-er" : "table-structure";
-  return ["gauss-horizon", ...(context.length > 0 ? context : ["diagram"]), suffix].join("-") + ".svg";
+  return ["chiron-horizon", ...(context.length > 0 ? context : ["diagram"]), suffix].join("-") + ".svg";
 }

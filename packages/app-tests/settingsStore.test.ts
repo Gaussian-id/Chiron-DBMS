@@ -34,7 +34,7 @@ vi.mock("../../apps/desktop/src/lib/backend/api", async (importOriginal) => {
   };
 });
 
-const OLD_FONT_SIZE_KEY = "gauss-horizon-query-editor-font-size";
+const OLD_FONT_SIZE_KEY = "chiron-horizon-query-editor-font-size";
 
 beforeEach(() => {
   saveEditorSettingsMock.mockClear();
@@ -213,20 +213,20 @@ test("updateEditorSettings persists the CSV quote mode", async () => {
 });
 
 test("migrates legacy execute-all settings to current once and preserves later explicit choices", async () => {
-  await withMockLocalStorage({ "gauss-horizon-app-state:editor_settings": JSON.stringify({ executeMode: "all" }) }, async () => {
+  await withMockLocalStorage({ "chiron-horizon-app-state:editor_settings": JSON.stringify({ executeMode: "all" }) }, async () => {
     setActivePinia(createPinia());
     const migratedStore = useSettingsStore();
     await migratedStore.initEditorSettings();
 
     assert.equal(migratedStore.editorSettings.executeMode, "current");
-    let saved = JSON.parse(localStorage.getItem("gauss-horizon-app-state:editor_settings") || "{}");
+    let saved = JSON.parse(localStorage.getItem("chiron-horizon-app-state:editor_settings") || "{}");
     assert.equal(saved.executeMode, "current");
     assert.equal(saved.executeModeDefaultVersion, EXECUTE_MODE_CURRENT_DEFAULT_VERSION);
 
     migratedStore.updateEditorSettings({ executeMode: "all" });
     assert.equal(migratedStore.editorSettings.executeMode, "all");
     await vi.waitFor(() => {
-      saved = JSON.parse(localStorage.getItem("gauss-horizon-app-state:editor_settings") || "{}");
+      saved = JSON.parse(localStorage.getItem("chiron-horizon-app-state:editor_settings") || "{}");
       assert.equal(saved.executeMode, "all");
     });
     assert.equal(saved.executeModeDefaultVersion, EXECUTE_MODE_CURRENT_DEFAULT_VERSION);
@@ -263,22 +263,22 @@ test("CSV quote mode defaults to all fields and preserves a saved necessary mode
 });
 
 test("migrates the legacy saved export batch default to 2000 once", async () => {
-  await withMockLocalStorage({ "gauss-horizon-editor-settings": JSON.stringify({ exportBatchSize: 10000 }) }, async () => {
+  await withMockLocalStorage({ "chiron-horizon-editor-settings": JSON.stringify({ exportBatchSize: 10000 }) }, async () => {
     setActivePinia(createPinia());
     const store = useSettingsStore();
     await store.initEditorSettings();
 
     assert.equal(store.editorSettings.exportBatchSize, 2000);
-    assert.equal(localStorage.getItem("gauss-horizon-editor-settings"), null);
-    assert.equal(JSON.parse(localStorage.getItem("gauss-horizon-app-state:editor_settings") || "{}").exportBatchSize, 2000);
+    assert.equal(localStorage.getItem("chiron-horizon-editor-settings"), null);
+    assert.equal(JSON.parse(localStorage.getItem("chiron-horizon-app-state:editor_settings") || "{}").exportBatchSize, 2000);
   });
 });
 
 test("keeps a manually saved 10000 export batch size after migration", async () => {
   await withMockLocalStorage(
     {
-      "gauss-horizon-editor-settings": JSON.stringify({ exportBatchSize: 10000 }),
-      "gauss-horizon-export-batch-size-default-migrated-v1": "1",
+      "chiron-horizon-editor-settings": JSON.stringify({ exportBatchSize: 10000 }),
+      "chiron-horizon-export-batch-size-default-migrated-v1": "1",
     },
     async () => {
       setActivePinia(createPinia());
@@ -480,7 +480,7 @@ test("preserves adjacent tab shortcuts and persists unbound history actions when
 
   await withMockLocalStorage(
     {
-      "gauss-horizon-app-state:editor_settings": JSON.stringify({
+      "chiron-horizon-app-state:editor_settings": JSON.stringify({
         executeModeDefaultVersion: EXECUTE_MODE_CURRENT_DEFAULT_VERSION,
         shortcuts: legacyShortcuts,
       }),
@@ -532,7 +532,7 @@ test("preserves object browsing for legacy sidebar settings", () => {
 test("migrates existing settings once and preserves a later explicit opt-out", async () => {
   await withMockLocalStorage(
     {
-      "gauss-horizon-app-state:editor_settings": JSON.stringify({ sidebarBrowseObjectsOnDatabaseActivation: false }),
+      "chiron-horizon-app-state:editor_settings": JSON.stringify({ sidebarBrowseObjectsOnDatabaseActivation: false }),
     },
     async () => {
       setActivePinia(createPinia());
@@ -542,7 +542,7 @@ test("migrates existing settings once and preserves a later explicit opt-out", a
       assert.equal(migratedStore.editorSettings.sidebarBrowseObjectsOnDatabaseActivation, true);
       assert.equal(migratedStore.editorSettings.sidebarBrowseObjectsOnDatabaseActivationMigrationVersion, SIDEBAR_BROWSE_OBJECTS_MIGRATION_VERSION);
       await vi.waitFor(() => {
-        const saved = JSON.parse(localStorage.getItem("gauss-horizon-app-state:editor_settings") || "{}") as Record<string, unknown>;
+        const saved = JSON.parse(localStorage.getItem("chiron-horizon-app-state:editor_settings") || "{}") as Record<string, unknown>;
         assert.equal(saved.sidebarBrowseObjectsOnDatabaseActivation, true);
         assert.equal(saved.sidebarBrowseObjectsOnDatabaseActivationMigrationVersion, SIDEBAR_BROWSE_OBJECTS_MIGRATION_VERSION);
       });
@@ -954,8 +954,8 @@ test("AI partner presets reuse a supported runtime adapter", () => {
   assert.equal(jalapeno.model, "GLM-5.2");
   assert.deepEqual(jalapeno.models, [{ name: "GLM-5.2" }, { name: "DeepSeek-V4-Pro" }, { name: "MiniMax-M3" }]);
   assert.equal(jalapeno.requiresApiKey, true);
-  assert.equal(jalapeno.websiteUrl, "https://www.jalapeno-cloud.ai/gauss-horizon");
-  assert.equal(jalapeno.apiKeyUrl, "https://www.jalapeno-cloud.ai/gauss-horizon");
+  assert.equal(jalapeno.websiteUrl, "https://www.jalapeno-cloud.ai/chiron-horizon");
+  assert.equal(jalapeno.apiKeyUrl, "https://www.jalapeno-cloud.ai/chiron-horizon");
   assert.equal(getAiProviderPreset("openai-compatible", "https://api.jalapeno-cloud.ai/v1/").label, "Jalapeno Cloud");
   assert.equal(getAiProviderPresetId("openai-compatible", "https://api.jalapeno-cloud.ai/v1/"), "jalapeno-cloud");
   assert.equal(getAiProviderPreset("openai-compatible", "https://api.example.com/v1").label, "OpenAI Compatible");

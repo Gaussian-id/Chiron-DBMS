@@ -8,7 +8,7 @@ import (
 
 func TestParseXuguPackageMembers(t *testing.T) {
 	spec := `
-CREATE OR REPLACE PACKAGE "GaussHorizonPackage" AS
+CREATE OR REPLACE PACKAGE "ChironHorizonPackage" AS
   -- PROCEDURE ignored_comment(p_value INT);
   TYPE rec_type IS RECORD (
     procedure_name VARCHAR(40),
@@ -26,7 +26,7 @@ CREATE OR REPLACE PACKAGE "GaussHorizonPackage" AS
   ) RETURN NUMERIC(18, 2);
   FUNCTION "MixedCase"() RETURN VARCHAR;
   value_text VARCHAR := 'FUNCTION fake() RETURN INT;';
-END "GaussHorizonPackage";`
+END "ChironHorizonPackage";`
 
 	got := parseXuguPackageMembers(spec)
 	want := []xuguPackageMember{

@@ -33,10 +33,10 @@ function quoteColumnReferenceName(databaseType: DatabaseType | undefined, name: 
   return requiresMysqlIdentifierQuote(name) ? quoteTableIdentifier(databaseType, name) : name;
 }
 
-export const GAUSS_HORIZON_TABLE_REFERENCE_MIME = "application/x-gauss-horizon-table-reference";
-export const GAUSS_HORIZON_TABLE_REFERENCE_DROP_EVENT = "gauss-horizon-table-reference-drop";
-export const GAUSS_HORIZON_TABLE_REFERENCE_HOVER_EVENT = "gauss-horizon-table-reference-hover";
-export const GAUSS_HORIZON_TABLE_REFERENCE_DRAG_END_EVENT = "gauss-horizon-table-reference-drag-end";
+export const CHIRON_HORIZON_TABLE_REFERENCE_MIME = "application/x-chiron-horizon-table-reference";
+export const CHIRON_HORIZON_TABLE_REFERENCE_DROP_EVENT = "chiron-horizon-table-reference-drop";
+export const CHIRON_HORIZON_TABLE_REFERENCE_HOVER_EVENT = "chiron-horizon-table-reference-hover";
+export const CHIRON_HORIZON_TABLE_REFERENCE_DRAG_END_EVENT = "chiron-horizon-table-reference-drag-end";
 
 export interface QueryEditorTableReferenceEntry {
   schema?: string;
@@ -44,7 +44,7 @@ export interface QueryEditorTableReferenceEntry {
 }
 
 export interface QueryEditorTableReferencePayload {
-  kind: "gauss-horizon-table-reference";
+  kind: "chiron-horizon-table-reference";
   connectionId: string;
   database: string;
   schema?: string;
@@ -122,7 +122,7 @@ export function createTableReferencePayload(options: {
   const referenceType = options.referenceType ?? (options.columnName ? "column" : "table");
   if (referenceType !== "database" && !options.tableName) return null;
   const payload: QueryEditorTableReferencePayload = {
-    kind: "gauss-horizon-table-reference",
+    kind: "chiron-horizon-table-reference",
     connectionId: options.connectionId,
     database: options.database,
   };
@@ -152,7 +152,7 @@ export function createMultiTableReferencePayload(options: {
   const tableReferences = normalizeTableReferences(options.tableReferences);
   if (tableReferences.length === 0) return null;
   const payload: QueryEditorTableReferencePayload = {
-    kind: "gauss-horizon-table-reference",
+    kind: "chiron-horizon-table-reference",
     connectionId: options.connectionId,
     database: options.database,
     referenceType: "table",
@@ -176,7 +176,7 @@ export function createColumnReferencePayload(options: { connectionId?: string; d
   const columnNames = normalizeColumnNames(options.columnNames);
   if (!options.connectionId || options.database == null || columnNames.length === 0) return null;
   const payload: QueryEditorTableReferencePayload = {
-    kind: "gauss-horizon-table-reference",
+    kind: "chiron-horizon-table-reference",
     connectionId: options.connectionId,
     database: options.database,
     referenceType: "column",
@@ -194,12 +194,12 @@ export function parseTableReferencePayload(value: string | undefined | null): Qu
   if (!value) return null;
   try {
     const parsed = JSON.parse(value) as Partial<QueryEditorTableReferencePayload>;
-    if (parsed.kind !== "gauss-horizon-table-reference" || typeof parsed.connectionId !== "string" || typeof parsed.database !== "string" || !parsed.connectionId) {
+    if (parsed.kind !== "chiron-horizon-table-reference" || typeof parsed.connectionId !== "string" || typeof parsed.database !== "string" || !parsed.connectionId) {
       return null;
     }
     if (parsed.referenceType === "database") {
       const payload: QueryEditorTableReferencePayload = {
-        kind: "gauss-horizon-table-reference",
+        kind: "chiron-horizon-table-reference",
         connectionId: parsed.connectionId,
         database: parsed.database,
         referenceType: "database",
@@ -211,7 +211,7 @@ export function parseTableReferencePayload(value: string | undefined | null): Qu
     const columnNames = normalizeColumnNames(parsed.columnNames);
     if (columnNames.length > 0 && (parsed.referenceType === "column" || !parsed.tableName)) {
       const payload: QueryEditorTableReferencePayload = {
-        kind: "gauss-horizon-table-reference",
+        kind: "chiron-horizon-table-reference",
         connectionId: parsed.connectionId,
         database: parsed.database,
         referenceType: "column",
@@ -223,7 +223,7 @@ export function parseTableReferencePayload(value: string | undefined | null): Qu
     const tableReferences = normalizeTableReferences(parsed.tableReferences);
     if (tableReferences.length > 1) {
       const payload: QueryEditorTableReferencePayload = {
-        kind: "gauss-horizon-table-reference",
+        kind: "chiron-horizon-table-reference",
         connectionId: parsed.connectionId,
         database: parsed.database,
         referenceType: "table",
@@ -238,7 +238,7 @@ export function parseTableReferencePayload(value: string | undefined | null): Qu
     const columnName = typeof parsed.columnName === "string" && parsed.columnName ? parsed.columnName : undefined;
     const referenceType = parsed.referenceType === "column" || columnName || columnNames.length > 0 ? "column" : "table";
     const payload: QueryEditorTableReferencePayload = {
-      kind: "gauss-horizon-table-reference",
+      kind: "chiron-horizon-table-reference",
       connectionId: parsed.connectionId,
       database: parsed.database,
       tableName: parsed.tableName,
@@ -259,7 +259,7 @@ export function parseTableReferencePayload(value: string | undefined | null): Qu
 export function hasTableReferencePayloadType(types: Iterable<string> | undefined | null): boolean {
   if (!types) return false;
   for (const type of types) {
-    if (type === GAUSS_HORIZON_TABLE_REFERENCE_MIME) return true;
+    if (type === CHIRON_HORIZON_TABLE_REFERENCE_MIME) return true;
   }
   return false;
 }
@@ -279,15 +279,15 @@ export function clearActiveTableReferencePayload(payload?: QueryEditorTableRefer
 }
 
 export function createTableReferenceDropEvent(detail: QueryEditorTableReferenceDropDetail) {
-  return new CustomEvent<QueryEditorTableReferenceDropDetail>(GAUSS_HORIZON_TABLE_REFERENCE_DROP_EVENT, { detail });
+  return new CustomEvent<QueryEditorTableReferenceDropDetail>(CHIRON_HORIZON_TABLE_REFERENCE_DROP_EVENT, { detail });
 }
 
 export function createTableReferenceHoverEvent(detail: QueryEditorTableReferenceHoverDetail) {
-  return new CustomEvent<QueryEditorTableReferenceHoverDetail>(GAUSS_HORIZON_TABLE_REFERENCE_HOVER_EVENT, { detail });
+  return new CustomEvent<QueryEditorTableReferenceHoverDetail>(CHIRON_HORIZON_TABLE_REFERENCE_HOVER_EVENT, { detail });
 }
 
 export function createTableReferenceDragEndEvent(): Event {
-  return new Event(GAUSS_HORIZON_TABLE_REFERENCE_DRAG_END_EVENT);
+  return new Event(CHIRON_HORIZON_TABLE_REFERENCE_DRAG_END_EVENT);
 }
 
 function separatorValue(payload: QueryEditorTableReferencePayload, options: TableReferenceInsertOptions | undefined, kind: "table" | "column"): string {

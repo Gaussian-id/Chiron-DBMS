@@ -303,7 +303,7 @@ func TestSemanticGuards(t *testing.T) {
 	if _, err := permissionVhost(mustObject(t, `{"virtual_host":"*"}`)); err == nil {
 		t.Fatal("all-vhosts permission accepted")
 	}
-	if err := assertNotConnectedUser("delete", "gauss-horizon", "gauss-horizon"); err == nil {
+	if err := assertNotConnectedUser("delete", "chiron-horizon", "chiron-horizon"); err == nil {
 		t.Fatal("connected user mutation accepted")
 	}
 }
@@ -348,7 +348,7 @@ func TestAMQPErrorMapping(t *testing.T) {
 	if got := extractDeclaredResourceName("inequivalent arg 'durable' for queue 'q1' in vhost '/'"); got != "q1" {
 		t.Fatalf("got %q", got)
 	}
-	if got := extractQuotedName("access to queue 'q1' refused for user 'gauss-horizon'"); got != "q1" {
+	if got := extractQuotedName("access to queue 'q1' refused for user 'chiron-horizon'"); got != "q1" {
 		t.Fatalf("got %q", got)
 	}
 }

@@ -4,8 +4,8 @@ use tauri::{AppHandle, Emitter, State};
 use crate::commands::connection::{ensure_connection_writable, AppState};
 
 // Re-export types and functions used by other modules
-use gauss_horizon_core::models::connection::DatabaseType;
-pub use gauss_horizon_core::transfer::{
+use chiron_horizon_core::models::connection::DatabaseType;
+pub use chiron_horizon_core::transfer::{
     get_db_type, TransferOwnershipPreview, TransferProgress, TransferRequest, TransferStatus,
 };
 
@@ -28,11 +28,11 @@ pub async fn start_transfer(
     // Validate connections exist
     let source_db_type = get_db_type(&state, &request.source_connection_id).await?;
     let target_db_type = get_db_type(&state, &request.target_connection_id).await?;
-    gauss_horizon_core::transfer::validate_transfer_request(&request)?;
+    chiron_horizon_core::transfer::validate_transfer_request(&request)?;
 
     // `drop_target_before_create` rebuilds target tables; gate the dialect and require an
     // explicit confirmation for production databases.
-    gauss_horizon_core::transfer_rebuild::ensure_drop_target_allowed(
+    chiron_horizon_core::transfer_rebuild::ensure_drop_target_allowed(
         &state,
         &request.target_connection_id,
         &request.target_database,
@@ -45,7 +45,7 @@ pub async fn start_transfer(
     // Cross-family object transfers are validated inside transfer_schema_objects:
     // only mechanically rewriteable kinds (views, sequences) are allowed.
     // Structure-only data transfer is unsupported for MongoDB.
-    if matches!(request.content, gauss_horizon_core::transfer::TransferContent::StructureOnly)
+    if matches!(request.content, chiron_horizon_core::transfer::TransferContent::StructureOnly)
         && (matches!(source_db_type, DatabaseType::MongoDb) || matches!(target_db_type, DatabaseType::MongoDb))
     {
         return Err("MongoDB 暂不支持仅结构传输".to_string());
@@ -53,14 +53,14 @@ pub async fn start_transfer(
 
     // External Doris/StarRocks catalogs: pool is created with `catalog=` URL
     // setup (SET catalog) and without USE <external-db>. See ensure_transfer_pool.
-    let source_pool_key = gauss_horizon_core::transfer::ensure_transfer_pool(
+    let source_pool_key = chiron_horizon_core::transfer::ensure_transfer_pool(
         &state,
         &request.source_connection_id,
         &request.source_database,
         request.source_catalog.as_deref(),
     )
     .await?;
-    let target_pool_key = gauss_horizon_core::transfer::ensure_transfer_pool(
+    let target_pool_key = chiron_horizon_core::transfer::ensure_transfer_pool(
         &state,
         &request.target_connection_id,
         &request.target_database,
@@ -80,7 +80,7 @@ pub async fn start_transfer(
                 configs
                     .get(&request.source_connection_id)
                     .and_then(|config| {
-                        gauss_horizon_core::transfer::resolve_external_transfer_catalog_for_config(
+                        chiron_horizon_core::transfer::resolve_external_transfer_catalog_for_config(
                             request.source_catalog.as_deref(),
                             config,
                         )
@@ -90,7 +90,7 @@ pub async fn start_transfer(
             if skip_fk_sort {
                 (request.tables.clone(), std::collections::HashMap::new())
             } else {
-                gauss_horizon_core::transfer::sort_tables_by_fk_dependency_with_foreign_keys(
+                chiron_horizon_core::transfer::sort_tables_by_fk_dependency_with_foreign_keys(
                     &state,
                     &request.source_connection_id,
                     &request.source_database,
@@ -124,7 +124,7 @@ pub async fn start_transfer(
         let mut backup_drop_order: Vec<String> = Vec::new();
         let backup_names = if request.drop_target_before_create {
             // Re-sort tables in children-first order for the rename pre-pass
-            let (tables_for_rename, _) = gauss_horizon_core::transfer::sort_tables_by_fk_dependency_with_foreign_keys(
+            let (tables_for_rename, _) = chiron_horizon_core::transfer::sort_tables_by_fk_dependency_with_foreign_keys(
                 &state,
                 &request.target_connection_id,
                 &request.target_database,
@@ -139,7 +139,7 @@ pub async fn start_transfer(
             });
             backup_drop_order = tables_for_rename.clone();
 
-            match gauss_horizon_core::transfer::rename_tables_to_backup(
+            match chiron_horizon_core::transfer::rename_tables_to_backup(
                 &state,
                 &request,
                 &tables_for_rename,
@@ -169,7 +169,7 @@ pub async fn start_transfer(
                             terminal: true,
                         },
                     );
-                    gauss_horizon_core::transfer::clear_cancelled(&transfer_id).await;
+                    chiron_horizon_core::transfer::clear_cancelled(&transfer_id).await;
                     return;
                 }
                 Err(e) => {
@@ -187,7 +187,7 @@ pub async fn start_transfer(
                             terminal: true,
                         },
                     );
-                    gauss_horizon_core::transfer::clear_cancelled(&transfer_id).await;
+                    chiron_horizon_core::transfer::clear_cancelled(&transfer_id).await;
                     return;
                 }
             }
@@ -195,10 +195,10 @@ pub async fn start_transfer(
             None
         };
 
-        if matches!(source_db_type, gauss_horizon_core::models::connection::DatabaseType::Postgres)
-            && matches!(target_db_type, gauss_horizon_core::models::connection::DatabaseType::Postgres)
+        if matches!(source_db_type, chiron_horizon_core::models::connection::DatabaseType::Postgres)
+            && matches!(target_db_type, chiron_horizon_core::models::connection::DatabaseType::Postgres)
         {
-            match gauss_horizon_core::transfer::transfer_postgres_schema_dependencies(
+            match chiron_horizon_core::transfer::transfer_postgres_schema_dependencies(
                 &state,
                 &request,
                 &source_pool_key,
@@ -227,7 +227,7 @@ pub async fn start_transfer(
                             terminal: true,
                         },
                     );
-                    gauss_horizon_core::transfer::clear_cancelled(&transfer_id).await;
+                    chiron_horizon_core::transfer::clear_cancelled(&transfer_id).await;
                     return;
                 }
                 Err(e) => {
@@ -245,13 +245,13 @@ pub async fn start_transfer(
                             terminal: true,
                         },
                     );
-                    gauss_horizon_core::transfer::clear_cancelled(&transfer_id).await;
+                    chiron_horizon_core::transfer::clear_cancelled(&transfer_id).await;
                     return;
                 }
             }
         }
         for (i, table) in sorted_tables.iter().enumerate() {
-            if gauss_horizon_core::transfer::is_cancelled(&transfer_id).await {
+            if chiron_horizon_core::transfer::is_cancelled(&transfer_id).await {
                 emit_progress(
                     &app,
                     TransferProgress {
@@ -266,13 +266,13 @@ pub async fn start_transfer(
                         terminal: true,
                     },
                 );
-                gauss_horizon_core::transfer::clear_cancelled(&transfer_id).await;
+                chiron_horizon_core::transfer::clear_cancelled(&transfer_id).await;
                 return;
             }
 
             log::info!("[transfer] table {}/{}: {}", i + 1, total_tables, table);
 
-            match gauss_horizon_core::transfer::transfer_table(
+            match chiron_horizon_core::transfer::transfer_table(
                 &state,
                 &request,
                 table,
@@ -324,7 +324,7 @@ pub async fn start_transfer(
                                 terminal: true,
                             },
                         );
-                        gauss_horizon_core::transfer::clear_cancelled(&transfer_id).await;
+                        chiron_horizon_core::transfer::clear_cancelled(&transfer_id).await;
                         return;
                     }
                     failed_tables.push(table.clone());
@@ -355,7 +355,7 @@ pub async fn start_transfer(
         let mut failed_fk_tables: Vec<String> = Vec::new();
         let mut failed_fk_count = 0usize;
         for (table, alter_sql) in &pending_fk_alters {
-            if let Err(e) = gauss_horizon_core::transfer::execute_on_pool(&state, &target_pool_key, alter_sql).await {
+            if let Err(e) = chiron_horizon_core::transfer::execute_on_pool(&state, &target_pool_key, alter_sql).await {
                 log::warn!("[transfer] failed to add deferred foreign key constraint for {table}: {e}");
                 failed_fk_count += 1;
                 failed_fk_tables.push(table.clone());
@@ -372,8 +372,8 @@ pub async fn start_transfer(
         // Core decision handles all content modes: DataOnly never
         // transfers schema objects; PG→PG keeps the legacy empty-selection
         // default only when structure participates in the transfer.
-        let mut object_outcome = gauss_horizon_core::transfer::TransferObjectOutcome::default();
-        match gauss_horizon_core::transfer::transfer_schema_objects(
+        let mut object_outcome = chiron_horizon_core::transfer::TransferObjectOutcome::default();
+        match chiron_horizon_core::transfer::transfer_schema_objects(
             &state,
             &request,
             &source_pool_key,
@@ -400,7 +400,7 @@ pub async fn start_transfer(
                         terminal: true,
                     },
                 );
-                gauss_horizon_core::transfer::clear_cancelled(&transfer_id).await;
+                chiron_horizon_core::transfer::clear_cancelled(&transfer_id).await;
                 return;
             }
             Err(e) => {
@@ -431,7 +431,7 @@ pub async fn start_transfer(
         // their backup names.
         if let Some(backup_names) = backup_names.as_ref() {
             if failed_tables.is_empty() {
-                if let Err(e) = gauss_horizon_core::transfer::drop_backup_tables(
+                if let Err(e) = chiron_horizon_core::transfer::drop_backup_tables(
                     &state,
                     &request,
                     target_db_type,
@@ -486,7 +486,7 @@ pub async fn start_transfer(
                 terminal: true,
             },
         );
-        gauss_horizon_core::transfer::clear_cancelled(&transfer_id).await;
+        chiron_horizon_core::transfer::clear_cancelled(&transfer_id).await;
     });
 
     Ok(())
@@ -500,15 +500,15 @@ pub async fn preview_transfer_ownership(
     let state = state.inner().clone();
     let source_db_type = get_db_type(&state, &request.source_connection_id).await?;
     let target_db_type = get_db_type(&state, &request.target_connection_id).await?;
-    gauss_horizon_core::transfer::validate_transfer_request(&request)?;
-    let source_pool_key = gauss_horizon_core::transfer::ensure_transfer_pool(
+    chiron_horizon_core::transfer::validate_transfer_request(&request)?;
+    let source_pool_key = chiron_horizon_core::transfer::ensure_transfer_pool(
         &state,
         &request.source_connection_id,
         &request.source_database,
         request.source_catalog.as_deref(),
     )
     .await?;
-    let target_pool_key = gauss_horizon_core::transfer::ensure_transfer_pool(
+    let target_pool_key = chiron_horizon_core::transfer::ensure_transfer_pool(
         &state,
         &request.target_connection_id,
         &request.target_database,
@@ -516,7 +516,7 @@ pub async fn preview_transfer_ownership(
     )
     .await?;
 
-    gauss_horizon_core::transfer::preview_transfer_ownership(
+    chiron_horizon_core::transfer::preview_transfer_ownership(
         &state,
         &request,
         &source_db_type,
@@ -529,7 +529,7 @@ pub async fn preview_transfer_ownership(
 
 #[tauri::command]
 pub async fn cancel_transfer(transfer_id: String) -> Result<(), String> {
-    gauss_horizon_core::transfer::set_cancelled(&transfer_id).await;
+    chiron_horizon_core::transfer::set_cancelled(&transfer_id).await;
     Ok(())
 }
 
@@ -546,7 +546,7 @@ pub async fn sort_tables_by_fk_dependency(
     tables: Vec<String>,
     parents_first: bool,
 ) -> Result<Vec<String>, String> {
-    gauss_horizon_core::transfer::sort_tables_by_fk_dependency(
+    chiron_horizon_core::transfer::sort_tables_by_fk_dependency(
         &state,
         &connection_id,
         &database,

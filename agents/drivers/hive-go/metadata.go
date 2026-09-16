@@ -207,15 +207,15 @@ func (server *server) connectionInfo() (map[string]any, error) {
 	}
 	productName := "Apache Hive"
 	compatibilityMode := "hive"
-	driverName := "Gauss Horizon Hive Go Agent"
+	driverName := "Chiron Horizon Hive Go Agent"
 	if strings.EqualFold(server.params.DatabaseType, "kyuubi") {
 		productName = "Apache Kyuubi"
 		compatibilityMode = "kyuubi"
-		driverName = "Gauss Horizon Kyuubi Go Agent"
+		driverName = "Chiron Horizon Kyuubi Go Agent"
 	} else if strings.EqualFold(server.params.DatabaseType, "impala") || strings.Contains(strings.ToLower(version), "impalad version") {
 		productName = "Apache Impala"
 		compatibilityMode = "impala"
-		driverName = "Gauss Horizon Impala Go Agent"
+		driverName = "Chiron Horizon Impala Go Agent"
 	}
 	return map[string]any{
 		"database":          server.config.Database,

@@ -73,14 +73,14 @@ vi.mock("@/stores/settingsStore", () => ({
 }));
 
 function queryAnalysis(sql: string) {
-  const hidden = sql.includes("__GAUSS_HORIZON_PK_0");
+  const hidden = sql.includes("__CHIRON_HORIZON_PK_0");
   return {
     editable: true,
     analysis: {
       schema: undefined,
       tableName: "users",
       selectStar: false,
-      columns: [{ sourceName: "name", resultName: "name", expression: "name" }, ...(hidden ? [{ sourceName: "id", resultName: "__GAUSS_HORIZON_PK_0", expression: "`id`" }] : [])],
+      columns: [{ sourceName: "name", resultName: "name", expression: "name" }, ...(hidden ? [{ sourceName: "id", resultName: "__CHIRON_HORIZON_PK_0", expression: "`id`" }] : [])],
     },
   };
 }
@@ -122,7 +122,7 @@ describe("queryStore hidden primary key editing", () => {
     cancelQuery.mockResolvedValue(false);
     executeMulti.mockResolvedValue([
       {
-        columns: ["name", "__GAUSS_HORIZON_PK_0"],
+        columns: ["name", "__CHIRON_HORIZON_PK_0"],
         rows: [["Alice", 7]],
         affected_rows: 0,
         execution_time_ms: 1,
@@ -131,7 +131,7 @@ describe("queryStore hidden primary key editing", () => {
     beginManualTransaction.mockResolvedValue("txn-1");
     executeInManualTransaction.mockResolvedValue([
       {
-        columns: ["name", "__GAUSS_HORIZON_PK_0"],
+        columns: ["name", "__CHIRON_HORIZON_PK_0"],
         rows: [["Alice", 7]],
         affected_rows: 0,
         execution_time_ms: 1,
@@ -150,7 +150,7 @@ describe("queryStore hidden primary key editing", () => {
 
     await store.executeTabSql(tabId, "SELECT name FROM users");
 
-    expect(executeMulti).toHaveBeenCalledWith("mysql-1", "app", "SELECT name, `id` AS `__GAUSS_HORIZON_PK_0` FROM users", undefined, expect.any(String), expect.objectContaining({ timeoutSecs: 30 }));
+    expect(executeMulti).toHaveBeenCalledWith("mysql-1", "app", "SELECT name, `id` AS `__CHIRON_HORIZON_PK_0` FROM users", undefined, expect.any(String), expect.objectContaining({ timeoutSecs: 30 }));
     const tab = store.tabs.find((item) => item.id === tabId)!;
     expect(tab.result?.hidden_column_indexes).toEqual([1]);
     await vi.waitFor(() => expect(tab.querySourceColumns).toEqual(["name", "id"]));
@@ -241,16 +241,16 @@ describe("queryStore hidden primary key editing", () => {
     await store.executeTabSql(tabId, "SELECT name FROM users");
 
     expect(getColumns).toHaveBeenCalledWith("mysql-1", "app", "app", "users", undefined);
-    expect(executeMulti).toHaveBeenCalledWith("mysql-1", "", "SELECT name, `id` AS `__GAUSS_HORIZON_PK_0` FROM users", undefined, expect.any(String), expect.objectContaining({ timeoutSecs: 30 }));
+    expect(executeMulti).toHaveBeenCalledWith("mysql-1", "", "SELECT name, `id` AS `__CHIRON_HORIZON_PK_0` FROM users", undefined, expect.any(String), expect.objectContaining({ timeoutSecs: 30 }));
     const tab = store.tabs.find((item) => item.id === tabId)!;
     await vi.waitFor(() => expect(tab.querySourceColumns).toEqual(["name", "id"]));
     expect(tab.tableMeta?.database).toBe("app");
     expect(tab.queryEditabilityReason).toBeUndefined();
   });
 
-  it("keeps insert disabled when a MySQL table has a physical primary key named like Gauss Horizon ROWID", async () => {
+  it("keeps insert disabled when a MySQL table has a physical primary key named like Chiron Horizon ROWID", async () => {
     getColumns.mockResolvedValue([
-      { name: "__GAUSS_HORIZON_ROWID", data_type: "varchar", is_nullable: false, column_default: null, is_primary_key: true, extra: null },
+      { name: "__CHIRON_HORIZON_ROWID", data_type: "varchar", is_nullable: false, column_default: null, is_primary_key: true, extra: null },
       { name: "name", data_type: "varchar", is_nullable: true, column_default: null, is_primary_key: false, extra: null },
     ]);
     analyzeEditableQueryEditability.mockImplementation(async (sql: string) => ({
@@ -259,7 +259,7 @@ describe("queryStore hidden primary key editing", () => {
         schema: undefined,
         tableName: "users",
         selectStar: false,
-        columns: [{ sourceName: "name", resultName: "name", expression: "name" }, ...(sql.includes("__GAUSS_HORIZON_PK_0") ? [{ sourceName: "__GAUSS_HORIZON_ROWID", resultName: "__GAUSS_HORIZON_PK_0", expression: "`__GAUSS_HORIZON_ROWID`" }] : [])],
+        columns: [{ sourceName: "name", resultName: "name", expression: "name" }, ...(sql.includes("__CHIRON_HORIZON_PK_0") ? [{ sourceName: "__CHIRON_HORIZON_ROWID", resultName: "__CHIRON_HORIZON_PK_0", expression: "`__CHIRON_HORIZON_ROWID`" }] : [])],
       },
     }));
 
@@ -270,7 +270,7 @@ describe("queryStore hidden primary key editing", () => {
     await store.executeTabSql(tabId, "SELECT name FROM users");
 
     const tab = store.tabs.find((item) => item.id === tabId)!;
-    await vi.waitFor(() => expect(tab.querySourceColumns).toEqual(["name", "__GAUSS_HORIZON_ROWID"]));
+    await vi.waitFor(() => expect(tab.querySourceColumns).toEqual(["name", "__CHIRON_HORIZON_ROWID"]));
     expect(tab.queryAnalysis?.allowInsert).toBe(false);
   });
 
@@ -304,7 +304,7 @@ describe("queryStore hidden primary key editing", () => {
     await store.executeTabSql(tabId, "SELECT name FROM users");
 
     expect(getColumns).toHaveBeenCalledWith("jdbc-1", "app", "", "users", undefined);
-    expect(executeMulti).toHaveBeenCalledWith("jdbc-1", "", "SELECT name, `id` AS `__GAUSS_HORIZON_PK_0` FROM users", undefined, expect.any(String), expect.objectContaining({ timeoutSecs: 30 }));
+    expect(executeMulti).toHaveBeenCalledWith("jdbc-1", "", "SELECT name, `id` AS `__CHIRON_HORIZON_PK_0` FROM users", undefined, expect.any(String), expect.objectContaining({ timeoutSecs: 30 }));
     const tab = store.tabs.find((item) => item.id === tabId)!;
     await vi.waitFor(() => expect(tab.querySourceColumns).toEqual(["name", "id"]));
     expect(tab.queryEditabilityReason).toBeUndefined();
@@ -357,19 +357,19 @@ describe("queryStore hidden primary key editing", () => {
     await store.executeTabSql(tabId, "SELECT name FROM users");
 
     expect(getColumns).toHaveBeenCalledWith("mysql-1", "analytics", "analytics", "users", undefined);
-    expect(executeMulti).toHaveBeenCalledWith("mysql-1", "analytics", "SELECT name, `id` AS `__GAUSS_HORIZON_PK_0` FROM users", undefined, expect.any(String), expect.objectContaining({ timeoutSecs: 30 }));
+    expect(executeMulti).toHaveBeenCalledWith("mysql-1", "analytics", "SELECT name, `id` AS `__CHIRON_HORIZON_PK_0` FROM users", undefined, expect.any(String), expect.objectContaining({ timeoutSecs: 30 }));
   });
 
   it("loads metadata from a MySQL cross-database qualified source", async () => {
     analyzeEditableQueryEditability.mockImplementation(async (sql: string) => {
-      const hidden = sql.includes("__GAUSS_HORIZON_PK_0");
+      const hidden = sql.includes("__CHIRON_HORIZON_PK_0");
       return {
         editable: true,
         analysis: {
           schema: "reporting",
           tableName: "users",
           selectStar: false,
-          columns: [{ sourceName: "name", resultName: "name", expression: "name" }, ...(hidden ? [{ sourceName: "id", resultName: "__GAUSS_HORIZON_PK_0", expression: "`id`" }] : [])],
+          columns: [{ sourceName: "name", resultName: "name", expression: "name" }, ...(hidden ? [{ sourceName: "id", resultName: "__CHIRON_HORIZON_PK_0", expression: "`id`" }] : [])],
         },
       };
     });
@@ -380,7 +380,7 @@ describe("queryStore hidden primary key editing", () => {
     await store.executeTabSql(tabId, "SELECT name FROM reporting.users");
 
     expect(getColumns).toHaveBeenCalledWith("mysql-1", "app", "reporting", "users", undefined);
-    expect(executeMulti).toHaveBeenCalledWith("mysql-1", "app", "SELECT name, `id` AS `__GAUSS_HORIZON_PK_0` FROM reporting.users", undefined, expect.any(String), expect.objectContaining({ timeoutSecs: 30 }));
+    expect(executeMulti).toHaveBeenCalledWith("mysql-1", "app", "SELECT name, `id` AS `__CHIRON_HORIZON_PK_0` FROM reporting.users", undefined, expect.any(String), expect.objectContaining({ timeoutSecs: 30 }));
     const tab = store.tabs.find((item) => item.id === tabId)!;
     await vi.waitFor(() => expect(tab.querySourceColumns).toEqual(["name", "id"]));
     expect(tab.tableMeta?.database).toBe("app");
@@ -434,7 +434,7 @@ describe("queryStore hidden primary key editing", () => {
       { name: "TT_PLATFORM_CARS", type: "table", schema: "SH_SMCVDMS_OVERSEAS_DRSSITB" },
     ]);
     analyzeEditableQueryEditability.mockImplementation(async (sql: string) => {
-      const hidden = sql.includes("__GAUSS_HORIZON_PK_0");
+      const hidden = sql.includes("__CHIRON_HORIZON_PK_0");
       return {
         editable: true,
         analysis: {
@@ -445,7 +445,7 @@ describe("queryStore hidden primary key editing", () => {
           columns: hidden
             ? [
                 { star: true, sourceQualifier: "t", sourceKey: "t:0", resultName: "*", expression: "t.*" },
-                { resultName: "__GAUSS_HORIZON_PK_0", expression: "ROWIDTOCHAR(ROWID)" },
+                { resultName: "__CHIRON_HORIZON_PK_0", expression: "ROWIDTOCHAR(ROWID)" },
               ]
             : [],
         },
@@ -453,7 +453,7 @@ describe("queryStore hidden primary key editing", () => {
     });
     executeMulti.mockResolvedValue([
       {
-        columns: ["ID", "PLATFORM", "__GAUSS_HORIZON_PK_0"],
+        columns: ["ID", "PLATFORM", "__CHIRON_HORIZON_PK_0"],
         rows: [[72, "轻卡", "AAAPr9AAEAAAACXAAA"]],
         affected_rows: 0,
         execution_time_ms: 1,
@@ -468,12 +468,12 @@ describe("queryStore hidden primary key editing", () => {
 
     await store.executeTabSql(tabId, "SELECT t.* FROM SH_SMCVDMS_OVERSEAS_DRSSITB.TT_PLATFORM_CARS t WHERE t.PLATFORM = '轻卡'");
 
-    expect(executeMulti).toHaveBeenCalledWith("oracle-1", "ORCL", "SELECT t.*, ROWIDTOCHAR(ROWID) AS \"__GAUSS_HORIZON_PK_0\" FROM SH_SMCVDMS_OVERSEAS_DRSSITB.TT_PLATFORM_CARS t WHERE t.PLATFORM = '轻卡'", undefined, expect.any(String), expect.objectContaining({ timeoutSecs: 30 }));
+    expect(executeMulti).toHaveBeenCalledWith("oracle-1", "ORCL", "SELECT t.*, ROWIDTOCHAR(ROWID) AS \"__CHIRON_HORIZON_PK_0\" FROM SH_SMCVDMS_OVERSEAS_DRSSITB.TT_PLATFORM_CARS t WHERE t.PLATFORM = '轻卡'", undefined, expect.any(String), expect.objectContaining({ timeoutSecs: 30 }));
     expect(lookupLocalCompletionTables).toHaveBeenCalledWith("oracle-1", "ORCL", "TT_PLATFORM_CARS", 20, "SH_SMCVDMS_OVERSEAS_DRSSITB", undefined);
     const tab = store.tabs.find((item) => item.id === tabId)!;
     expect(tab.result?.hidden_column_indexes).toEqual([2]);
-    await vi.waitFor(() => expect(tab.querySourceColumns).toEqual(["ID", "PLATFORM", "__GAUSS_HORIZON_ROWID"]));
-    expect(tab.tableMeta?.primaryKeys).toEqual(["__GAUSS_HORIZON_ROWID"]);
+    await vi.waitFor(() => expect(tab.querySourceColumns).toEqual(["ID", "PLATFORM", "__CHIRON_HORIZON_ROWID"]));
+    expect(tab.tableMeta?.primaryKeys).toEqual(["__CHIRON_HORIZON_ROWID"]);
     expect(tab.queryAnalysis).toBeDefined();
     expect(tab.queryAnalysis?.allowInsert).not.toBe(false);
     expect(tab.queryEditabilityReason).toBeUndefined();
@@ -606,8 +606,8 @@ describe("queryStore hidden primary key editing", () => {
 
     const tab = store.tabs.find((item) => item.id === tabId)!;
     await vi.waitFor(() => expect(tab.result?.columns).toEqual(["ROWID", "NAME", "LABEL"]));
-    await vi.waitFor(() => expect(tab.querySourceColumns).toEqual(["__GAUSS_HORIZON_ROWID", "NAME", undefined]), { timeout: 5000 });
-    expect(tab.tableMeta?.primaryKeys).toEqual(["__GAUSS_HORIZON_ROWID"]);
+    await vi.waitFor(() => expect(tab.querySourceColumns).toEqual(["__CHIRON_HORIZON_ROWID", "NAME", undefined]), { timeout: 5000 });
+    expect(tab.tableMeta?.primaryKeys).toEqual(["__CHIRON_HORIZON_ROWID"]);
     expect(tab.queryAnalysis).toBeDefined();
     expect(tab.queryEditabilityReason).toBeUndefined();
   }, 10_000);
@@ -698,7 +698,7 @@ describe("queryStore hidden primary key editing", () => {
       { name: "CUSTOMERS", type: "table", schema: "APP" },
     ]);
     analyzeEditableQueryEditability.mockImplementation(async (sql: string) => {
-      const hidden = sql.includes("__GAUSS_HORIZON_PK_0");
+      const hidden = sql.includes("__CHIRON_HORIZON_PK_0");
       return {
         editable: true,
         analysis: {
@@ -708,7 +708,7 @@ describe("queryStore hidden primary key editing", () => {
           columns: hidden
             ? [
                 { star: true, sourceKey: "CUSTOMERS:0", resultName: "*", expression: "*" },
-                { resultName: "__GAUSS_HORIZON_PK_0", expression: "ROWIDTOCHAR(ROWID)" },
+                { resultName: "__CHIRON_HORIZON_PK_0", expression: "ROWIDTOCHAR(ROWID)" },
               ]
             : [],
         },
@@ -716,7 +716,7 @@ describe("queryStore hidden primary key editing", () => {
     });
     executeMulti.mockResolvedValue([
       {
-        columns: ["ID", "NAME", "__GAUSS_HORIZON_PK_0"],
+        columns: ["ID", "NAME", "__CHIRON_HORIZON_PK_0"],
         rows: [[1, "Alice", "AAAPr9AAEAAAACXAAA"]],
         affected_rows: 0,
         execution_time_ms: 1,
@@ -730,7 +730,7 @@ describe("queryStore hidden primary key editing", () => {
 
     await store.executeTabSql(tabId, "SELECT * FROM CUSTOMERS");
 
-    expect(executeMulti).toHaveBeenCalledWith("oracle-1", "ORCL", 'SELECT CUSTOMERS.*, ROWIDTOCHAR(ROWID) AS "__GAUSS_HORIZON_PK_0" FROM CUSTOMERS', undefined, expect.any(String), expect.objectContaining({ timeoutSecs: 30 }));
+    expect(executeMulti).toHaveBeenCalledWith("oracle-1", "ORCL", 'SELECT CUSTOMERS.*, ROWIDTOCHAR(ROWID) AS "__CHIRON_HORIZON_PK_0" FROM CUSTOMERS', undefined, expect.any(String), expect.objectContaining({ timeoutSecs: 30 }));
     expect(lookupLocalCompletionTables).toHaveBeenCalledWith("oracle-1", "ORCL", "CUSTOMERS", 20, "APP", undefined);
     expect(store.tabs.find((item) => item.id === tabId)?.result?.hidden_column_indexes).toEqual([2]);
   });
@@ -1098,7 +1098,7 @@ describe("queryStore hidden primary key editing", () => {
     const { useQueryStore } = await import("@/stores/queryStore");
     const store = useQueryStore();
     const tabId = store.createTab("elasticsearch-1", "", "Query");
-    const sql = "SELECT * FROM `gauss-horizon-app-logs-v1` AS dalv";
+    const sql = "SELECT * FROM `chiron-horizon-app-logs-v1` AS dalv";
 
     await store.executeTabSql(tabId, sql, { pagination: { limit: 100, offset: 0 } });
     const tab = store.tabs.find((item) => item.id === tabId)!;
@@ -1171,7 +1171,7 @@ describe("queryStore hidden primary key editing", () => {
 
     await store.executeTabSql(tabId, "SELECT name FROM users");
 
-    expect(executeInManualTransaction).toHaveBeenCalledWith("txn-1", "SELECT name, `id` AS `__GAUSS_HORIZON_PK_0` FROM users", "app", undefined, expect.any(Number), false, undefined, undefined, undefined);
+    expect(executeInManualTransaction).toHaveBeenCalledWith("txn-1", "SELECT name, `id` AS `__CHIRON_HORIZON_PK_0` FROM users", "app", undefined, expect.any(Number), false, undefined, undefined, undefined);
   });
 
   it("keeps a keyless Oracle query editable when its WHERE clause reads another table", async () => {
@@ -1182,7 +1182,7 @@ describe("queryStore hidden primary key editing", () => {
     ]);
     lookupLocalCompletionTables.mockReturnValue([{ name: "PLATFORM_CARS", type: "table", schema: "APP" }]);
     analyzeEditableQueryEditability.mockImplementation(async (sql: string) => {
-      const hidden = sql.includes("__GAUSS_HORIZON_PK_0");
+      const hidden = sql.includes("__CHIRON_HORIZON_PK_0");
       return {
         editable: true,
         analysis: {
@@ -1193,7 +1193,7 @@ describe("queryStore hidden primary key editing", () => {
           columns: hidden
             ? [
                 { star: true, sourceQualifier: "t", sourceKey: "t:0", resultName: "*", expression: "t.*" },
-                { resultName: "__GAUSS_HORIZON_PK_0", expression: "ROWIDTOCHAR(ROWID)" },
+                { resultName: "__CHIRON_HORIZON_PK_0", expression: "ROWIDTOCHAR(ROWID)" },
               ]
             : [],
         },
@@ -1201,7 +1201,7 @@ describe("queryStore hidden primary key editing", () => {
     });
     executeMulti.mockResolvedValue([
       {
-        columns: ["ID", "CUSTOMER_NO", "__GAUSS_HORIZON_PK_0"],
+        columns: ["ID", "CUSTOMER_NO", "__CHIRON_HORIZON_PK_0"],
         rows: [[72, 2100196, "AAAPr9AAEAAAACXAAA"]],
         affected_rows: 0,
         execution_time_ms: 1,
@@ -1220,14 +1220,14 @@ describe("queryStore hidden primary key editing", () => {
     expect(executeMulti).toHaveBeenCalledWith(
       "oracle-1",
       "ORCL",
-      'SELECT t.*, ROWIDTOCHAR(ROWID) AS "__GAUSS_HORIZON_PK_0" FROM APP.PLATFORM_CARS t WHERE t.CUSTOMER_NO IN (SELECT c.CUSTOMER_NO FROM APP.CUSTOMERS c WHERE c.ENABLED = 1)',
+      'SELECT t.*, ROWIDTOCHAR(ROWID) AS "__CHIRON_HORIZON_PK_0" FROM APP.PLATFORM_CARS t WHERE t.CUSTOMER_NO IN (SELECT c.CUSTOMER_NO FROM APP.CUSTOMERS c WHERE c.ENABLED = 1)',
       undefined,
       expect.any(String),
       expect.objectContaining({ timeoutSecs: 30 }),
     );
     const tab = store.tabs.find((item) => item.id === tabId)!;
     expect(tab.result?.hidden_column_indexes).toEqual([2]);
-    await vi.waitFor(() => expect(tab.querySourceColumns).toEqual(["ID", "CUSTOMER_NO", "__GAUSS_HORIZON_ROWID"]));
+    await vi.waitFor(() => expect(tab.querySourceColumns).toEqual(["ID", "CUSTOMER_NO", "__CHIRON_HORIZON_ROWID"]));
     expect(tab.queryAnalysis).toBeDefined();
     expect(tab.queryAnalysis?.allowInsertDelete).not.toBe(false);
     expect(tab.queryEditabilityReason).toBeUndefined();
@@ -1285,10 +1285,10 @@ describe("queryStore hidden primary key editing", () => {
         schema: "APP",
         tableName: "DOCUMENTS",
         selectStar: false,
-        columns: [{ sourceName: "PAYLOAD", resultName: "PAYLOAD", expression: "PAYLOAD" }, ...(sql.includes("__GAUSS_HORIZON_PK_0") ? [{ sourceName: "ID", resultName: "__GAUSS_HORIZON_PK_0", expression: '"ID"' }] : [])],
+        columns: [{ sourceName: "PAYLOAD", resultName: "PAYLOAD", expression: "PAYLOAD" }, ...(sql.includes("__CHIRON_HORIZON_PK_0") ? [{ sourceName: "ID", resultName: "__CHIRON_HORIZON_PK_0", expression: '"ID"' }] : [])],
       },
     }));
-    executeMulti.mockResolvedValue([{ columns: ["PAYLOAD", "__GAUSS_HORIZON_PK_0"], rows: [["<CLOB>", 1]], affected_rows: 0, execution_time_ms: 1 }]);
+    executeMulti.mockResolvedValue([{ columns: ["PAYLOAD", "__CHIRON_HORIZON_PK_0"], rows: [["<CLOB>", 1]], affected_rows: 0, execution_time_ms: 1 }]);
 
     const { useQueryStore } = await import("@/stores/queryStore");
     const store = useQueryStore();
@@ -1297,7 +1297,7 @@ describe("queryStore hidden primary key editing", () => {
 
     await store.executeTabSql(tabId, "SELECT PAYLOAD FROM APP.DOCUMENTS");
 
-    expect(executeMulti).toHaveBeenCalledWith("oracle-1", "ORCL", 'SELECT PAYLOAD, "ID" AS "__GAUSS_HORIZON_PK_0" FROM APP.DOCUMENTS', undefined, expect.any(String), expect.objectContaining({ tableDataPreview: true, timeoutSecs: 30 }));
+    expect(executeMulti).toHaveBeenCalledWith("oracle-1", "ORCL", 'SELECT PAYLOAD, "ID" AS "__CHIRON_HORIZON_PK_0" FROM APP.DOCUMENTS', undefined, expect.any(String), expect.objectContaining({ tableDataPreview: true, timeoutSecs: 30 }));
   });
 
   it("keeps deferred Oracle LOBs disabled for views", async () => {
@@ -1373,10 +1373,10 @@ describe("queryStore hidden primary key editing", () => {
         schema: "APP",
         tableName: "CUSTOMERS",
         selectStar: false,
-        columns: [{ sourceName: "NAME", resultName: "NAME", expression: "NAME" }, ...(sql.includes("__GAUSS_HORIZON_PK_0") ? [{ sourceName: "ID", resultName: "__GAUSS_HORIZON_PK_0", expression: '"ID"' }] : [])],
+        columns: [{ sourceName: "NAME", resultName: "NAME", expression: "NAME" }, ...(sql.includes("__CHIRON_HORIZON_PK_0") ? [{ sourceName: "ID", resultName: "__CHIRON_HORIZON_PK_0", expression: '"ID"' }] : [])],
       },
     }));
-    executeMulti.mockResolvedValue([{ columns: ["NAME", "__GAUSS_HORIZON_PK_0"], rows: [["Alice", 1]], affected_rows: 0, execution_time_ms: 1 }]);
+    executeMulti.mockResolvedValue([{ columns: ["NAME", "__CHIRON_HORIZON_PK_0"], rows: [["Alice", 1]], affected_rows: 0, execution_time_ms: 1 }]);
 
     const { useQueryStore } = await import("@/stores/queryStore");
     const store = useQueryStore();
@@ -1444,17 +1444,17 @@ describe("queryStore hidden primary key editing", () => {
     });
 
     expect(buildSortedQuerySql).toHaveBeenCalledWith({
-      originalSql: "SELECT name, `id` AS `__GAUSS_HORIZON_PK_0` FROM users",
+      originalSql: "SELECT name, `id` AS `__CHIRON_HORIZON_PK_0` FROM users",
       databaseType: "mysql",
-      resultColumns: ["name", "__GAUSS_HORIZON_PK_0"],
+      resultColumns: ["name", "__CHIRON_HORIZON_PK_0"],
       columnIndex: 0,
       column: "name",
       direction: "asc",
     });
-    expect(executeMulti).toHaveBeenCalledWith("mysql-1", "app", "SELECT name, `id` AS `__GAUSS_HORIZON_PK_0` FROM users ORDER BY name ASC", undefined, expect.any(String), expect.objectContaining({ timeoutSecs: 30 }));
+    expect(executeMulti).toHaveBeenCalledWith("mysql-1", "app", "SELECT name, `id` AS `__CHIRON_HORIZON_PK_0` FROM users ORDER BY name ASC", undefined, expect.any(String), expect.objectContaining({ timeoutSecs: 30 }));
     const tab = store.tabs.find((item) => item.id === tabId)!;
     expect(tab.result?.hidden_column_indexes).toEqual([1]);
-    expect(tab.resultSortedSql).toBe("SELECT name, `id` AS `__GAUSS_HORIZON_PK_0` FROM users ORDER BY name ASC");
+    expect(tab.resultSortedSql).toBe("SELECT name, `id` AS `__CHIRON_HORIZON_PK_0` FROM users ORDER BY name ASC");
     await vi.waitFor(() => expect(tab.querySourceColumns).toEqual(["name", "id"]));
     expect(tab.queryAnalysis).toBeDefined();
 
@@ -1493,7 +1493,7 @@ describe("queryStore hidden primary key editing", () => {
     expect(tab.resultSortDirection).toBeUndefined();
     expect(tab.resultSortMode).toBeUndefined();
     expect(tab.resultSortedSql).toBeUndefined();
-    expect(executeMulti).toHaveBeenLastCalledWith("mysql-1", "app", "SELECT name, `id` AS `__GAUSS_HORIZON_PK_0` FROM users", undefined, expect.any(String), expect.objectContaining({ timeoutSecs: 30 }));
+    expect(executeMulti).toHaveBeenLastCalledWith("mysql-1", "app", "SELECT name, `id` AS `__CHIRON_HORIZON_PK_0` FROM users", undefined, expect.any(String), expect.objectContaining({ timeoutSecs: 30 }));
   });
 
   it("preserves the original query behavior when the primary key is already returned", async () => {
@@ -1539,20 +1539,20 @@ describe("queryStore hidden primary key editing", () => {
       { name: "NAME", data_type: "VARCHAR2", is_nullable: true, column_default: null, is_primary_key: false, extra: null },
     ]);
     analyzeEditableQueryEditability.mockImplementation(async (sql: string) => {
-      const hidden = sql.includes("__GAUSS_HORIZON_PK_0");
+      const hidden = sql.includes("__CHIRON_HORIZON_PK_0");
       return {
         editable: true,
         analysis: {
           schema: undefined,
-          tableName: "GAUSS_HORIZON_HIDDEN_PK_EDIT_TEST",
+          tableName: "CHIRON_HORIZON_HIDDEN_PK_EDIT_TEST",
           selectStar: false,
-          columns: [{ sourceName: "NAME", resultName: "NAME", expression: "NAME" }, ...(hidden ? [{ sourceName: "ID", resultName: "__GAUSS_HORIZON_PK_0", expression: '"ID"' }] : [])],
+          columns: [{ sourceName: "NAME", resultName: "NAME", expression: "NAME" }, ...(hidden ? [{ sourceName: "ID", resultName: "__CHIRON_HORIZON_PK_0", expression: '"ID"' }] : [])],
         },
       };
     });
     executeMulti.mockResolvedValue([
       {
-        columns: ["NAME", "__GAUSS_HORIZON_PK_0"],
+        columns: ["NAME", "__CHIRON_HORIZON_PK_0"],
         rows: [["Alice", 7]],
         affected_rows: 0,
         execution_time_ms: 1,
@@ -1565,10 +1565,10 @@ describe("queryStore hidden primary key editing", () => {
     // Exercise the explicit auto-commit execute-multi path.
     store.setAutoCommit(tabId, true);
 
-    await store.executeTabSql(tabId, "SELECT NAME FROM GAUSS_HORIZON_HIDDEN_PK_EDIT_TEST");
+    await store.executeTabSql(tabId, "SELECT NAME FROM CHIRON_HORIZON_HIDDEN_PK_EDIT_TEST");
 
-    expect(getColumns).toHaveBeenCalledWith("oracle-1", "XEPDB1", "", "GAUSS_HORIZON_HIDDEN_PK_EDIT_TEST", undefined);
-    expect(executeMulti).toHaveBeenCalledWith("oracle-1", "XEPDB1", 'SELECT NAME, "ID" AS "__GAUSS_HORIZON_PK_0" FROM GAUSS_HORIZON_HIDDEN_PK_EDIT_TEST', undefined, expect.any(String), expect.objectContaining({ timeoutSecs: 30 }));
+    expect(getColumns).toHaveBeenCalledWith("oracle-1", "XEPDB1", "", "CHIRON_HORIZON_HIDDEN_PK_EDIT_TEST", undefined);
+    expect(executeMulti).toHaveBeenCalledWith("oracle-1", "XEPDB1", 'SELECT NAME, "ID" AS "__CHIRON_HORIZON_PK_0" FROM CHIRON_HORIZON_HIDDEN_PK_EDIT_TEST', undefined, expect.any(String), expect.objectContaining({ timeoutSecs: 30 }));
     const tab = store.tabs.find((item) => item.id === tabId)!;
     expect(tab.result?.hidden_column_indexes).toEqual([1]);
     await vi.waitFor(() => expect(tab.querySourceColumns).toEqual(["NAME", "ID"]));
@@ -1654,20 +1654,20 @@ describe("queryStore hidden primary key editing", () => {
       { name: "name", data_type: "varchar", is_nullable: true, column_default: null, is_primary_key: false, extra: null },
     ]);
     analyzeEditableQueryEditability.mockImplementation(async (sql: string) => {
-      const hidden = sql.includes("__GAUSS_HORIZON_PK_0");
+      const hidden = sql.includes("__CHIRON_HORIZON_PK_0");
       return {
         editable: true,
         analysis: {
           schema: undefined,
           tableName: "items",
           selectStar: false,
-          columns: [{ sourceName: "tenant_id", resultName: "tenant_id", expression: "tenant_id" }, { sourceName: "name", resultName: "name", expression: "name" }, ...(hidden ? [{ sourceName: "item_id", resultName: "__GAUSS_HORIZON_PK_0", expression: "`item_id`" }] : [])],
+          columns: [{ sourceName: "tenant_id", resultName: "tenant_id", expression: "tenant_id" }, { sourceName: "name", resultName: "name", expression: "name" }, ...(hidden ? [{ sourceName: "item_id", resultName: "__CHIRON_HORIZON_PK_0", expression: "`item_id`" }] : [])],
         },
       };
     });
     executeMulti.mockResolvedValue([
       {
-        columns: ["tenant_id", "name", "__GAUSS_HORIZON_PK_0"],
+        columns: ["tenant_id", "name", "__CHIRON_HORIZON_PK_0"],
         rows: [[3, "Alice", 7]],
         affected_rows: 0,
         execution_time_ms: 1,
@@ -1680,7 +1680,7 @@ describe("queryStore hidden primary key editing", () => {
 
     await store.executeTabSql(tabId, "SELECT tenant_id, name FROM items");
 
-    expect(executeMulti).toHaveBeenCalledWith("mysql-1", "app", "SELECT tenant_id, name, `item_id` AS `__GAUSS_HORIZON_PK_0` FROM items", undefined, expect.any(String), expect.objectContaining({ timeoutSecs: 30 }));
+    expect(executeMulti).toHaveBeenCalledWith("mysql-1", "app", "SELECT tenant_id, name, `item_id` AS `__CHIRON_HORIZON_PK_0` FROM items", undefined, expect.any(String), expect.objectContaining({ timeoutSecs: 30 }));
     const tab = store.tabs.find((item) => item.id === tabId)!;
     expect(tab.result?.hidden_column_indexes).toEqual([2]);
     await vi.waitFor(() => expect(tab.querySourceColumns).toEqual(["tenant_id", "name", "item_id"]));
@@ -1743,7 +1743,7 @@ describe("queryStore hidden primary key editing", () => {
       { name: "name", data_type: "varchar", is_nullable: true, column_default: null, is_primary_key: false, extra: null },
     ]);
     analyzeEditableQueryEditability.mockImplementation(async (sql: string) => {
-      const hidden = sql.includes("__GAUSS_HORIZON_PK_0");
+      const hidden = sql.includes("__CHIRON_HORIZON_PK_0");
       return {
         editable: true,
         analysis: {
@@ -1754,8 +1754,8 @@ describe("queryStore hidden primary key editing", () => {
             { sourceName: "name", resultName: "name", expression: "name" },
             ...(hidden
               ? [
-                  { sourceName: "tenant_id", resultName: "__GAUSS_HORIZON_PK_0", expression: "`tenant_id`" },
-                  { sourceName: "item_id", resultName: "__GAUSS_HORIZON_PK_1", expression: "`item_id`" },
+                  { sourceName: "tenant_id", resultName: "__CHIRON_HORIZON_PK_0", expression: "`tenant_id`" },
+                  { sourceName: "item_id", resultName: "__CHIRON_HORIZON_PK_1", expression: "`item_id`" },
                 ]
               : []),
           ],
@@ -1764,7 +1764,7 @@ describe("queryStore hidden primary key editing", () => {
     });
     executeMulti.mockResolvedValue([
       {
-        columns: ["name", "__GAUSS_HORIZON_PK_1"],
+        columns: ["name", "__CHIRON_HORIZON_PK_1"],
         rows: [["Alice", 7]],
         affected_rows: 0,
         execution_time_ms: 1,

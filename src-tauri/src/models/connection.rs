@@ -1,1 +1,1 @@
-pub use gauss_horizon_core::models::connection::*;
+pub use chiron_horizon_core::models::connection::*;

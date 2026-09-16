@@ -2,13 +2,13 @@ use std::sync::Arc;
 use tauri::State;
 
 use crate::commands::connection::AppState;
-use gauss_horizon_core::db;
+use chiron_horizon_core::db;
 
 /// Resolve a non-internal catalog for dispatch to the Doris multi-catalog path.
-/// Thin wrapper around the shared gauss-horizon-core resolver so the Tauri and HTTP
+/// Thin wrapper around the shared chiron-horizon-core resolver so the Tauri and HTTP
 /// backends stay in sync.
 async fn external_doris_catalog(state: &AppState, connection_id: &str, catalog: Option<&str>) -> Option<String> {
-    gauss_horizon_core::schema::resolve_external_doris_catalog(state, connection_id, catalog).await
+    chiron_horizon_core::schema::resolve_external_doris_catalog(state, connection_id, catalog).await
 }
 
 #[tauri::command]
@@ -16,7 +16,7 @@ pub async fn list_databases(
     state: State<'_, Arc<AppState>>,
     connection_id: String,
 ) -> Result<Vec<db::DatabaseInfo>, String> {
-    gauss_horizon_core::schema::list_databases_core(&state, &connection_id).await
+    chiron_horizon_core::schema::list_databases_core(&state, &connection_id).await
 }
 
 #[tauri::command]
@@ -24,7 +24,7 @@ pub async fn list_database_metadata(
     state: State<'_, Arc<AppState>>,
     connection_id: String,
 ) -> Result<Vec<db::DatabaseInfo>, String> {
-    gauss_horizon_core::schema::list_database_metadata_core(&state, &connection_id).await
+    chiron_horizon_core::schema::list_database_metadata_core(&state, &connection_id).await
 }
 
 #[tauri::command]
@@ -33,7 +33,7 @@ pub async fn list_database_storage(
     connection_id: String,
     databases: Vec<String>,
 ) -> Result<Vec<db::DatabaseStorageInfo>, String> {
-    gauss_horizon_core::schema::list_database_storage_core(&state, &connection_id, &databases).await
+    chiron_horizon_core::schema::list_database_storage_core(&state, &connection_id, &databases).await
 }
 
 #[tauri::command]
@@ -42,7 +42,7 @@ pub async fn list_xugu_tablespaces(
     connection_id: String,
     database: Option<String>,
 ) -> Result<Vec<db::XuguTablespaceInfo>, String> {
-    gauss_horizon_core::schema::list_xugu_tablespaces_core(&state, &connection_id, database.as_deref()).await
+    chiron_horizon_core::schema::list_xugu_tablespaces_core(&state, &connection_id, database.as_deref()).await
 }
 
 #[tauri::command]
@@ -51,7 +51,7 @@ pub async fn get_sqlserver_completion_context(
     connection_id: String,
     database: String,
 ) -> Result<db::sqlserver::SqlServerCompletionContext, String> {
-    gauss_horizon_core::schema::get_sqlserver_completion_context_core(&state, &connection_id, &database).await
+    chiron_horizon_core::schema::get_sqlserver_completion_context_core(&state, &connection_id, &database).await
 }
 
 #[tauri::command]
@@ -59,7 +59,7 @@ pub async fn list_doris_catalogs(
     state: State<'_, Arc<AppState>>,
     connection_id: String,
 ) -> Result<Vec<db::CatalogInfo>, String> {
-    gauss_horizon_core::schema::list_doris_catalogs_core(&state, &connection_id).await
+    chiron_horizon_core::schema::list_doris_catalogs_core(&state, &connection_id).await
 }
 
 #[tauri::command]
@@ -68,7 +68,7 @@ pub async fn list_doris_catalog_databases(
     connection_id: String,
     catalog: String,
 ) -> Result<Vec<db::DatabaseInfo>, String> {
-    gauss_horizon_core::schema::list_doris_catalog_databases_core(&state, &connection_id, &catalog).await
+    chiron_horizon_core::schema::list_doris_catalog_databases_core(&state, &connection_id, &catalog).await
 }
 
 #[tauri::command]
@@ -76,7 +76,7 @@ pub async fn list_sqlserver_linked_servers(
     state: State<'_, Arc<AppState>>,
     connection_id: String,
 ) -> Result<Vec<db::LinkedServerInfo>, String> {
-    gauss_horizon_core::schema::list_sqlserver_linked_servers_core(&state, &connection_id).await
+    chiron_horizon_core::schema::list_sqlserver_linked_servers_core(&state, &connection_id).await
 }
 
 #[tauri::command]
@@ -85,7 +85,7 @@ pub async fn list_sqlserver_linked_server_catalogs(
     connection_id: String,
     server: String,
 ) -> Result<Vec<db::DatabaseInfo>, String> {
-    gauss_horizon_core::schema::list_sqlserver_linked_server_catalogs_core(&state, &connection_id, &server).await
+    chiron_horizon_core::schema::list_sqlserver_linked_server_catalogs_core(&state, &connection_id, &server).await
 }
 
 #[tauri::command]
@@ -95,7 +95,7 @@ pub async fn list_sqlserver_linked_server_schemas(
     server: String,
     catalog: String,
 ) -> Result<Vec<String>, String> {
-    gauss_horizon_core::schema::list_sqlserver_linked_server_schemas_core(&state, &connection_id, &server, &catalog)
+    chiron_horizon_core::schema::list_sqlserver_linked_server_schemas_core(&state, &connection_id, &server, &catalog)
         .await
 }
 
@@ -110,7 +110,7 @@ pub async fn list_sqlserver_linked_server_tables(
     limit: Option<usize>,
     offset: Option<usize>,
 ) -> Result<Vec<db::TableInfo>, String> {
-    gauss_horizon_core::schema::list_sqlserver_linked_server_tables_core(
+    chiron_horizon_core::schema::list_sqlserver_linked_server_tables_core(
         &state,
         &connection_id,
         &server,
@@ -130,7 +130,7 @@ pub async fn list_schemas(
     database: String,
     apply_visible_filter: Option<bool>,
 ) -> Result<Vec<String>, String> {
-    gauss_horizon_core::schema::list_schemas_core_with_visible_filter(
+    chiron_horizon_core::schema::list_schemas_core_with_visible_filter(
         &state,
         &connection_id,
         &database,
@@ -145,7 +145,7 @@ pub async fn list_schema_infos(
     connection_id: String,
     database: String,
 ) -> Result<Vec<db::SchemaInfo>, String> {
-    gauss_horizon_core::schema::list_schema_infos_core(&state, &connection_id, &database).await
+    chiron_horizon_core::schema::list_schema_infos_core(&state, &connection_id, &database).await
 }
 
 #[tauri::command]
@@ -154,7 +154,7 @@ pub async fn list_data_types(
     connection_id: String,
     database: String,
 ) -> Result<Vec<String>, String> {
-    gauss_horizon_core::schema::list_data_types_core(&state, &connection_id, &database).await
+    chiron_horizon_core::schema::list_data_types_core(&state, &connection_id, &database).await
 }
 
 #[tauri::command]
@@ -168,10 +168,10 @@ pub async fn list_tables(
     offset: Option<usize>,
     object_types: Option<Vec<String>>,
     catalog: Option<String>,
-    table_name_filter: Option<gauss_horizon_core::schema::TableNameFilter>,
+    table_name_filter: Option<chiron_horizon_core::schema::TableNameFilter>,
 ) -> Result<Vec<db::TableInfo>, String> {
     if let Some(catalog) = external_doris_catalog(&state, &connection_id, catalog.as_deref()).await {
-        return gauss_horizon_core::schema::list_doris_catalog_tables_core(
+        return chiron_horizon_core::schema::list_doris_catalog_tables_core(
             &state,
             &connection_id,
             &catalog,
@@ -184,7 +184,7 @@ pub async fn list_tables(
         )
         .await;
     }
-    gauss_horizon_core::schema::list_tables_core(
+    chiron_horizon_core::schema::list_tables_core(
         &state,
         &connection_id,
         &database,
@@ -208,7 +208,7 @@ pub async fn get_table_comment(
     catalog: Option<String>,
 ) -> Result<Option<String>, String> {
     if let Some(catalog) = external_doris_catalog(&state, &connection_id, catalog.as_deref()).await {
-        return gauss_horizon_core::schema::get_doris_catalog_table_comment_core(
+        return chiron_horizon_core::schema::get_doris_catalog_table_comment_core(
             &state,
             &connection_id,
             &catalog,
@@ -217,7 +217,7 @@ pub async fn get_table_comment(
         )
         .await;
     }
-    gauss_horizon_core::schema::get_table_comment_core(&state, &connection_id, &database, &schema, &table).await
+    chiron_horizon_core::schema::get_table_comment_core(&state, &connection_id, &database, &schema, &table).await
 }
 
 #[tauri::command]
@@ -227,7 +227,7 @@ pub async fn get_mysql_table_auto_increment(
     database: String,
     table: String,
 ) -> Result<Option<String>, String> {
-    gauss_horizon_core::schema::get_mysql_table_auto_increment_core(&state, &connection_id, &database, &table).await
+    chiron_horizon_core::schema::get_mysql_table_auto_increment_core(&state, &connection_id, &database, &table).await
 }
 
 #[tauri::command]
@@ -241,10 +241,10 @@ pub async fn list_objects(
     offset: Option<usize>,
     object_types: Option<Vec<String>>,
     catalog: Option<String>,
-    table_name_filter: Option<gauss_horizon_core::schema::TableNameFilter>,
+    table_name_filter: Option<chiron_horizon_core::schema::TableNameFilter>,
 ) -> Result<Vec<db::ObjectInfo>, String> {
     if let Some(catalog) = external_doris_catalog(&state, &connection_id, catalog.as_deref()).await {
-        let tables = gauss_horizon_core::schema::list_doris_catalog_tables_core(
+        let tables = chiron_horizon_core::schema::list_doris_catalog_tables_core(
             &state,
             &connection_id,
             &catalog,
@@ -276,7 +276,7 @@ pub async fn list_objects(
             })
             .collect());
     }
-    gauss_horizon_core::schema::list_objects_core(
+    chiron_horizon_core::schema::list_objects_core(
         &state,
         &connection_id,
         &database,
@@ -297,7 +297,7 @@ pub async fn list_object_statistics(
     database: String,
     schema: String,
 ) -> Result<Vec<db::ObjectStatistics>, String> {
-    gauss_horizon_core::schema::list_object_statistics_core(&state, &connection_id, &database, &schema).await
+    chiron_horizon_core::schema::list_object_statistics_core(&state, &connection_id, &database, &schema).await
 }
 
 #[tauri::command]
@@ -307,7 +307,7 @@ pub async fn list_completion_objects(
     database: String,
     schema: String,
 ) -> Result<Vec<db::ObjectInfo>, String> {
-    gauss_horizon_core::schema::list_completion_objects_core(&state, &connection_id, &database, &schema).await
+    chiron_horizon_core::schema::list_completion_objects_core(&state, &connection_id, &database, &schema).await
 }
 
 #[tauri::command]
@@ -315,7 +315,7 @@ pub async fn completion_assistant_search(
     state: State<'_, Arc<AppState>>,
     request: db::CompletionAssistantRequest,
 ) -> Result<db::CompletionAssistantResponse, String> {
-    gauss_horizon_core::schema::completion_assistant_search_core(&state, request).await
+    chiron_horizon_core::schema::completion_assistant_search_core(&state, request).await
 }
 
 #[tauri::command]
@@ -329,7 +329,7 @@ pub async fn get_object_source(
     signature: Option<String>,
     relation_name: Option<String>,
 ) -> Result<db::ObjectSource, String> {
-    gauss_horizon_core::schema::get_object_source_core(
+    chiron_horizon_core::schema::get_object_source_core(
         &state,
         &connection_id,
         &database,
@@ -350,7 +350,7 @@ pub async fn get_event_info(
     schema: String,
     name: String,
 ) -> Result<db::MysqlEventInfo, String> {
-    gauss_horizon_core::schema::get_event_info_core(&state, &connection_id, &database, &schema, &name).await
+    chiron_horizon_core::schema::get_event_info_core(&state, &connection_id, &database, &schema, &name).await
 }
 
 #[tauri::command]
@@ -361,7 +361,7 @@ pub async fn get_custom_type_details(
     schema: String,
     name: String,
 ) -> Result<db::CustomTypeDetails, String> {
-    gauss_horizon_core::schema::get_custom_type_details_core(&state, &connection_id, &database, &schema, &name).await
+    chiron_horizon_core::schema::get_custom_type_details_core(&state, &connection_id, &database, &schema, &name).await
 }
 
 #[tauri::command]
@@ -375,7 +375,7 @@ pub async fn get_columns(
     client_session_id: Option<String>,
 ) -> Result<Vec<db::ColumnInfo>, String> {
     if let Some(catalog) = external_doris_catalog(&state, &connection_id, catalog.as_deref()).await {
-        return gauss_horizon_core::schema::get_doris_catalog_columns_core(
+        return chiron_horizon_core::schema::get_doris_catalog_columns_core(
             &state,
             &connection_id,
             &catalog,
@@ -384,7 +384,7 @@ pub async fn get_columns(
         )
         .await;
     }
-    gauss_horizon_core::schema::get_columns_core_for_session(
+    chiron_horizon_core::schema::get_columns_core_for_session(
         &state,
         &connection_id,
         &database,
@@ -402,7 +402,7 @@ pub async fn get_all_columns(
     database: String,
     schema: String,
 ) -> Result<Vec<db::TableColumnsResult>, String> {
-    gauss_horizon_core::schema::get_all_columns_core(&state, &connection_id, &database, &schema).await
+    chiron_horizon_core::schema::get_all_columns_core(&state, &connection_id, &database, &schema).await
 }
 
 #[tauri::command]
@@ -413,7 +413,7 @@ pub async fn get_sqlserver_column_metadata(
     schema: String,
     table: String,
 ) -> Result<Vec<db::sqlserver::SqlServerColumnMetadata>, String> {
-    gauss_horizon_core::schema::get_sqlserver_column_metadata_core(&state, &connection_id, &database, &schema, &table)
+    chiron_horizon_core::schema::get_sqlserver_column_metadata_core(&state, &connection_id, &database, &schema, &table)
         .await
 }
 
@@ -427,7 +427,7 @@ pub async fn list_indexes(
     catalog: Option<String>,
 ) -> Result<Vec<db::IndexInfo>, String> {
     if let Some(catalog) = external_doris_catalog(&state, &connection_id, catalog.as_deref()).await {
-        return gauss_horizon_core::schema::list_doris_catalog_indexes_core(
+        return chiron_horizon_core::schema::list_doris_catalog_indexes_core(
             &state,
             &connection_id,
             &catalog,
@@ -436,7 +436,7 @@ pub async fn list_indexes(
         )
         .await;
     }
-    gauss_horizon_core::schema::list_indexes_core(&state, &connection_id, &database, &schema, &table).await
+    chiron_horizon_core::schema::list_indexes_core(&state, &connection_id, &database, &schema, &table).await
 }
 
 #[tauri::command]
@@ -449,7 +449,7 @@ pub async fn list_reference_key_columns(
     catalog: Option<String>,
 ) -> Result<Vec<String>, String> {
     if let Some(catalog) = external_doris_catalog(&state, &connection_id, catalog.as_deref()).await {
-        let indexes = gauss_horizon_core::schema::list_doris_catalog_indexes_core(
+        let indexes = chiron_horizon_core::schema::list_doris_catalog_indexes_core(
             &state,
             &connection_id,
             &catalog,
@@ -457,9 +457,9 @@ pub async fn list_reference_key_columns(
             &table,
         )
         .await?;
-        return Ok(gauss_horizon_core::schema::reference_key_columns_from_indexes(&indexes));
+        return Ok(chiron_horizon_core::schema::reference_key_columns_from_indexes(&indexes));
     }
-    gauss_horizon_core::schema::list_reference_key_columns_core(&state, &connection_id, &database, &schema, &table)
+    chiron_horizon_core::schema::list_reference_key_columns_core(&state, &connection_id, &database, &schema, &table)
         .await
 }
 
@@ -471,9 +471,9 @@ pub async fn list_reference_keys(
     schema: String,
     table: String,
     catalog: Option<String>,
-) -> Result<Vec<gauss_horizon_core::schema::ReferenceKeyInfo>, String> {
+) -> Result<Vec<chiron_horizon_core::schema::ReferenceKeyInfo>, String> {
     if let Some(catalog) = external_doris_catalog(&state, &connection_id, catalog.as_deref()).await {
-        let indexes = gauss_horizon_core::schema::list_doris_catalog_indexes_core(
+        let indexes = chiron_horizon_core::schema::list_doris_catalog_indexes_core(
             &state,
             &connection_id,
             &catalog,
@@ -481,9 +481,9 @@ pub async fn list_reference_keys(
             &table,
         )
         .await?;
-        return Ok(gauss_horizon_core::schema::reference_keys_from_indexes(&indexes));
+        return Ok(chiron_horizon_core::schema::reference_keys_from_indexes(&indexes));
     }
-    gauss_horizon_core::schema::list_reference_keys_core(&state, &connection_id, &database, &schema, &table).await
+    chiron_horizon_core::schema::list_reference_keys_core(&state, &connection_id, &database, &schema, &table).await
 }
 
 #[tauri::command]
@@ -496,7 +496,7 @@ pub async fn list_foreign_keys(
     catalog: Option<String>,
 ) -> Result<Vec<db::ForeignKeyInfo>, String> {
     if let Some(catalog) = external_doris_catalog(&state, &connection_id, catalog.as_deref()).await {
-        return gauss_horizon_core::schema::list_doris_catalog_foreign_keys_core(
+        return chiron_horizon_core::schema::list_doris_catalog_foreign_keys_core(
             &state,
             &connection_id,
             &catalog,
@@ -505,7 +505,7 @@ pub async fn list_foreign_keys(
         )
         .await;
     }
-    gauss_horizon_core::schema::list_foreign_keys_core(&state, &connection_id, &database, &schema, &table).await
+    chiron_horizon_core::schema::list_foreign_keys_core(&state, &connection_id, &database, &schema, &table).await
 }
 
 #[tauri::command]
@@ -518,7 +518,7 @@ pub async fn list_triggers(
     catalog: Option<String>,
 ) -> Result<Vec<db::TriggerInfo>, String> {
     if let Some(catalog) = external_doris_catalog(&state, &connection_id, catalog.as_deref()).await {
-        return gauss_horizon_core::schema::list_doris_catalog_triggers_core(
+        return chiron_horizon_core::schema::list_doris_catalog_triggers_core(
             &state,
             &connection_id,
             &catalog,
@@ -527,7 +527,7 @@ pub async fn list_triggers(
         )
         .await;
     }
-    gauss_horizon_core::schema::list_triggers_core(&state, &connection_id, &database, &schema, &table).await
+    chiron_horizon_core::schema::list_triggers_core(&state, &connection_id, &database, &schema, &table).await
 }
 
 #[tauri::command]
@@ -538,9 +538,9 @@ pub async fn list_constraints(
     schema: String,
     table: String,
     catalog: Option<String>,
-) -> Result<Vec<gauss_horizon_core::db::ConstraintInfo>, String> {
+) -> Result<Vec<chiron_horizon_core::db::ConstraintInfo>, String> {
     let _ = catalog;
-    gauss_horizon_core::schema::list_constraints_core(&state, &connection_id, &database, &schema, &table).await
+    chiron_horizon_core::schema::list_constraints_core(&state, &connection_id, &database, &schema, &table).await
 }
 
 #[tauri::command]
@@ -550,8 +550,8 @@ pub async fn list_partitions(
     database: String,
     schema: String,
     table: String,
-) -> Result<Vec<gauss_horizon_core::db::PartitionInfo>, String> {
-    gauss_horizon_core::schema::list_partitions_core(&state, &connection_id, &database, &schema, &table).await
+) -> Result<Vec<chiron_horizon_core::db::PartitionInfo>, String> {
+    chiron_horizon_core::schema::list_partitions_core(&state, &connection_id, &database, &schema, &table).await
 }
 
 #[tauri::command]
@@ -561,8 +561,8 @@ pub async fn get_table_partition_status(
     database: String,
     schema: String,
     table: String,
-) -> Result<gauss_horizon_core::schema::TablePartitionStatus, String> {
-    gauss_horizon_core::schema::table_partition_status_core(&state, &connection_id, &database, &schema, &table).await
+) -> Result<chiron_horizon_core::schema::TablePartitionStatus, String> {
+    chiron_horizon_core::schema::table_partition_status_core(&state, &connection_id, &database, &schema, &table).await
 }
 
 #[tauri::command]
@@ -573,7 +573,7 @@ pub async fn list_invalid_indexes(
     schema: String,
     table: String,
 ) -> Result<Vec<String>, String> {
-    gauss_horizon_core::schema::list_invalid_indexes_core(&state, &connection_id, &database, &schema, &table).await
+    chiron_horizon_core::schema::list_invalid_indexes_core(&state, &connection_id, &database, &schema, &table).await
 }
 
 #[tauri::command]
@@ -583,8 +583,8 @@ pub async fn list_subpartitions(
     database: String,
     schema: String,
     table: String,
-) -> Result<Vec<gauss_horizon_core::db::SubpartitionInfo>, String> {
-    gauss_horizon_core::schema::list_subpartitions_core(&state, &connection_id, &database, &schema, &table).await
+) -> Result<Vec<chiron_horizon_core::db::SubpartitionInfo>, String> {
+    chiron_horizon_core::schema::list_subpartitions_core(&state, &connection_id, &database, &schema, &table).await
 }
 
 #[tauri::command]
@@ -600,7 +600,7 @@ pub async fn get_table_ddl(
     portable: Option<bool>,
 ) -> Result<String, String> {
     if let Some(catalog) = external_doris_catalog(&state, &connection_id, catalog.as_deref()).await {
-        return gauss_horizon_core::schema::get_doris_catalog_table_ddl_core(
+        return chiron_horizon_core::schema::get_doris_catalog_table_ddl_core(
             &state,
             &connection_id,
             &catalog,
@@ -610,7 +610,7 @@ pub async fn get_table_ddl(
         .await;
     }
     if portable.unwrap_or(false) {
-        gauss_horizon_core::schema::get_table_export_ddl_core(
+        chiron_horizon_core::schema::get_table_export_ddl_core(
             &state,
             &connection_id,
             &database,
@@ -620,7 +620,7 @@ pub async fn get_table_ddl(
         )
         .await
     } else if include_postgres_access.unwrap_or(false) {
-        gauss_horizon_core::schema::get_table_display_ddl_core(
+        chiron_horizon_core::schema::get_table_display_ddl_core(
             &state,
             &connection_id,
             &database,
@@ -630,7 +630,7 @@ pub async fn get_table_ddl(
         )
         .await
     } else {
-        gauss_horizon_core::schema::get_table_ddl_core(&state, &connection_id, &database, &schema, &table, object_type)
+        chiron_horizon_core::schema::get_table_ddl_core(&state, &connection_id, &database, &schema, &table, object_type)
             .await
     }
 }
@@ -642,7 +642,7 @@ pub async fn list_functions(
     database: String,
     schema: String,
 ) -> Result<Vec<db::FunctionInfo>, String> {
-    gauss_horizon_core::schema::list_functions_core(&state, &connection_id, &database, &schema).await
+    chiron_horizon_core::schema::list_functions_core(&state, &connection_id, &database, &schema).await
 }
 
 #[tauri::command]
@@ -653,7 +653,7 @@ pub async fn list_sequences(
     schema: String,
     with_last_values: bool,
 ) -> Result<Vec<db::SequenceInfo>, String> {
-    gauss_horizon_core::schema::list_sequences_core(&state, &connection_id, &database, &schema, with_last_values).await
+    chiron_horizon_core::schema::list_sequences_core(&state, &connection_id, &database, &schema, with_last_values).await
 }
 
 #[tauri::command]
@@ -663,7 +663,7 @@ pub async fn list_rules(
     database: String,
     schema: String,
 ) -> Result<Vec<db::RuleInfo>, String> {
-    gauss_horizon_core::schema::list_rules_core(&state, &connection_id, &database, &schema).await
+    chiron_horizon_core::schema::list_rules_core(&state, &connection_id, &database, &schema).await
 }
 
 #[tauri::command]
@@ -673,7 +673,7 @@ pub async fn list_owners(
     database: String,
     schema: String,
 ) -> Result<Vec<db::OwnerInfo>, String> {
-    gauss_horizon_core::schema::list_owners_core(&state, &connection_id, &database, &schema).await
+    chiron_horizon_core::schema::list_owners_core(&state, &connection_id, &database, &schema).await
 }
 
 #[tauri::command]
@@ -684,7 +684,7 @@ pub async fn get_table_owner(
     schema: String,
     table: String,
 ) -> Result<Option<String>, String> {
-    gauss_horizon_core::schema::get_table_owner_core(&state, &connection_id, &database, &schema, &table).await
+    chiron_horizon_core::schema::get_table_owner_core(&state, &connection_id, &database, &schema, &table).await
 }
 
 #[tauri::command]
@@ -694,7 +694,7 @@ pub async fn list_extensions(
     database: String,
     schema: Option<String>,
 ) -> Result<Vec<db::ExtensionInfo>, String> {
-    gauss_horizon_core::schema::list_extensions_core(&state, &connection_id, &database, schema.as_deref()).await
+    chiron_horizon_core::schema::list_extensions_core(&state, &connection_id, &database, schema.as_deref()).await
 }
 
 #[tauri::command]
@@ -703,5 +703,5 @@ pub async fn list_available_extensions(
     connection_id: String,
     database: String,
 ) -> Result<Vec<db::ExtensionInfo>, String> {
-    gauss_horizon_core::schema::list_available_extensions_core(&state, &connection_id, &database).await
+    chiron_horizon_core::schema::list_available_extensions_core(&state, &connection_id, &database).await
 }

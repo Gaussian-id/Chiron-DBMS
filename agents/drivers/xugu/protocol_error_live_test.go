@@ -46,7 +46,7 @@ func TestLiveXuguStructuredErrorRoundTrip(t *testing.T) {
 		"agentSessionId": agentSessionID,
 		"database":       params.Database,
 		"schema":         params.Username,
-		"sql":            `SELECT * FROM "GAUSS_HORIZON_JAR12_OBJECT_THAT_MUST_NOT_EXIST"`,
+		"sql":            `SELECT * FROM "CHIRON_HORIZON_JAR12_OBJECT_THAT_MUST_NOT_EXIST"`,
 		"maxRows":        1,
 	})
 	if invalid.Error == nil {

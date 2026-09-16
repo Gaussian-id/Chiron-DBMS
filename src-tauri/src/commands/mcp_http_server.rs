@@ -9,9 +9,9 @@ use std::{
     },
 };
 
-use gauss_horizon_core::{connection::AppState, storage::McpHttpServerSettings};
-use gauss_horizon_mcp::{
-    serve_streamable_http_on_listener, GaussHorizonBackend, HttpAuth, HttpRuntimeConfig, LocalBackend,
+use chiron_horizon_core::{connection::AppState, storage::McpHttpServerSettings};
+use chiron_horizon_mcp::{
+    serve_streamable_http_on_listener, ChironHorizonBackend, HttpAuth, HttpRuntimeConfig, LocalBackend,
 };
 use serde::Serialize;
 use tauri::State;
@@ -243,7 +243,7 @@ impl McpHttpServerState {
             .map_err(|error| format!("failed to bind MCP HTTP service at {bind_addr}: {error}"))?;
         let cancellation = CancellationToken::new();
         let diagnostics = self.diagnostics.clone();
-        let backend: Arc<dyn GaussHorizonBackend> =
+        let backend: Arc<dyn ChironHorizonBackend> =
             Arc::new(LocalBackend::from_app_state(app_state, self.data_dir.clone()));
         let shutdown = cancellation.clone();
         let task = tauri::async_runtime::spawn(async move {
@@ -464,7 +464,7 @@ fn spawn_health_supervisor(state: Arc<AppState>, service: Arc<McpHttpServerState
 #[cfg(test)]
 mod tests {
     use super::{endpoint_for_settings, McpHttpServerState};
-    use gauss_horizon_core::storage::McpHttpServerSettings;
+    use chiron_horizon_core::storage::McpHttpServerSettings;
 
     #[test]
     fn endpoint_uses_a_client_reachable_authority() {

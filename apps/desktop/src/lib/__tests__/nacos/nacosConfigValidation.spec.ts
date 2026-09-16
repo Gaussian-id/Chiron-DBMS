@@ -7,7 +7,7 @@ describe("Nacos config validation", () => {
     expect(validateNacosConfig("service:\n  port: 8080", "yaml")).toBeNull();
     expect(validateNacosConfig("<root><value>1</value></root>", "xml")).toBeNull();
     expect(validateNacosConfig("<html><body>ok</body></html>", "html")).toBeNull();
-    expect(validateNacosConfig('<!doctype html><html><head><meta charset="utf-8"><title>Gauss Horizon</title></head><body><ul><li>one<li>two</ul><br></body></html>', "html")).toBeNull();
+    expect(validateNacosConfig('<!doctype html><html><head><meta charset="utf-8"><title>Chiron Horizon</title></head><body><ul><li>one<li>two</ul><br></body></html>', "html")).toBeNull();
     expect(validateNacosConfig("server.port=8080", "properties")).toBeNull();
     expect(validateNacosConfig("feature.enabled", "properties")).toBeNull();
     expect(validateNacosConfig("key=\\\\u12xz", "properties")).toBeNull();
@@ -70,6 +70,6 @@ describe("Nacos config validation", () => {
     expect(validateNacosConfig("ports = [1 2]", "toml")?.message).toContain("TOML");
     expect(validateNacosConfig("enabled = truth", "toml")?.message).toContain("TOML");
     expect(validateNacosConfig("[server] trailing", "toml")?.message).toContain("TOML");
-    expect(validateNacosConfig('name = "gauss-horizon"\nname = "duplicate"', "toml")?.message).toContain("TOML");
+    expect(validateNacosConfig('name = "chiron-horizon"\nname = "duplicate"', "toml")?.message).toContain("TOML");
   });
 });

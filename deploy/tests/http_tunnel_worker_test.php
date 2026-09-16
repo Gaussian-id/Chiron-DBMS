@@ -1,8 +1,8 @@
 <?php
 declare(strict_types=1);
 
-define('GAUSS_HORIZON_TUNNEL_FUNCTIONS_ONLY', true);
-require dirname(__DIR__) . DIRECTORY_SEPARATOR . 'gauss_horizon_tunnel.php';
+define('CHIRON_HORIZON_TUNNEL_FUNCTIONS_ONLY', true);
+require dirname(__DIR__) . DIRECTORY_SEPARATOR . 'chiron_horizon_tunnel.php';
 
 assert_same(10000, worker_poll_timeout_us(0), 'active polling starts at 10ms');
 assert_same(10000, worker_poll_timeout_us(99), 'active polling lasts for 100 idle polls');
@@ -13,7 +13,7 @@ assert_same(0, next_worker_idle_poll_count(120, true), 'activity resets the idle
 assert_same(10000, worker_poll_timeout_us(next_worker_idle_poll_count(120, true)), 'activity resets polling to 10ms');
 assert_same(120, next_worker_idle_poll_count(120, false), 'the idle counter remains capped');
 
-$baseDir = sys_get_temp_dir() . DIRECTORY_SEPARATOR . 'gauss-horizon-tunnel-test-' . bin2hex(random_bytes(6));
+$baseDir = sys_get_temp_dir() . DIRECTORY_SEPARATOR . 'chiron-horizon-tunnel-test-' . bin2hex(random_bytes(6));
 $sessionDir = $baseDir . DIRECTORY_SEPARATOR . 'session123';
 $worker = null;
 $pipes = [];
@@ -34,10 +34,10 @@ try {
     $address = stream_socket_get_name($server, false);
     $port = (int) substr((string) strrchr($address, ':'), 1);
 
-    $script = dirname(__DIR__) . DIRECTORY_SEPARATOR . 'gauss_horizon_tunnel.php';
+    $script = dirname(__DIR__) . DIRECTORY_SEPARATOR . 'chiron_horizon_tunnel.php';
     $command = escapeshellarg(PHP_BINARY)
         . ' ' . escapeshellarg($script)
-        . ' --gauss-horizon-worker ' . escapeshellarg($sessionDir)
+        . ' --chiron-horizon-worker ' . escapeshellarg($sessionDir)
         . ' 127.0.0.1 ' . escapeshellarg((string) $port)
         . ' 5';
     $worker = proc_open($command, [

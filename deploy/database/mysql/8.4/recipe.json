@@ -7,8 +7,8 @@
   "platforms": ["linux/amd64", "linux/arm64"],
   "service": "database",
   "defaultPort": 3306,
-  "connection": { "host": "127.0.0.1", "port": 10101, "username": "root", "password": "123456", "database": "gauss-horizon" },
+  "connection": { "host": "127.0.0.1", "port": 10101, "username": "root", "password": "123456", "database": "chiron-horizon" },
   "hostPorts": { "DB_PORT": 10101 },
-  "shell": ["mysql", "-uroot", "-p${DB_PASSWORD}", "-Dgauss-horizon"],
-  "smoke": { "steps": [{ "name": "query initialized row", "command": ["mysql", "-uroot", "-p${DB_PASSWORD}", "-Dgauss-horizon", "-Nse", "SELECT note FROM gauss_horizon_smoke WHERE id=1"], "expect": "Gauss Horizon smoke" }] }
+  "shell": ["mysql", "-uroot", "-p${DB_PASSWORD}", "-Dchiron-horizon"],
+  "smoke": { "steps": [{ "name": "query initialized row", "command": ["mysql", "-uroot", "-p${DB_PASSWORD}", "-Dchiron-horizon", "-Nse", "SELECT note FROM chiron_horizon_smoke WHERE id=1"], "expect": "Chiron Horizon smoke" }] }
 }

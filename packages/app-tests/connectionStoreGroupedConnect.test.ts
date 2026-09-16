@@ -206,7 +206,7 @@ test("reloading connections preserves the current grouped layout when the saved 
   }
 });
 
-test("importing grouped gauss-horizon connections remaps exported layout to new connection ids", async () => {
+test("importing grouped chiron-horizon connections remaps exported layout to new connection ids", async () => {
   const originalFetch = globalThis.fetch;
   const storage = installMemoryStorage();
   let savedConnections: ConnectionConfig[] = [];

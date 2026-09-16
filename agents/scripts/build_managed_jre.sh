@@ -19,7 +19,7 @@ MODULES='java.base,java.sql,java.sql.rowset,java.naming,java.management,java.des
 "$JLINK_BIN" --module-path "$JMODS" --add-modules "$MODULES" --strip-debug --no-header-files --no-man-pages --compress=zip-6 --output "$RUNTIME_DIR"
 "$RUNTIME_DIR/bin/java" -version
 mkdir -p "$OUT_DIR"
-OUTPUT="$OUT_DIR/gauss-horizon-jre-21-${PLATFORM}.tar.zst"
+OUTPUT="$OUT_DIR/chiron-horizon-jre-21-${PLATFORM}.tar.zst"
 if command -v zstd >/dev/null; then
   tar -C "$WORK_DIR" -cf - runtime | zstd -q -19 --long=27 -o "$OUTPUT"
 else

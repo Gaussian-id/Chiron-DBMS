@@ -158,9 +158,9 @@ async function main() {
   mkdirSync(mavenDir, { recursive: true });
   copyFileSync(pluginZip, join(payloadDir, "plugin.zip"));
 
-  const externalCache = process.env.GAUSS_HORIZON_OFFLINE_JDBC_MAVEN_CACHE?.trim();
-  const resolverRepository = process.env.GAUSS_HORIZON_OFFLINE_JDBC_MAVEN_REPOSITORY?.trim() || assetManifest.repository;
-  const workDir = externalCache ? null : mkdtempSync(join(tmpdir(), "gauss-horizon-offline-jdbc-"));
+  const externalCache = process.env.CHIRON_HORIZON_OFFLINE_JDBC_MAVEN_CACHE?.trim();
+  const resolverRepository = process.env.CHIRON_HORIZON_OFFLINE_JDBC_MAVEN_REPOSITORY?.trim() || assetManifest.repository;
+  const workDir = externalCache ? null : mkdtempSync(join(tmpdir(), "chiron-horizon-offline-jdbc-"));
   const localRepository = externalCache ? resolve(externalCache) : join(workDir, "maven-cache");
   mkdirSync(localRepository, { recursive: true });
   const manifestBundles = [];

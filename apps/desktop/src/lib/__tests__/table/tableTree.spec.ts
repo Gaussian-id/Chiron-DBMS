@@ -10,49 +10,49 @@ const context = {
 
 describe("case-sensitive database objects", () => {
   const views: ObjectInfo[] = [
-    { name: "gauss_horizon_issue4529_case_V1", object_type: "VIEW", schema: "gauss_horizon_test" },
-    { name: "gauss_horizon_issue4529_case_v1", object_type: "VIEW", schema: "gauss_horizon_test" },
+    { name: "chiron_horizon_issue4529_case_V1", object_type: "VIEW", schema: "chiron_horizon_test" },
+    { name: "chiron_horizon_issue4529_case_v1", object_type: "VIEW", schema: "chiron_horizon_test" },
   ];
 
   it("keeps table metadata entries whose names differ only by case", () => {
     const tables: TableInfo[] = views.map((view) => ({ name: view.name, table_type: "VIEW", comment: null }));
 
-    const merged = mergeTableInfosIntoObjects([], tables, "gauss_horizon_test");
+    const merged = mergeTableInfosIntoObjects([], tables, "chiron_horizon_test");
 
-    expect(merged.map((object) => object.name)).toEqual(["gauss_horizon_issue4529_case_V1", "gauss_horizon_issue4529_case_v1"]);
+    expect(merged.map((object) => object.name)).toEqual(["chiron_horizon_issue4529_case_V1", "chiron_horizon_issue4529_case_v1"]);
   });
 
   it("keeps simple tree nodes whose names differ only by case", () => {
-    const nodes = buildSimpleObjectTreeNodes({ ...context, schema: "gauss_horizon_test", objects: views });
+    const nodes = buildSimpleObjectTreeNodes({ ...context, schema: "chiron_horizon_test", objects: views });
 
-    expect(nodes.map((node) => node.label)).toEqual(["gauss_horizon_issue4529_case_V1", "gauss_horizon_issue4529_case_v1"]);
+    expect(nodes.map((node) => node.label)).toEqual(["chiron_horizon_issue4529_case_V1", "chiron_horizon_issue4529_case_v1"]);
     expect(new Set(nodes.map((node) => node.id)).size).toBe(2);
   });
 
   it("keeps grouped tree nodes whose names differ only by case", () => {
-    const groups = buildGroupedObjectTreeNodes({ ...context, schema: "gauss_horizon_test", objects: views });
+    const groups = buildGroupedObjectTreeNodes({ ...context, schema: "chiron_horizon_test", objects: views });
     const viewGroup = groups.find((node) => node.type === "group-views");
 
     expect(viewGroup?.objectCount).toBe(2);
-    expect(viewGroup?.children?.map((node) => node.label)).toEqual(["gauss_horizon_issue4529_case_V1", "gauss_horizon_issue4529_case_v1"]);
+    expect(viewGroup?.children?.map((node) => node.label)).toEqual(["chiron_horizon_issue4529_case_V1", "chiron_horizon_issue4529_case_v1"]);
     expect(new Set(viewGroup?.children?.map((node) => node.id) ?? []).size).toBe(2);
   });
 
   it("keeps table nodes whose names differ only by case across pages", () => {
     const firstPage = buildTableTreeNodes({
       ...context,
-      schema: "gauss_horizon_test",
-      tables: [{ name: "gauss_horizon_issue4529_case_T1", table_type: "BASE TABLE", comment: null }],
+      schema: "chiron_horizon_test",
+      tables: [{ name: "chiron_horizon_issue4529_case_T1", table_type: "BASE TABLE", comment: null }],
     });
     const secondPage = buildTableTreeNodes({
       ...context,
-      schema: "gauss_horizon_test",
-      tables: [{ name: "gauss_horizon_issue4529_case_t1", table_type: "BASE TABLE", comment: null }],
+      schema: "chiron_horizon_test",
+      tables: [{ name: "chiron_horizon_issue4529_case_t1", table_type: "BASE TABLE", comment: null }],
     });
 
     const merged = mergeTableTreePageChildren(firstPage, secondPage, context.connectionId, context.database);
 
-    expect(merged.map((node) => node.label)).toEqual(["gauss_horizon_issue4529_case_T1", "gauss_horizon_issue4529_case_t1"]);
+    expect(merged.map((node) => node.label)).toEqual(["chiron_horizon_issue4529_case_T1", "chiron_horizon_issue4529_case_t1"]);
   });
 });
 
@@ -120,7 +120,7 @@ describe("programmable database objects", () => {
   it("renders only the synonym group for the Xugu public-synonym scope", () => {
     const groups = buildObjectGroupPlaceholderNodes({
       ...context,
-      schema: "\u0000GAUSS_HORIZON_XUGU_PUBLIC_SYNONYMS",
+      schema: "\u0000CHIRON_HORIZON_XUGU_PUBLIC_SYNONYMS",
       objectTypes: ["SYNONYM"],
     });
 
@@ -129,8 +129,8 @@ describe("programmable database objects", () => {
 
   it("coalesces Xugu package specification and body into one top-level node", () => {
     const objects: ObjectInfo[] = [
-      { name: "GAUSS_HORIZON_UI_PKG", object_type: "PACKAGE", schema: "APP", valid: true },
-      { name: "GAUSS_HORIZON_UI_PKG", object_type: "PACKAGE_BODY", schema: "APP", valid: false },
+      { name: "CHIRON_HORIZON_UI_PKG", object_type: "PACKAGE", schema: "APP", valid: true },
+      { name: "CHIRON_HORIZON_UI_PKG", object_type: "PACKAGE_BODY", schema: "APP", valid: false },
     ];
 
     const nodes = buildSimpleObjectTreeNodes({ ...context, schema: "APP", objects, databaseType: "xugu" });
@@ -138,7 +138,7 @@ describe("programmable database objects", () => {
     expect(nodes[0]).toEqual(
       expect.objectContaining({
         type: "package",
-        objectName: "GAUSS_HORIZON_UI_PKG",
+        objectName: "CHIRON_HORIZON_UI_PKG",
         valid: false,
         xuguPackageBodyAvailable: true,
         xuguPackageBodyValid: false,
@@ -148,14 +148,14 @@ describe("programmable database objects", () => {
 
   it("keeps the package body as metadata for the expandable Xugu package node", () => {
     const objects: ObjectInfo[] = [
-      { name: "GAUSS_HORIZON_UI_PKG", object_type: "PACKAGE", schema: "APP", valid: true },
-      { name: "GAUSS_HORIZON_UI_PKG", object_type: "PACKAGE_BODY", schema: "APP", valid: true },
+      { name: "CHIRON_HORIZON_UI_PKG", object_type: "PACKAGE", schema: "APP", valid: true },
+      { name: "CHIRON_HORIZON_UI_PKG", object_type: "PACKAGE_BODY", schema: "APP", valid: true },
     ];
 
     const groups = buildGroupedObjectTreeNodes({ ...context, schema: "APP", objects, databaseType: "xugu" });
     const packageGroup = groups.find((node) => node.type === "group-packages");
     expect(packageGroup?.objectCount).toBe(1);
-    expect(packageGroup?.children).toEqual([expect.objectContaining({ type: "package", objectName: "GAUSS_HORIZON_UI_PKG" })]);
+    expect(packageGroup?.children).toEqual([expect.objectContaining({ type: "package", objectName: "CHIRON_HORIZON_UI_PKG" })]);
   });
 
   it("keeps a body-only Xugu metadata response visible as a package", () => {
@@ -189,8 +189,8 @@ describe("programmable database objects", () => {
 
   it("does not merge package and package body for other databases", () => {
     const objects: ObjectInfo[] = [
-      { name: "GAUSS_HORIZON_UI_PKG", object_type: "PACKAGE", schema: "APP" },
-      { name: "GAUSS_HORIZON_UI_PKG", object_type: "PACKAGE_BODY", schema: "APP" },
+      { name: "CHIRON_HORIZON_UI_PKG", object_type: "PACKAGE", schema: "APP" },
+      { name: "CHIRON_HORIZON_UI_PKG", object_type: "PACKAGE_BODY", schema: "APP" },
     ];
 
     const nodes = buildSimpleObjectTreeNodes({ ...context, schema: "APP", objects, databaseType: "oracle" });

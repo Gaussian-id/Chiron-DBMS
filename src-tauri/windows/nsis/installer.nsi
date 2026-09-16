@@ -499,16 +499,16 @@ FunctionEnd
 
 ; Keep the standard write-error actions while explaining how to upgrade legacy
 ; installations restored from Program Files without changing the install mode.
-LangString gaussHorizonFileWriteError ${LANG_ENGLISH} "Error opening file for writing:$\r$\n$\r$\n$0$\r$\n$\r$\nIf you are upgrading Gauss Horizon installed under Program Files, abort this installation, right-click the installer, and select Run as administrator.$\r$\n$\r$\nClick Abort to stop the installation,$\r$\nRetry to try again, or$\r$\nIgnore to skip this file."
-LangString gaussHorizonFileWriteErrorNoIgnore ${LANG_ENGLISH} "Error opening file for writing:$\r$\n$\r$\n$0$\r$\n$\r$\nIf you are upgrading Gauss Horizon installed under Program Files, cancel this installation, right-click the installer, and select Run as administrator.$\r$\n$\r$\nClick Retry to try again, or$\r$\nCancel to stop the installation."
-LangString gaussHorizonFileWriteError ${LANG_SIMPCHINESE} "无法打开要写入的文件：$\r$\n$\r$\n$0$\r$\n$\r$\n如果正在升级安装于 Program Files 的 Gauss Horizon，请中止本次安装，然后右键单击安装程序并选择“以管理员身份运行”。$\r$\n$\r$\n单击“中止”停止安装，$\r$\n单击“重试”再次尝试，或$\r$\n单击“忽略”跳过此文件。"
-LangString gaussHorizonFileWriteErrorNoIgnore ${LANG_SIMPCHINESE} "无法打开要写入的文件：$\r$\n$\r$\n$0$\r$\n$\r$\n如果正在升级安装于 Program Files 的 Gauss Horizon，请取消本次安装，然后右键单击安装程序并选择“以管理员身份运行”。$\r$\n$\r$\n单击“重试”再次尝试，或$\r$\n单击“取消”停止安装。"
-LangString gaussHorizonFileWriteError ${LANG_TRADCHINESE} "無法開啟要寫入的檔案：$\r$\n$\r$\n$0$\r$\n$\r$\n如果正在升級安裝於 Program Files 的 Gauss Horizon，請中止本次安裝，然後以滑鼠右鍵按一下安裝程式並選擇「以系統管理員身分執行」。$\r$\n$\r$\n按一下「中止」以停止安裝，$\r$\n按一下「重試」以再次嘗試，或$\r$\n按一下「忽略」以略過此檔案。"
-LangString gaussHorizonFileWriteErrorNoIgnore ${LANG_TRADCHINESE} "無法開啟要寫入的檔案：$\r$\n$\r$\n$0$\r$\n$\r$\n如果正在升級安裝於 Program Files 的 Gauss Horizon，請取消本次安裝，然後以滑鼠右鍵按一下安裝程式並選擇「以系統管理員身分執行」。$\r$\n$\r$\n按一下「重試」以再次嘗試，或$\r$\n按一下「取消」以停止安裝。"
-LangString gaussHorizonWin7InstallerRequired ${LANG_ENGLISH} "This installer does not support Windows 7 or Windows Server 2012 R2.$\r$\n$\r$\nPlease use the dedicated Windows 7 / Server 2012 R2 package instead.$\r$\n$\r$\nOpen the download now?"
-LangString gaussHorizonWin7InstallerRequired ${LANG_SIMPCHINESE} "此安装包不支持 Windows 7 或 Windows Server 2012 R2。$\r$\n$\r$\n请改用 Windows 7 / Server 2012 R2 专用包。$\r$\n$\r$\n是否立即打开下载地址？"
-LangString gaussHorizonWin7InstallerRequired ${LANG_TRADCHINESE} "此安裝套件不支援 Windows 7 或 Windows Server 2012 R2。$\r$\n$\r$\n請改用 Windows 7 / Server 2012 R2 專用套件。$\r$\n$\r$\n是否立即開啟下載網址？"
-FileErrorText "$(gaussHorizonFileWriteError)" "$(gaussHorizonFileWriteErrorNoIgnore)"
+LangString chironHorizonFileWriteError ${LANG_ENGLISH} "Error opening file for writing:$\r$\n$\r$\n$0$\r$\n$\r$\nIf you are upgrading Chiron Horizon installed under Program Files, abort this installation, right-click the installer, and select Run as administrator.$\r$\n$\r$\nClick Abort to stop the installation,$\r$\nRetry to try again, or$\r$\nIgnore to skip this file."
+LangString chironHorizonFileWriteErrorNoIgnore ${LANG_ENGLISH} "Error opening file for writing:$\r$\n$\r$\n$0$\r$\n$\r$\nIf you are upgrading Chiron Horizon installed under Program Files, cancel this installation, right-click the installer, and select Run as administrator.$\r$\n$\r$\nClick Retry to try again, or$\r$\nCancel to stop the installation."
+LangString chironHorizonFileWriteError ${LANG_SIMPCHINESE} "无法打开要写入的文件：$\r$\n$\r$\n$0$\r$\n$\r$\n如果正在升级安装于 Program Files 的 Chiron Horizon，请中止本次安装，然后右键单击安装程序并选择“以管理员身份运行”。$\r$\n$\r$\n单击“中止”停止安装，$\r$\n单击“重试”再次尝试，或$\r$\n单击“忽略”跳过此文件。"
+LangString chironHorizonFileWriteErrorNoIgnore ${LANG_SIMPCHINESE} "无法打开要写入的文件：$\r$\n$\r$\n$0$\r$\n$\r$\n如果正在升级安装于 Program Files 的 Chiron Horizon，请取消本次安装，然后右键单击安装程序并选择“以管理员身份运行”。$\r$\n$\r$\n单击“重试”再次尝试，或$\r$\n单击“取消”停止安装。"
+LangString chironHorizonFileWriteError ${LANG_TRADCHINESE} "無法開啟要寫入的檔案：$\r$\n$\r$\n$0$\r$\n$\r$\n如果正在升級安裝於 Program Files 的 Chiron Horizon，請中止本次安裝，然後以滑鼠右鍵按一下安裝程式並選擇「以系統管理員身分執行」。$\r$\n$\r$\n按一下「中止」以停止安裝，$\r$\n按一下「重試」以再次嘗試，或$\r$\n按一下「忽略」以略過此檔案。"
+LangString chironHorizonFileWriteErrorNoIgnore ${LANG_TRADCHINESE} "無法開啟要寫入的檔案：$\r$\n$\r$\n$0$\r$\n$\r$\n如果正在升級安裝於 Program Files 的 Chiron Horizon，請取消本次安裝，然後以滑鼠右鍵按一下安裝程式並選擇「以系統管理員身分執行」。$\r$\n$\r$\n按一下「重試」以再次嘗試，或$\r$\n按一下「取消」以停止安裝。"
+LangString chironHorizonWin7InstallerRequired ${LANG_ENGLISH} "This installer does not support Windows 7 or Windows Server 2012 R2.$\r$\n$\r$\nPlease use the dedicated Windows 7 / Server 2012 R2 package instead.$\r$\n$\r$\nOpen the download now?"
+LangString chironHorizonWin7InstallerRequired ${LANG_SIMPCHINESE} "此安装包不支持 Windows 7 或 Windows Server 2012 R2。$\r$\n$\r$\n请改用 Windows 7 / Server 2012 R2 专用包。$\r$\n$\r$\n是否立即打开下载地址？"
+LangString chironHorizonWin7InstallerRequired ${LANG_TRADCHINESE} "此安裝套件不支援 Windows 7 或 Windows Server 2012 R2。$\r$\n$\r$\n請改用 Windows 7 / Server 2012 R2 專用套件。$\r$\n$\r$\n是否立即開啟下載網址？"
+FileErrorText "$(chironHorizonFileWriteError)" "$(chironHorizonFileWriteErrorNoIgnore)"
 
 Function .onInit
   ${GetOptions} $CMDLINE "/P" $PassiveMode
@@ -531,7 +531,7 @@ Function .onInit
   !endif
 
   ; Tauri renders fixedRuntime (and skip) as an empty install mode in NSIS;
-  ; Gauss Horizon does not ship a skip-mode installer. Only route builds that actually
+  ; Chiron Horizon does not ship a skip-mode installer. Only route builds that actually
   ; install an Evergreen WebView2 runtime to the fixed WebView2 109 bundle.
   !if "${INSTALLWEBVIEW2MODE}" != ""
     ${If} ${IsWin7}
@@ -542,12 +542,12 @@ Function .onInit
         Quit
       ${EndIf}
 
-      MessageBox MB_ICONSTOP|MB_YESNO|MB_DEFBUTTON1 "$(gaussHorizonWin7InstallerRequired)" IDYES gauss_horizon_open_win7_installer
+      MessageBox MB_ICONSTOP|MB_YESNO|MB_DEFBUTTON1 "$(chironHorizonWin7InstallerRequired)" IDYES chiron_horizon_open_win7_installer
       SetErrorLevel 1633
       Quit
 
-      gauss_horizon_open_win7_installer:
-        ExecShell "open" "https://distribution-disabled.invalid/releases/v${VERSION}/GAUSS_HORIZON_${VERSION}_x64-win7-server2012r2-offline-setup.exe?v=${VERSION}"
+      chiron_horizon_open_win7_installer:
+        ExecShell "open" "https://distribution-disabled.invalid/releases/v${VERSION}/CHIRON_HORIZON_${VERSION}_x64-win7-server2012r2-offline-setup.exe?v=${VERSION}"
         SetErrorLevel 1633
         Quit
     ${EndIf}

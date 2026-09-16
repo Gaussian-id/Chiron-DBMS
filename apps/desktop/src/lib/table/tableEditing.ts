@@ -1,9 +1,9 @@
 import type { ColumnInfo, DatabaseType, IndexInfo } from "@/types/database";
 import { getDatabaseCapability } from "@/lib/database/databaseCapabilities";
 
-export const GAUSS_HORIZON_ROWID_COLUMN = "__GAUSS_HORIZON_ROWID";
-export const GAUSS_HORIZON_NEO4J_ELEMENT_ID_COLUMN = "__GAUSS_HORIZON_ELEMENT_ID";
-export const GAUSS_HORIZON_TDENGINE_TBNAME_COLUMN = "tbname";
+export const CHIRON_HORIZON_ROWID_COLUMN = "__CHIRON_HORIZON_ROWID";
+export const CHIRON_HORIZON_NEO4J_ELEMENT_ID_COLUMN = "__CHIRON_HORIZON_ELEMENT_ID";
+export const CHIRON_HORIZON_TDENGINE_TBNAME_COLUMN = "tbname";
 
 function isViewTableType(tableType?: string): boolean {
   return tableType?.toUpperCase().includes("VIEW") === true;
@@ -21,17 +21,17 @@ export function isTdengineStableTableType(tableType?: string): boolean {
 export function editablePrimaryKeys(databaseType: DatabaseType | undefined, columns: ColumnInfo[], tableType?: string): string[] {
   const primaryKeys = columns.filter((column) => column.is_primary_key).map((column) => column.name);
   if (isViewTableType(tableType)) return primaryKeys;
-  if (databaseType === "tdengine" && primaryKeys.length > 0 && isTdengineStableTableType(tableType)) return [GAUSS_HORIZON_TDENGINE_TBNAME_COLUMN, ...primaryKeys];
+  if (databaseType === "tdengine" && primaryKeys.length > 0 && isTdengineStableTableType(tableType)) return [CHIRON_HORIZON_TDENGINE_TBNAME_COLUMN, ...primaryKeys];
   const syntheticKey = getDatabaseCapability(databaseType).syntheticKey;
-  if (syntheticKey === "oracle-rowid" && primaryKeys.length === 0 && isKnownOracleBaseTableType(tableType)) return [GAUSS_HORIZON_ROWID_COLUMN];
-  if (syntheticKey === "xugu-rowid" && primaryKeys.length === 0) return [GAUSS_HORIZON_ROWID_COLUMN];
-  if (syntheticKey === "neo4j-element-id" && primaryKeys.length === 0) return [GAUSS_HORIZON_NEO4J_ELEMENT_ID_COLUMN];
+  if (syntheticKey === "oracle-rowid" && primaryKeys.length === 0 && isKnownOracleBaseTableType(tableType)) return [CHIRON_HORIZON_ROWID_COLUMN];
+  if (syntheticKey === "xugu-rowid" && primaryKeys.length === 0) return [CHIRON_HORIZON_ROWID_COLUMN];
+  if (syntheticKey === "neo4j-element-id" && primaryKeys.length === 0) return [CHIRON_HORIZON_NEO4J_ELEMENT_ID_COLUMN];
   return primaryKeys;
 }
 
 export function editableRowIdentifierColumns(databaseType: DatabaseType | undefined, columns: ColumnInfo[], indexes?: IndexInfo[], tableType?: string): string[] {
   const primaryKeys = editablePrimaryKeys(databaseType, columns, tableType);
-  const oracleRowIdFallback = getDatabaseCapability(databaseType).syntheticKey === "oracle-rowid" && primaryKeys.length === 1 && primaryKeys[0]?.toUpperCase() === GAUSS_HORIZON_ROWID_COLUMN;
+  const oracleRowIdFallback = getDatabaseCapability(databaseType).syntheticKey === "oracle-rowid" && primaryKeys.length === 1 && primaryKeys[0]?.toUpperCase() === CHIRON_HORIZON_ROWID_COLUMN;
   if (primaryKeys.length > 0 && !oracleRowIdFallback) return primaryKeys;
   const uniqueIndex = indexes?.filter((index) => !index.filter && index.columns.length > 0 && (index.is_primary || index.is_unique)).sort((left, right) => Number(right.is_primary) - Number(left.is_primary) || left.columns.length - right.columns.length)[0];
   return uniqueIndex?.columns ?? primaryKeys;
@@ -79,7 +79,7 @@ export function hasCompleteTdengineRowIdentity(databaseType: DatabaseType | unde
 
 export function canDeleteExistingTdengineRows(databaseType: DatabaseType | undefined, primaryKeys: readonly string[]): boolean {
   if (databaseType !== "tdengine") return true;
-  const rowPrimaryKeys = primaryKeys.filter((primaryKey) => primaryKey.toLowerCase() !== GAUSS_HORIZON_TDENGINE_TBNAME_COLUMN);
+  const rowPrimaryKeys = primaryKeys.filter((primaryKey) => primaryKey.toLowerCase() !== CHIRON_HORIZON_TDENGINE_TBNAME_COLUMN);
   return rowPrimaryKeys.length <= 1;
 }
 
@@ -99,8 +99,8 @@ export function usesSyntheticRowIdKey(databaseType: DatabaseType | undefined, pr
   if (isViewTableType(tableType)) return false;
   const syntheticKey = getDatabaseCapability(databaseType).syntheticKey;
   if (primaryKeys.length !== 1) return false;
-  if (syntheticKey === "oracle-rowid" || syntheticKey === "xugu-rowid") return primaryKeys[0].toUpperCase() === GAUSS_HORIZON_ROWID_COLUMN;
-  return syntheticKey === "neo4j-element-id" && primaryKeys[0] === GAUSS_HORIZON_NEO4J_ELEMENT_ID_COLUMN;
+  if (syntheticKey === "oracle-rowid" || syntheticKey === "xugu-rowid") return primaryKeys[0].toUpperCase() === CHIRON_HORIZON_ROWID_COLUMN;
+  return syntheticKey === "neo4j-element-id" && primaryKeys[0] === CHIRON_HORIZON_NEO4J_ELEMENT_ID_COLUMN;
 }
 
 /**
@@ -116,13 +116,13 @@ export function shouldIncludeSyntheticRowId(databaseType: DatabaseType | undefin
 }
 
 export function isHiddenGridColumn(databaseType: DatabaseType | undefined, column: string, primaryKeys: string[], tableType?: string): boolean {
-  if (databaseType === "neo4j" && column === GAUSS_HORIZON_NEO4J_ELEMENT_ID_COLUMN) return true;
-  return shouldIncludeSyntheticRowId(databaseType, primaryKeys, tableType) && column.toUpperCase() === GAUSS_HORIZON_ROWID_COLUMN;
+  if (databaseType === "neo4j" && column === CHIRON_HORIZON_NEO4J_ELEMENT_ID_COLUMN) return true;
+  return shouldIncludeSyntheticRowId(databaseType, primaryKeys, tableType) && column.toUpperCase() === CHIRON_HORIZON_ROWID_COLUMN;
 }
 
 export function isTdengineExistingRowReadonlyColumn(databaseType: DatabaseType | undefined, column: string, columns: ColumnInfo[]): boolean {
   if (databaseType !== "tdengine") return false;
-  if (column.toLowerCase() === GAUSS_HORIZON_TDENGINE_TBNAME_COLUMN) return true;
+  if (column.toLowerCase() === CHIRON_HORIZON_TDENGINE_TBNAME_COLUMN) return true;
   const columnInfo = columns.find((info) => info.name.toLowerCase() === column.toLowerCase());
   return !!columnInfo?.is_primary_key || /\btag\b/i.test(columnInfo?.extra ?? "");
 }

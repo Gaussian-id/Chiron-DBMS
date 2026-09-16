@@ -95,7 +95,7 @@ function handleWebEvent(data: string) {
     else if (event.type === "notice" && event.notice) handleNotice(event.notice);
     else if (event.type === "dismiss" && event.id) dismissPrompt(event.id);
   } catch (error) {
-    console.error("[Gauss Horizon] invalid SSH prompt event:", error);
+    console.error("[Chiron Horizon] invalid SSH prompt event:", error);
   }
 }
 
@@ -214,7 +214,7 @@ async function resolve(action: "accept" | "reject" | "secret") {
     // Advance to the next queued prompt (if any) and reset per-prompt state.
     dismissPrompt(prompt.id);
   } catch (e) {
-    console.error("[Gauss Horizon] resolve_ssh_prompt failed:", e);
+    console.error("[Chiron Horizon] resolve_ssh_prompt failed:", e);
     // "No pending" / "already cancelled" mean the backend already dropped this
     // prompt (timeout or cancelled) — remove it from the queue and move on so
     // the dialog does not get stuck.
@@ -277,7 +277,7 @@ function submitSecret() {
     is a blocking prompt, so keep it above every other layer in the app (the
     tallest today are the image preview at 80/81 and the sidebar overlays at
     100). -->
-    <DialogContent class="flex max-h-[min(36rem,calc(var(--gauss-horizon-viewport-height)-2rem))] w-full max-w-[32rem] flex-col gap-4 overflow-hidden" overlay-class="z-[200]" portal-class="z-[200]" :show-close-button="false" @interact-outside.prevent @escape-key-down.prevent>
+    <DialogContent class="flex max-h-[min(36rem,calc(var(--chiron-horizon-viewport-height)-2rem))] w-full max-w-[32rem] flex-col gap-4 overflow-hidden" overlay-class="z-[200]" portal-class="z-[200]" :show-close-button="false" @interact-outside.prevent @escape-key-down.prevent>
       <DialogHeader class="shrink-0">
         <DialogTitle>{{ t(titleKey) }}</DialogTitle>
         <DialogDescription class="text-muted-foreground">

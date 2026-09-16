@@ -19,7 +19,7 @@ describe("MySQL routine execution SQL", () => {
       ],
     });
 
-    expect(sql).toBe(["SET @gauss_horizon_output_2 = NULL;", "CALL `double_value`(5, @gauss_horizon_output_2);", "SELECT @gauss_horizon_output_2 AS `p_output`;"].join("\n"));
+    expect(sql).toBe(["SET @chiron_horizon_output_2 = NULL;", "CALL `double_value`(5, @chiron_horizon_output_2);", "SELECT @chiron_horizon_output_2 AS `p_output`;"].join("\n"));
   });
 
   it("initializes INOUT variables and returns all output values", () => {
@@ -34,7 +34,7 @@ describe("MySQL routine execution SQL", () => {
       ],
     });
 
-    expect(sql).toBe(["SET @gauss_horizon_output_2 = 10;", "SET @gauss_horizon_output_3 = NULL;", "CALL `adjust_values`(5, @gauss_horizon_output_2, @gauss_horizon_output_3);", "SELECT @gauss_horizon_output_2 AS `p_total`, @gauss_horizon_output_3 AS `p_status`;"].join("\n"));
+    expect(sql).toBe(["SET @chiron_horizon_output_2 = 10;", "SET @chiron_horizon_output_3 = NULL;", "CALL `adjust_values`(5, @chiron_horizon_output_2, @chiron_horizon_output_3);", "SELECT @chiron_horizon_output_2 AS `p_total`, @chiron_horizon_output_3 AS `p_status`;"].join("\n"));
   });
 
   it("keeps input-only procedure calls unchanged", () => {
@@ -67,7 +67,7 @@ describe("MySQL routine execution SQL", () => {
         routineName: "double_value",
         parameters: parameters.map((parameter) => ({ ...parameter, value: parameter.mode === "IN" ? "5" : "" })),
       }),
-    ).toContain("CALL `double_value`(5, @gauss_horizon_output_2);");
+    ).toContain("CALL `double_value`(5, @chiron_horizon_output_2);");
   });
 });
 
@@ -83,7 +83,7 @@ describe("SQL Server routine execution SQL", () => {
       ],
     });
 
-    expect(sql).toBe(["DECLARE @gauss_horizon_output_2 varchar(128);", "EXEC [dbo].[Sys_CreatePrimaryKeyValue] @tableName = 'users', @returnValue = @gauss_horizon_output_2 OUTPUT;", "SELECT @gauss_horizon_output_2 AS [returnValue];"].join("\n"));
+    expect(sql).toBe(["DECLARE @chiron_horizon_output_2 varchar(128);", "EXEC [dbo].[Sys_CreatePrimaryKeyValue] @tableName = 'users', @returnValue = @chiron_horizon_output_2 OUTPUT;", "SELECT @chiron_horizon_output_2 AS [returnValue];"].join("\n"));
   });
 
   it("initializes INOUT parameters and keeps numeric values unquoted", () => {
@@ -94,7 +94,7 @@ describe("SQL Server routine execution SQL", () => {
       parameters: [{ name: "@amount", dataType: "decimal(18,4)", mode: "INOUT", ordinal: 1, value: "12.5000" }],
     });
 
-    expect(sql).toBe(["DECLARE @gauss_horizon_output_1 decimal(18,4) = 12.5000;", "EXEC [dbo].[adjust_amount] @amount = @gauss_horizon_output_1 OUTPUT;", "SELECT @gauss_horizon_output_1 AS [amount];"].join("\n"));
+    expect(sql).toBe(["DECLARE @chiron_horizon_output_1 decimal(18,4) = 12.5000;", "EXEC [dbo].[adjust_amount] @amount = @chiron_horizon_output_1 OUTPUT;", "SELECT @chiron_horizon_output_1 AS [amount];"].join("\n"));
   });
 
   it("preserves IN parameters and omission of requested defaults", () => {
@@ -144,7 +144,7 @@ describe("SQL Server routine execution SQL", () => {
         routineName: "collect_outputs",
         parameters: parameters.map((parameter) => ({ ...parameter, value: "" })),
       }),
-    ).toContain(["DECLARE @gauss_horizon_output_1 varchar(64);", "DECLARE @gauss_horizon_output_2 varchar(max);", "DECLARE @gauss_horizon_output_3 decimal(18,4);"].join("\n"));
+    ).toContain(["DECLARE @chiron_horizon_output_1 varchar(64);", "DECLARE @chiron_horizon_output_2 varchar(max);", "DECLARE @chiron_horizon_output_3 decimal(18,4);"].join("\n"));
 
     const metadataSql = routineParametersQuery({ database: "app", databaseType: "sqlserver", schema: "dbo", routineName: "save" });
     expect(metadataSql).toContain("JOIN sys.types t ON t.user_type_id = p.user_type_id");
@@ -154,7 +154,7 @@ describe("SQL Server routine execution SQL", () => {
   });
 
   it("quotes Oracle routine metadata aliases for legacy Oracle syntax", () => {
-    const sql = routineParametersQuery({ database: "XE", databaseType: "oracle", schema: "GAUSS_HORIZON_TEST", routineName: "demo" });
+    const sql = routineParametersQuery({ database: "XE", databaseType: "oracle", schema: "CHIRON_HORIZON_TEST", routineName: "demo" });
 
     expect(sql).toContain('ARGUMENT_NAME AS "name"');
     expect(sql).toContain('DEFAULTED AS "has_default"');

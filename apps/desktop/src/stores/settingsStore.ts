@@ -475,8 +475,8 @@ export const AI_PROVIDER_PARTNER_PRESETS: readonly AiPartnerProviderPreset[] = [
     apiStyle: "completions",
     authMethod: "bearer",
     requiresApiKey: true,
-    websiteUrl: "https://www.jalapeno-cloud.ai/gauss-horizon",
-    apiKeyUrl: "https://www.jalapeno-cloud.ai/gauss-horizon",
+    websiteUrl: "https://www.jalapeno-cloud.ai/chiron-horizon",
+    apiKeyUrl: "https://www.jalapeno-cloud.ai/chiron-horizon",
     descriptionKey: "ai.jalapenoDescription",
   },
   {
@@ -491,8 +491,8 @@ export const AI_PROVIDER_PARTNER_PRESETS: readonly AiPartnerProviderPreset[] = [
     apiStyle: "completions",
     authMethod: "bearer",
     requiresApiKey: true,
-    websiteUrl: "https://api.hualong.online/register?promo=Gauss Horizon%26HUALONG",
-    apiKeyUrl: "https://api.hualong.online/register?promo=Gauss Horizon%26HUALONG",
+    websiteUrl: "https://api.hualong.online/register?promo=Chiron Horizon%26HUALONG",
+    apiKeyUrl: "https://api.hualong.online/register?promo=Chiron Horizon%26HUALONG",
     descriptionKey: "ai.hualongDescription",
   },
 ];
@@ -1151,9 +1151,9 @@ export const DEFAULT_EDITOR_SETTINGS: EditorSettings = {
   defaultTransactionMode: "auto",
 };
 
-export const STORAGE_KEY = "gauss-horizon-editor-settings";
-const OLD_FONT_SIZE_KEY = "gauss-horizon-query-editor-font-size";
-const EXPORT_BATCH_SIZE_DEFAULT_MIGRATION_KEY = "gauss-horizon-export-batch-size-default-migrated-v1";
+export const STORAGE_KEY = "chiron-horizon-editor-settings";
+const OLD_FONT_SIZE_KEY = "chiron-horizon-query-editor-font-size";
+const EXPORT_BATCH_SIZE_DEFAULT_MIGRATION_KEY = "chiron-horizon-export-batch-size-default-migrated-v1";
 const LEGACY_DEFAULT_EXPORT_BATCH_SIZE = 10000;
 const MIN_UI_SCALE = 0.7;
 const MAX_UI_SCALE = 2;

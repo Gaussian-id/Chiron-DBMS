@@ -89,7 +89,7 @@ function deferred<T>() {
 function structuredTimeoutError() {
   return {
     version: 1 as const,
-    code: "Gauss Horizon-JDBC-2002",
+    code: "Chiron Horizon-JDBC-2002",
     messageKey: "backendErrors.jdbc.operationTimedOut",
     messageParams: { stage: "execute" },
     source: "jdbcAgent" as const,
@@ -100,7 +100,7 @@ function structuredTimeoutError() {
 function structuredSqlError(detail = "duplicate key") {
   return {
     version: 1 as const,
-    code: "Gauss Horizon-JDBC-4001",
+    code: "Chiron Horizon-JDBC-4001",
     messageKey: "backendErrors.jdbc.sqlFailed",
     messageParams: { stage: "execute" },
     source: "jdbcAgent" as const,
@@ -182,7 +182,7 @@ describe("queryStore multi-statement errors", () => {
   it("preserves the original message when a top-level structured error omits detail", async () => {
     const structuredError = {
       version: 1 as const,
-      code: "Gauss Horizon-LEGACY-0001",
+      code: "Chiron Horizon-LEGACY-0001",
       messageKey: "backendErrors.legacy",
       messageParams: {},
       source: "legacyBackend" as const,
@@ -676,7 +676,7 @@ describe("queryStore multi-statement errors", () => {
         pageSql,
         pageLimit: 100,
         pageOffset: offset,
-        countSql: "SELECT COUNT(*) AS gauss_horizon_total_rows FROM Users;",
+        countSql: "SELECT COUNT(*) AS chiron_horizon_total_rows FROM Users;",
         useAgentResultSession: false,
       };
     });
@@ -701,7 +701,7 @@ describe("queryStore multi-statement errors", () => {
     expect(firstPage).toMatchObject({ database: "BarDB", schema: undefined, resultPageLimit: 100, resultPageOffset: 0 });
     expect(firstPage.result).toMatchObject({ sourceStatement: "SELECT * FROM Users", sourceLabel: "BarDB.Users" });
     expect(firstPage.result?.rows).toHaveLength(100);
-    expect(firstPage.resultCountSql).toBe("USE FooDB;\nGO\nUSE [BarDB];\nGO\nSELECT COUNT(*) AS gauss_horizon_total_rows FROM Users;\nGO\n");
+    expect(firstPage.resultCountSql).toBe("USE FooDB;\nGO\nUSE [BarDB];\nGO\nSELECT COUNT(*) AS chiron_horizon_total_rows FROM Users;\nGO\n");
     expect(mocks.closeClientConnectionSession).toHaveBeenCalledWith("sqlserver-1", "FooDB", tabId);
 
     await store.executeTabSql(tabId, firstPage.result!.sourceStatement!, {

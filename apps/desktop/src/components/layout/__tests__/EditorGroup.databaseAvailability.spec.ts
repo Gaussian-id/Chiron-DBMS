@@ -14,7 +14,7 @@ vi.mock("../EditorToolbar.vue", () => ({ default: { render: () => h("div", { "da
 vi.mock("../QueryEditorSurface.vue", () => ({ default: { render: () => h("div", { "data-query-surface": "" }) } }));
 vi.mock("../ContentArea.vue", () => ({ default: { render: () => h("div", { "data-content-surface": "" }) } }));
 import EditorGroup from "../EditorGroup.vue";
-import driverManifest from "../../../../../../crates/gauss-horizon-core/assets/database-drivers.manifest.json";
+import driverManifest from "../../../../../../crates/chiron-horizon-core/assets/database-drivers.manifest.json";
 let app: App;
 let root: HTMLElement;
 async function mount(type: string, mode = "query") {

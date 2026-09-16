@@ -7,11 +7,11 @@ use tauri::{AppHandle, Emitter, State};
 
 use crate::commands::connection::AppState;
 
-use gauss_horizon_core::query_cancel::RunningTaskMetadata;
-pub use gauss_horizon_core::query_result_export::QueryResultExportRequest;
-use gauss_horizon_core::query_result_export::StagedExportTarget;
-use gauss_horizon_core::table_export::ExportStatus;
-pub use gauss_horizon_core::table_export::TableExportProgress;
+use chiron_horizon_core::query_cancel::RunningTaskMetadata;
+pub use chiron_horizon_core::query_result_export::QueryResultExportRequest;
+use chiron_horizon_core::query_result_export::StagedExportTarget;
+use chiron_horizon_core::table_export::ExportStatus;
+pub use chiron_horizon_core::table_export::TableExportProgress;
 
 fn emit_progress(app: &AppHandle, progress: TableExportProgress) {
     let _ = app.emit("query-result-export-progress", progress);
@@ -126,7 +126,7 @@ mod tests {
     impl TestDir {
         fn new() -> Self {
             let path = std::env::temp_dir().join(format!(
-                "gauss-horizon-query-result-export-{}-{}",
+                "chiron-horizon-query-result-export-{}-{}",
                 std::process::id(),
                 NEXT_TEST_DIR.fetch_add(1, Ordering::SeqCst)
             ));
@@ -271,7 +271,7 @@ pub async fn start_query_result_export(
 
     // Exports interleave async fetches with synchronous row formatting and
     // buffered disk writes; run them off the async workers (see spawn_export_task).
-    gauss_horizon_core::export_runtime::spawn_export_task(async move {
+    chiron_horizon_core::export_runtime::spawn_export_task(async move {
         let execution_id = request.execution_id.clone().filter(|id| !id.trim().is_empty());
         let registered_query = execution_id.as_ref().map(|id| {
             state.running_queries.register_task(
@@ -286,7 +286,7 @@ pub async fn start_query_result_export(
         let cancel_token = registered_query.as_ref().map(|query| query.token());
         let routed_progress = Arc::new(RoutedExportProgress::default());
         let routed_progress_handler = routed_progress.clone();
-        let result = gauss_horizon_core::query_result_export::export_query_result_core(
+        let result = chiron_horizon_core::query_result_export::export_query_result_core(
             &state,
             &request,
             cancel_token.clone(),
@@ -302,7 +302,7 @@ pub async fn start_query_result_export(
         let cancellation_requested =
             terminal.as_ref().is_some_and(|progress| matches!(progress.status, ExportStatus::Cancelled))
                 || cancel_token.as_ref().is_some_and(|token| token.is_cancelled())
-                || gauss_horizon_core::database_export::is_export_cancelled(&export_id).await;
+                || chiron_horizon_core::database_export::is_export_cancelled(&export_id).await;
         finalize_staged_export(
             target,
             &export_id,
@@ -313,7 +313,7 @@ pub async fn start_query_result_export(
             |progress| emit_progress(&app, progress),
         );
 
-        gauss_horizon_core::database_export::clear_export_cancelled(&export_id).await;
+        chiron_horizon_core::database_export::clear_export_cancelled(&export_id).await;
     });
 
     Ok(())
@@ -325,7 +325,7 @@ pub async fn cancel_query_result_export(
     export_id: String,
     execution_id: Option<String>,
 ) -> Result<(), String> {
-    gauss_horizon_core::database_export::set_export_cancelled(&export_id).await;
+    chiron_horizon_core::database_export::set_export_cancelled(&export_id).await;
     if let Some(execution_id) = execution_id.filter(|id| !id.trim().is_empty()) {
         state.running_queries.cancel(&execution_id);
     }

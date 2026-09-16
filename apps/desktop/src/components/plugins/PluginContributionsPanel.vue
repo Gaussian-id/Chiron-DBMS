@@ -41,7 +41,7 @@ const GithubIcon = {
   },
 };
 
-const PLUGIN_ALLOW_UNSIGNED_STORAGE_KEY = "gauss-horizon-plugin-allow-unsigned";
+const PLUGIN_ALLOW_UNSIGNED_STORAGE_KEY = "chiron-horizon-plugin-allow-unsigned";
 
 type TauriFileDropPayload = { type: "enter"; paths: string[]; position: { x: number; y: number } } | { type: "over"; position: { x: number; y: number } } | { type: "drop"; paths: string[]; position: { x: number; y: number } } | { type: "leave" };
 
@@ -328,7 +328,7 @@ async function choosePluginPackage() {
     return;
   }
   const { open } = await import("@tauri-apps/plugin-dialog");
-  const path = await open({ multiple: false, filters: [{ name: t("pluginPlatform.packageFileType"), extensions: ["gauss-horizonp"] }] });
+  const path = await open({ multiple: false, filters: [{ name: t("pluginPlatform.packageFileType"), extensions: ["chiron-horizonp"] }] });
   if (typeof path === "string") await installPlugin(path);
 }
 
@@ -356,7 +356,7 @@ async function installPlugin(source: string | File) {
 }
 
 function isPluginPackagePath(path: string): boolean {
-  return /\.gauss-horizonp$/i.test(path);
+  return /\.chiron-horizonp$/i.test(path);
 }
 
 function webDropPluginPackage(event: DragEvent): File | null {
@@ -482,16 +482,16 @@ watch(allowUnsigned, (value) => {
 });
 onMounted(() => {
   void refresh();
-  if (isTauriRuntime()) document.addEventListener("gauss-horizon:tauri-file-drop", onTauriPluginDrop);
+  if (isTauriRuntime()) document.addEventListener("chiron-horizon:tauri-file-drop", onTauriPluginDrop);
 });
 onBeforeUnmount(() => {
-  if (isTauriRuntime()) document.removeEventListener("gauss-horizon:tauri-file-drop", onTauriPluginDrop);
+  if (isTauriRuntime()) document.removeEventListener("chiron-horizon:tauri-file-drop", onTauriPluginDrop);
 });
 </script>
 
 <template>
   <div ref="panelRootRef" class="plugin-center-view relative mx-auto flex h-full w-full max-w-6xl flex-col gap-4 overflow-hidden px-6 py-6" @dragenter="onWebDragEnter" @dragover="onWebDragOver" @dragleave="onWebDragLeave" @drop="onWebDrop">
-    <input ref="webFileInput" type="file" accept=".gauss-horizonp" class="hidden" @change="handleWebPackage" />
+    <input ref="webFileInput" type="file" accept=".chiron-horizonp" class="hidden" @change="handleWebPackage" />
     <div v-if="error" class="shrink-0 rounded-lg border border-destructive/30 bg-destructive/5 px-3 py-2 text-xs text-destructive">{{ error }}</div>
 
     <Tabs v-model="activeSection" class="min-h-0 flex-1 gap-3">

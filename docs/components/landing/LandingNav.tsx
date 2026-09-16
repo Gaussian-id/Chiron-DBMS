@@ -54,7 +54,7 @@ export function LandingNav({ lang, active }: { lang: DocsLang; active?: "home" |
   const langHref = langHrefMap[active ?? ""] ?? `/${otherLang}`;
   const navItems = [
     { id: "home", href: `/${lang}`, label: t.home, tabletHidden: false },
-    { id: "docs", href: `/${lang}/docs/what-is-gauss-horizon`, label: t.docs, tabletHidden: false },
+    { id: "docs", href: `/${lang}/docs/what-is-chiron-horizon`, label: t.docs, tabletHidden: false },
     { id: "changelog", href: `/${lang}/changelog`, label: t.changelog, tabletHidden: false },
     { id: "community", href: `/${lang}/community`, label: t.community, tabletHidden: false },
     { id: "sponsors", href: `/${lang}/sponsors`, label: t.sponsors, tabletHidden: true },
@@ -102,7 +102,7 @@ export function LandingNav({ lang, active }: { lang: DocsLang; active?: "home" |
       <div className="landing-nav-inner flex items-center justify-between max-w-[1180px] h-16 mx-auto px-7 max-[760px]:min-h-[60px] max-[760px]:h-auto max-[760px]:px-[18px] max-[760px]:py-2">
         <Link href={`/${lang}`} prefetch={false} className="landing-nav-brand flex min-h-11 items-center gap-2.5 text-landing-ink text-2xl font-[820]" onClick={() => setMenuOpen(false)}>
           <img src="/logo-64.png" alt="" aria-hidden="true" width={28} height={28} />
-          <span>Gauss Horizon</span>
+          <span>Chiron Horizon</span>
         </Link>
         <div className="flex items-center gap-1">
           {navItems.map((item) => (

@@ -1,6 +1,6 @@
 # Cassandra Agent benchmark
 
-This benchmark compares the same Gauss Horizon JSON-RPC operations through the native
+This benchmark compares the same Chiron Horizon JSON-RPC operations through the native
 Apache `cassandra-gocql-driver` Agent and the archived Cassandra JDBC Agent.
 It measures process startup, connection creation, RSS, latency, throughput,
 artifact size, and shutdown behavior.
@@ -11,7 +11,7 @@ already-connected process per candidate.
 
 ## Prepare the fixture
 
-The default workload expects `gauss_horizon_native_test.all_types` with at least 100 rows
+The default workload expects `chiron_horizon_native_test.all_types` with at least 100 rows
 and an integer primary key named `id`. Override the SQL variables below when
 using another schema.
 
@@ -20,7 +20,7 @@ using another schema.
 From `agents/`:
 
 ```bash
-go build -o /tmp/gauss-horizon-cassandra-bench/cassandra-go ./drivers/cassandra-go
+go build -o /tmp/chiron-horizon-cassandra-bench/cassandra-go ./drivers/cassandra-go
 ```
 
 Keep an archived JDBC Agent JAR as the baseline. The production Cassandra
@@ -29,13 +29,13 @@ module publishes only the native executable.
 ## Run
 
 ```bash
-GO_AGENT=/tmp/gauss-horizon-cassandra-bench/cassandra-go \
-JDBC_AGENT_JAR=/tmp/gauss-horizon-cassandra-bench/gauss-horizon-agent-cassandra.jar \
+GO_AGENT=/tmp/chiron-horizon-cassandra-bench/cassandra-go \
+JDBC_AGENT_JAR=/tmp/chiron-horizon-cassandra-bench/chiron-horizon-agent-cassandra.jar \
 CASSANDRA_HOST=127.0.0.1 \
 CASSANDRA_PORT=9042 \
-CASSANDRA_KEYSPACE=gauss_horizon_native_test \
+CASSANDRA_KEYSPACE=chiron_horizon_native_test \
 python3 drivers/cassandra-go/bench/agent_compare.py \
-  > /tmp/gauss-horizon-cassandra-bench/result.json
+  > /tmp/chiron-horizon-cassandra-bench/result.json
 ```
 
 If Java is only available in a container, provide the full interactive command
@@ -43,7 +43,7 @@ as a JSON argv array so no shell is implied (pass `["sh", "-c", "..."]`
 explicitly when you need shell features):
 
 ```bash
-JDBC_AGENT_COMMAND='["docker","run","--rm","-i","--name","gauss-horizon-cassandra-jdbc-bench","-v","/tmp/gauss-horizon-cassandra-bench:/bench:ro","eclipse-temurin:21-jre","java","-jar","/bench/gauss-horizon-agent-cassandra.jar"]'
+JDBC_AGENT_COMMAND='["docker","run","--rm","-i","--name","chiron-horizon-cassandra-jdbc-bench","-v","/tmp/chiron-horizon-cassandra-bench:/bench:ro","eclipse-temurin:21-jre","java","-jar","/bench/chiron-horizon-agent-cassandra.jar"]'
 ```
 
 ## Configuration

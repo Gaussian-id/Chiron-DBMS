@@ -46,7 +46,7 @@ const channels = [
 const i18n = {
   en: {
     title: "Community",
-    desc: "Join the Gauss Horizon community — ask questions, share feedback, and connect with other users.",
+    desc: "Join the Chiron Horizon community — ask questions, share feedback, and connect with other users.",
     discord: { name: "Discord", desc: "Real-time chat, Q&A, and feature discussions." },
     qq: { name: "QQ Group", desc: "Group number: 1087880322" },
     wechat: { name: "WeChat Group", desc: "Join via Tencent Docs invite link." },
@@ -54,7 +54,7 @@ const i18n = {
   },
   cn: {
     title: "交流群",
-    desc: "加入 Gauss Horizon 社区 — 提问、反馈、与其他用户交流。",
+    desc: "加入 Chiron Horizon 社区 — 提问、反馈、与其他用户交流。",
     discord: { name: "Discord", desc: "实时聊天、问答和功能讨论。" },
     qq: { name: "QQ 群", desc: "群号：1087880322" },
     wechat: { name: "微信群", desc: "通过腾讯文档链接加入。" },

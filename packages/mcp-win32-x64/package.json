@@ -1,7 +1,7 @@
 {
-  "name": "@gauss-horizon/mcp-win32-x64",
+  "name": "@chiron-horizon/mcp-win32-x64",
   "version": "0.1.0",
-  "description": "Precompiled Gauss Horizon MCP Rust binary for win32 x64",
+  "description": "Precompiled Chiron Horizon MCP Rust binary for win32 x64",
   "license": "Apache-2.0",
   "repository": {
     "type": "git",
@@ -15,7 +15,7 @@
     "x64"
   ],
   "bin": {
-    "gauss-horizon-mcp-native": "bin/gauss-horizon-mcp.exe"
+    "chiron-horizon-mcp-native": "bin/chiron-horizon-mcp.exe"
   },
   "files": [
     "bin"

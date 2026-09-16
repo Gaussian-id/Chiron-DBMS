@@ -35,11 +35,11 @@ function rel(partial: Pick<DiagramRelationship, "sourceCardinality" | "targetCar
 }
 
 test("diagramExportFileName builds safe names for each format and mode", () => {
-  assert.equal(diagramExportFileName("", "", "table", "svg"), "gauss-horizon-diagram-table-structure.svg");
-  assert.equal(diagramExportFileName("prod/main", "billing db", "engineering", "png"), "gauss-horizon-prod-main-billing-db-engineering-er.png");
-  assert.equal(diagramExportFileName("a", "b", "table", "json"), "gauss-horizon-a-b-diagram.json");
-  assert.equal(diagramExportFileName("a", "b", "table", "dbml"), "gauss-horizon-a-b-schema.dbml");
-  assert.equal(diagramExportFileName("a", "b", "engineering", "mermaid"), "gauss-horizon-a-b-er.mmd");
+  assert.equal(diagramExportFileName("", "", "table", "svg"), "chiron-horizon-diagram-table-structure.svg");
+  assert.equal(diagramExportFileName("prod/main", "billing db", "engineering", "png"), "chiron-horizon-prod-main-billing-db-engineering-er.png");
+  assert.equal(diagramExportFileName("a", "b", "table", "json"), "chiron-horizon-a-b-diagram.json");
+  assert.equal(diagramExportFileName("a", "b", "table", "dbml"), "chiron-horizon-a-b-schema.dbml");
+  assert.equal(diagramExportFileName("a", "b", "engineering", "mermaid"), "chiron-horizon-a-b-er.mmd");
 });
 
 test("buildDiagramJson pretty-prints with trailing newline", () => {

@@ -1,4 +1,4 @@
-export const TAB_DRAG_MIME = "application/x-gauss-horizon-tab";
+export const TAB_DRAG_MIME = "application/x-chiron-horizon-tab";
 
 export interface TabDragPayload {
   mime: typeof TAB_DRAG_MIME;

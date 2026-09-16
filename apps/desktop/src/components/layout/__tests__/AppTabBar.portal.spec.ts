@@ -85,7 +85,7 @@ function mountNavigation(placement: "top" | "bottom" | "left" | "right", empty =
     pages.driverActive = false;
     settings.settingsPageActive = false;
   };
-  window.addEventListener("gauss-horizon:activate-query-surface", onQuerySurface);
+  window.addEventListener("chiron-horizon:activate-query-surface", onQuerySurface);
   const host = document.createElement("div");
   document.body.appendChild(host);
   const root = defineComponent({
@@ -115,7 +115,7 @@ function mountNavigation(placement: "top" | "bottom" | "left" | "right", empty =
   cleanups.push(() => {
     app.unmount();
     host.remove();
-    window.removeEventListener("gauss-horizon:activate-query-surface", onQuerySurface);
+    window.removeEventListener("chiron-horizon:activate-query-surface", onQuerySurface);
   });
   return { host, store, settings, pages, portal, actions, warnings, navigation, workspace };
 }

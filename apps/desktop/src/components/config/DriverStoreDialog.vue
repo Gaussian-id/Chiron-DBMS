@@ -388,7 +388,7 @@ function canInstallOrUpdateDriver(dbType: string): boolean {
 }
 
 async function openOfflineDriverDownload() {
-  window.alert("Offline driver downloads are not available in Gauss Horizon 0.1.0. Import a locally supplied driver package.");
+  window.alert("Offline driver downloads are not available in Chiron Horizon 0.1.0. Import a locally supplied driver package.");
 }
 
 function queueDriverInstall(dbType: string) {
@@ -659,7 +659,7 @@ async function exportOfflinePackage(driverKeys: string[]) {
       const { save } = await import("@tauri-apps/plugin-dialog");
       return save({
         title: t("driverStore.offlineExportChooseDestination"),
-        defaultPath: `gauss-horizon-agents-offline-${platform}.zip`,
+        defaultPath: `chiron-horizon-agents-offline-${platform}.zip`,
         filters: [{ name: "ZIP", extensions: ["zip"] }],
       });
     },
@@ -2226,7 +2226,7 @@ watch(driverStoreTab, (tab) => {
 .driver-store-focus-highlight {
   background-color: color-mix(in srgb, var(--primary) 8%, transparent);
   box-shadow: inset 0 0 0 1.5px color-mix(in srgb, var(--primary) 45%, transparent);
-  border-radius: var(--gauss-horizon-radius-fixed-6);
+  border-radius: var(--chiron-horizon-radius-fixed-6);
 }
 
 .driver-store-view,
@@ -2348,37 +2348,37 @@ watch(driverStoreTab, (tab) => {
   height: 2rem !important;
 }
 
-html.gauss-horizon-legacy-webview .driver-store-tab {
+html.chiron-horizon-legacy-webview .driver-store-tab {
   margin-top: 1.25rem !important;
 }
 
-html.gauss-horizon-legacy-webview .driver-store-agent-tab:not([hidden]),
-html.gauss-horizon-legacy-webview .driver-store-jdbc-tab:not([hidden]),
-html.gauss-horizon-legacy-webview .driver-store-storage-tab:not([hidden]) {
+html.chiron-horizon-legacy-webview .driver-store-agent-tab:not([hidden]),
+html.chiron-horizon-legacy-webview .driver-store-jdbc-tab:not([hidden]),
+html.chiron-horizon-legacy-webview .driver-store-storage-tab:not([hidden]) {
   display: flex !important;
   flex-direction: column !important;
   gap: 1.25rem !important;
 }
 
-html.gauss-horizon-legacy-webview .driver-store-agent-tab > :not([hidden]) ~ :not([hidden]),
-html.gauss-horizon-legacy-webview .driver-store-jdbc-tab > :not([hidden]) ~ :not([hidden]),
-html.gauss-horizon-legacy-webview .driver-store-storage-tab > :not([hidden]) ~ :not([hidden]) {
+html.chiron-horizon-legacy-webview .driver-store-agent-tab > :not([hidden]) ~ :not([hidden]),
+html.chiron-horizon-legacy-webview .driver-store-jdbc-tab > :not([hidden]) ~ :not([hidden]),
+html.chiron-horizon-legacy-webview .driver-store-storage-tab > :not([hidden]) ~ :not([hidden]) {
   margin-top: 0 !important;
 }
 
-html.gauss-horizon-legacy-webview .driver-store-local-import-button {
+html.chiron-horizon-legacy-webview .driver-store-local-import-button {
   width: 2rem !important;
   height: 2rem !important;
   padding: 0 !important;
 }
 
-html.gauss-horizon-legacy-webview .driver-store-local-import-button svg {
+html.chiron-horizon-legacy-webview .driver-store-local-import-button svg {
   width: 1rem !important;
   height: 1rem !important;
 }
 
 @media (min-width: 640px) {
-  html.gauss-horizon-legacy-webview [data-driver-category-nav] {
+  html.chiron-horizon-legacy-webview [data-driver-category-nav] {
     width: 10rem !important;
     flex-direction: column !important;
     overflow-x: hidden !important;
@@ -2390,22 +2390,22 @@ html.gauss-horizon-legacy-webview .driver-store-local-import-button svg {
     padding-bottom: 0.125rem !important;
   }
 
-  html.gauss-horizon-legacy-webview [data-driver-category-nav] > button {
+  html.chiron-horizon-legacy-webview [data-driver-category-nav] > button {
     width: 100% !important;
     align-self: stretch !important;
   }
 
-  html.gauss-horizon-legacy-webview [data-driver-category-nav] > button[aria-current="page"] {
+  html.chiron-horizon-legacy-webview [data-driver-category-nav] > button[aria-current="page"] {
     background-color: rgba(23, 23, 23, 0.08) !important;
     color: rgb(23, 23, 23) !important;
   }
 
-  html.gauss-horizon-legacy-webview.dark [data-driver-category-nav] > button[aria-current="page"] {
+  html.chiron-horizon-legacy-webview.dark [data-driver-category-nav] > button[aria-current="page"] {
     background-color: rgba(255, 255, 255, 0.1) !important;
     color: rgb(244, 244, 245) !important;
   }
 
-  html.gauss-horizon-legacy-webview .driver-store-agent-results {
+  html.chiron-horizon-legacy-webview .driver-store-agent-results {
     width: 0 !important;
     min-width: 0 !important;
     flex: 1 1 0% !important;

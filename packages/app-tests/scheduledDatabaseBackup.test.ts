@@ -132,7 +132,7 @@ test("due check respects enabled state and next run", () => {
 test("backup file names are unique and safe for schema-aware exports", () => {
   const path = databaseBackupFilePath("C:\\backups", "Nightly: prod", "app/private", new Date(2026, 6, 16, 2, 3, 4), "12345678-abcd");
 
-  assert.equal(path, "C:\\backups\\gauss-horizon-backup__Nightly_ prod__20260716-020304__app_private__12345678.sql");
+  assert.equal(path, "C:\\backups\\chiron-horizon-backup__Nightly_ prod__20260716-020304__app_private__12345678.sql");
 });
 
 test("backup file names retain the target suffix without an implicit run suffix", () => {
@@ -146,7 +146,7 @@ test("scheduled runs render a user-defined relative directory template", () => {
 
   assert.equal(directory, "C:\\backups\\archives\\Nightly_ prod\\20260716\\20260716020304-12345678");
   assert.equal(databaseBackupRunDirectoryPatternIsValid("{schedule}/{runId}"), true);
-  assert.equal(databaseBackupRunDirectoryPatternIsValid("gauss-horizon-backup_{timestamp}"), true);
+  assert.equal(databaseBackupRunDirectoryPatternIsValid("chiron-horizon-backup_{timestamp}"), true);
   assert.equal(databaseBackupRunDirectoryPatternIsValid("../{runId}"), false);
   assert.equal(databaseBackupRunDirectoryPatternIsValid("daily"), true);
 });
@@ -359,7 +359,7 @@ test("scheduled backup history exposes rename and overall percentage controls", 
 
 test("scheduled backups prepare table scope before opening a consistent snapshot", () => {
   const scheduler = readFileSync("apps/desktop/src/composables/useScheduledDatabaseBackups.ts", "utf8");
-  const exportCore = readFileSync("crates/gauss-horizon-core/src/database_export.rs", "utf8");
+  const exportCore = readFileSync("crates/chiron-horizon-core/src/database_export.rs", "utf8");
   const schemaIndex = scheduler.indexOf("await api.listSchemas(config.connectionId, database)");
   const snapshotIndex = scheduler.indexOf("await api.beginDatabaseBackupSnapshot(config.connectionId, database, runId)");
   const exportIndex = scheduler.indexOf("await runDatabaseExportUntilTerminal(");

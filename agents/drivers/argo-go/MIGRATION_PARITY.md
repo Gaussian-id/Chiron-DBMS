@@ -5,7 +5,7 @@ Status date: 2026-09-03.
 This agent is a fork of `agents/drivers/hive-go` created to serve ArgoDB
 (Transwarp ArgoDB) connections exclusively: `supportsRoutines()` returns true
 unconditionally and connection identity reports `ArgoDB (Transwarp)` /
-`Gauss Horizon ArgoDB Go Agent`. Vanilla Hive / Kyuubi / Impala stay on hive-go.
+`Chiron Horizon ArgoDB Go Agent`. Vanilla Hive / Kyuubi / Impala stay on hive-go.
 
 No Hive 3 / Hive 4 / Kyuubi parity is claimed for this directory. The
 validation matrix in `agents/drivers/hive-go/MIGRATION_PARITY.md` applies to

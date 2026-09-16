@@ -47,7 +47,7 @@ configure(agentProjects) {
     apply plugin: 'com.gradleup.shadow'
 
     tasks.named('shadowJar') {
-        archiveBaseName = "gauss-horizon-agent-${project.name}"
+        archiveBaseName = "chiron-horizon-agent-${project.name}"
         archiveClassifier = ''
     }
 }

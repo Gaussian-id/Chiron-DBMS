@@ -3,16 +3,16 @@
   "catalogVersion": 1,
   "repository": {
     "id": "example-marketplace",
-    "name": "Gauss Horizon Example Marketplace",
+    "name": "Chiron Horizon Example Marketplace",
     "homepage": "https://plugins.example.com"
   },
   "generatedAt": "2026-07-28T00:00:00Z",
   "plugins": [
     {
-      "id": "gauss.horizon.example.hello",
-      "name": "Gauss Horizon Hello Workbench",
-      "description": "Complete Gauss Horizon plugin example with a native sidecar, saved connection provider, workbench UI, and virtual filesystem provider.",
-      "publisher": "gauss-horizon",
+      "id": "chiron.horizon.example.hello",
+      "name": "Chiron Horizon Hello Workbench",
+      "description": "Complete Chiron Horizon plugin example with a native sidecar, saved connection provider, workbench UI, and virtual filesystem provider.",
+      "publisher": "chiron-horizon",
       "verified": false,
       "icon": "../hello-workbench/assets/plugin.svg",
       "tags": [
@@ -36,9 +36,9 @@
           "artifacts": [
             {
               "target": "darwin-arm64",
-              "url": "../hello-workbench/dist/gauss.horizon.example.hello-1.0.0-darwin-arm64.gauss-horizonp",
+              "url": "../hello-workbench/dist/chiron.horizon.example.hello-1.0.0-darwin-arm64.chiron-horizonp",
               "sha256": "98261c584716ad4c55f9daffcebbde2849214167ec8a722e646c6786632f2f96",
-              "signingKeyId": "gauss-horizon-store-preview-2026",
+              "signingKeyId": "chiron-horizon-store-preview-2026",
               "size": 329815
             }
           ]
@@ -46,27 +46,27 @@
       ],
       "localizations": {
         "zh-CN": {
-          "name": "Gauss Horizon Hello 工作台",
-          "description": "包含原生 Sidecar、可保存连接、工作台 UI 和虚拟文件系统的完整 Gauss Horizon 插件示例。"
+          "name": "Chiron Horizon Hello 工作台",
+          "description": "包含原生 Sidecar、可保存连接、工作台 UI 和虚拟文件系统的完整 Chiron Horizon 插件示例。"
         },
         "zh-TW": {
-          "name": "Gauss Horizon Hello 工作台",
-          "description": "包含原生 Sidecar、可儲存連線、工作台 UI 與虛擬檔案系統的完整 Gauss Horizon 外掛範例。"
+          "name": "Chiron Horizon Hello 工作台",
+          "description": "包含原生 Sidecar、可儲存連線、工作台 UI 與虛擬檔案系統的完整 Chiron Horizon 外掛範例。"
         },
         "ja": {
-          "name": "Gauss Horizon Hello ワークベンチ",
-          "description": "ネイティブ Sidecar、保存可能な接続、ワークベンチ UI、仮想ファイルシステムを含む完全な Gauss Horizon プラグイン例です。"
+          "name": "Chiron Horizon Hello ワークベンチ",
+          "description": "ネイティブ Sidecar、保存可能な接続、ワークベンチ UI、仮想ファイルシステムを含む完全な Chiron Horizon プラグイン例です。"
         },
         "es": {
-          "name": "Área de trabajo Hello de Gauss Horizon",
+          "name": "Área de trabajo Hello de Chiron Horizon",
           "description": "Ejemplo completo con sidecar nativo, conexión guardada, interfaz de trabajo y sistema de archivos virtual."
         },
         "it": {
-          "name": "Area di lavoro Hello di Gauss Horizon",
+          "name": "Area di lavoro Hello di Chiron Horizon",
           "description": "Esempio completo con sidecar nativo, connessione salvata, UI di lavoro e file system virtuale."
         },
         "pt-BR": {
-          "name": "Área de trabalho Hello do Gauss Horizon",
+          "name": "Área de trabalho Hello do Chiron Horizon",
           "description": "Exemplo completo com sidecar nativo, conexão salva, interface de trabalho e sistema de arquivos virtual."
         }
       }

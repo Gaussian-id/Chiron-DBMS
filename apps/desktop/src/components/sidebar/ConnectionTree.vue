@@ -732,7 +732,7 @@ function refreshPendingInvalidatedTableSearchScopes() {
     if (!findNodePathByIdentity(store.treeNodes, scope.parentNodeId, scope)) continue;
     pendingInvalidatedTableSearchScopes.delete(scopeKey);
     void loadLocalTableSearchResults(scope.parentNodeId, true, undefined, scope).catch((error) => {
-      console.debug("[Gauss Horizon][sidebar-table-search:index-rebuild-failed]", { scope, error });
+      console.debug("[Chiron Horizon][sidebar-table-search:index-rebuild-failed]", { scope, error });
     });
   }
 }
@@ -2953,25 +2953,25 @@ defineExpose({ focusSearch, createNewGroup, collapseAllTreeNodes, locateTabInSid
   background: color-mix(in oklch, var(--foreground) 48%, transparent);
 }
 
-html.gauss-horizon-legacy-webview .sidebar-tree-scrollbar {
+html.chiron-horizon-legacy-webview .sidebar-tree-scrollbar {
   opacity: 0.9;
 }
 
-html.gauss-horizon-legacy-webview .sidebar-tree-scrollbar__thumb {
+html.chiron-horizon-legacy-webview .sidebar-tree-scrollbar__thumb {
   background: rgba(82, 82, 82, 0.42);
 }
 
-html.gauss-horizon-legacy-webview.dark .sidebar-tree-scrollbar__thumb {
+html.chiron-horizon-legacy-webview.dark .sidebar-tree-scrollbar__thumb {
   background: rgba(212, 212, 216, 0.42);
 }
 
-html.gauss-horizon-legacy-webview .sidebar-tree-scrollbar:hover .sidebar-tree-scrollbar__thumb,
-html.gauss-horizon-legacy-webview .sidebar-tree-scrollbar--dragging .sidebar-tree-scrollbar__thumb {
+html.chiron-horizon-legacy-webview .sidebar-tree-scrollbar:hover .sidebar-tree-scrollbar__thumb,
+html.chiron-horizon-legacy-webview .sidebar-tree-scrollbar--dragging .sidebar-tree-scrollbar__thumb {
   background: rgba(82, 82, 82, 0.62);
 }
 
-html.gauss-horizon-legacy-webview.dark .sidebar-tree-scrollbar:hover .sidebar-tree-scrollbar__thumb,
-html.gauss-horizon-legacy-webview.dark .sidebar-tree-scrollbar--dragging .sidebar-tree-scrollbar__thumb {
+html.chiron-horizon-legacy-webview.dark .sidebar-tree-scrollbar:hover .sidebar-tree-scrollbar__thumb,
+html.chiron-horizon-legacy-webview.dark .sidebar-tree-scrollbar--dragging .sidebar-tree-scrollbar__thumb {
   background: rgba(212, 212, 216, 0.62);
 }
 

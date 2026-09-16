@@ -8,7 +8,7 @@
   "description": "{{DESCRIPTION_JSON}}",
   "icon": "assets/plugin.svg",
   "engines": {
-    "gauss-horizon": ">=0.5.68",
+    "chiron-horizon": ">=0.5.68",
     "host_api": "1"
   },
   "entrypoints": {

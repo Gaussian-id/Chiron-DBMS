@@ -286,7 +286,7 @@ th {
 .state-badge {
   display: inline-block;
   padding: 2px 7px;
-  border-radius: var(--gauss-horizon-radius-fixed-4);
+  border-radius: var(--chiron-horizon-radius-fixed-4);
   background: var(--color-background-secondary);
   color: var(--color-text-secondary);
   font-size: 11px;
@@ -374,7 +374,7 @@ th {
 }
 
 .topic-link:focus-visible {
-  border-radius: var(--gauss-horizon-radius-fixed-4);
+  border-radius: var(--chiron-horizon-radius-fixed-4);
   outline: 2px solid var(--color-primary);
   outline-offset: 2px;
 }

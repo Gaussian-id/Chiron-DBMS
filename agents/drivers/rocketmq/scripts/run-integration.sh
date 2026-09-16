@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# The Gauss Horizon RocketMQ agent under test is the Go binary in this directory. Maven
+# The Chiron Horizon RocketMQ agent under test is the Go binary in this directory. Maven
 # only supplies disposable official RocketMQ NameServer/Broker server JARs.
 version="${1:?RocketMQ version is required}"
 module_dir=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
-work_dir=$(mktemp -d "${TMPDIR:-/tmp}/gauss-horizon-rocketmq-${version}.XXXXXX")
+work_dir=$(mktemp -d "${TMPDIR:-/tmp}/chiron-horizon-rocketmq-${version}.XXXXXX")
 namesrv_port="${ROCKETMQ_NAMESRV_PORT:-19876}"
 broker_port="${ROCKETMQ_BROKER_PORT:-20911}"
 store_root="${ROCKETMQ_STORE_ROOT:-${work_dir}/store}"
@@ -28,7 +28,7 @@ trap cleanup EXIT
 cat >"$work_dir/pom.xml" <<EOF
 <project xmlns="http://maven.apache.org/POM/4.0.0">
   <modelVersion>4.0.0</modelVersion>
-  <groupId>com.gauss.horizon.test</groupId>
+  <groupId>com.chiron.horizon.test</groupId>
   <artifactId>rocketmq-integration</artifactId>
   <version>1.0.0</version>
   <dependencies>

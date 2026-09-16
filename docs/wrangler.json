@@ -1,5 +1,5 @@
 {
-  "name": "gauss-horizon",
+  "name": "chiron-horizon",
   "compatibility_date": "2026-05-07",
   "main": "./worker.ts",
   "assets": {
@@ -9,7 +9,7 @@
   "r2_buckets": [
     {
       "binding": "ISSUE_IMAGES",
-      "bucket_name": "gauss-horizon"
+      "bucket_name": "chiron-horizon"
     }
   ],
   "durable_objects": {

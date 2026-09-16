@@ -117,12 +117,12 @@ export const BACKGROUND_IMAGE_SURFACE_VARS = [
   "--muted",
   "--secondary",
   "--accent",
-  "--gauss-horizon-chrome",
-  "--gauss-horizon-chrome-muted",
-  "--gauss-horizon-content",
-  "--gauss-horizon-editor-toolbar",
-  "--gauss-horizon-gutter",
-  "--gauss-horizon-sidebar-header",
+  "--chiron-horizon-chrome",
+  "--chiron-horizon-chrome-muted",
+  "--chiron-horizon-content",
+  "--chiron-horizon-editor-toolbar",
+  "--chiron-horizon-gutter",
+  "--chiron-horizon-sidebar-header",
 ] as const;
 
 /** Alpha for the surface variables derived from the surface-opacity setting. */

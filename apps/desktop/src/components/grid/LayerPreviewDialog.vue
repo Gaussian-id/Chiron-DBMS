@@ -797,7 +797,7 @@ onBeforeUnmount(() => cleanupMap());
   background: #1a1a2e;
 }
 .layer-preview-dialog .leaflet-popup-content-wrapper {
-  border-radius: var(--gauss-horizon-radius-fixed-6);
+  border-radius: var(--chiron-horizon-radius-fixed-6);
   font-size: 12px;
 }
 .layer-preview-dialog .leaflet-popup-content {

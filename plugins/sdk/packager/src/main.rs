@@ -47,7 +47,7 @@ pub fn generate_signing_key() -> Result<SigningKeyMaterial, String> {
 
 pub fn main_entry() {
     if let Err(error) = run_cli(std::env::args().skip(1)) {
-        eprintln!("gauss-horizon-plugin-packager: {error}");
+        eprintln!("chiron-horizon-plugin-packager: {error}");
         std::process::exit(1);
     }
 }
@@ -102,8 +102,8 @@ where
     }
     let artifact_metadata =
         artifact_metadata_request(artifact_metadata, artifact_target, artifact_url, key_id.as_deref())?;
-    if output.extension().and_then(|extension| extension.to_str()) != Some("gauss-horizonp") {
-        return Err("Output file must use the .gauss-horizonp extension".to_string());
+    if output.extension().and_then(|extension| extension.to_str()) != Some("chiron-horizonp") {
+        return Err("Output file must use the .chiron-horizonp extension".to_string());
     }
     let source = std::fs::canonicalize(&source)
         .map_err(|error| format!("Failed to resolve package source {}: {error}", source.display()))?;
@@ -176,7 +176,7 @@ where
 
     let temporary = output_parent.join(format!(
         ".{}.{}.tmp",
-        output.file_name().and_then(|name| name.to_str()).unwrap_or("plugin.gauss-horizonp"),
+        output.file_name().and_then(|name| name.to_str()).unwrap_or("plugin.chiron-horizonp"),
         std::process::id()
     ));
     let package_result = write_package(&temporary, files, &checksums, signature.as_deref());
@@ -227,7 +227,7 @@ where
         }
     }
     let key_id = key_id.ok_or("sign requires --key-id")?;
-    let (_, signing_key) = signing_key(Some(&key_id))?.ok_or("GAUSS_HORIZON_PLUGIN_SIGNING_KEY is required")?;
+    let (_, signing_key) = signing_key(Some(&key_id))?.ok_or("CHIRON_HORIZON_PLUGIN_SIGNING_KEY is required")?;
     let artifact_metadata = artifact_metadata_request(artifact_metadata, artifact_target, artifact_url, Some(&key_id))?;
     sign_existing_package(&input, &output, &key_id, &signing_key, artifact_metadata, print_output)
 }
@@ -241,11 +241,11 @@ fn sign_existing_package(
     print_output: bool,
 ) -> Result<(), String> {
     validate_key_id(key_id)?;
-    if input.extension().and_then(|extension| extension.to_str()) != Some("gauss-horizonp") {
-        return Err("Input file must use the .gauss-horizonp extension".to_string());
+    if input.extension().and_then(|extension| extension.to_str()) != Some("chiron-horizonp") {
+        return Err("Input file must use the .chiron-horizonp extension".to_string());
     }
-    if output.extension().and_then(|extension| extension.to_str()) != Some("gauss-horizonp") {
-        return Err("Output file must use the .gauss-horizonp extension".to_string());
+    if output.extension().and_then(|extension| extension.to_str()) != Some("chiron-horizonp") {
+        return Err("Output file must use the .chiron-horizonp extension".to_string());
     }
     let input = std::fs::canonicalize(input)
         .map_err(|error| format!("Failed to resolve candidate package {}: {error}", input.display()))?;
@@ -272,7 +272,7 @@ fn sign_existing_package(
         artifact_metadata.map(|request| prepare_artifact_metadata_request(request, &input, &output)).transpose()?;
     let temporary = output_parent.join(format!(
         ".{}.{}.tmp",
-        output.file_name().and_then(|name| name.to_str()).unwrap_or("plugin.gauss-horizonp"),
+        output.file_name().and_then(|name| name.to_str()).unwrap_or("plugin.chiron-horizonp"),
         std::process::id()
     ));
     std::fs::copy(&input, &temporary).map_err(|error| error.to_string())?;
@@ -445,7 +445,7 @@ fn write_artifact_metadata(
     package_size: u64,
 ) -> Result<(), String> {
     let url = request.url.clone().unwrap_or_else(|| {
-        package_output.file_name().and_then(|name| name.to_str()).unwrap_or("plugin.gauss-horizonp").to_string()
+        package_output.file_name().and_then(|name| name.to_str()).unwrap_or("plugin.chiron-horizonp").to_string()
     });
     let mut metadata = serde_json::json!({
         "target": request.target,
@@ -541,15 +541,15 @@ fn write_package(
 }
 
 fn signing_key(key_id: Option<&str>) -> Result<Option<(String, SigningKey)>, String> {
-    let encoded = std::env::var("GAUSS_HORIZON_PLUGIN_SIGNING_KEY").ok();
+    let encoded = std::env::var("CHIRON_HORIZON_PLUGIN_SIGNING_KEY").ok();
     match (key_id, encoded) {
         (None, None) => Ok(None),
-        (Some(_), None) => Err("GAUSS_HORIZON_PLUGIN_SIGNING_KEY is required when --key-id is provided".to_string()),
-        (None, Some(_)) => Err("--key-id is required when GAUSS_HORIZON_PLUGIN_SIGNING_KEY is set".to_string()),
+        (Some(_), None) => Err("CHIRON_HORIZON_PLUGIN_SIGNING_KEY is required when --key-id is provided".to_string()),
+        (None, Some(_)) => Err("--key-id is required when CHIRON_HORIZON_PLUGIN_SIGNING_KEY is set".to_string()),
         (Some(key_id), Some(encoded)) => {
             validate_key_id(key_id)?;
             let signing_key = decode_signing_key(&encoded)?;
-            if let Ok(expected_public_key) = std::env::var("GAUSS_HORIZON_PLUGIN_SIGNING_PUBLIC_KEY") {
+            if let Ok(expected_public_key) = std::env::var("CHIRON_HORIZON_PLUGIN_SIGNING_PUBLIC_KEY") {
                 verify_signing_public_key(&signing_key, &expected_public_key)?;
             }
             Ok(Some((key_id.to_string(), signing_key)))
@@ -560,19 +560,19 @@ fn signing_key(key_id: Option<&str>) -> Result<Option<(String, SigningKey)>, Str
 fn decode_signing_key(encoded: &str) -> Result<SigningKey, String> {
     let bytes = base64::engine::general_purpose::STANDARD
         .decode(encoded.trim())
-        .map_err(|error| format!("Invalid GAUSS_HORIZON_PLUGIN_SIGNING_KEY: {error}"))?;
-    let bytes: [u8; 32] = bytes.try_into().map_err(|_| "GAUSS_HORIZON_PLUGIN_SIGNING_KEY must contain 32 bytes".to_string())?;
+        .map_err(|error| format!("Invalid CHIRON_HORIZON_PLUGIN_SIGNING_KEY: {error}"))?;
+    let bytes: [u8; 32] = bytes.try_into().map_err(|_| "CHIRON_HORIZON_PLUGIN_SIGNING_KEY must contain 32 bytes".to_string())?;
     Ok(SigningKey::from_bytes(&bytes))
 }
 
 fn verify_signing_public_key(signing_key: &SigningKey, expected: &str) -> Result<(), String> {
     let expected = base64::engine::general_purpose::STANDARD
         .decode(expected.trim())
-        .map_err(|error| format!("Invalid GAUSS_HORIZON_PLUGIN_SIGNING_PUBLIC_KEY: {error}"))?;
+        .map_err(|error| format!("Invalid CHIRON_HORIZON_PLUGIN_SIGNING_PUBLIC_KEY: {error}"))?;
     let expected: [u8; 32] =
-        expected.try_into().map_err(|_| "GAUSS_HORIZON_PLUGIN_SIGNING_PUBLIC_KEY must contain 32 bytes".to_string())?;
+        expected.try_into().map_err(|_| "CHIRON_HORIZON_PLUGIN_SIGNING_PUBLIC_KEY must contain 32 bytes".to_string())?;
     if signing_key.verifying_key().to_bytes() != expected {
-        return Err("GAUSS_HORIZON_PLUGIN_SIGNING_KEY does not match GAUSS_HORIZON_PLUGIN_SIGNING_PUBLIC_KEY".to_string());
+        return Err("CHIRON_HORIZON_PLUGIN_SIGNING_KEY does not match CHIRON_HORIZON_PLUGIN_SIGNING_PUBLIC_KEY".to_string());
     }
     Ok(())
 }
@@ -671,13 +671,13 @@ fn executable_permissions(path: &Path) -> u32 {
 
 fn usage() -> String {
     format!(
-        "Usage: gauss-horizon-plugin-packager <source-dir> <output.gauss-horizonp> [--key-id ID] [--artifact-metadata FILE --target TARGET [--artifact-url URL]]\n       {}",
+        "Usage: chiron-horizon-plugin-packager <source-dir> <output.chiron-horizonp> [--key-id ID] [--artifact-metadata FILE --target TARGET [--artifact-url URL]]\n       {}",
         sign_usage()
     )
 }
 
 fn sign_usage() -> String {
-    "gauss-horizon-plugin-packager sign <unsigned.gauss-horizonp> <signed.gauss-horizonp> --key-id ID [--artifact-metadata FILE --target TARGET [--artifact-url URL]]".to_string()
+    "chiron-horizon-plugin-packager sign <unsigned.chiron-horizonp> <signed.chiron-horizonp> --key-id ID [--artifact-metadata FILE --target TARGET [--artifact-url URL]]".to_string()
 }
 
 #[cfg(test)]
@@ -736,7 +736,7 @@ mod tests {
         assert!(artifact_metadata_request(
             Some("artifact.json".into()),
             Some("universal".to_string()),
-            Some("plugin.gauss-horizonp".to_string()),
+            Some("plugin.chiron-horizonp".to_string()),
             None,
         )
         .unwrap()
@@ -744,7 +744,7 @@ mod tests {
         assert!(artifact_metadata_request(
             Some("artifact.json".into()),
             Some("universal".to_string()),
-            Some("plugin.gauss-horizonp".to_string()),
+            Some("plugin.chiron-horizonp".to_string()),
             Some("vendor.release"),
         )
         .unwrap()
@@ -769,13 +769,13 @@ mod tests {
         std::fs::create_dir_all(&source).unwrap();
         std::fs::write(source.join("manifest.json"), r#"{"manifest_version":1,"id":"example.plugin"}"#).unwrap();
         std::fs::write(source.join("asset.txt"), "candidate").unwrap();
-        let unsigned = root.path().join("unsigned.gauss-horizonp");
-        let signed = root.path().join("signed.gauss-horizonp");
+        let unsigned = root.path().join("unsigned.chiron-horizonp");
+        let signed = root.path().join("signed.chiron-horizonp");
         run_package_cli([source.to_string_lossy().into_owned(), unsigned.to_string_lossy().into_owned()], false)
             .unwrap();
 
         let signing_key = SigningKey::from_bytes(&[7u8; 32]);
-        sign_existing_package(&unsigned, &signed, "gauss-horizon-store.test", &signing_key, None, false).unwrap();
+        sign_existing_package(&unsigned, &signed, "chiron-horizon-store.test", &signing_key, None, false).unwrap();
 
         let mut archive = ZipArchive::new(std::fs::File::open(&signed).unwrap()).unwrap();
         let mut checksums = Vec::new();
@@ -785,7 +785,7 @@ mod tests {
             archive.by_name("signature.json").unwrap().read_to_end(&mut raw).unwrap();
             serde_json::from_slice(&raw).unwrap()
         };
-        assert_eq!(signature["key_id"], "gauss-horizon-store.test");
+        assert_eq!(signature["key_id"], "chiron-horizon-store.test");
         let signature_bytes: [u8; 64] = base64::engine::general_purpose::STANDARD
             .decode(signature["signature"].as_str().unwrap())
             .unwrap()
@@ -794,8 +794,8 @@ mod tests {
         signing_key.verifying_key().verify(&checksums, &Signature::from_bytes(&signature_bytes)).unwrap();
         assert!(sign_existing_package(
             &signed,
-            &root.path().join("resigned.gauss-horizonp"),
-            "gauss-horizon-store.test",
+            &root.path().join("resigned.chiron-horizonp"),
+            "chiron-horizon-store.test",
             &signing_key,
             None,
             false

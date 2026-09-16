@@ -112,7 +112,7 @@ function theme() {
   for (const f of frames.value) post(f, { type: "env", theme: themes() });
 }
 async function api(path, params = {}) {
-  const response = await fetch(`/api/${path}`, { method: "POST", headers: { "Content-Type": "application/json", "X-Mock-Csrf": csrf, "X-Gauss Horizon-Page": pageId }, body: JSON.stringify(params) });
+  const response = await fetch(`/api/${path}`, { method: "POST", headers: { "Content-Type": "application/json", "X-Mock-Csrf": csrf, "X-Chiron Horizon-Page": pageId }, body: JSON.stringify(params) });
   const result = await response.json();
   if (!response.ok) throw Object.assign(new Error(result.error?.message || "请求失败"), { code: result.error?.code, data: result.error?.data });
   return result.value;
@@ -271,7 +271,7 @@ async function importFile(event) {
 async function onMessage(event) {
   const m = event.data;
   const f = frames.value.find((f) => windows.get(f.id)?.contentWindow === event.source);
-  if (!f || m?.source !== "gauss-horizon-plugin" || m.version !== 1 || m.channel !== f.channel) return;
+  if (!f || m?.source !== "chiron-horizon-plugin" || m.version !== 1 || m.channel !== f.channel) return;
   if (m.type === "ready") {
     init(f);
     return;

@@ -1,6 +1,6 @@
 import { normalizeExternalSqlPath } from "@/lib/sql/sqlFileOpen";
 
-export const EXTERNAL_SQL_FILE_TARGETS_STORAGE_KEY = "gauss-horizon-external-sql-file-targets-v1";
+export const EXTERNAL_SQL_FILE_TARGETS_STORAGE_KEY = "chiron-horizon-external-sql-file-targets-v1";
 export const MAX_EXTERNAL_SQL_FILE_TARGETS = 200;
 
 export interface ExternalSqlFileTarget {

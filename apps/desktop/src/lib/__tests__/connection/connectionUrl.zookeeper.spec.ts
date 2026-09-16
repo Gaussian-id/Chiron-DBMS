@@ -26,9 +26,9 @@ describe("ZooKeeper connection URLs", () => {
   });
 
   it("decodes credentials that apply to the ensemble", () => {
-    const parsed = parseConnectionUrl("zookeeper://gauss-horizon%40ops:p%40ss@zk-1:2181,zk-2:2181/app");
+    const parsed = parseConnectionUrl("zookeeper://chiron-horizon%40ops:p%40ss@zk-1:2181,zk-2:2181/app");
 
-    expect(parsed.username).toBe("gauss-horizon@ops");
+    expect(parsed.username).toBe("chiron-horizon@ops");
     expect(parsed.password).toBe("p@ss");
     expect(parsed.connectionString).toBe("zk-1:2181,zk-2:2181/app");
   });

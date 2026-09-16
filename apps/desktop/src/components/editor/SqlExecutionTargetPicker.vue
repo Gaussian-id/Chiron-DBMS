@@ -35,7 +35,7 @@ function displayLabel(candidate: SqlExecutionCandidate) {
 }
 
 function optionId(index: number) {
-  return `gauss-horizon-exec-target-${index}`;
+  return `chiron-horizon-exec-target-${index}`;
 }
 
 watch(

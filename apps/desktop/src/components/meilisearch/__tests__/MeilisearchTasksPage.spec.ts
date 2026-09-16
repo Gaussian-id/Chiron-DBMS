@@ -110,7 +110,7 @@ let app: ReturnType<typeof createApp> | undefined;
 let root: HTMLDivElement | undefined;
 
 beforeEach(() => {
-  localStorage.removeItem("gauss-horizon:meilisearch:task-columns:v1");
+  localStorage.removeItem("chiron-horizon:meilisearch:task-columns:v1");
   mocks.getTasks.mockResolvedValue({ results: [], total: 7, limit: 20, from: null, next: null });
   mocks.getTask.mockResolvedValue({ uid: 1, indexUid: "movies", status: "failed", type: "futureType", enqueuedAt: "2026-01-01T00:00:00Z" });
   mocks.cancelTasks.mockImplementation(() => new Promise(() => {}));
@@ -279,7 +279,7 @@ describe("MeilisearchTasksPage mutation safety", () => {
     checkboxes[4].dispatchEvent(new Event("change", { bubbles: true }));
     await nextTick();
 
-    const stored = JSON.parse(localStorage.getItem("gauss-horizon:meilisearch:task-columns:v1") || "null");
+    const stored = JSON.parse(localStorage.getItem("chiron-horizon:meilisearch:task-columns:v1") || "null");
     expect(stored.visible).not.toContain("details");
     expect(container.querySelector('[role="columnheader"][data-column="details"]')).toBeNull();
   });

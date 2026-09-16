@@ -14,7 +14,7 @@ class FakeMcp:
         return {'content':[{'type':'text','text':'PRIVATE_DOCUMENT_CONTENT'}],'isError':False}
 
 
-def call(name='gauss_horizon_execute_query', arguments='{"sql":"db.accounts.countDocuments({})"}'):
+def call(name='chiron_horizon_execute_query', arguments='{"sql":"db.accounts.countDocuments({})"}'):
     return {'role':'assistant','content':None,'tool_calls':[{'id':'test-call','type':'function','function':{'name':name,'arguments':arguments}}]}
 
 
@@ -43,7 +43,7 @@ class ChatTests(unittest.TestCase):
 
     def test_unadvertised_tool_never_runs(self):
         mcp=FakeMcp()
-        with patch.object(server,'model_request',side_effect=[call('gauss_horizon_remove_connection','{}'),{'content':'Denied'}]):
+        with patch.object(server,'model_request',side_effect=[call('chiron_horizon_remove_connection','{}'),{'content':'Denied'}]):
             result=server.chat(mcp,{},'Delete',[],'sample_analytics',False)
         self.assertEqual(mcp.calls,[])
         self.assertTrue(result['results'][0]['error'])
@@ -53,7 +53,7 @@ class ChatTests(unittest.TestCase):
         mcp.connection_id='authorized-id'
         recorded=[]
         mcp.rpc=lambda method,args:recorded.append((method,args)) or {}
-        mcp.tool('gauss_horizon_execute_query',{'connection_id':'another-id','connection_name':'another-name','sql':'db.a.find({})'})
+        mcp.tool('chiron_horizon_execute_query',{'connection_id':'another-id','connection_name':'another-name','sql':'db.a.find({})'})
         args=recorded[0][1]['arguments']
         self.assertEqual(args['connection_id'],'authorized-id')
         self.assertNotIn('connection_name',args)

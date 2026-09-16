@@ -53,5 +53,5 @@ export function dropOracleDatabaseLinkSql(link: OracleDatabaseLink): string {
   return `DROP ${link.owner === "PUBLIC" ? "PUBLIC " : ""}DATABASE LINK ${oracleDatabaseLinkName(link.name)}`;
 }
 export function testOracleDatabaseLinkSql(link: OracleDatabaseLink): string {
-  return `SELECT 1 AS GAUSS_HORIZON_LINK_OK FROM DUAL@${oracleDatabaseLinkName(link.name)}`;
+  return `SELECT 1 AS CHIRON_HORIZON_LINK_OK FROM DUAL@${oracleDatabaseLinkName(link.name)}`;
 }

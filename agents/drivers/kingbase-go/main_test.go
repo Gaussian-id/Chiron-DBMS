@@ -265,11 +265,11 @@ func (connection *modeDetectionConn) QueryContext(_ context.Context, query strin
 			rows = append(rows, []driver.Value{*connection.state.databaseMode})
 		}
 		return &valueRows{columns: []string{"setting"}, rows: rows}, nil
-	case strings.Contains(query, "AS `gauss_horizon_identifier_probe`"):
+	case strings.Contains(query, "AS `chiron_horizon_identifier_probe`"):
 		if !connection.state.backtickIdentifiers {
 			return nil, &gokb.Error{Code: gokb.ErrorCode("42601"), Message: "syntax error at or near `"}
 		}
-		return &valueRows{columns: []string{"gauss_horizon_identifier_probe"}, rows: [][]driver.Value{{int64(1)}}}, nil
+		return &valueRows{columns: []string{"chiron_horizon_identifier_probe"}, rows: [][]driver.Value{{int64(1)}}}, nil
 	default:
 		return nil, errors.New("unexpected query: " + query)
 	}
@@ -506,10 +506,10 @@ func TestBuildDSNQuotesCredentialsAndFiltersUnsafeKeys(t *testing.T) {
 		Database:  "test'db",
 		Username:  "system",
 		Password:  `p'ass\\word`,
-		URLParams: "application_name=gauss-horizon&fallback_application_name=gauss-horizon&useSSL=false&bad-key=ignored",
+		URLParams: "application_name=chiron-horizon&fallback_application_name=chiron-horizon&useSSL=false&bad-key=ignored",
 	})
 	for _, expected := range []string{
-		`host='db host'`, `dbname='test\'db'`, `password='p\'ass\\\\word'`, `application_name='gauss-horizon'`, `fallback_application_name='gauss-horizon'`,
+		`host='db host'`, `dbname='test\'db'`, `password='p\'ass\\\\word'`, `application_name='chiron-horizon'`, `fallback_application_name='chiron-horizon'`,
 	} {
 		if !strings.Contains(dsn, expected) {
 			t.Fatalf("DSN missing %q: %s", expected, dsn)
@@ -529,9 +529,9 @@ func TestBuildDSNKeepsOnlySupportedURLParams(t *testing.T) {
 		Database: "test",
 		Username: "system",
 		Password: "secret",
-		URLParams: "fallback_application_name=gauss-horizon&connect_timeout=30&sslcert=cert.pem&sslkey=key.pem&sslrootcert=root.pem" +
+		URLParams: "fallback_application_name=chiron-horizon&connect_timeout=30&sslcert=cert.pem&sslkey=key.pem&sslrootcert=root.pem" +
 			"&disable_prepared_binary_result=yes&binary_parameters=yes&krbsrvname=kingbase&krbspn=kingbase/db.example.com" +
-			"&application_name=gauss-horizon&options=-csearch_path=public&client_encoding=UTF8&search_path=public&statement_timeout=1000&work_mem=64MB" +
+			"&application_name=chiron-horizon&options=-csearch_path=public&client_encoding=UTF8&search_path=public&statement_timeout=1000&work_mem=64MB" +
 			"&timezone=Asia/Shanghai&default_transaction_read_only=off&synchronous_commit=on" +
 			"&useSSL=false&autoReconnect=true&characterEncoding=UTF-8&serverTimezone=Asia/Shanghai&rewriteBatchedStatements=true" +
 			"&useServerPrepStmts=true&connectTimeout=10&socketTimeout=30&useCompression=true&zeroDateTimeBehavior=convertToNull" +
@@ -539,9 +539,9 @@ func TestBuildDSNKeepsOnlySupportedURLParams(t *testing.T) {
 	}
 	dsn := buildDSN(cp)
 	for _, expected := range []string{
-		`fallback_application_name='gauss-horizon'`, `connect_timeout='30'`, `sslcert='cert.pem'`, `sslkey='key.pem'`, `sslrootcert='root.pem'`,
+		`fallback_application_name='chiron-horizon'`, `connect_timeout='30'`, `sslcert='cert.pem'`, `sslkey='key.pem'`, `sslrootcert='root.pem'`,
 		`disable_prepared_binary_result='yes'`, `binary_parameters='yes'`, `krbsrvname='kingbase'`, `krbspn='kingbase/db.example.com'`,
-		`application_name='gauss-horizon'`, `options='-csearch_path=public'`, `client_encoding='UTF8'`, `search_path='public'`, `statement_timeout='1000'`, `work_mem='64MB'`,
+		`application_name='chiron-horizon'`, `options='-csearch_path=public'`, `client_encoding='UTF8'`, `search_path='public'`, `statement_timeout='1000'`, `work_mem='64MB'`,
 		`timezone='Asia/Shanghai'`, `default_transaction_read_only='off'`, `synchronous_commit='on'`,
 	} {
 		if !strings.Contains(dsn, expected) {
@@ -567,19 +567,19 @@ func TestBuildDSNKeepsOnlySupportedNativeConnectionStringParameters(t *testing.T
 	}{
 		{
 			name:             "keyword DSN",
-			connectionString: "host=db.example.com port=54321 user=system password=secret dbname=test connect_timeout=30 fallback_application_name='gauss-horizon' application_name='gauss-horizon app' options='-c search_path=public' client_encoding=UTF8 disable_prepared_binary_result=yes binary_parameters=yes krbsrvname=kingbase krbspn='kingbase/db.example.com' statement_timeout=1000 useSSL=false serverTimezone=Asia/Shanghai currentSchema=public",
+			connectionString: "host=db.example.com port=54321 user=system password=secret dbname=test connect_timeout=30 fallback_application_name='chiron-horizon' application_name='chiron-horizon app' options='-c search_path=public' client_encoding=UTF8 disable_prepared_binary_result=yes binary_parameters=yes krbsrvname=kingbase krbspn='kingbase/db.example.com' statement_timeout=1000 useSSL=false serverTimezone=Asia/Shanghai currentSchema=public",
 			preservedFragments: []string{
 				"host=db.example.com", "port=54321", "user=system", "password=secret", "dbname=test", "connect_timeout=30",
-				"fallback_application_name='gauss-horizon'", "application_name='gauss-horizon app'", "options='-c search_path=public'", "client_encoding=UTF8",
+				"fallback_application_name='chiron-horizon'", "application_name='chiron-horizon app'", "options='-c search_path=public'", "client_encoding=UTF8",
 				"disable_prepared_binary_result=yes", "binary_parameters=yes", "krbsrvname=kingbase", "krbspn='kingbase/db.example.com'",
 				"statement_timeout=1000",
 			},
 		},
 		{
 			name:             "Kingbase URL",
-			connectionString: "kingbase://system:secret@db.example.com:54321/test?connect_timeout=30&fallback_application_name=gauss-horizon&application_name=gauss-horizon&options=-c%20search_path%3Dpublic&disable_prepared_binary_result=yes&binary_parameters=yes&krbsrvname=kingbase&statement_timeout=1000&useSSL=false&serverTimezone=Asia%2FShanghai&currentSchema=public",
+			connectionString: "kingbase://system:secret@db.example.com:54321/test?connect_timeout=30&fallback_application_name=chiron-horizon&application_name=chiron-horizon&options=-c%20search_path%3Dpublic&disable_prepared_binary_result=yes&binary_parameters=yes&krbsrvname=kingbase&statement_timeout=1000&useSSL=false&serverTimezone=Asia%2FShanghai&currentSchema=public",
 			preservedFragments: []string{
-				"connect_timeout=30", "fallback_application_name=gauss-horizon", "application_name=gauss-horizon", "options=-c%20search_path%3Dpublic",
+				"connect_timeout=30", "fallback_application_name=chiron-horizon", "application_name=chiron-horizon", "options=-c%20search_path%3Dpublic",
 				"disable_prepared_binary_result=yes", "binary_parameters=yes", "krbsrvname=kingbase", "statement_timeout=1000",
 			},
 		},
@@ -635,7 +635,7 @@ func TestBuildDSNForwardsUnknownServerParameters(t *testing.T) {
 // TestBuildDSNNormalizesJDBCAliases verifies JDBC properties with a direct native
 // equivalent are rewritten to the gokb/server name instead of being discarded.
 func TestBuildDSNNormalizesJDBCAliases(t *testing.T) {
-	for surface, cp := range kingbaseParamSurfaces("connectTimeout=20&currentSchema=public&ApplicationName=gauss-horizon&clientEncoding=UTF-8") {
+	for surface, cp := range kingbaseParamSurfaces("connectTimeout=20&currentSchema=public&ApplicationName=chiron-horizon&clientEncoding=UTF-8") {
 		t.Run(surface, func(t *testing.T) {
 			dsn := buildDSN(cp)
 			for _, native := range []string{"connect_timeout", "search_path", "application_name", "client_encoding"} {
@@ -721,15 +721,15 @@ func TestBuildDSNPreservesFirstDuplicateWithinSameParameterClass(t *testing.T) {
 	}
 }
 
-func TestBuildDSNConvertsGaussHorizonJDBCURL(t *testing.T) {
+func TestBuildDSNConvertsChironHorizonJDBCURL(t *testing.T) {
 	dsn := buildDSN(connectParams{
 		Host:             "127.0.0.1",
 		Port:             54321,
 		Database:         "test",
 		Username:         "system",
 		Password:         "secret",
-		URLParams:        "application_name=gauss-horizon",
-		ConnectionString: "jdbc:kingbase8://127.0.0.1:54321/test?application_name=gauss-horizon",
+		URLParams:        "application_name=chiron-horizon",
+		ConnectionString: "jdbc:kingbase8://127.0.0.1:54321/test?application_name=chiron-horizon",
 	})
 	if strings.HasPrefix(dsn, "jdbc:") || !strings.Contains(dsn, "host='127.0.0.1'") || !strings.Contains(dsn, "dbname='test'") {
 		t.Fatalf("JDBC URL was not converted to a gokb DSN: %s", dsn)
@@ -743,7 +743,7 @@ func TestBuildDSNNormalizesPreferWithoutPassingLiteralMode(t *testing.T) {
 		Database:  "test",
 		Username:  "system",
 		Password:  "secret",
-		URLParams: "SSLMODE=disable&sslmode=prefer&application_name=gauss-horizon&fallback_application_name=gauss-horizon&useSSL=false",
+		URLParams: "SSLMODE=disable&sslmode=prefer&application_name=chiron-horizon&fallback_application_name=chiron-horizon&useSSL=false",
 	}
 	if mode := effectiveSSLMode(cp); mode != "prefer" {
 		t.Fatalf("unexpected effective SSL mode: %q", mode)
@@ -755,7 +755,7 @@ func TestBuildDSNNormalizesPreferWithoutPassingLiteralMode(t *testing.T) {
 	if !strings.Contains(dsn, "sslmode=require") || strings.Contains(strings.ToLower(dsn), "sslmode=prefer") {
 		t.Fatalf("prefer must be converted to the first require attempt: %s", dsn)
 	}
-	for _, expected := range []string{`application_name='gauss-horizon'`, `fallback_application_name='gauss-horizon'`} {
+	for _, expected := range []string{`application_name='chiron-horizon'`, `fallback_application_name='chiron-horizon'`} {
 		if !strings.Contains(dsn, expected) {
 			t.Fatalf("unrelated URL parameters must be preserved, missing %q: %s", expected, dsn)
 		}
@@ -774,10 +774,10 @@ func TestBuildDSNOverridesPreferInNativeConnectionStrings(t *testing.T) {
 	}{
 		{
 			name:             "keyword DSN",
-			connectionString: "host=db.example.com application_name='gauss-horizon app' sslmode = 'prefer' options='-c search_path=public tenant' useSSL=false",
+			connectionString: "host=db.example.com application_name='chiron-horizon app' sslmode = 'prefer' options='-c search_path=public tenant' useSSL=false",
 			preservedFragments: []string{
 				"host=db.example.com",
-				"application_name='gauss-horizon app'",
+				"application_name='chiron-horizon app'",
 				"options='-c search_path=public tenant'",
 			},
 			droppedFragments: []string{
@@ -786,10 +786,10 @@ func TestBuildDSNOverridesPreferInNativeConnectionStrings(t *testing.T) {
 		},
 		{
 			name:             "Kingbase URL",
-			connectionString: "kingbase://system:secret@db.example.com/test?application_name=gauss-horizon&options=-c%20search_path%3Dpublic&useSSL=false&SSLMODE=prefer#section",
+			connectionString: "kingbase://system:secret@db.example.com/test?application_name=chiron-horizon&options=-c%20search_path%3Dpublic&useSSL=false&SSLMODE=prefer#section",
 			preservedFragments: []string{
 				"kingbase://system:secret@db.example.com/test?",
-				"application_name=gauss-horizon",
+				"application_name=chiron-horizon",
 				"options=-c%20search_path%3Dpublic",
 				"#section",
 			},
@@ -832,20 +832,20 @@ func TestOpenAndPingDBNativeConnectionStringsWithoutSSLModeUsePreferFallback(t *
 	}{
 		{
 			name:             "keyword DSN",
-			connectionString: "host=db.example.com application_name=gauss-horizon fallback_application_name=gauss-horizon useSSL=false",
+			connectionString: "host=db.example.com application_name=chiron-horizon fallback_application_name=chiron-horizon useSSL=false",
 			preservedFragments: []string{
 				"host=db.example.com",
-				"application_name=gauss-horizon",
-				"fallback_application_name=gauss-horizon",
+				"application_name=chiron-horizon",
+				"fallback_application_name=chiron-horizon",
 			},
 		},
 		{
 			name:             "Kingbase URL",
-			connectionString: "kingbase://system:secret@db.example.com/test?application_name=gauss-horizon&fallback_application_name=gauss-horizon&useSSL=false",
+			connectionString: "kingbase://system:secret@db.example.com/test?application_name=chiron-horizon&fallback_application_name=chiron-horizon&useSSL=false",
 			preservedFragments: []string{
 				"kingbase://system:secret@db.example.com/test?",
-				"application_name=gauss-horizon",
-				"fallback_application_name=gauss-horizon",
+				"application_name=chiron-horizon",
+				"fallback_application_name=chiron-horizon",
 			},
 		},
 	} {
@@ -4195,7 +4195,7 @@ func TestDetectMySQLCompatModeProbesBacktickSyntaxWhenDatabaseModeMissing(t *tes
 
 	state.mu.Lock()
 	defer state.mu.Unlock()
-	if len(state.queries) != 2 || !strings.Contains(state.queries[1], "gauss_horizon_identifier_probe") {
+	if len(state.queries) != 2 || !strings.Contains(state.queries[1], "chiron_horizon_identifier_probe") {
 		t.Fatalf("expected database_mode probe followed by backtick syntax probe, got: %v", state.queries)
 	}
 }
@@ -4214,18 +4214,18 @@ func TestQuoteLiteralEscapesMetadataValues(t *testing.T) {
 		t.Fatalf("unexpected literal: %s", got)
 	}
 	constraints := metadataListConstraints{Filter: "CHILD", ObjectTypes: []string{"table"}}
-	if !constraintsMatch(constraints, "gauss_horizon_child", "TABLE") || constraintsMatch(constraints, "gauss_horizon_parent", "TABLE") {
+	if !constraintsMatch(constraints, "chiron_horizon_child", "TABLE") || constraintsMatch(constraints, "chiron_horizon_parent", "TABLE") {
 		t.Fatal("metadata constraints were not applied")
 	}
 }
 
 func TestCompletionNameMatching(t *testing.T) {
-	request := completionAssistantRequest{Mask: "GAUSS_HORIZON_", MatchMode: "prefix"}
-	if !completionNameMatches("gauss_horizon_child", request) || completionNameMatches("other_gauss_horizon_child", request) {
+	request := completionAssistantRequest{Mask: "CHIRON_HORIZON_", MatchMode: "prefix"}
+	if !completionNameMatches("chiron_horizon_child", request) || completionNameMatches("other_chiron_horizon_child", request) {
 		t.Fatal("case-insensitive prefix matching failed")
 	}
 	request.MatchMode = "contains"
-	if !completionNameMatches("other_gauss_horizon_child", request) {
+	if !completionNameMatches("other_chiron_horizon_child", request) {
 		t.Fatal("contains matching failed")
 	}
 }

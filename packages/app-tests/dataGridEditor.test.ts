@@ -508,7 +508,7 @@ test("cloning an Oracle keyless row clears the hidden ROWID source column", asyn
   installBrowserTestGlobals();
 
   const result = computed(() => ({
-    columns: ["ID", "PLATFORM", "__GAUSS_HORIZON_PK_0"],
+    columns: ["ID", "PLATFORM", "__CHIRON_HORIZON_PK_0"],
     rows: [[72, "轻卡", "AAAPr9AAEAAAACXAAA"] as CellValue[]],
   }));
   const rowStatusFilter = ref<"all" | "changed" | "edited" | "new" | "deleted">("all");
@@ -523,9 +523,9 @@ test("cloning an Oracle keyless row clears the hidden ROWID source column", asyn
     tableMeta: computed(() => ({
       tableName: "TT_PLATFORM_CARS",
       columns: [column("ID"), column("PLATFORM")],
-      primaryKeys: ["__GAUSS_HORIZON_ROWID"],
+      primaryKeys: ["__CHIRON_HORIZON_ROWID"],
     })),
-    sourceColumns: computed(() => ["ID", "PLATFORM", "__GAUSS_HORIZON_ROWID"]),
+    sourceColumns: computed(() => ["ID", "PLATFORM", "__CHIRON_HORIZON_ROWID"]),
     onExecuteSql: computed(() => undefined),
     customSaveHandler: computed(() => undefined),
     sql: computed(() => undefined),

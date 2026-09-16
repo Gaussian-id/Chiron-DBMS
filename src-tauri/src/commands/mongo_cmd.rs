@@ -3,11 +3,11 @@ use std::sync::Arc;
 use tauri::State;
 
 use crate::commands::connection::{ensure_connection_writable, AppState};
-use gauss_horizon_core::db::mongo_driver::MongoDocumentResult;
+use chiron_horizon_core::db::mongo_driver::MongoDocumentResult;
 
 #[tauri::command]
-pub fn mongo_parse_shell_command(source: String) -> Result<gauss_horizon_core::mongo_shell::MongoCommand, String> {
-    gauss_horizon_core::mongo_shell::parse(&source)
+pub fn mongo_parse_shell_command(source: String) -> Result<chiron_horizon_core::mongo_shell::MongoCommand, String> {
+    chiron_horizon_core::mongo_shell::parse(&source)
 }
 
 async fn run_cancellable<T, F>(state: &Arc<AppState>, execution_id: Option<String>, future: F) -> Result<T, String>
@@ -20,7 +20,7 @@ where
         let token = query.token();
         tokio::select! {
             biased;
-            _ = token.cancelled() => Err(gauss_horizon_core::query::canceled_error()),
+            _ = token.cancelled() => Err(chiron_horizon_core::query::canceled_error()),
             result = future => result,
         }
     } else {
@@ -33,7 +33,7 @@ pub async fn mongo_list_databases(
     state: State<'_, Arc<AppState>>,
     connection_id: String,
 ) -> Result<Vec<String>, String> {
-    gauss_horizon_core::mongo_ops::mongo_list_databases_core(&state, &connection_id).await
+    chiron_horizon_core::mongo_ops::mongo_list_databases_core(&state, &connection_id).await
 }
 
 #[tauri::command]
@@ -41,8 +41,8 @@ pub async fn mongo_list_collections(
     state: State<'_, Arc<AppState>>,
     connection_id: String,
     database: String,
-) -> Result<Vec<gauss_horizon_core::document_ops::CollectionInfo>, String> {
-    gauss_horizon_core::mongo_ops::mongo_list_collections_core(&state, &connection_id, &database).await
+) -> Result<Vec<chiron_horizon_core::document_ops::CollectionInfo>, String> {
+    chiron_horizon_core::mongo_ops::mongo_list_collections_core(&state, &connection_id, &database).await
 }
 
 #[tauri::command]
@@ -52,7 +52,7 @@ pub async fn mongo_create_database(
     database: String,
 ) -> Result<(), String> {
     ensure_connection_writable(&state, &connection_id, "Create database").await?;
-    gauss_horizon_core::mongo_ops::mongo_create_database_core(&state, &connection_id, &database).await
+    chiron_horizon_core::mongo_ops::mongo_create_database_core(&state, &connection_id, &database).await
 }
 
 #[tauri::command]
@@ -62,7 +62,7 @@ pub async fn mongo_drop_database(
     database: String,
 ) -> Result<(), String> {
     ensure_connection_writable(&state, &connection_id, "Drop database").await?;
-    gauss_horizon_core::mongo_ops::mongo_drop_database_core(&state, &connection_id, &database).await
+    chiron_horizon_core::mongo_ops::mongo_drop_database_core(&state, &connection_id, &database).await
 }
 
 #[tauri::command]
@@ -73,7 +73,7 @@ pub async fn mongo_drop_collection(
     collection: String,
 ) -> Result<(), String> {
     ensure_connection_writable(&state, &connection_id, "Drop collection").await?;
-    gauss_horizon_core::mongo_ops::mongo_drop_collection_core(&state, &connection_id, &database, &collection).await
+    chiron_horizon_core::mongo_ops::mongo_drop_collection_core(&state, &connection_id, &database, &collection).await
 }
 
 #[tauri::command]
@@ -85,7 +85,7 @@ pub async fn mongo_rename_collection(
     new_name: String,
 ) -> Result<(), String> {
     ensure_connection_writable(&state, &connection_id, "Rename collection").await?;
-    gauss_horizon_core::mongo_ops::mongo_rename_collection_core(
+    chiron_horizon_core::mongo_ops::mongo_rename_collection_core(
         &state,
         &connection_id,
         &database,
@@ -102,9 +102,9 @@ pub async fn mongo_clone_collection(
     database: String,
     source_collection: String,
     target_collection: String,
-) -> Result<gauss_horizon_core::db::mongo_driver::MongoCloneCollectionResult, String> {
+) -> Result<chiron_horizon_core::db::mongo_driver::MongoCloneCollectionResult, String> {
     ensure_connection_writable(&state, &connection_id, "Clone collection").await?;
-    gauss_horizon_core::mongo_ops::mongo_clone_collection_core(
+    chiron_horizon_core::mongo_ops::mongo_clone_collection_core(
         &state,
         &connection_id,
         &database,
@@ -171,7 +171,7 @@ pub async fn mongo_find_one(
     run_cancellable(
         &app,
         execution_id,
-        gauss_horizon_core::mongo_ops::mongo_find_one_core(
+        chiron_horizon_core::mongo_ops::mongo_find_one_core(
             &app,
             &connection_id,
             &database,
@@ -202,7 +202,7 @@ pub async fn mongo_count_documents(
     crate::commands::document_cmd::run_cancellable(
         &app,
         execution_id,
-        gauss_horizon_core::mongo_ops::mongo_count_documents_core(
+        chiron_horizon_core::mongo_ops::mongo_count_documents_core(
             &app,
             &connection_id,
             &database,
@@ -229,7 +229,7 @@ pub async fn mongo_server_version(
     run_cancellable(
         &app,
         execution_id,
-        gauss_horizon_core::mongo_ops::mongo_server_version_core(&app, &connection_id, &database),
+        chiron_horizon_core::mongo_ops::mongo_server_version_core(&app, &connection_id, &database),
     )
     .await
 }
@@ -243,7 +243,7 @@ pub async fn mongo_collection_stats(
     scale: Option<serde_json::Number>,
     execution_id: Option<String>,
     mcp_request: Option<bool>,
-) -> Result<gauss_horizon_core::db::mongo_driver::MongoCollectionStatsResult, String> {
+) -> Result<chiron_horizon_core::db::mongo_driver::MongoCollectionStatsResult, String> {
     let app = state.inner().clone();
     if mcp_request == Some(true) {
         crate::commands::mcp_bridge::ensure_mcp_read_allowed_by_id(&app, &connection_id, &database).await?;
@@ -251,7 +251,13 @@ pub async fn mongo_collection_stats(
     run_cancellable(
         &app,
         execution_id,
-        gauss_horizon_core::mongo_ops::mongo_collection_stats_core(&app, &connection_id, &database, &collection, scale),
+        chiron_horizon_core::mongo_ops::mongo_collection_stats_core(
+            &app,
+            &connection_id,
+            &database,
+            &collection,
+            scale,
+        ),
     )
     .await
 }
@@ -281,7 +287,7 @@ pub async fn mongo_aggregate_documents(
     run_cancellable(
         &app,
         execution_id,
-        gauss_horizon_core::mongo_ops::mongo_aggregate_documents_core(
+        chiron_horizon_core::mongo_ops::mongo_aggregate_documents_core(
             &app,
             &connection_id,
             &database,
@@ -312,7 +318,7 @@ pub async fn mongo_distinct(
     run_cancellable(
         &app,
         execution_id,
-        gauss_horizon_core::mongo_ops::mongo_distinct_core(
+        chiron_horizon_core::mongo_ops::mongo_distinct_core(
             &app,
             &connection_id,
             &database,
@@ -331,8 +337,8 @@ pub async fn mongo_list_index_specs(
     connection_id: String,
     database: String,
     collection: String,
-) -> Result<Vec<gauss_horizon_core::db::mongo_driver::MongoIndexSpec>, String> {
-    gauss_horizon_core::mongo_ops::mongo_list_index_specs_core(&state, &connection_id, &database, &collection).await
+) -> Result<Vec<chiron_horizon_core::db::mongo_driver::MongoIndexSpec>, String> {
+    chiron_horizon_core::mongo_ops::mongo_list_index_specs_core(&state, &connection_id, &database, &collection).await
 }
 
 #[tauri::command]
@@ -355,7 +361,7 @@ pub async fn mongo_create_index(
         .await?;
     }
     ensure_connection_writable(&state, &connection_id, "Create index").await?;
-    let name = gauss_horizon_core::mongo_ops::mongo_create_index_core(
+    let name = chiron_horizon_core::mongo_ops::mongo_create_index_core(
         &state,
         &connection_id,
         &database,
@@ -386,7 +392,7 @@ pub async fn mongo_create_user(
         .await?;
     }
     ensure_connection_writable(&state, &connection_id, "Create user").await?;
-    let affected_rows = gauss_horizon_core::mongo_ops::mongo_create_user_core(
+    let affected_rows = chiron_horizon_core::mongo_ops::mongo_create_user_core(
         &state,
         &connection_id,
         &database,
@@ -420,7 +426,7 @@ pub async fn mongo_run_command(
     run_cancellable(
         &app,
         execution_id,
-        gauss_horizon_core::mongo_ops::mongo_run_command_core(&app, &connection_id, &database, &command_json),
+        chiron_horizon_core::mongo_ops::mongo_run_command_core(&app, &connection_id, &database, &command_json),
     )
     .await
 }
@@ -434,7 +440,7 @@ pub async fn mongo_drop_indexes(
     indexes_json: Option<String>,
     single: bool,
     mcp_request: Option<bool>,
-) -> Result<gauss_horizon_core::db::mongo_driver::MongoDropIndexesResult, String> {
+) -> Result<chiron_horizon_core::db::mongo_driver::MongoDropIndexesResult, String> {
     if mcp_request == Some(true) {
         crate::commands::mcp_bridge::ensure_mcp_dangerous_write_allowed_by_id(
             state.inner(),
@@ -445,7 +451,7 @@ pub async fn mongo_drop_indexes(
         .await?;
     }
     ensure_connection_writable(&state, &connection_id, "Drop indexes").await?;
-    gauss_horizon_core::mongo_ops::mongo_drop_indexes_core(
+    chiron_horizon_core::mongo_ops::mongo_drop_indexes_core(
         &state,
         &connection_id,
         &database,
@@ -491,7 +497,7 @@ pub async fn mongo_insert_documents(
             .await?;
     }
     ensure_connection_writable(&state, &connection_id, "Insert").await?;
-    gauss_horizon_core::mongo_ops::mongo_insert_documents_core(
+    chiron_horizon_core::mongo_ops::mongo_insert_documents_core(
         &state,
         &connection_id,
         &database,
@@ -546,7 +552,7 @@ pub async fn mongo_update_documents(
         .await?;
     }
     ensure_connection_writable(&state, &connection_id, "Update").await?;
-    gauss_horizon_core::mongo_ops::mongo_update_documents_core(
+    chiron_horizon_core::mongo_ops::mongo_update_documents_core(
         &state,
         &connection_id,
         &database,
@@ -601,7 +607,7 @@ pub async fn mongo_delete_documents(
         .await?;
     }
     ensure_connection_writable(&state, &connection_id, "Delete").await?;
-    gauss_horizon_core::mongo_ops::mongo_delete_documents_core(
+    chiron_horizon_core::mongo_ops::mongo_delete_documents_core(
         &state,
         &connection_id,
         &database,
@@ -634,7 +640,7 @@ pub async fn mongo_find_one_and_update(
         .await?;
     }
     ensure_connection_writable(&state, &connection_id, "Update").await?;
-    gauss_horizon_core::mongo_ops::mongo_find_one_and_update_core(
+    chiron_horizon_core::mongo_ops::mongo_find_one_and_update_core(
         &state,
         &connection_id,
         &database,
@@ -668,7 +674,7 @@ pub async fn mongo_find_one_and_replace(
         .await?;
     }
     ensure_connection_writable(&state, &connection_id, "Update").await?;
-    gauss_horizon_core::mongo_ops::mongo_find_one_and_replace_core(
+    chiron_horizon_core::mongo_ops::mongo_find_one_and_replace_core(
         &state,
         &connection_id,
         &database,
@@ -701,7 +707,7 @@ pub async fn mongo_find_one_and_delete(
         .await?;
     }
     ensure_connection_writable(&state, &connection_id, "Delete").await?;
-    gauss_horizon_core::mongo_ops::mongo_find_one_and_delete_core(
+    chiron_horizon_core::mongo_ops::mongo_find_one_and_delete_core(
         &state,
         &connection_id,
         &database,

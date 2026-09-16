@@ -117,7 +117,7 @@ describe("QueryEditor context menu lifecycle", () => {
     const open = async (id: string) => {
       container.querySelector(`#${id}`)?.dispatchEvent(new MouseEvent("contextmenu", { bubbles: true, cancelable: true }));
       await nextTick();
-      return document.querySelector<HTMLButtonElement>("[data-gauss-horizon-context-menu] button");
+      return document.querySelector<HTMLButtonElement>("[data-chiron-horizon-context-menu] button");
     };
 
     expect(await open("table-a")).toMatchObject({ disabled: false, textContent: "Inspect table_a" });
@@ -163,8 +163,8 @@ describe("QueryEditor batch column selection", () => {
   });
 
   it("marks the insertion action so the completion menu can keep it sticky", () => {
-    expect(source).toContain("gaussHorizonBatchColumnSelectionAction: { sessionKey: item.sessionKey }");
-    expect(source).toContain('optionClass: (completion) => ((completion as QueryCompletionOption).gaussHorizonBatchColumnSelectionAction ? "cm-batch-column-selection-action" : "")');
+    expect(source).toContain("chironHorizonBatchColumnSelectionAction: { sessionKey: item.sessionKey }");
+    expect(source).toContain('optionClass: (completion) => ((completion as QueryCompletionOption).chironHorizonBatchColumnSelectionAction ? "cm-batch-column-selection-action" : "")');
   });
 
   it("updates the insertion count while a mouse selection is still in progress", () => {

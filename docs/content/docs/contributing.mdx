@@ -1,12 +1,12 @@
 ---
 title: Build From Source and Contribute
-description: Set up Gauss Horizon from scratch, run the desktop app, make your first change, test it, and open a pull request.
+description: Set up Chiron Horizon from scratch, run the desktop app, make your first change, test it, and open a pull request.
 ---
 
-This tutorial is for first-time Gauss Horizon contributors. By the end, you will have:
+This tutorial is for first-time Chiron Horizon contributors. By the end, you will have:
 
 1. Installed Node.js, pnpm, Rust, and native build dependencies
-2. Forked, cloned, and run Gauss Horizon Desktop
+2. Forked, cloned, and run Chiron Horizon Desktop
 3. Located the relevant code and completed a small change
 4. Run checks and tests that match the change
 5. Pushed a branch and opened a pull request
@@ -16,12 +16,12 @@ This tutorial is for first-time Gauss Horizon contributors. By the end, you will
 </Callout>
 
 <Callout type="warn">
-  Pull requests described on this page target `Gaussian-id/Gauss-Horizon` and cover the Gauss Horizon application, plugin platform, SDK, CLI, documentation, and Agents. Ordinary plugin source remains in the plugin's own repository, while Marketplace listing PRs target `Gaussian-id/Gauss-DBM-store`. See [Develop and Submit Gauss Horizon Plugins](/en/docs/plugin-development) for the complete flow.
+  Pull requests described on this page target `Gaussian-id/Gauss-Horizon` and cover the Chiron Horizon application, plugin platform, SDK, CLI, documentation, and Agents. Ordinary plugin source remains in the plugin's own repository, while Marketplace listing PRs target `Gaussian-id/Gauss-DBM-store`. See [Develop and Submit Chiron Horizon Plugins](/en/docs/plugin-development) for the complete flow.
 </Callout>
 
 ## 1. Choose and Claim an Issue
 
-Open [Gauss Horizon Issues](https://github.com/Gaussian-id/Gauss-Horizon/issues) and choose an issue that has no assignee and no active contributor in its comments. Good first contributions have one of these properties:
+Open [Chiron Horizon Issues](https://github.com/Gaussian-id/Gauss-Horizon/issues) and choose an issue that has no assignee and no active contributor in its comments. Good first contributions have one of these properties:
 
 - The reproduction steps and expected behavior are already clear
 - The scope is a small documentation, translation, or UI change
@@ -41,7 +41,7 @@ If you later cannot continue, post `/unclaim` as a standalone comment (`/unclaim
 
 ## 2. Install the Toolchain
 
-Gauss Horizon Desktop uses Tauri, Vue, and Rust. The repository currently requires:
+Chiron Horizon Desktop uses Tauri, Vue, and Rust. The repository currently requires:
 
 | Tool | Version |
 | --- | --- |
@@ -79,7 +79,7 @@ cargo --version
 
 ### Install Native Dependencies
 
-See the [official Tauri prerequisites](https://v2.tauri.app/start/prerequisites/) for complete platform details. Gauss Horizon also uses ODBC development libraries.
+See the [official Tauri prerequisites](https://v2.tauri.app/start/prerequisites/) for complete platform details. Chiron Horizon also uses ODBC development libraries.
 
 <Tabs groupId="contributing-platform" items={["macOS", "Ubuntu / Debian", "Windows"]}>
   <Tab value="macOS">
@@ -116,7 +116,7 @@ See the [official Tauri prerequisites](https://v2.tauri.app/start/prerequisites/
         winget install StrawberryPerl.StrawberryPerl
         ```
 
-        Gauss Horizon enables the `sqlite-sqlcipher` feature by default, which compiles SQLCipher and OpenSSL from source. Windows needs Perl to run the OpenSSL `Configure` script. Reopen your terminal after installing so `perl` is available on `PATH`.
+        Chiron Horizon enables the `sqlite-sqlcipher` feature by default, which compiles SQLCipher and OpenSSL from source. Windows needs Perl to run the OpenSSL `Configure` script. Reopen your terminal after installing so `perl` is available on `PATH`.
 
     5. Run the Windows commands on this page in PowerShell.
 
@@ -132,8 +132,8 @@ Open [Gaussian-id/Gauss-Horizon](https://github.com/Gaussian-id/Gauss-Horizon) o
 Replace `<your-github-name>` with your account name:
 
 ```bash
-git clone https://github.com/<your-github-name>/gauss.horizon.git
-cd gauss-horizon
+git clone https://github.com/<your-github-name>/chiron.horizon.git
+cd chiron-horizon
 git remote add upstream https://github.com/Gaussian-id/Gauss-Horizon.git
 git remote -v
 ```
@@ -153,7 +153,7 @@ git rebase upstream/main
 git push origin main
 ```
 
-## 4. Run Gauss Horizon for the First Time
+## 4. Run Chiron Horizon for the First Time
 
 ### macOS and Linux
 
@@ -171,9 +171,9 @@ For a lightweight desktop build, disable the default Rust features and enable on
 make dev-fast
 ```
 
-Development builds can run alongside an installed Gauss Horizon instance. Both use the same local Gauss Horizon data, so connections and history are available in each window. Avoid changing the same connection, saved SQL, or global setting in both windows at once.
+Development builds can run alongside an installed Chiron Horizon instance. Both use the same local Chiron Horizon data, so connections and history are available in each window. Avoid changing the same connection, saved SQL, or global setting in both windows at once.
 
-When testing the MCP bridge, the instance started last owns the shared `mcp-bridge-port` discovery file and receives MCP requests. Redis PubSub prefers port `4224` (or `GAUSS_HORIZON_PORT` when set) and automatically falls back to an available local port; the frontend uses the actual bound port.
+When testing the MCP bridge, the instance started last owns the shared `mcp-bridge-port` discovery file and receives MCP requests. Redis PubSub prefers port `4224` (or `CHIRON_HORIZON_PORT` when set) and automatically falls back to an available local port; the frontend uses the actual bound port.
 
 ### Windows
 
@@ -192,13 +192,13 @@ pnpm tauri dev -- --no-default-features --features duckdb-sidecar,dynamodb,sqlit
 
 ### Confirm the Environment Works
 
-A successful run opens the Gauss Horizon desktop window without a compiler error in the terminal. Complete three quick checks:
+A successful run opens the Chiron Horizon desktop window without a compiler error in the terminal. Complete three quick checks:
 
 1. Open Settings
 2. Create or open a local test connection
 3. Close and start the app again to confirm the setup is repeatable
 
-If port `1420` is already in use, stop the previous Gauss Horizon/Vite development process and restart.
+If port `1420` is already in use, stop the previous Chiron Horizon/Vite development process and restart.
 
 ## Local database test environments
 
@@ -219,10 +219,10 @@ The service ports listen on `127.0.0.1` by default. Set `DB_BIND_ADDRESS=0.0.0.0
 | --- | --- |
 | `apps/desktop/src/` | Vue pages, components, state, interactions, and translations |
 | `src-tauri/` | Tauri desktop commands, system integration, and packaging |
-| `crates/gauss-horizon-core/` | Connections, queries, metadata, and shared Rust database logic |
-| `crates/gauss-horizon-web/` | Docker/Web backend |
+| `crates/chiron-horizon-core/` | Connections, queries, metadata, and shared Rust database logic |
+| `crates/chiron-horizon-web/` | Docker/Web backend |
 | `packages/app-tests/` | Tests for shared frontend logic |
-| `packages/cli/` | Gauss Horizon CLI |
+| `packages/cli/` | Chiron Horizon CLI |
 | `packages/mcp-server/` | MCP Server |
 | `docs/content/docs/` | Multilingual website documentation |
 | `agents/drivers/` | Java/JDBC and selected native database agents |
@@ -296,7 +296,7 @@ For UI changes, check light and dark themes, narrow windows, empty data, loading
 
 ### Path C: Change the Rust Backend
 
-Shared Rust logic is mainly in `crates/gauss-horizon-core/`; desktop commands are in `src-tauri/`. When DuckDB is unrelated, start with the fast checks:
+Shared Rust logic is mainly in `crates/chiron-horizon-core/`; desktop commands are in `src-tauri/`. When DuckDB is unrelated, start with the fast checks:
 
 ```bash
 make cargo-check-fast
@@ -307,7 +307,7 @@ Database behavior changes should be verified against a real database, not only m
 
 ### Path D: Change an Agent Driver
 
-Agents are separate processes that communicate with Gauss Horizon through stdin/stdout JSON-RPC. Java/JDBC agents normally use JDK 21; native agents use Go or Rust. Read these first:
+Agents are separate processes that communicate with Chiron Horizon through stdin/stdout JSON-RPC. Java/JDBC agents normally use JDK 21; native agents use Go or Rust. Read these first:
 
 - [`agents/README.md`](https://github.com/Gaussian-id/Gauss-Horizon/blob/main/agents/README.md)
 - [`agents/docs/agent-authoring.md`](https://github.com/Gaussian-id/Gauss-Horizon/blob/main/agents/docs/agent-authoring.md)
@@ -328,28 +328,28 @@ The Shadow JAR is written under:
 agents/drivers/<driver-module>/build/libs/
 ```
 
-A successful build does not mean the local Gauss Horizon app is using the new code. Gauss Horizon runs `.gauss-horizon/agents/drivers/<db_type>/agent.jar` under the user home directory, so back up and replace the runtime JAR:
+A successful build does not mean the local Chiron Horizon app is using the new code. Chiron Horizon runs `.chiron-horizon/agents/drivers/<db_type>/agent.jar` under the user home directory, so back up and replace the runtime JAR:
 
 <Tabs groupId="agent-runtime-replace" items={["macOS / Linux", "Windows PowerShell"]}>
   <Tab value="macOS / Linux">
     ```bash
-    cp ~/.gauss-horizon/agents/drivers/<db_type>/agent.jar \
-      ~/.gauss-horizon/agents/drivers/<db_type>/agent.jar.bak
+    cp ~/.chiron-horizon/agents/drivers/<db_type>/agent.jar \
+      ~/.chiron-horizon/agents/drivers/<db_type>/agent.jar.bak
     cp drivers/<driver-module>/build/libs/*-all.jar \
-      ~/.gauss-horizon/agents/drivers/<db_type>/agent.jar
+      ~/.chiron-horizon/agents/drivers/<db_type>/agent.jar
     ```
   </Tab>
   <Tab value="Windows PowerShell">
     ```powershell
-    Copy-Item "$HOME\.gauss-horizon\agents\drivers\<db_type>\agent.jar" `
-      "$HOME\.gauss-horizon\agents\drivers\<db_type>\agent.jar.bak"
+    Copy-Item "$HOME\.chiron-horizon\agents\drivers\<db_type>\agent.jar" `
+      "$HOME\.chiron-horizon\agents\drivers\<db_type>\agent.jar.bak"
     $jar = Get-ChildItem "drivers\<driver-module>\build\libs\*-all.jar" | Select-Object -First 1
-    Copy-Item $jar.FullName "$HOME\.gauss-horizon\agents\drivers\<db_type>\agent.jar" -Force
+    Copy-Item $jar.FullName "$HOME\.chiron-horizon\agents\drivers\<db_type>\agent.jar" -Force
     ```
   </Tab>
 </Tabs>
 
-Restart Gauss Horizon or disconnect and reconnect the database so the old agent process exits and the new JAR is loaded. Repeat the issue's reproduction flow against the real database version.
+Restart Chiron Horizon or disconnect and reconnect the database so the old agent process exits and the new JAR is loaded. Repeat the issue's reproduction flow against the real database version.
 
 #### When to Change `agents/versions.json`
 

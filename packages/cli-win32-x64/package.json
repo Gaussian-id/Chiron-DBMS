@@ -1,7 +1,7 @@
 {
-  "name": "@gauss-horizon/cli-win32-x64",
+  "name": "@chiron-horizon/cli-win32-x64",
   "version": "0.1.0",
-  "description": "Precompiled Gauss Horizon CLI binary for Windows x64",
+  "description": "Precompiled Chiron Horizon CLI binary for Windows x64",
   "license": "Apache-2.0",
   "repository": {
     "type": "git",
@@ -15,7 +15,7 @@
     "x64"
   ],
   "bin": {
-    "gauss-horizon-native": "bin/gauss-horizon.exe"
+    "chiron-horizon-native": "bin/chiron-horizon.exe"
   },
   "files": [
     "bin"

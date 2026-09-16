@@ -15,10 +15,10 @@ mod startup_recovery;
 mod webview2_recovery;
 mod window_state_guard;
 
+use chiron_horizon_core::sql_dialect::dialect_loader::{register_core_dialects, DialectPluginLoader, DialectRegistry};
+use chiron_horizon_core::sql_dialect::hot_reload::DialectHotReload;
+use chiron_horizon_core::storage::{maybe_import_user_data_db, DesktopIconTheme, DesktopSettings, Storage};
 use commands::connection::AppState;
-use gauss_horizon_core::sql_dialect::dialect_loader::{register_core_dialects, DialectPluginLoader, DialectRegistry};
-use gauss_horizon_core::sql_dialect::hot_reload::DialectHotReload;
-use gauss_horizon_core::storage::{maybe_import_user_data_db, DesktopIconTheme, DesktopSettings, Storage};
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 use std::time::{Duration, Instant};
@@ -40,7 +40,7 @@ use tauri_plugin_deep_link::DeepLinkExt;
 use tauri_plugin_opener::OpenerExt;
 
 const DESKTOP_TRAY_ID: &str = "main-tray";
-const APP_CLOSE_REQUESTED_EVENT: &str = "gauss-horizon-app-close-requested";
+const APP_CLOSE_REQUESTED_EVENT: &str = "chiron-horizon-app-close-requested";
 #[cfg(target_os = "macos")]
 const APP_MENU_QUIT_ID: &str = "app-menu-quit";
 #[cfg(target_os = "macos")]
@@ -204,7 +204,7 @@ fn native_window_decorations_override(target_os: &str) -> Option<bool> {
 #[cfg(target_os = "macos")]
 fn build_app_menu<R: tauri::Runtime>(app_handle: &tauri::AppHandle<R>) -> tauri::Result<Menu<R>> {
     let pkg_info = app_handle.package_info();
-    let app_name = "Gauss Horizon by Gaussian".to_string();
+    let app_name = "Chiron Horizon".to_string();
     let about_metadata = AboutMetadata {
         name: Some(app_name.clone()),
         version: Some(pkg_info.version.to_string()),
@@ -505,8 +505,8 @@ fn linux_uses_native_wayland(
 #[cfg(target_os = "linux")]
 fn apply_linux_webkit_rendering_workarounds() {
     let render_devices = linux_drm_render_devices();
-    let appimage = gauss_horizon_core::legacy::var_os("APPIMAGE");
-    let explicit_device_file = gauss_horizon_core::legacy::var_os("WEBKIT_WEB_RENDER_DEVICE_FILE")
+    let appimage = chiron_horizon_core::legacy::var_os("APPIMAGE");
+    let explicit_device_file = chiron_horizon_core::legacy::var_os("WEBKIT_WEB_RENDER_DEVICE_FILE")
         .filter(|path| !path.is_empty())
         .map(std::path::PathBuf::from)
         // Resolve stable /dev/dri/by-path links to the renderD* node used by sysfs.
@@ -520,9 +520,9 @@ fn apply_linux_webkit_rendering_workarounds() {
     let has_hardware_render_device =
         render_devices.iter().any(|device| !linux_drm_driver_is_software_only(device.driver.as_deref()));
     let uses_native_wayland = linux_uses_native_wayland(
-        gauss_horizon_core::legacy::var_os("WAYLAND_DISPLAY").as_deref(),
-        gauss_horizon_core::legacy::var_os("XDG_SESSION_TYPE").as_deref(),
-        gauss_horizon_core::legacy::var_os("GDK_BACKEND").as_deref(),
+        chiron_horizon_core::legacy::var_os("WAYLAND_DISPLAY").as_deref(),
+        chiron_horizon_core::legacy::var_os("XDG_SESSION_TYPE").as_deref(),
+        chiron_horizon_core::legacy::var_os("GDK_BACKEND").as_deref(),
     );
     // AppImages bundle WebKitGTK/GTK but use the host EGL/GL stack. On some
     // combinations, WebKit's DMABUF initialization aborts the WebProcess
@@ -530,7 +530,7 @@ fn apply_linux_webkit_rendering_workarounds() {
     // user-overridable and use the stable shared-memory renderer instead.
     if linux_appimage_requires_dmabuf_workaround(appimage.as_deref())
         && linux_webkit_environment_override(
-            gauss_horizon_core::legacy::var_os("WEBKIT_DISABLE_DMABUF_RENDERER").as_deref(),
+            chiron_horizon_core::legacy::var_os("WEBKIT_DISABLE_DMABUF_RENDERER").as_deref(),
             "1",
         )
         .is_some()
@@ -544,7 +544,7 @@ fn apply_linux_webkit_rendering_workarounds() {
         uses_native_wayland,
     ) {
         if let Some(value) =
-            linux_webkit_environment_override(gauss_horizon_core::legacy::var_os(key).as_deref(), value)
+            linux_webkit_environment_override(chiron_horizon_core::legacy::var_os(key).as_deref(), value)
         {
             std::env::set_var(key, value);
         }
@@ -684,7 +684,7 @@ fn open_connection_deep_links(app: &tauri::AppHandle, links: Vec<String>) {
     if let Some(state) = app.try_state::<commands::deep_link::DeepLinkOpenState>() {
         state.push_connection_links(links.clone());
     }
-    let _ = app.emit("gauss-horizon-open-connection-links", links);
+    let _ = app.emit("chiron-horizon-open-connection-links", links);
     show_main_window(app);
 }
 
@@ -695,7 +695,7 @@ fn open_ai_config_deep_links(app: &tauri::AppHandle, links: Vec<String>) {
     if let Some(state) = app.try_state::<commands::deep_link::DeepLinkOpenState>() {
         state.push_ai_config_links(links.clone());
     }
-    let _ = app.emit("gauss-horizon-open-ai-config-links", links);
+    let _ = app.emit("chiron-horizon-open-ai-config-links", links);
     show_main_window(app);
 }
 
@@ -749,16 +749,16 @@ fn locale_family(locale: &str) -> LocaleFamily {
 
 fn tray_menu_labels_for_locale(locale: &str) -> (&'static str, &'static str) {
     match locale_family(locale) {
-        LocaleFamily::SimplifiedChinese => ("显示 Gauss Horizon", "退出 Gauss Horizon"),
-        LocaleFamily::TraditionalChinese => ("顯示 Gauss Horizon", "退出 Gauss Horizon"),
-        LocaleFamily::Japanese => ("Gauss Horizonを表示", "Gauss Horizonを終了"),
-        LocaleFamily::Korean => ("Gauss Horizon 표시", "Gauss Horizon 종료"),
-        LocaleFamily::Azerbaijani => ("Gauss Horizon-i göstər", "Gauss Horizon-dən çıx"),
-        LocaleFamily::Spanish => ("Mostrar Gauss Horizon", "Salir de Gauss Horizon"),
-        LocaleFamily::Italian => ("Mostra Gauss Horizon", "Esci da Gauss Horizon"),
-        LocaleFamily::Turkish => ("Gauss Horizon'i Göster", "Gauss Horizon'ten Çık"),
-        LocaleFamily::Portuguese => ("Mostrar Gauss Horizon", "Sair do Gauss Horizon"),
-        LocaleFamily::English => ("Show Gauss Horizon", "Quit Gauss Horizon"),
+        LocaleFamily::SimplifiedChinese => ("显示 Chiron Horizon", "退出 Chiron Horizon"),
+        LocaleFamily::TraditionalChinese => ("顯示 Chiron Horizon", "退出 Chiron Horizon"),
+        LocaleFamily::Japanese => ("Chiron Horizonを表示", "Chiron Horizonを終了"),
+        LocaleFamily::Korean => ("Chiron Horizon 표시", "Chiron Horizon 종료"),
+        LocaleFamily::Azerbaijani => ("Chiron Horizon-i göstər", "Chiron Horizon-dən çıx"),
+        LocaleFamily::Spanish => ("Mostrar Chiron Horizon", "Salir de Chiron Horizon"),
+        LocaleFamily::Italian => ("Mostra Chiron Horizon", "Esci da Chiron Horizon"),
+        LocaleFamily::Turkish => ("Chiron Horizon'i Göster", "Chiron Horizon'ten Çık"),
+        LocaleFamily::Portuguese => ("Mostrar Chiron Horizon", "Sair do Chiron Horizon"),
+        LocaleFamily::English => ("Show Chiron Horizon", "Quit Chiron Horizon"),
     }
 }
 
@@ -826,7 +826,7 @@ fn setup_desktop_tray<R: tauri::Runtime, M: Manager<R>>(
 ) -> tauri::Result<()> {
     let menu = build_tray_menu(manager)?;
     let mut tray = TrayIconBuilder::<R>::with_id(DESKTOP_TRAY_ID)
-        .tooltip("Gauss Horizon by Gaussian")
+        .tooltip("Chiron Horizon")
         .menu(&menu)
         .show_menu_on_left_click(false);
     #[cfg(target_os = "macos")]
@@ -989,36 +989,36 @@ mod tests {
 
     #[test]
     fn tray_menu_labels_follow_locale() {
-        assert_eq!(tray_menu_labels_for_locale("zh-CN"), ("显示 Gauss Horizon", "退出 Gauss Horizon"));
-        assert_eq!(tray_menu_labels_for_locale("zh_CN"), ("显示 Gauss Horizon", "退出 Gauss Horizon"));
-        assert_eq!(tray_menu_labels_for_locale("zh-Hans-CN"), ("显示 Gauss Horizon", "退出 Gauss Horizon"));
-        assert_eq!(tray_menu_labels_for_locale("zh"), ("显示 Gauss Horizon", "退出 Gauss Horizon"));
-        assert_eq!(tray_menu_labels_for_locale("zh-TW"), ("顯示 Gauss Horizon", "退出 Gauss Horizon"));
-        assert_eq!(tray_menu_labels_for_locale("zh-Hant-HK"), ("顯示 Gauss Horizon", "退出 Gauss Horizon"));
-        assert_eq!(tray_menu_labels_for_locale("zh-MO"), ("顯示 Gauss Horizon", "退出 Gauss Horizon"));
-        assert_eq!(tray_menu_labels_for_locale("ja-JP"), ("Gauss Horizonを表示", "Gauss Horizonを終了"));
-        assert_eq!(tray_menu_labels_for_locale("ko-KR"), ("Gauss Horizon 표시", "Gauss Horizon 종료"));
-        assert_eq!(tray_menu_labels_for_locale("az-AZ"), ("Gauss Horizon-i göstər", "Gauss Horizon-dən çıx"));
-        assert_eq!(tray_menu_labels_for_locale("es-ES"), ("Mostrar Gauss Horizon", "Salir de Gauss Horizon"));
-        assert_eq!(tray_menu_labels_for_locale("it-IT"), ("Mostra Gauss Horizon", "Esci da Gauss Horizon"));
-        assert_eq!(tray_menu_labels_for_locale("pt-BR"), ("Mostrar Gauss Horizon", "Sair do Gauss Horizon"));
-        assert_eq!(tray_menu_labels_for_locale("tr-TR"), ("Gauss Horizon'i Göster", "Gauss Horizon'ten Çık"));
-        assert_eq!(tray_menu_labels_for_locale("en-US"), ("Show Gauss Horizon", "Quit Gauss Horizon"));
+        assert_eq!(tray_menu_labels_for_locale("zh-CN"), ("显示 Chiron Horizon", "退出 Chiron Horizon"));
+        assert_eq!(tray_menu_labels_for_locale("zh_CN"), ("显示 Chiron Horizon", "退出 Chiron Horizon"));
+        assert_eq!(tray_menu_labels_for_locale("zh-Hans-CN"), ("显示 Chiron Horizon", "退出 Chiron Horizon"));
+        assert_eq!(tray_menu_labels_for_locale("zh"), ("显示 Chiron Horizon", "退出 Chiron Horizon"));
+        assert_eq!(tray_menu_labels_for_locale("zh-TW"), ("顯示 Chiron Horizon", "退出 Chiron Horizon"));
+        assert_eq!(tray_menu_labels_for_locale("zh-Hant-HK"), ("顯示 Chiron Horizon", "退出 Chiron Horizon"));
+        assert_eq!(tray_menu_labels_for_locale("zh-MO"), ("顯示 Chiron Horizon", "退出 Chiron Horizon"));
+        assert_eq!(tray_menu_labels_for_locale("ja-JP"), ("Chiron Horizonを表示", "Chiron Horizonを終了"));
+        assert_eq!(tray_menu_labels_for_locale("ko-KR"), ("Chiron Horizon 표시", "Chiron Horizon 종료"));
+        assert_eq!(tray_menu_labels_for_locale("az-AZ"), ("Chiron Horizon-i göstər", "Chiron Horizon-dən çıx"));
+        assert_eq!(tray_menu_labels_for_locale("es-ES"), ("Mostrar Chiron Horizon", "Salir de Chiron Horizon"));
+        assert_eq!(tray_menu_labels_for_locale("it-IT"), ("Mostra Chiron Horizon", "Esci da Chiron Horizon"));
+        assert_eq!(tray_menu_labels_for_locale("pt-BR"), ("Mostrar Chiron Horizon", "Sair do Chiron Horizon"));
+        assert_eq!(tray_menu_labels_for_locale("tr-TR"), ("Chiron Horizon'i Göster", "Chiron Horizon'ten Çık"));
+        assert_eq!(tray_menu_labels_for_locale("en-US"), ("Show Chiron Horizon", "Quit Chiron Horizon"));
         // Unknown and empty locales fall back to English; "ita" must not match "it".
-        assert_eq!(tray_menu_labels_for_locale("ita"), ("Show Gauss Horizon", "Quit Gauss Horizon"));
-        assert_eq!(tray_menu_labels_for_locale(""), ("Show Gauss Horizon", "Quit Gauss Horizon"));
+        assert_eq!(tray_menu_labels_for_locale("ita"), ("Show Chiron Horizon", "Quit Chiron Horizon"));
+        assert_eq!(tray_menu_labels_for_locale(""), ("Show Chiron Horizon", "Quit Chiron Horizon"));
     }
 
     #[test]
     fn app_menu_labels_follow_locale() {
-        assert_eq!(app_menu_quit_label("zh-CN", "Gauss Horizon"), "退出 Gauss Horizon");
-        assert_eq!(app_menu_quit_label("zh-TW", "Gauss Horizon"), "退出 Gauss Horizon");
-        assert_eq!(app_menu_quit_label("ja-JP", "Gauss Horizon"), "Gauss Horizonを終了");
-        assert_eq!(app_menu_quit_label("ko-KR", "Gauss Horizon"), "Gauss Horizon 종료");
-        assert_eq!(app_menu_quit_label("tr-TR", "Gauss Horizon"), "Gauss Horizon Uygulamasından Çık");
-        assert_eq!(app_menu_quit_label("az-AZ", "Gauss Horizon"), "Gauss Horizon-dən çıx");
-        assert_eq!(app_menu_quit_label("en-US", "Gauss Horizon"), "Quit Gauss Horizon");
-        assert_eq!(app_menu_quit_label("", "Gauss Horizon"), "Quit Gauss Horizon");
+        assert_eq!(app_menu_quit_label("zh-CN", "Chiron Horizon"), "退出 Chiron Horizon");
+        assert_eq!(app_menu_quit_label("zh-TW", "Chiron Horizon"), "退出 Chiron Horizon");
+        assert_eq!(app_menu_quit_label("ja-JP", "Chiron Horizon"), "Chiron Horizonを終了");
+        assert_eq!(app_menu_quit_label("ko-KR", "Chiron Horizon"), "Chiron Horizon 종료");
+        assert_eq!(app_menu_quit_label("tr-TR", "Chiron Horizon"), "Chiron Horizon Uygulamasından Çık");
+        assert_eq!(app_menu_quit_label("az-AZ", "Chiron Horizon"), "Chiron Horizon-dən çıx");
+        assert_eq!(app_menu_quit_label("en-US", "Chiron Horizon"), "Quit Chiron Horizon");
+        assert_eq!(app_menu_quit_label("", "Chiron Horizon"), "Quit Chiron Horizon");
         assert_eq!(app_menu_copy_support_info_label("zh-CN"), "复制支持信息");
         assert_eq!(app_menu_copy_support_info_label("zh-TW"), "複製支援資訊");
         assert_eq!(app_menu_copy_support_info_label("ko-KR"), "지원 정보 복사");
@@ -1064,7 +1064,7 @@ mod tests {
 
     #[test]
     fn startup_data_dir_diagnostics_never_include_paths() {
-        let private_path = PathBuf::from(r"C:\Users\private-user\GaussHorizonData");
+        let private_path = PathBuf::from(r"C:\Users\private-user\ChironHorizonData");
         assert_eq!(startup_data_dir_mode(&DataDirMode::Default), "default");
         assert_eq!(startup_data_dir_mode(&DataDirMode::EnvOverride), "env_override");
         let label = startup_data_dir_mode(&DataDirMode::Portable { exe_dir: private_path });
@@ -1180,7 +1180,7 @@ mod tests {
 
     #[test]
     fn discovers_only_usable_linux_drm_render_device_files() {
-        let root = std::env::temp_dir().join(format!("gauss-horizon-drm-render-devices-{}", uuid::Uuid::new_v4()));
+        let root = std::env::temp_dir().join(format!("chiron-horizon-drm-render-devices-{}", uuid::Uuid::new_v4()));
         let sys_class_drm = root.join("sys/class/drm");
         let dev_dri = root.join("dev/dri");
         std::fs::create_dir_all(sys_class_drm.join("renderD128/device")).unwrap();
@@ -1210,7 +1210,7 @@ mod tests {
         assert_eq!(linux_pci_id_from_sysfs_value("0x10000"), None);
         assert_eq!(linux_pci_id_from_sysfs_value("not-a-device"), None);
 
-        let root = std::env::temp_dir().join(format!("gauss-horizon-drm-pci-ids-{}", uuid::Uuid::new_v4()));
+        let root = std::env::temp_dir().join(format!("chiron-horizon-drm-pci-ids-{}", uuid::Uuid::new_v4()));
         let sys_class_drm = root.join("sys/class/drm");
         let dev_dri = root.join("dev/dri");
         for node in ["renderD128", "renderD129"] {
@@ -1302,7 +1302,7 @@ mod tests {
 
     #[test]
     fn enables_appimage_dmabuf_workaround_only_for_real_appimage_values() {
-        assert!(linux_appimage_requires_dmabuf_workaround(Some(OsStr::new("/opt/Gauss Horizon.AppImage"))));
+        assert!(linux_appimage_requires_dmabuf_workaround(Some(OsStr::new("/opt/Chiron Horizon.AppImage"))));
         assert!(!linux_appimage_requires_dmabuf_workaround(Some(OsStr::new(""))));
         assert!(!linux_appimage_requires_dmabuf_workaround(None));
     }
@@ -1405,11 +1405,11 @@ mod tests {
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
-    gauss_horizon_core::legacy::install_environment_compatibility();
-    if let Err(error) = gauss_horizon_core::legacy::migrate_default_profile() {
+    chiron_horizon_core::legacy::install_environment_compatibility();
+    if let Err(error) = chiron_horizon_core::legacy::migrate_default_profile() {
         eprintln!("{error}");
         rfd::MessageDialog::new()
-            .set_title("Gauss Horizon profile migration")
+            .set_title("Chiron Horizon profile migration")
             .set_description(&error)
             .set_level(rfd::MessageLevel::Error)
             .show();
@@ -1442,7 +1442,7 @@ pub fn run() {
                 if let Some(state) = app.try_state::<commands::external_sql::ExternalSqlOpenState>() {
                     state.push(paths.clone());
                 }
-                let _ = app.emit("gauss-horizon-open-sql-files", paths);
+                let _ = app.emit("chiron-horizon-open-sql-files", paths);
             }
 
             let db_paths = commands::external_db::db_file_paths_from_args(args, std::path::Path::new(&cwd));
@@ -1450,7 +1450,7 @@ pub fn run() {
                 if let Some(state) = app.try_state::<commands::external_db::ExternalDbOpenState>() {
                     state.push(db_paths.clone());
                 }
-                let _ = app.emit("gauss-horizon-open-db-files", db_paths);
+                let _ = app.emit("chiron-horizon-open-db-files", db_paths);
             }
             // This runs inside the *existing* instance: a second launch has already
             // handed over its arguments and exited. If we cannot reveal a window here
@@ -1522,15 +1522,22 @@ pub fn run() {
             std::fs::create_dir_all(&data_dir).expect("Failed to create data dir");
             let data_dir_mode = startup_data_dir_mode(&data_dir_resolution.mode);
             append_startup_probe(format!("data dir ready mode={data_dir_mode}"));
-            let alternative_data_dir = data_dir::alternative_data_dir(&data_dir_resolution);
-            match maybe_import_user_data_db(&data_dir, alternative_data_dir.as_deref()) {
-                Ok(result) => eprintln!("[STARTUP] data db fallback import: {result:?}"),
-                Err(err) => eprintln!("[STARTUP] data db fallback import failed: {err}"),
+            let fallback_data_dirs = [
+                data_dir::alternative_data_dir(&data_dir_resolution),
+                data_dir::legacy_product_data_dir(&data_dir_resolution),
+            ];
+            for fallback_data_dir in fallback_data_dirs.into_iter().flatten() {
+                match maybe_import_user_data_db(&data_dir, Some(&fallback_data_dir)) {
+                    Ok(chiron_horizon_core::storage::DataDbImportResult::Imported)
+                    | Ok(chiron_horizon_core::storage::DataDbImportResult::SkippedTargetHasData) => break,
+                    Ok(result) => eprintln!("[STARTUP] data db fallback import: {result:?}"),
+                    Err(err) => eprintln!("[STARTUP] data db fallback import failed: {err}"),
+                }
             }
-            let db_path = gauss_horizon_core::legacy::storage_db_path(&data_dir);
+            let db_path = chiron_horizon_core::legacy::storage_db_path(&data_dir);
 
             let t = Instant::now();
-            append_startup_probe(format!("opening storage file=gauss-horizon.db data_dir_mode={data_dir_mode}"));
+            append_startup_probe(format!("opening storage file=chiron-horizon.db data_dir_mode={data_dir_mode}"));
             let storage = tauri::async_runtime::block_on(async {
                 let s = Storage::open(&db_path).await.expect("Failed to open storage");
                 eprintln!("[STARTUP]   Storage::open in {:?}", t.elapsed());
@@ -1608,7 +1615,7 @@ pub fn run() {
             } else {
                 AppState::new_with_plugin_dir_and_app_version(storage, plugin_dir, env!("CARGO_PKG_VERSION"))
             };
-            gauss_horizon_core::db::sqlite_worker::enable_sqlite_ssh_runtime(env!("CARGO_PKG_VERSION"));
+            chiron_horizon_core::db::sqlite_worker::enable_sqlite_ssh_runtime(env!("CARGO_PKG_VERSION"));
             state.set_duckdb_worker_process_isolation_enabled(desktop_settings.duckdb_worker_process_isolation);
             state.set_duckdb_worker_max_processes(desktop_settings.duckdb_worker_max_processes);
             let oidc_app_handle = app.handle().clone();
@@ -1684,7 +1691,7 @@ pub fn run() {
         .on_window_event(|window, event| {
             if let tauri::WindowEvent::Destroyed = event {
                 if let Some(tab_id) = window.label().strip_prefix("detached-tab-") {
-                    let _ = window.emit("gauss-horizon:detached-tab-lost", serde_json::json!({ "tabId": tab_id }));
+                    let _ = window.emit("chiron-horizon:detached-tab-lost", serde_json::json!({ "tabId": tab_id }));
                 }
                 return;
             }
@@ -1698,7 +1705,7 @@ pub fn run() {
                     // with the default `listen()` target receive events emitted
                     // to any window, so the frontend must filter by tabId.
                     let _ = window
-                        .emit("gauss-horizon:detached-tab-close-requested", serde_json::json!({ "tabId": tab_id }));
+                        .emit("chiron-horizon:detached-tab-close-requested", serde_json::json!({ "tabId": tab_id }));
                     return;
                 }
                 if !should_hide_window_on_close(std::env::consts::OS) {
@@ -2652,7 +2659,7 @@ pub fn run() {
                     if let Some(state) = app_handle.try_state::<commands::external_sql::ExternalSqlOpenState>() {
                         state.push(paths.clone());
                     }
-                    let _ = app_handle.emit("gauss-horizon-open-sql-files", paths);
+                    let _ = app_handle.emit("chiron-horizon-open-sql-files", paths);
                     if let Some(window) = app_handle.get_webview_window("main") {
                         let _ = window.show();
                         let _ = window.set_focus();
@@ -2669,7 +2676,7 @@ pub fn run() {
                     if let Some(state) = app_handle.try_state::<commands::external_db::ExternalDbOpenState>() {
                         state.push(db_paths.clone());
                     }
-                    let _ = app_handle.emit("gauss-horizon-open-db-files", db_paths);
+                    let _ = app_handle.emit("chiron-horizon-open-db-files", db_paths);
                     if let Some(window) = app_handle.get_webview_window("main") {
                         let _ = window.show();
                         let _ = window.set_focus();

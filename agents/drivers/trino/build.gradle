@@ -5,6 +5,6 @@ dependencies {
 
 tasks.named('shadowJar') {
     manifest {
-        attributes('Agent-Label': 'Trino (Presto)', 'Main-Class': 'com.gauss.horizon.agent.trino.TrinoAgent')
+        attributes('Agent-Label': 'Trino (Presto)', 'Main-Class': 'com.chiron.horizon.agent.trino.TrinoAgent')
     }
 }

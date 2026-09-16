@@ -1,10 +1,10 @@
-# MCP Gauss Horizon — MongoDB end-to-end verification
+# MCP Chiron Horizon — MongoDB end-to-end verification
 
-Date: 2026-09-14. Branch: `codex/gauss-horizon-0.1.0`. Requested by Kevin after clarifying that ChironDB's native MCP and Gauss Horizon's multi-database MCP are separate products/surfaces.
+Date: 2026-09-14. Branch: `codex/chiron-horizon-0.1.0`. Requested by Kevin after clarifying that ChironDB's native MCP and Chiron Horizon's multi-database MCP are separate products/surfaces.
 
 ## Result and scope
 
-**PASS: all 14 end-to-end acceptance groups** against real MongoDB 8.0.30 and the standalone Gauss Horizon MCP 0.1.0 binary. Both stdio and authenticated Streamable HTTP were exercised using a small JSON-RPC/MCP client, without mocking the database or MCP backend. This establishes the tested MongoDB operations and access controls in this local configuration; it does not establish universal production readiness or interaction through a particular AI model/client UI.
+**PASS: all 14 end-to-end acceptance groups** against real MongoDB 8.0.30 and the standalone Chiron Horizon MCP 0.1.0 binary. Both stdio and authenticated Streamable HTTP were exercised using a small JSON-RPC/MCP client, without mocking the database or MCP backend. This establishes the tested MongoDB operations and access controls in this local configuration; it does not establish universal production readiness or interaction through a particular AI model/client UI.
 
 MongoDB ran in an isolated official `mongo:8.0` Docker container, published on loopback only with a generated root password. MCP used a new private temporary profile and persisted synthetic connection credentials. Test policy changes were made in that disposable profile while the MCP process was stopped. No existing connection/profile, production database, desktop installation or real secret was used. Test containers and MCP processes were closed and removed; evidence was retained privately.
 
@@ -27,7 +27,7 @@ MongoDB ran in an isolated official `mongo:8.0` Docker container, published on l
 
 The CRUD checks verified inserted/updated values via MCP and checked deletion directly in MongoDB. Denied writes were checked against the underlying database, including preservation of the initial three documents, the original amount value and absence of a cross-database output collection. MCP policy enforcement is independent of the MongoDB account's ability to write.
 
-The stdio handshake reported server identity `gauss-horizon` and version `0.1.0`. HTTP tests included missing/wrong bearer tokens (401), untrusted Origin (403), successful initialize/tools/list/query and read-only rejection. Reconnect succeeded on the first explicit read attempt after the fixed-port MongoDB container restarted. There was no automatic write retry.
+The stdio handshake reported server identity `chiron-horizon` and version `0.1.0`. HTTP tests included missing/wrong bearer tokens (401), untrusted Origin (403), successful initialize/tools/list/query and read-only rejection. Reconnect succeeded on the first explicit read attempt after the fixed-port MongoDB container restarted. There was no automatic write retry.
 
 ## Limits and accurate interpretation
 
@@ -48,21 +48,21 @@ Initial harness attempts stopped on an incorrect expectation that MongoDB expose
 Requires Rust, Docker, Python 3, and the official MongoDB image. From the repository root:
 
 ```sh
-cargo build -p gauss-horizon-mcp --no-default-features --features sqlite-bundled
-python3 scripts/mcp-mongodb-e2e.py --binary target/debug/gauss-horizon-mcp --image mongo:8.0
-cargo test -p gauss-horizon-mcp --no-default-features --features sqlite-bundled --test protocol --test mongodb_databases --test local
+cargo build -p chiron-horizon-mcp --no-default-features --features sqlite-bundled
+python3 scripts/mcp-mongodb-e2e.py --binary target/debug/chiron-horizon-mcp --image mongo:8.0
+cargo test -p chiron-horizon-mcp --no-default-features --features sqlite-bundled --test protocol --test mongodb_databases --test local
 ```
 
-Local execution used Rust 1.94.1, `CARGO_INCREMENTAL=0`, `CARGO_BUILD_JOBS=3`, `CARGO_PROFILE_DEV_DEBUG=0` and `CARGO_PROFILE_TEST_DEBUG=0`. The script creates its own database/container/profile and removes only its own container on exit. Evidence paths are printed at completion. It does not require a running Gauss Horizon desktop.
+Local execution used Rust 1.94.1, `CARGO_INCREMENTAL=0`, `CARGO_BUILD_JOBS=3`, `CARGO_PROFILE_DEV_DEBUG=0` and `CARGO_PROFILE_TEST_DEBUG=0`. The script creates its own database/container/profile and removes only its own container on exit. Evidence paths are printed at completion. It does not require a running Chiron Horizon desktop.
 
 ## Evidence
 
 - Script: `/Users/kalbefarma/Documents/Projects/Gauss-DBM/scripts/mcp-mongodb-e2e.py`
-- Final run log: `/tmp/gauss-horizon-mongo-mcp-acceptance.log`
-- Summary and redacted-by-construction tool responses: `/var/folders/yh/8wsb5r6x1wzbzhtv2_dzl4y00000gn/T/gauss-horizon-mongo-mcp-oydhfljt/summary.json`, `/var/folders/yh/8wsb5r6x1wzbzhtv2_dzl4y00000gn/T/gauss-horizon-mongo-mcp-oydhfljt/transcript.json`
-- Environment/version record: `/var/folders/yh/8wsb5r6x1wzbzhtv2_dzl4y00000gn/T/gauss-horizon-mongo-mcp-oydhfljt/environment.json`
-- Build log: `/tmp/gauss-horizon-mongo-mcp-build.log`
-- Regression log: `/tmp/gauss-horizon-mongo-mcp-regression.log`
+- Final run log: `/tmp/chiron-horizon-mongo-mcp-acceptance.log`
+- Summary and redacted-by-construction tool responses: `/var/folders/yh/8wsb5r6x1wzbzhtv2_dzl4y00000gn/T/chiron-horizon-mongo-mcp-oydhfljt/summary.json`, `/var/folders/yh/8wsb5r6x1wzbzhtv2_dzl4y00000gn/T/chiron-horizon-mongo-mcp-oydhfljt/transcript.json`
+- Environment/version record: `/var/folders/yh/8wsb5r6x1wzbzhtv2_dzl4y00000gn/T/chiron-horizon-mongo-mcp-oydhfljt/environment.json`
+- Build log: `/tmp/chiron-horizon-mongo-mcp-build.log`
+- Regression log: `/tmp/chiron-horizon-mongo-mcp-regression.log`
 - MCP executable SHA-256: `98ad6be186341756dcb1428d6bf8eb0b9e7663f29a966d5fa48aeb747548edde`
 - MongoDB image ID: `sha256:4a0f30875898413139bec44c73c02a05fed172578de65b644dcdcee143ae7306`
 

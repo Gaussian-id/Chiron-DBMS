@@ -1,4 +1,4 @@
-import bundled from "../../crates/gauss-horizon-core/assets/changelog.json";
+import bundled from "../../crates/chiron-horizon-core/assets/changelog.json";
 import { requestJson } from "./httpJson";
 import type { DocsLang } from "@/lib/i18n";
 
@@ -47,7 +47,7 @@ export type ChangelogBootstrap = {
   fallbackReleases: ChangelogRelease[] | null;
 };
 
-const CHANGELOG_URL = "https://raw.githubusercontent.com/Gaussian-id/Gauss-Horizon/main/crates/gauss-horizon-core/assets/changelog.json";
+const CHANGELOG_URL = "https://raw.githubusercontent.com/Gaussian-id/Gauss-Horizon/main/crates/chiron-horizon-core/assets/changelog.json";
 export type ChangelogLang = "en" | "cn";
 export function changelogDataLang(lang: DocsLang): ChangelogLang { return lang === "cn" ? "cn" : "en"; }
 export function changelogUrl(_lang: ChangelogLang) { return CHANGELOG_URL; }
@@ -57,13 +57,13 @@ export async function fetchChangelog(lang: ChangelogLang): Promise<ChangelogData
   try {
     const remote=await requestJson<ChangelogData>(changelogUrl(lang),{cache:"force-cache"});
     if (Array.isArray(remote.releases) && remote.releases.some(r=>r.tag==="v0.1.0")) return remote;
-  } catch { /* Offline builds retain the bundled Gaussian changelog. */ }
+  } catch { /* Offline builds retain the bundled Chiron Horizon changelog. */ }
   return bundled;
 }
 export async function fetchChangelogIndex(lang: ChangelogLang): Promise<ChangelogIndex> { return fetchChangelog(lang); }
 export async function fetchChangelogRelease(lang: ChangelogLang, tag: string): Promise<ChangelogRelease> {
   const release=(await fetchChangelog(lang)).releases.find(r=>r.tag===tag);
-  if (!release) throw new Error("Unknown Gaussian version");
+  if (!release) throw new Error("Unknown Chiron Horizon version");
   return release;
 }
 export async function loadChangelogBootstrap(lang: ChangelogLang): Promise<ChangelogBootstrap> {

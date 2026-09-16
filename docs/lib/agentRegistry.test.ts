@@ -12,9 +12,9 @@ test("offline download catalog includes the JDBC plugin ZIP", () => {
   const catalog = buildAgentDownloadCatalog([]);
 
   assert.deepEqual(catalog.jdbcPlugin, {
-    label: "Gauss Horizon JDBC Plugin",
-    filename: "gauss-horizon-jdbc-plugin-0.1.0.zip",
-    url: "https://github.com/Gaussian-id/Gauss-Horizon/releases/download/v0.1.0/gauss-horizon-jdbc-plugin-0.1.0.zip",
+    label: "Chiron Horizon JDBC Plugin",
+    filename: "chiron-horizon-jdbc-plugin-0.1.0.zip",
+    url: "https://github.com/Gaussian-id/Gauss-Horizon/releases/download/v0.1.0/chiron-horizon-jdbc-plugin-0.1.0.zip",
   });
 });
 
@@ -33,41 +33,41 @@ test("Java agent tar.zst packages are preferred over raw JARs", () => {
   const accessVersion = driverVersions.access;
   const entries = buildDriverEntries([
     {
-      name: `gauss-horizon-agent-access-${accessVersion}.jar`,
-      browser_download_url: `https://example.com/gauss-horizon-agent-access-${accessVersion}.jar`,
+      name: `chiron-horizon-agent-access-${accessVersion}.jar`,
+      browser_download_url: `https://example.com/chiron-horizon-agent-access-${accessVersion}.jar`,
       size: 1024,
     },
     {
-      name: `gauss-horizon-agent-access-${accessVersion}.tar.zst`,
-      browser_download_url: `https://example.com/gauss-horizon-agent-access-${accessVersion}.tar.zst`,
+      name: `chiron-horizon-agent-access-${accessVersion}.tar.zst`,
+      browser_download_url: `https://example.com/chiron-horizon-agent-access-${accessVersion}.tar.zst`,
       size: 2048,
     },
   ]);
 
   assert.equal(entries[0]?.key, "access");
-  assert.equal(entries[0]?.jar.url, `https://example.com/gauss-horizon-agent-access-${accessVersion}.tar.zst`);
+  assert.equal(entries[0]?.jar.url, `https://example.com/chiron-horizon-agent-access-${accessVersion}.tar.zst`);
 });
 
 test("KingBase native tar.zst packages are preferred over raw release executables", () => {
   const entries = buildNativeAgentEntries([
     {
-      name: "gauss-horizon-agent-kingbase-windows-x64.exe",
-      browser_download_url: "https://example.com/gauss-horizon-agent-kingbase-windows-x64.exe",
+      name: "chiron-horizon-agent-kingbase-windows-x64.exe",
+      browser_download_url: "https://example.com/chiron-horizon-agent-kingbase-windows-x64.exe",
       size: 1024,
     },
     {
-      name: "gauss-horizon-agent-kingbase-0.1.34-windows-x64.exe",
-      browser_download_url: "https://example.com/gauss-horizon-agent-kingbase-0.1.34-windows-x64.exe",
+      name: "chiron-horizon-agent-kingbase-0.1.34-windows-x64.exe",
+      browser_download_url: "https://example.com/chiron-horizon-agent-kingbase-0.1.34-windows-x64.exe",
       size: 2048,
     },
     {
-      name: "gauss-horizon-agent-kingbase-0.1.34-windows-x64.tar.zst",
-      browser_download_url: "https://example.com/gauss-horizon-agent-kingbase-0.1.34-windows-x64.tar.zst",
+      name: "chiron-horizon-agent-kingbase-0.1.34-windows-x64.tar.zst",
+      browser_download_url: "https://example.com/chiron-horizon-agent-kingbase-0.1.34-windows-x64.tar.zst",
       size: 4096,
     },
     {
-      name: "gauss-horizon-agent-kingbase-0.1.34-linux-x64.tar.zst",
-      browser_download_url: "https://example.com/gauss-horizon-agent-kingbase-0.1.34-linux-x64.tar.zst",
+      name: "chiron-horizon-agent-kingbase-0.1.34-linux-x64.tar.zst",
+      browser_download_url: "https://example.com/chiron-horizon-agent-kingbase-0.1.34-linux-x64.tar.zst",
       size: 3072,
     },
   ]);
@@ -79,13 +79,13 @@ test("KingBase native tar.zst packages are preferred over raw release executable
         key: "kingbase",
         version: "0.1.34",
         platformKey: "linux-x64",
-        filename: "gauss-horizon-agent-kingbase-0.1.34-linux-x64.tar.zst",
+        filename: "chiron-horizon-agent-kingbase-0.1.34-linux-x64.tar.zst",
       },
       {
         key: "kingbase",
         version: "0.1.34",
         platformKey: "windows-x64",
-        filename: "gauss-horizon-agent-kingbase-0.1.34-windows-x64.tar.zst",
+        filename: "chiron-horizon-agent-kingbase-0.1.34-windows-x64.tar.zst",
       },
     ],
   );
@@ -94,8 +94,8 @@ test("KingBase native tar.zst packages are preferred over raw release executable
 test("DuckDB native tar.zst packages appear in the native catalog", () => {
   const entries = buildNativeAgentEntries([
     {
-      name: "gauss-horizon-agent-duckdb-0.1.0-macos-aarch64.tar.zst",
-      browser_download_url: "https://example.com/gauss-horizon-agent-duckdb-0.1.0-macos-aarch64.tar.zst",
+      name: "chiron-horizon-agent-duckdb-0.1.0-macos-aarch64.tar.zst",
+      browser_download_url: "https://example.com/chiron-horizon-agent-duckdb-0.1.0-macos-aarch64.tar.zst",
       size: 4096,
     },
   ]);
@@ -106,7 +106,7 @@ test("DuckDB native tar.zst packages appear in the native catalog", () => {
       {
         key: "duckdb",
         platformKey: "macos-aarch64",
-        filename: "gauss-horizon-agent-duckdb-0.1.0-macos-aarch64.tar.zst",
+        filename: "chiron-horizon-agent-duckdb-0.1.0-macos-aarch64.tar.zst",
       },
     ],
   );
@@ -115,8 +115,8 @@ test("DuckDB native tar.zst packages appear in the native catalog", () => {
 test("RabbitMQ native tar.zst packages appear in the native catalog", () => {
   const entries = buildNativeAgentEntries([
     {
-      name: "gauss-horizon-agent-rabbitmq-0.1.1-windows-x64.tar.zst",
-      browser_download_url: "https://example.com/gauss-horizon-agent-rabbitmq-0.1.1-windows-x64.tar.zst",
+      name: "chiron-horizon-agent-rabbitmq-0.1.1-windows-x64.tar.zst",
+      browser_download_url: "https://example.com/chiron-horizon-agent-rabbitmq-0.1.1-windows-x64.tar.zst",
       size: 4096,
     },
   ]);
@@ -127,7 +127,7 @@ test("RabbitMQ native tar.zst packages appear in the native catalog", () => {
       {
         key: "rabbitmq",
         platformKey: "windows-x64",
-        filename: "gauss-horizon-agent-rabbitmq-0.1.1-windows-x64.tar.zst",
+        filename: "chiron-horizon-agent-rabbitmq-0.1.1-windows-x64.tar.zst",
       },
     ],
   );
@@ -138,8 +138,8 @@ test("all current native-only agent packages appear in the native catalog", () =
   const nativeKeys = ["cassandra", "duckdb", "hive", "iotdb", "kingbase", "neo4j", "oracle", "rabbitmq", "rocketmq", "tdengine", "vastbase", "xugu", "zookeeper"];
   const entries = buildNativeAgentEntries(
     nativeKeys.map((key) => ({
-      name: `gauss-horizon-agent-${key}-${driverVersions[key as keyof typeof driverVersions]}-macos-aarch64.tar.zst`,
-      browser_download_url: `https://example.com/gauss-horizon-agent-${key}-macos-aarch64.tar.zst`,
+      name: `chiron-horizon-agent-${key}-${driverVersions[key as keyof typeof driverVersions]}-macos-aarch64.tar.zst`,
+      browser_download_url: `https://example.com/chiron-horizon-agent-${key}-macos-aarch64.tar.zst`,
       size: 4096,
     })),
   );

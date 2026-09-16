@@ -88,7 +88,7 @@ function createMongoExportState(options: {
     mongoUpdateTarget: computed(() => (options.mongoUpdateTarget === false ? undefined : { collection: "documents", idColumn: "_id" })),
     databaseType: computed(() => "mongodb"),
     connectionId: computed(() => "connection-1"),
-    database: computed(() => "gauss-horizon"),
+    database: computed(() => "chiron-horizon"),
     context: computed(() => "results"),
     sourceColumns: computed(() => options.columns),
     mongoDocuments: computed(() => options.mongoDocuments),
@@ -139,7 +139,7 @@ function createExportState(
     databaseType: computed(() => databaseType),
     displayValue,
     connectionId: computed(() => "connection-1"),
-    database: computed(() => "gauss-horizon"),
+    database: computed(() => "chiron-horizon"),
     context: computed(() => "table-data"),
     sourceColumns: computed(() => columns),
     visibleColumnIndexes: computed(() => visibleColumnIndexes ?? columns.map((_, index) => index)),
@@ -240,7 +240,7 @@ describe("useDataGridExport prepared row statements", () => {
       })),
       databaseType: computed(() => "mysql"),
       connectionId: computed(() => "connection-1"),
-      database: computed(() => "gauss-horizon"),
+      database: computed(() => "chiron-horizon"),
       context: computed(() => "table-data"),
       sourceColumns: computed(() => ["name", "active"]),
       columnTypes: computed(() => ["varchar", "boolean"]),
@@ -459,7 +459,7 @@ describe("useDataGridExport prepared row statements", () => {
       tableMeta: computed(() => editableTable),
       databaseType: computed(() => "mysql"),
       connectionId: computed(() => "connection-1"),
-      database: computed(() => "gauss-horizon"),
+      database: computed(() => "chiron-horizon"),
       context: computed(() => "table-data"),
       sourceColumns: computed(() => ["name"]),
       columnTypes: computed(() => ["varchar"]),
@@ -537,7 +537,7 @@ describe("useDataGridExport prepared row statements", () => {
       tableMeta: computed(() => editableTable),
       databaseType: computed(() => "mysql"),
       connectionId: computed(() => "connection-1"),
-      database: computed(() => "gauss-horizon"),
+      database: computed(() => "chiron-horizon"),
       context: computed(() => "table-data"),
       sourceColumns: computed(() => ["id", "name"]),
       allColumns: computed(() => ["id", "name"]),
@@ -588,7 +588,7 @@ describe("useDataGridExport prepared row statements", () => {
       tableMeta: computed(() => editableTable),
       databaseType: computed(() => "mysql"),
       connectionId: computed(() => "connection-1"),
-      database: computed(() => "gauss-horizon"),
+      database: computed(() => "chiron-horizon"),
       context: computed(() => "table-data"),
       sourceColumns: computed(() => ["id", "name"]),
       allColumns: computed(() => ["id", "name"]),
@@ -1267,7 +1267,7 @@ describe("useDataGridExport prepared row statements", () => {
       tableMeta: computed(() => editableTable),
       databaseType: computed(() => "mysql"),
       connectionId: computed(() => "connection-1"),
-      database: computed(() => "gauss-horizon"),
+      database: computed(() => "chiron-horizon"),
       context: computed(() => "table-data"),
       sourceColumns: computed(() => ["id", "name"]),
       columnTypes: computed(() => ["int", "varchar"]),
@@ -1317,7 +1317,7 @@ describe("useDataGridExport prepared row statements", () => {
       tableMeta: computed(() => editableTable),
       databaseType: computed(() => "mysql"),
       connectionId: computed(() => "connection-1"),
-      database: computed(() => "gauss-horizon"),
+      database: computed(() => "chiron-horizon"),
       context: computed(() => "table-data"),
       sourceColumns: computed(() => ["name"]),
       columnTypes: computed(() => ["varchar"]),
@@ -1615,7 +1615,7 @@ describe("useDataGridExport prepared row statements", () => {
 });
 
 // issue #7471：文本型 MySQL VARBINARY 复制单元格/多选/整行时，外部剪贴板应呈现原始字符串；
-// SQL 路径与 Gauss Horizon 内部网格回粘仍保留 hex 以保证 byte-for-byte round-trip，非文本二进制也始终保持 hex。
+// SQL 路径与 Chiron Horizon 内部网格回粘仍保留 hex 以保证 byte-for-byte round-trip，非文本二进制也始终保持 hex。
 describe("useDataGridExport VARBINARY 文本复制 (#7471)", () => {
   const varbinTable: DataGridTableMeta = {
     tableName: "test_varbin",
@@ -1640,7 +1640,7 @@ describe("useDataGridExport VARBINARY 文本复制 (#7471)", () => {
 
     expect(extractDataGridSelection).toHaveBeenCalledWith(expect.objectContaining({ extractor: "raw", rows: [["abc"]] }));
     expect(copyToClipboard).toHaveBeenCalledWith("abc");
-    // OS 剪贴板是文本，Gauss Horizon 内部剪贴板仍保留原 hex，粘回 VARBINARY 时不会重编码或丢字节。
+    // OS 剪贴板是文本，Chiron Horizon 内部剪贴板仍保留原 hex，粘回 VARBINARY 时不会重编码或丢字节。
     expect(parseDataGridClipboard("abc")).toEqual([["0x616263"]]);
   });
 

@@ -1,11 +1,11 @@
 ---
 title: User Guide
-description: Use Gauss Horizon connections, the query workspace, AI assistance, attachments, and MCP safely.
+description: Use Chiron Horizon connections, the query workspace, AI assistance, attachments, and MCP safely.
 ---
 
-# Use Gauss Horizon
+# Use Chiron Horizon
 
-Gauss Horizon by Gaussian is a database workbench. It stores connection settings, opens a workspace for the selected database, and keeps database access under the permissions of the account you configure. Version **0.1.0** is distributed through the [Gauss Horizon GitHub Releases](https://github.com/Gaussian-id/Gauss-Horizon/releases). npm packages are deferred for this release and application auto-update is disabled.
+Chiron Horizon is a database workbench. It stores connection settings, opens a workspace for the selected database, and keeps database access under the permissions of the account you configure. Version **0.1.0** is distributed through the [Chiron Horizon GitHub Releases](https://github.com/Gaussian-id/Gauss-Horizon/releases). npm packages are deferred for this release and application auto-update is disabled.
 
 ## 1. Create and test a connection
 
@@ -14,7 +14,7 @@ Gauss Horizon by Gaussian is a database workbench. It stores connection settings
 3. Use **Test Connection** before saving. A successful save only stores the configuration; it does not change the database.
 4. Give production, staging, and development connections clear names and colors. Enable **Read-only** or production protection before opening a sensitive target.
 
-For ChironDB, select **ChironDB**, enter the server's HTTP endpoint and credentials if required, then choose a collection in the workspace. ChironDB is the database server; Gauss Horizon is the client. See [Getting Started](/en/docs/getting-started) for connection and server prerequisites.
+For ChironDB, select **ChironDB**, enter the server's HTTP endpoint and credentials if required, then choose a collection in the workspace. ChironDB is the database server; Chiron Horizon is the client. See [Getting Started](/en/docs/getting-started) for connection and server prerequisites.
 
 ## 2. Work in the editor
 
@@ -34,9 +34,9 @@ For SQL workspaces, execution scope, result tabs, plans, history, parameters, an
 
 ## 3. Save, import, and export connections
 
-Use **Export** in the sidebar to save selected connections. The desktop/browser default filename is `Gauss Horizon-connections.json`. Encrypted export uses a passphrase and is the recommended option. Plaintext export can contain database passwords, SSH credentials, and connection strings, so keep it only in a trusted location and delete it after a one-time migration.
+Use **Export** in the sidebar to save selected connections. The desktop/browser default filename is `Chiron Horizon-connections.json`. Encrypted export uses a passphrase and is the recommended option. Plaintext export can contain database passwords, SSH credentials, and connection strings, so keep it only in a trusted location and delete it after a one-time migration.
 
-Use **Import** in the sidebar to restore connections. Gauss Horizon recognizes its encrypted/plain JSON formats and compatible older files by their contents, not by the filename. Review the connection list and test imported connections before using them. Driver packages and saved SQL are not part of a connection export.
+Use **Import** in the sidebar to restore connections. Chiron Horizon recognizes its encrypted/plain JSON formats and compatible older files by their contents, not by the filename. Review the connection list and test imported connections before using them. Driver packages and saved SQL are not part of a connection export.
 
 See [Config Export/Import](/en/docs/config-export) and [Connection Import](/en/docs/connection-import) for the exact scope and supported migrations from other tools.
 
@@ -60,7 +60,7 @@ Do not attach secrets or data that the chosen provider is not authorized to rece
 
 ## 6. Use MCP with an AI client or automation
 
-The Gauss Horizon MCP server lets an MCP-capable client use the database connections you have explicitly exposed. It is separate from ChironDB's own server/protocol. Choose the connection allowlist, database scope, tool allowlist, and execution level in **Settings → MCP** before connecting a client.
+The Chiron Horizon MCP server lets an MCP-capable client use the database connections you have explicitly exposed. It is separate from ChironDB's own server/protocol. Choose the connection allowlist, database scope, tool allowlist, and execution level in **Settings → MCP** before connecting a client.
 
 Start with **Read only**. The other levels are **Data read/write** and **Full access**, but neither can bypass the connection's own read-only flag, production protection, database scope, or database-account privileges. MCP has no per-operation desktop approval dialog, so scope and least-privilege database accounts matter.
 
@@ -70,7 +70,7 @@ MongoDB MCP was end-to-end verified against MongoDB 8.0.30 on macOS Apple Silico
 
 ## 7. Appearance, About, and support
 
-Use **Settings → Appearance** to choose the interface theme and logo variant. The supplied **Black** Gauss Horizon artwork is a logo choice independent of light/dark theme. **Settings → About** shows the local 0.1.0 changelog and its website link; the changelog remains available offline.
+Use **Settings → Appearance** to choose the interface theme and logo variant. The supplied **Black** Chiron Horizon artwork is a logo choice independent of light/dark theme. **Settings → About** shows the local 0.1.0 changelog and its website link; the changelog remains available offline.
 
 When requesting support, include the app/server version, database type, sanitized endpoint, action, error text, and query ID. Do not include API keys, passwords, exported plaintext connection files, or sensitive result rows.
 

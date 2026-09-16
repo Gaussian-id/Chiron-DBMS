@@ -1,6 +1,6 @@
 import { safeLocalStorageGet, safeLocalStorageSet } from "@/lib/backend/safeStorage";
 
-const STORAGE_KEY = "gauss-horizon-data-grid-condition-history";
+const STORAGE_KEY = "chiron-horizon-data-grid-condition-history";
 const MAX_HISTORY_PER_SCOPE = 20;
 
 export type DataGridConditionHistoryKind = "where" | "orderBy";

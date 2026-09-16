@@ -12,7 +12,7 @@ function installBridge(channel) {
   });
   let initialized = false;
   const readyTimer = setInterval(() => {
-    if (!initialized) parent.postMessage({ source: "gauss-horizon-plugin", version: 1, channel, type: "ready" }, "*");
+    if (!initialized) parent.postMessage({ source: "chiron-horizon-plugin", version: 1, channel, type: "ready" }, "*");
   }, 200);
   const encode = (input) => {
     const data = input instanceof Uint8Array ? input : new Uint8Array(input);
@@ -29,7 +29,7 @@ function installBridge(channel) {
         reject(new Error("Mock host request timed out"));
       }, 310000);
       pending.set(id, { resolve, reject, timer });
-      parent.postMessage({ source: "gauss-horizon-plugin", version: 1, channel, type: "request", id, method, params }, "*");
+      parent.postMessage({ source: "chiron-horizon-plugin", version: 1, channel, type: "request", id, method, params }, "*");
     });
   const listen = (kind, callback) => {
     listeners[kind].add(callback);
@@ -38,12 +38,12 @@ function installBridge(channel) {
   function applyTheme(value) {
     if (!value) return;
     theme = value;
-    document.documentElement.dataset.gaussHorizonTheme = value.appearance;
+    document.documentElement.dataset.chironHorizonTheme = value.appearance;
     for (const [name, token] of Object.entries(value.tokens || {})) {
       if (/^--[a-z0-9-]+$/i.test(name) && typeof token === "string") document.documentElement.style.setProperty(name, token);
     }
   }
-  window.gaussHorizonPlugin = Object.freeze({
+  window.chironHorizonPlugin = Object.freeze({
     ready,
     get context() {
       return context;
@@ -78,7 +78,7 @@ function installBridge(channel) {
   });
   addEventListener("message", (event) => {
     const m = event.data;
-    if (event.source !== parent || m?.source !== "gauss-horizon-host" || m.channel !== channel || m.version !== 1) return;
+    if (event.source !== parent || m?.source !== "chiron-horizon-host" || m.channel !== channel || m.version !== 1) return;
     if (m.type === "init") {
       initialized = true;
       clearInterval(readyTimer);
@@ -87,27 +87,27 @@ function installBridge(channel) {
       applyTheme(m.theme);
       resolveReady(context);
       for (const fn of listeners.init) fn(context);
-      dispatchEvent(new CustomEvent("gauss-horizon-plugin-init", { detail: m }));
+      dispatchEvent(new CustomEvent("chiron-horizon-plugin-init", { detail: m }));
     }
     if (m.type === "context") {
       context = m.context || {};
       for (const fn of listeners.context) fn(context);
-      dispatchEvent(new CustomEvent("gauss-horizon-plugin-context", { detail: context }));
+      dispatchEvent(new CustomEvent("chiron-horizon-plugin-context", { detail: context }));
     }
     if (m.type === "env") {
       locale = m.locale || locale;
       applyTheme(m.theme);
       for (const fn of listeners.event) fn(m);
-      dispatchEvent(new CustomEvent("gauss-horizon-plugin-env", { detail: m }));
+      dispatchEvent(new CustomEvent("chiron-horizon-plugin-env", { detail: m }));
     }
     if (m.type === "event") {
       for (const fn of listeners.event) fn(m);
-      dispatchEvent(new CustomEvent("gauss-horizon-plugin-event", { detail: m }));
+      dispatchEvent(new CustomEvent("chiron-horizon-plugin-event", { detail: m }));
     }
     if (m.type === "binary") {
       const payload = { channel: m.binaryChannel, data: decode(m.dataBase64) };
       for (const fn of listeners.binary) fn(payload);
-      dispatchEvent(new CustomEvent("gauss-horizon-plugin-binary", { detail: payload }));
+      dispatchEvent(new CustomEvent("chiron-horizon-plugin-binary", { detail: payload }));
     }
     if (m.type === "response") {
       const waiter = pending.get(m.id);

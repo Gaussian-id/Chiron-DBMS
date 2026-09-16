@@ -137,7 +137,7 @@ const hasSharedOutput = computed(() => showSharedResult.value && hasQueryOutput(
 const SHARED_RESULT_PANE_MIN_SIZE = 12;
 const SHARED_RESULT_PANE_MAX_SIZE = 80;
 const SHARED_RESULT_PANE_DEFAULT_SIZE = 32;
-const SHARED_RESULT_PANE_STORAGE_KEY = "gauss-horizon-shared-results-pane-size";
+const SHARED_RESULT_PANE_STORAGE_KEY = "chiron-horizon-shared-results-pane-size";
 const storedResultPaneSize = Number(safeLocalStorageGet(SHARED_RESULT_PANE_STORAGE_KEY));
 const resultPaneSize = ref(Number.isFinite(storedResultPaneSize) && storedResultPaneSize >= SHARED_RESULT_PANE_MIN_SIZE && storedResultPaneSize <= SHARED_RESULT_PANE_MAX_SIZE ? storedResultPaneSize : SHARED_RESULT_PANE_DEFAULT_SIZE);
 const showResultPane = computed({

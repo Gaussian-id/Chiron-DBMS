@@ -7,7 +7,7 @@ import { useToast } from "@/composables/useToast";
 import { useSettingsStore } from "@/stores/settingsStore";
 import { useTheme } from "@/composables/useTheme";
 import { loadEditorTheme, editorFontTheme } from "@/lib/editor/editorThemes";
-import { createGaussHorizonCodeMirrorSqlDialect } from "@/lib/editor/codemirrorSqlDialect";
+import { createChironHorizonCodeMirrorSqlDialect } from "@/lib/editor/codemirrorSqlDialect";
 import { Splitpanes, Pane } from "splitpanes";
 import {
   schemaDiffObjectSelectionState,
@@ -160,7 +160,7 @@ async function initEditor() {
   const themeExt = await loadEditorTheme(editorTheme, appAppearance);
   const fontExt = editorFontTheme(EditorView, fontSize, fontFamily, { fixedHeight: true, scrollable: true });
 
-  const dialect = createGaussHorizonCodeMirrorSqlDialect(langSql, "postgres");
+  const dialect = createChironHorizonCodeMirrorSqlDialect(langSql, "postgres");
 
   const state = EditorState.create({
     doc: effectiveSql.value,
@@ -409,11 +409,11 @@ function getObjectIconColor(kind: DiffObjectKind): string {
    NacosAdminConsole). */
 .deploy-sql-editor :deep(.cm-selectionBackground),
 .deploy-sql-editor :deep(.cm-focused > .cm-scroller > .cm-selectionLayer .cm-selectionBackground) {
-  background: var(--gauss-horizon-editor-selection-background, rgba(59, 130, 246, 0.35)) !important;
+  background: var(--chiron-horizon-editor-selection-background, rgba(59, 130, 246, 0.35)) !important;
 }
 
 .deploy-sql-editor :deep(.cm-content ::selection) {
-  background: var(--gauss-horizon-editor-selection-background, rgba(59, 130, 246, 0.35)) !important;
+  background: var(--chiron-horizon-editor-selection-background, rgba(59, 130, 246, 0.35)) !important;
 }
 
 :deep(.splitpanes--vertical > .splitpanes__splitter) {

@@ -404,7 +404,7 @@ func buildSendMessageCommand(topic string, payload []byte, queueID int, params m
 		message.WithProperty(header, value)
 	}
 	command := remoting.NewRequest(sendMessageRequestCode, map[string]string{
-		"producerGroup": "_GAUSS_HORIZON_ROCKETMQ_PRODUCER", "topic": topic,
+		"producerGroup": "_CHIRON_HORIZON_ROCKETMQ_PRODUCER", "topic": topic,
 		"defaultTopic": "TBW102", "defaultTopicQueueNums": "4",
 		"queueId": strconv.Itoa(queueID), "sysFlag": "0",
 		"bornTimestamp": strconv.FormatInt(bornTimestamp, 10), "flag": "0",

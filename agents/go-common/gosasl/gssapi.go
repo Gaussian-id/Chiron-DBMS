@@ -60,7 +60,7 @@ type GSSAPIMechanism struct {
 }
 
 // NewGSSAPIMechanism returns a GSSAPI mechanism backed by pure Go Kerberos, or
-// Windows SSPI when GAUSS_HORIZON_KRB5_USE_SSPI is enabled.
+// Windows SSPI when CHIRON_HORIZON_KRB5_USE_SSPI is enabled.
 func NewGSSAPIMechanism(service string) (*GSSAPIMechanism, error) {
 	context, err := gssapiBackendFactory()
 	return newGSSAPIMechanism(service, gssapiOptionsFromEnvironment(), context, err)
@@ -235,17 +235,17 @@ func gssapiOptionsFromEnvironment() GSSAPIOptions {
 		ConfigPath:       projectEnvironment("KRB5_CONFIG"),
 		CCachePath:       projectEnvironment("KRB5CCNAME"),
 		KeytabPath:       firstConfiguredEnvironment("KRB5_CLIENT_KTNAME", "KRB5_KTNAME"),
-		Principal:        projectEnvironment("GAUSS_HORIZON_KRB5_PRINCIPAL"),
-		Password:         projectEnvironment("GAUSS_HORIZON_KRB5_PASSWORD"),
-		QOP:              projectEnvironment("GAUSS_HORIZON_KRB5_QOP"),
-		AuthorizationID:  projectEnvironment("GAUSS_HORIZON_KRB5_AUTHORIZATION_ID"),
-		ServerName:       projectEnvironment("GAUSS_HORIZON_KRB5_SERVER_NAME"),
+		Principal:        projectEnvironment("CHIRON_HORIZON_KRB5_PRINCIPAL"),
+		Password:         projectEnvironment("CHIRON_HORIZON_KRB5_PASSWORD"),
+		QOP:              projectEnvironment("CHIRON_HORIZON_KRB5_QOP"),
+		AuthorizationID:  projectEnvironment("CHIRON_HORIZON_KRB5_AUTHORIZATION_ID"),
+		ServerName:       projectEnvironment("CHIRON_HORIZON_KRB5_SERVER_NAME"),
 		ServiceHost:      projectEnvironment("SERVICE_HOST_QUALIFIED"),
-		UseCCache:        configuredEnvironmentBool("GAUSS_HORIZON_KRB5_USE_CCACHE"),
-		UseKeytab:        configuredEnvironmentBool("GAUSS_HORIZON_KRB5_USE_KEYTAB"),
-		UseSSPI:          configuredEnvironmentBool("GAUSS_HORIZON_KRB5_USE_SSPI"),
-		CanonicalizeHost: configuredEnvironmentBool("GAUSS_HORIZON_KRB5_CANONICALIZE_HOST"),
-		DisablePAFXFAST:  configuredEnvironmentBool("GAUSS_HORIZON_KRB5_DISABLE_PAFXFAST"),
+		UseCCache:        configuredEnvironmentBool("CHIRON_HORIZON_KRB5_USE_CCACHE"),
+		UseKeytab:        configuredEnvironmentBool("CHIRON_HORIZON_KRB5_USE_KEYTAB"),
+		UseSSPI:          configuredEnvironmentBool("CHIRON_HORIZON_KRB5_USE_SSPI"),
+		CanonicalizeHost: configuredEnvironmentBool("CHIRON_HORIZON_KRB5_CANONICALIZE_HOST"),
+		DisablePAFXFAST:  configuredEnvironmentBool("CHIRON_HORIZON_KRB5_DISABLE_PAFXFAST"),
 	}
 }
 

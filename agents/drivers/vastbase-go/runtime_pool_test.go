@@ -140,7 +140,7 @@ func TestConnectionRuntimeSharesListTablesStatementAcrossSessions(t *testing.T) 
 }
 
 func TestConnectionRuntimeLimitsConcurrentOperations(t *testing.T) {
-	t.Setenv("GAUSS_HORIZON_AGENT_VASTBASE_MAX_CONCURRENT_OPERATIONS", "2")
+	t.Setenv("CHIRON_HORIZON_AGENT_VASTBASE_MAX_CONCURRENT_OPERATIONS", "2")
 	connectionRuntime := newConnectionRuntime()
 	var active atomic.Int32
 	var peak atomic.Int32

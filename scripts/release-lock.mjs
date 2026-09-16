@@ -1,4 +1,4 @@
-const DESKTOP_PACKAGE_NAMES = new Set(["gauss-horizon", "gauss-horizon-web"]);
+const DESKTOP_PACKAGE_NAMES = new Set(["chiron-horizon", "chiron-horizon-web"]);
 
 export function normalizeDesktopPackageVersions(lockfile) {
   let inPackage = false;

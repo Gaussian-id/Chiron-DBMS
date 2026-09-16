@@ -1,6 +1,6 @@
 <template>
   <Dialog :open="true">
-    <DialogContent class="gauss-horizon-ddl-view-dialog sm:max-w-190">
+    <DialogContent class="chiron-horizon-ddl-view-dialog sm:max-w-190">
       <div>fixture body</div>
       <DialogFooter>
         <Button>fixture action</Button>
@@ -15,11 +15,11 @@ import { Button } from "@/components/ui/button";
 </script>
 
 <style scoped>
-html.gauss-horizon-legacy-webview [data-slot="dialog-content"].gauss-horizon-ddl-view-dialog[class~="max-w-sm"] {
+html.chiron-horizon-legacy-webview [data-slot="dialog-content"].chiron-horizon-ddl-view-dialog[class~="max-w-sm"] {
   max-width: 47.5rem !important;
 }
 
-html.gauss-horizon-legacy-webview [data-slot="dialog-content"].gauss-horizon-ddl-view-dialog [data-slot="dialog-footer"] {
+html.chiron-horizon-legacy-webview [data-slot="dialog-content"].chiron-horizon-ddl-view-dialog [data-slot="dialog-footer"] {
   flex-direction: row !important;
 }
 </style>

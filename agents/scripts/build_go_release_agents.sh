@@ -39,7 +39,7 @@ for module in "${MODULES[@]}"; do
     IFS=: read -r platform goos goarch <<<"$target"
     extension=""
     if [[ "$goos" == "windows" ]]; then extension=".exe"; fi
-    output="${OUT_DIR}/gauss-horizon-agent-${key}-0.1.0-${platform}${extension}"
+    output="${OUT_DIR}/chiron-horizon-agent-${key}-0.1.0-${platform}${extension}"
     echo "Building ${key} for ${platform}"
     (cd "$directory" && CGO_ENABLED=0 GOOS="$goos" GOARCH="$goarch" go build -trimpath -ldflags='-s -w' -o "$ROOT_DIR/$output" .)
   done

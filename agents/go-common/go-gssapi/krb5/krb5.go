@@ -918,11 +918,11 @@ func clientOptionsFromEnvironment() ClientOptions {
 		ConfigPath:      projectEnvironment("KRB5_CONFIG"),
 		CCachePath:      projectEnvironment("KRB5CCNAME"),
 		KeytabPath:      firstEnvironmentValue("KRB5_CLIENT_KTNAME", "KRB5_KTNAME"),
-		Principal:       projectEnvironment("GAUSS_HORIZON_KRB5_PRINCIPAL"),
-		Password:        projectEnvironment("GAUSS_HORIZON_KRB5_PASSWORD"),
-		UseCCache:       environmentBool("GAUSS_HORIZON_KRB5_USE_CCACHE"),
-		UseKeytab:       environmentBool("GAUSS_HORIZON_KRB5_USE_KEYTAB"),
-		DisablePAFXFAST: environmentBool("GAUSS_HORIZON_KRB5_DISABLE_PAFXFAST"),
+		Principal:       projectEnvironment("CHIRON_HORIZON_KRB5_PRINCIPAL"),
+		Password:        projectEnvironment("CHIRON_HORIZON_KRB5_PASSWORD"),
+		UseCCache:       environmentBool("CHIRON_HORIZON_KRB5_USE_CCACHE"),
+		UseKeytab:       environmentBool("CHIRON_HORIZON_KRB5_USE_KEYTAB"),
+		DisablePAFXFAST: environmentBool("CHIRON_HORIZON_KRB5_DISABLE_PAFXFAST"),
 	}
 }
 

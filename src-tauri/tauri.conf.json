@@ -1,8 +1,8 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
-  "productName": "Gauss Horizon",
+  "productName": "Chiron Horizon",
   "version": "0.1.0",
-  "identifier": "id.gaussian.gauss-horizon",
+  "identifier": "id.chiron.horizon",
   "build": {
     "frontendDist": "../dist",
     "devUrl": "http://localhost:1420",
@@ -12,7 +12,7 @@
   "app": {
     "windows": [
       {
-        "title": "Gauss Horizon by Gaussian",
+        "title": "Chiron Horizon",
         "width": 1280,
         "height": 800,
         "minWidth": 900,
@@ -62,10 +62,10 @@
     ],
     "linux": {
       "deb": {
-        "desktopTemplate": "linux/GaussHorizon.desktop"
+        "desktopTemplate": "linux/ChironHorizon.desktop"
       },
       "rpm": {
-        "desktopTemplate": "linux/GaussHorizon.desktop"
+        "desktopTemplate": "linux/ChironHorizon.desktop"
       }
     },
     "macOS": {
@@ -94,7 +94,7 @@
     "deep-link": {
       "desktop": {
         "schemes": [
-          "gauss-horizon"
+          "chiron-horizon"
         ]
       }
     }

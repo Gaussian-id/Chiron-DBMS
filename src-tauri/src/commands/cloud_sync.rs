@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use gauss_horizon_core::cloud_sync::{
+use chiron_horizon_core::cloud_sync::{
     apply_sync_snapshot, build_sync_snapshot, build_sync_snapshot_with_saved_secrets, finalize_snippet_migration,
     forget_snippet_token, forget_webdav_password,
     forget_webdav_sync_secrets_passphrase as core_forget_webdav_sync_secrets_passphrase, resolve_snippet_token,
@@ -12,11 +12,11 @@ use gauss_horizon_core::cloud_sync::{
     SnippetProvider, SnippetSyncClient, SnippetSyncConfig, SnippetSyncSettings, SnippetSyncSummary, SnippetTokenStatus,
     WebDavClient, WebDavConfig, WebDavPasswordStatus, WebDavSyncSecretsStatus, WebDavSyncSummary,
 };
-use gauss_horizon_core::storage::DesktopSettings;
+use chiron_horizon_core::storage::DesktopSettings;
 use serde::{Deserialize, Serialize};
 use tauri::State;
 
-use gauss_horizon_core::connection::AppState;
+use chiron_horizon_core::connection::AppState;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -248,15 +248,15 @@ pub async fn snippet_sync_download(
 mod tests {
     use std::sync::Arc;
 
-    use gauss_horizon_core::cloud_sync::SnippetProvider;
-    use gauss_horizon_core::storage::Storage;
+    use chiron_horizon_core::cloud_sync::SnippetProvider;
+    use chiron_horizon_core::storage::Storage;
     use tauri::Manager;
 
     use super::AppState;
 
     #[tokio::test]
     async fn snippet_settings_surfaces_pending_cleanup_after_restart() {
-        let dir = std::env::temp_dir().join(format!("gauss-horizon-tauri-snippet-cleanup-{}", uuid::Uuid::new_v4()));
+        let dir = std::env::temp_dir().join(format!("chiron-horizon-tauri-snippet-cleanup-{}", uuid::Uuid::new_v4()));
         std::fs::create_dir_all(&dir).unwrap();
         let db = dir.join("storage.db");
         let storage = Storage::open(&db).await.unwrap();

@@ -7,7 +7,7 @@
   "publisher": "{{PUBLISHER_JSON}}",
   "description": "{{DESCRIPTION_JSON}}",
   "icon": "assets/plugin.svg",
-  "engines": { "gauss-horizon": ">=0.5.68", "host_api": "1" },
+  "engines": { "chiron-horizon": ">=0.5.68", "host_api": "1" },
   "entrypoints": { "ui": { "root": "ui", "entry": "ui/index.html" } },
   "contributions": [
     {

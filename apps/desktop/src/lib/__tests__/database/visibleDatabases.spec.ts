@@ -16,18 +16,18 @@ describe("visibleDatabases schema filtering", () => {
   });
 
   it("keeps Oracle DIP visible while hiding default system schemas", () => {
-    expect(filterSchemaNamesForConnection(["GAUSS_HORIZON_TEST", "DIP", "SYSTEM"], { db_type: "oracle", database: "XE" }, "XE")).toEqual(["GAUSS_HORIZON_TEST", "DIP"]);
+    expect(filterSchemaNamesForConnection(["CHIRON_HORIZON_TEST", "DIP", "SYSTEM"], { db_type: "oracle", database: "XE" }, "XE")).toEqual(["CHIRON_HORIZON_TEST", "DIP"]);
   });
 
   it("uses Oracle schema filtering for inferred JDBC connections", () => {
     const connection = {
       db_type: "jdbc" as const,
       connection_string: "jdbc:oracle:thin:@//localhost:1521/XE",
-      username: "GAUSS_HORIZON_TEST",
+      username: "CHIRON_HORIZON_TEST",
     };
 
     expect(connectionUsesVisibleSchemaFilter(connection)).toBe(true);
-    expect(filterSchemaNamesForConnection(["ANONYMOUS", "GAUSS_HORIZON_TEST", "SYS", "SYSTEM"], connection, "")).toEqual(["GAUSS_HORIZON_TEST"]);
+    expect(filterSchemaNamesForConnection(["ANONYMOUS", "CHIRON_HORIZON_TEST", "SYS", "SYSTEM"], connection, "")).toEqual(["CHIRON_HORIZON_TEST"]);
   });
 
   it("keeps the Dameng login schema visible while hiding default system schemas", () => {

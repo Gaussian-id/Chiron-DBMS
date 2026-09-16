@@ -14,7 +14,7 @@ if ($os.Major -ne 6 -or ($os.Minor -ne 1 -and $os.Minor -ne 3)) {
 }
 
 $installerPath = (Resolve-Path -LiteralPath $InstallerPath).Path
-$testRoot = Join-Path ([System.IO.Path]::GetTempPath()) "gauss-horizon-server2012-installer-smoke"
+$testRoot = Join-Path ([System.IO.Path]::GetTempPath()) "chiron-horizon-server2012-installer-smoke"
 $resolvedTemp = (Resolve-Path -LiteralPath ([System.IO.Path]::GetTempPath())).Path.TrimEnd('\')
 $resolvedTestRoot = [System.IO.Path]::GetFullPath($testRoot).TrimEnd('\')
 if (!$resolvedTestRoot.StartsWith("$resolvedTemp\", [System.StringComparison]::OrdinalIgnoreCase)) {
@@ -32,7 +32,7 @@ try {
     throw "Server 2012 R2 test installer failed with exit code $($installer.ExitCode)."
   }
 
-  $appPath = Join-Path $resolvedTestRoot "gauss-horizon.exe"
+  $appPath = Join-Path $resolvedTestRoot "chiron-horizon.exe"
   $runtimePath = Join-Path $resolvedTestRoot "webview2-fixed-runtime\msedgewebview2.exe"
   foreach ($requiredPath in @($appPath, $runtimePath)) {
     if (!(Test-Path -LiteralPath $requiredPath -PathType Leaf)) {
@@ -42,20 +42,20 @@ try {
 
   $env:WEBVIEW2_BROWSER_EXECUTABLE_FOLDER = Join-Path $resolvedTestRoot "webview2-fixed-runtime"
   $env:WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS = "--no-sandbox --disable-gpu"
-  $env:GAUSS_HORIZON_STARTUP_LOG_DIR = Join-Path $resolvedTestRoot "smoke-logs"
-  New-Item -ItemType Directory -Path $env:GAUSS_HORIZON_STARTUP_LOG_DIR -Force | Out-Null
+  $env:CHIRON_HORIZON_STARTUP_LOG_DIR = Join-Path $resolvedTestRoot "smoke-logs"
+  New-Item -ItemType Directory -Path $env:CHIRON_HORIZON_STARTUP_LOG_DIR -Force | Out-Null
 
   $appProcess = Start-Process -FilePath $appPath -PassThru
   Start-Sleep -Seconds $StartupSeconds
   $appProcess.Refresh()
   if ($appProcess.HasExited) {
-    $startupLog = Join-Path $env:GAUSS_HORIZON_STARTUP_LOG_DIR "startup.log"
+    $startupLog = Join-Path $env:CHIRON_HORIZON_STARTUP_LOG_DIR "startup.log"
     $logText = if (Test-Path -LiteralPath $startupLog) {
       Get-Content -LiteralPath $startupLog -Raw
     } else {
       "<startup.log was not created>"
     }
-    throw "Gauss Horizon exited during the Server 2012 R2 startup smoke test with code $($appProcess.ExitCode).`n$logText"
+    throw "Chiron Horizon exited during the Server 2012 R2 startup smoke test with code $($appProcess.ExitCode).`n$logText"
   }
 
   Write-Host "Server 2012 R2 installer smoke test passed after $StartupSeconds seconds: $installerPath"

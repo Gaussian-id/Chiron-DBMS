@@ -1,4 +1,4 @@
-// Message queue admin types, matching gauss-horizon-core/src/mq/types.rs
+// Message queue admin types, matching chiron-horizon-core/src/mq/types.rs
 
 export type MqSystemKind = "pulsar" | "kafka" | "rocketmq" | "rabbitmq";
 

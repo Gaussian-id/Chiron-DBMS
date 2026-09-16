@@ -5,6 +5,6 @@ dependencies {
 
 tasks.named('shadowJar') {
     manifest {
-        attributes('Agent-Label': 'Apache Kylin', 'Main-Class': 'com.gauss.horizon.agent.kylin.KylinAgent')
+        attributes('Agent-Label': 'Apache Kylin', 'Main-Class': 'com.chiron.horizon.agent.kylin.KylinAgent')
     }
 }

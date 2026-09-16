@@ -1,7 +1,7 @@
 import { LEGACY_SQLSERVER_LINKED_SCHEMA_PREFIX } from "@/lib/compat/legacyProfile";
 import type { TreeNode } from "@/types/database";
 
-const SQLSERVER_LINKED_SCHEMA_PREFIX = "__gauss_horizon_sqlserver_linked__:";
+const SQLSERVER_LINKED_SCHEMA_PREFIX = "__chiron_horizon_sqlserver_linked__:";
 
 export interface SqlServerLinkedSchemaRef {
   server: string;

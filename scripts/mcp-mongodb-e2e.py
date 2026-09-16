@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """Real MongoDB + standalone MCP stdio/HTTP acceptance. Only disposable data.
-Run after building gauss-horizon-mcp; requires Docker and Python 3 standard library.
+Run after building chiron-horizon-mcp; requires Docker and Python 3 standard library.
 Evidence survives; only the container created by this run is removed on exit.
 """
 import argparse
@@ -119,12 +119,12 @@ class HttpClient:
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('--binary', default='target/debug/gauss-horizon-mcp')
+    parser.add_argument('--binary', default='target/debug/chiron-horizon-mcp')
     parser.add_argument('--image', default='mongo:8.0')
     args = parser.parse_args()
     binary = Path(args.binary).resolve()
     assert binary.is_file(), 'Build the standalone MCP binary first'
-    evidence = Path(tempfile.mkdtemp(prefix='gauss-horizon-mongo-mcp-'))
+    evidence = Path(tempfile.mkdtemp(prefix='chiron-horizon-mongo-mcp-'))
     evidence.chmod(0o700)
     profile = evidence/'profile'
     profile.mkdir(mode=0o700)
@@ -132,15 +132,15 @@ def main():
     envfile = evidence/'mongo.env'
     envfile.touch(mode=0o600)
     envfile.write_text('MONGO_INITDB_ROOT_USERNAME=root\nMONGO_INITDB_ROOT_PASSWORD='+mongo_password+'\n')
-    name = 'gauss-horizon-mcp-e2e-'+secrets.token_hex(5)
+    name = 'chiron-horizon-mcp-e2e-'+secrets.token_hex(5)
     # Retain runtime paths only; never inherit another profile/backend configuration.
     runtime_keys = ('PATH', 'HOME', 'USER', 'LOGNAME', 'TMPDIR', 'TMP', 'TEMP', 'SYSTEMROOT',
                     'WINDIR', 'COMSPEC', 'PATHEXT', 'APPDATA', 'LOCALAPPDATA', 'LANG', 'LC_ALL')
     env = {key: os.environ[key] for key in runtime_keys if key in os.environ}
-    env['GAUSS_HORIZON_DATA_DIR'] = str(profile)
+    env['CHIRON_HORIZON_DATA_DIR'] = str(profile)
     checks, transcript, clients = [], [], []
     http_process, container_started, complete = None, False, False
-    db = profile/'gauss-horizon.db'
+    db = profile/'chiron-horizon.db'
 
     def passed(label):
         checks.append(label)
@@ -148,8 +148,8 @@ def main():
 
     def initialize(client):
         result = client.call('initialize', {'protocolVersion': '2025-11-25', 'capabilities': {},
-                                             'clientInfo': {'name': 'gauss-horizon-mongodb-e2e', 'version': '0.1.0'}})
-        assert result['serverInfo']['name'] == 'gauss-horizon' and result['serverInfo']['version'] == '0.1.0', result
+                                             'clientInfo': {'name': 'chiron-horizon-mongodb-e2e', 'version': '0.1.0'}})
+        assert result['serverInfo']['name'] == 'chiron-horizon' and result['serverInfo']['version'] == '0.1.0', result
         client.notify('notifications/initialized')
         return result
 
@@ -160,7 +160,7 @@ def main():
         return client
 
     def tool(client, name, arguments=None, error=None):
-        result = client.call('tools/call', {'name': 'gauss_horizon_'+name, 'arguments': arguments or {}})
+        result = client.call('tools/call', {'name': 'chiron_horizon_'+name, 'arguments': arguments or {}})
         text = '\n'.join(x.get('text', '') for x in result.get('content', []))
         assert mongo_password not in text and http_token not in text, 'Secret leaked in tool output'
         transcript.append({'tool': name, 'result': result})
@@ -192,7 +192,7 @@ def main():
         with socket.socket() as sock:
             sock.bind(('127.0.0.1', 0))
             port = sock.getsockname()[1]
-        command('docker', 'run', '-d', '--name', name, '--label', 'gauss.horizon.test=mcp-mongodb-e2e',
+        command('docker', 'run', '-d', '--name', name, '--label', 'chiron.horizon.test=mcp-mongodb-e2e',
                 '-p', f'127.0.0.1:{port}:27017', '--env-file', str(envfile), args.image)
         container_started = True
         assert port == int(command('docker', 'port', name, '27017/tcp').rsplit(':', 1)[1])
@@ -218,7 +218,7 @@ def main():
         client = start()
         tools = client.call('tools/list')['tools']
         advertised = {t['name'] for t in tools}
-        assert {'gauss_horizon_execute_query','gauss_horizon_list_databases','gauss_horizon_describe_table'} <= advertised
+        assert {'chiron_horizon_execute_query','chiron_horizon_list_databases','chiron_horizon_describe_table'} <= advertised
         passed('real standalone stdio initialize and tools/list')
         for conn_name, password in [('Mongo E2E', mongo_password), ('Mongo Bad Auth', 'invalid-e2e-password')]:
             tool(client, 'add_connection', {'name': conn_name, 'db_type': 'mongodb', 'host': '127.0.0.1',
@@ -292,9 +292,9 @@ def main():
         passed('production connection rejects writes even with writable MCP policy')
         client.close()
         patch_connection(cid, is_production=False)
-        policy({'allowedToolNames': ['gauss_horizon_list_connections']})
+        policy({'allowedToolNames': ['chiron_horizon_list_connections']})
         client = start()
-        assert {t['name'] for t in client.call('tools/list')['tools']} == {'gauss_horizon_list_connections'}
+        assert {t['name'] for t in client.call('tools/list')['tools']} == {'chiron_horizon_list_connections'}
         tool(client, 'execute_query', {**base, 'sql': 'db.orders.find({})'}, 'TOOL_OUT_OF_SCOPE')
         passed('tool allowlist controls discovery and direct invocation')
         client.close()
@@ -316,7 +316,7 @@ def main():
         attempts=0
         while True:
             attempts += 1
-            recovered=client.call('tools/call', {'name':'gauss_horizon_execute_query','arguments':{**base,'sql':'db.orders.countDocuments({})'}})
+            recovered=client.call('tools/call', {'name':'chiron_horizon_execute_query','arguments':{**base,'sql':'db.orders.countDocuments({})'}})
             transcript.append({'tool':'read_after_mongodb_restart','result':recovered})
             if not recovered.get('isError'):
                 assert '3' in json.dumps(recovered)
@@ -328,7 +328,7 @@ def main():
         with socket.socket() as sock:
             sock.bind(('127.0.0.1',0))
             http_port=sock.getsockname()[1]
-        http_env={**env, 'GAUSS_HORIZON_MCP_HTTP_TOKEN': http_token}
+        http_env={**env, 'CHIRON_HORIZON_MCP_HTTP_TOKEN': http_token}
         with open(evidence/'http.stderr.log','w') as stderr:
             http_process=subprocess.Popen([str(binary),'--http','--http-port',str(http_port)],env=http_env,stdout=stderr,stderr=stderr)
         http=HttpClient(f'http://127.0.0.1:{http_port}/mcp',http_token)
@@ -348,7 +348,7 @@ def main():
             except urllib.error.HTTPError as error:
                 assert error.code==status,(error.code,status)
         initialize(http)
-        assert 'gauss_horizon_execute_query' in {t['name'] for t in http.call('tools/list')['tools']}
+        assert 'chiron_horizon_execute_query' in {t['name'] for t in http.call('tools/list')['tools']}
         assert '3' in tool(http, 'execute_query', {**base,'sql':'db.orders.countDocuments({})'})
         tool(http,'execute_query',{**base,'sql':'db.orders.insertOne({_id:101})'},'MCP_READ_ONLY')
         passed('Streamable HTTP initialize/tools/query, bearer auth, Origin validation and read-only enforcement')

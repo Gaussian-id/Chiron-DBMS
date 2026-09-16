@@ -50,7 +50,7 @@ func TestHandleLineClassifiesMissingSession(t *testing.T) {
 
 func TestParseConnectionConfig(t *testing.T) {
 	config, err := parseConnectionConfig(connectParams{
-		ConnectionString: "jdbc:iotdb://alice:secret@[::1]:7777/gauss_horizon_table?sql_dialect=table&fetch_size=2048&connect_retry_max=4",
+		ConnectionString: "jdbc:iotdb://alice:secret@[::1]:7777/chiron_horizon_table?sql_dialect=table&fetch_size=2048&connect_retry_max=4",
 		URLParams:        "enable_compression=true&node_urls=node1:6667,node2:6667&time_zone=UTC",
 	})
 	if err != nil {
@@ -59,7 +59,7 @@ func TestParseConnectionConfig(t *testing.T) {
 	if config.Host != "::1" || config.Port != 7777 || config.Username != "alice" || config.Password != "secret" {
 		t.Fatalf("unexpected endpoint config: %#v", config)
 	}
-	if config.Database != "gauss_horizon_table" || config.Dialect != client.TableSqlDialect || config.FetchSize != 2048 {
+	if config.Database != "chiron_horizon_table" || config.Dialect != client.TableSqlDialect || config.FetchSize != 2048 {
 		t.Fatalf("unexpected session config: %#v", config)
 	}
 	if !config.EnableCompression || config.ConnectRetryMax != 4 || config.TimeZone != "UTC" {

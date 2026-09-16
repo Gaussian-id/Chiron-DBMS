@@ -2,7 +2,7 @@ import { strict as assert } from "node:assert";
 import { readFileSync } from "node:fs";
 import { test } from "vitest";
 import * as langSql from "@codemirror/lang-sql";
-import { createGaussHorizonCodeMirrorSqlDialect } from "../../apps/desktop/src/lib/editor/codemirrorSqlDialect.ts";
+import { createChironHorizonCodeMirrorSqlDialect } from "../../apps/desktop/src/lib/editor/codemirrorSqlDialect.ts";
 import { codeMirrorSqlDialect, codeMirrorSqlDialectForConnection } from "../../apps/desktop/src/lib/database/jdbcDialect.ts";
 import type { DatabaseType } from "../../apps/desktop/src/types/database.ts";
 
@@ -21,26 +21,26 @@ function countParsedNodes(dialect: langSql.SQLDialect, sql: string, nodeName: st
 }
 
 test("adds SQL Server READONLY for table-valued procedure parameters", () => {
-  const dialect = createGaussHorizonCodeMirrorSqlDialect(langSql, "sqlserver");
+  const dialect = createChironHorizonCodeMirrorSqlDialect(langSql, "sqlserver");
 
   assert.equal(hasKeyword(dialect.spec.keywords, "READONLY"), true);
   assert.equal(countParsedNodes(dialect, "CREATE PROCEDURE [dbo].[gylxcx](@tp2 XTableType5 readonly,@tp xtabletype2 readonly) AS SELECT 1", "Keyword", "readonly"), 2);
 });
 
 test("uses MSSQL keywords for an ASE JDBC editor override", () => {
-  const dialect = createGaussHorizonCodeMirrorSqlDialect(langSql, "sqlserver", "jdbc");
+  const dialect = createChironHorizonCodeMirrorSqlDialect(langSql, "sqlserver", "jdbc");
 
   assert.equal(countParsedNodes(dialect, "SELECT top 1 * FROM wfAdmin AS wa", "Keyword", "top"), 1);
 });
 
 test("keeps generic JDBC on Standard SQL without the ASE editor override", () => {
-  const dialect = createGaussHorizonCodeMirrorSqlDialect(langSql, "mysql", "jdbc");
+  const dialect = createChironHorizonCodeMirrorSqlDialect(langSql, "mysql", "jdbc");
 
   assert.equal(countParsedNodes(dialect, "SELECT top 1 * FROM wfAdmin AS wa", "Keyword", "top"), 0);
 });
 
-test("keeps Gauss Horizon PostgreSQL procedural dialect extensions", () => {
-  const dialect = createGaussHorizonCodeMirrorSqlDialect(langSql, "postgres");
+test("keeps Chiron Horizon PostgreSQL procedural dialect extensions", () => {
+  const dialect = createChironHorizonCodeMirrorSqlDialect(langSql, "postgres");
 
   assert.equal(hasKeyword(dialect.spec.keywords, "PERFORM"), true);
   assert.equal(hasKeyword(dialect.spec.types, "JSONB"), true);
@@ -59,7 +59,7 @@ test("maps ClickHouse connections to the dedicated editor syntax dialect", () =>
 });
 
 test("classifies ClickHouse-specific syntax", () => {
-  const dialect = createGaussHorizonCodeMirrorSqlDialect(langSql, "clickhouse", "clickhouse");
+  const dialect = createChironHorizonCodeMirrorSqlDialect(langSql, "clickhouse", "clickhouse");
   const sql = `
     CREATE TABLE events
     (
@@ -125,7 +125,7 @@ test("treats compact double-dash comments as comments in non-MySQL SQL dialects"
   ];
 
   for (const databaseType of databaseTypes) {
-    const dialect = createGaussHorizonCodeMirrorSqlDialect(langSql, codeMirrorSqlDialect(databaseType), databaseType);
+    const dialect = createChironHorizonCodeMirrorSqlDialect(langSql, codeMirrorSqlDialect(databaseType), databaseType);
     assert.equal(countParsedNodes(dialect, "--SELECT 1", "LineComment", "--SELECT 1"), 1, databaseType);
     assert.equal(countParsedNodes(dialect, "--SELECT 1", "Keyword", "SELECT"), 0, databaseType);
   }
@@ -135,7 +135,7 @@ test("keeps MySQL-compatible double-dash whitespace rules", () => {
   const databaseTypes: DatabaseType[] = ["mysql", "doris", "starrocks", "manticoresearch", "goldendb", "gbase"];
 
   for (const databaseType of databaseTypes) {
-    const dialect = createGaussHorizonCodeMirrorSqlDialect(langSql, codeMirrorSqlDialect(databaseType), databaseType);
+    const dialect = createChironHorizonCodeMirrorSqlDialect(langSql, codeMirrorSqlDialect(databaseType), databaseType);
     assert.equal(countParsedNodes(dialect, "--SELECT 1", "LineComment", "--SELECT 1"), 0, databaseType);
     assert.equal(countParsedNodes(dialect, "--SELECT 1", "Keyword", "SELECT"), 1, databaseType);
     assert.equal(countParsedNodes(dialect, "-- SELECT 1", "LineComment", "-- SELECT 1"), 1, databaseType);
@@ -147,7 +147,7 @@ test("propagates database type to every DDL viewer entrypoint", () => {
   const connectionTree = readFileSync("apps/desktop/src/components/sidebar/ConnectionTree.vue", "utf8");
   const app = readFileSync("apps/desktop/src/App.vue", "utf8");
 
-  assert.match(ddlViewDialog, /createGaussHorizonCodeMirrorSqlDialect\(langSql, props\.dialect, props\.databaseType\)/);
+  assert.match(ddlViewDialog, /createChironHorizonCodeMirrorSqlDialect\(langSql, props\.dialect, props\.databaseType\)/);
   assert.match(connectionTree, /<SidebarDdlViewDialog/);
   assert.match(connectionTree, /:database-type="sidebarDdlDatabaseType"/);
   assert.match(connectionTree, /v-model:open="sidebarDdlOpen"/);

@@ -214,7 +214,7 @@ func applyHOCONAuthentication(config *cassandraConfig, parsed *hocon.Config) err
 	if value, ok, err := hoconString(parsed, prefix+"server-name-resolver"); err != nil {
 		return err
 	} else if ok && value != "" {
-		return fmt.Errorf("custom Java Kerberos server-name-resolver is not supported; use gauss.horizon.cassandra.kerberos.server-name")
+		return fmt.Errorf("custom Java Kerberos server-name-resolver is not supported; use chiron.horizon.cassandra.kerberos.server-name")
 	}
 	loginPrefix := prefix + "login-configuration."
 	if value, ok, err := hoconString(parsed, loginPrefix+"principal"); err != nil {
@@ -286,7 +286,7 @@ func applyHOCONSSL(config *cassandraConfig, parsed *hocon.Config) error {
 }
 
 func applyNativeHOCON(config *cassandraConfig, parsed *hocon.Config) error {
-	prefix := "gauss.horizon.cassandra."
+	prefix := "chiron.horizon.cassandra."
 	stringMappings := []struct {
 		path   string
 		target *string

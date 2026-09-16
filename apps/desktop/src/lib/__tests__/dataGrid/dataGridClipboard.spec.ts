@@ -103,7 +103,7 @@ describe("planDataGridPaste", () => {
 });
 
 describe("parseDataGridClipboard", () => {
-  it("restores null values copied from the Gauss Horizon grid", () => {
+  it("restores null values copied from the Chiron Horizon grid", () => {
     rememberDataGridClipboardCopy("NULL\tNULL", [[null, "NULL"]]);
 
     expect(parseDataGridClipboard("NULL\tNULL")).toEqual([[null, "NULL"]]);

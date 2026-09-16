@@ -90,14 +90,14 @@ const redisExpiryTransport = {
 
 const emit = defineEmits<{ deleted: [keyRaw: string]; loaded: [value: RedisValue]; renamed: [oldKeyRaw: string, newKeyRaw: string, newKeyDisplay: string] }>();
 
-const REDIS_JSON_WRAP_STORAGE_KEY = "gauss-horizon-redis-json-word-wrap";
-const REDIS_JSON_UNICODE_MODE_STORAGE_KEY = "gauss-horizon-redis-json-unicode-mode";
-const REDIS_VALUE_FORMAT_STORAGE_KEY = "gauss-horizon-redis-value-format";
-const REDIS_VALUE_CODEC_STORAGE_KEY = "gauss-horizon-redis-value-codec";
+const REDIS_JSON_WRAP_STORAGE_KEY = "chiron-horizon-redis-json-word-wrap";
+const REDIS_JSON_UNICODE_MODE_STORAGE_KEY = "chiron-horizon-redis-json-unicode-mode";
+const REDIS_VALUE_FORMAT_STORAGE_KEY = "chiron-horizon-redis-value-format";
+const REDIS_VALUE_CODEC_STORAGE_KEY = "chiron-horizon-redis-value-codec";
 // Versioned after moving the setting into the refresh menu so the previous
 // always-on default does not carry into the new manual-refresh default.
-const REDIS_AUTO_REFRESH_ENABLED_STORAGE_KEY = "gauss-horizon-redis-auto-refresh-enabled-v2";
-const REDIS_AUTO_REFRESH_INTERVAL_STORAGE_KEY = "gauss-horizon-redis-auto-refresh-interval-seconds-v2";
+const REDIS_AUTO_REFRESH_ENABLED_STORAGE_KEY = "chiron-horizon-redis-auto-refresh-enabled-v2";
+const REDIS_AUTO_REFRESH_INTERVAL_STORAGE_KEY = "chiron-horizon-redis-auto-refresh-interval-seconds-v2";
 const REDIS_AUTO_REFRESH_INTERVAL_OPTIONS = [1, 3, 5, 10] as const;
 const REDIS_COLLECTION_ROW_HEIGHT = 32;
 const REDIS_STREAM_MIN_ROW_HEIGHT = 96;
@@ -2739,7 +2739,7 @@ useUpdateBlocker(() => (hasUnsavedRedisDraft.value || editingTtl.value || saving
       <!-- Header -->
       <div class="shrink-0 border-b bg-background">
         <div class="flex h-9 items-center gap-2 px-4">
-          <span class="gauss-horizon-editor-font-family min-w-0 flex-1 truncate text-sm font-semibold">{{ formatValue(data.key_display) }}</span>
+          <span class="chiron-horizon-editor-font-family min-w-0 flex-1 truncate text-sm font-semibold">{{ formatValue(data.key_display) }}</span>
           <div class="flex h-7 shrink-0 overflow-hidden rounded-md border">
             <Button data-redis-value-refresh variant="ghost" size="icon" class="h-7 w-7 rounded-none animate-none" :disabled="loading || refreshingValue || hasUnsavedRedisDraft" :title="t('grid.refresh')" :aria-label="t('grid.refresh')" @click="refreshValueAndStreamGroups">
               <RefreshCw class="h-3.5 w-3.5 animate-none" />
@@ -2783,7 +2783,7 @@ useUpdateBlocker(() => (hasUnsavedRedisDraft.value || editingTtl.value || saving
         </div>
 
         <div class="flex min-h-7 flex-wrap items-center gap-2 px-4 pb-1">
-          <Badge variant="secondary" class="gauss-horizon-editor-font-family text-xs uppercase">{{ data.redis_type }}</Badge>
+          <Badge variant="secondary" class="chiron-horizon-editor-font-family text-xs uppercase">{{ data.redis_type }}</Badge>
           <Badge v-if="metadataSizeLabel" variant="outline" class="text-xs text-muted-foreground"> {{ t("redis.columnSize") }}: {{ metadataSizeLabel }} </Badge>
           <template v-if="!editingTtl">
             <Badge v-if="data.ttl > 0" as="button" type="button" variant="outline" class="text-xs cursor-pointer text-muted-foreground hover:bg-accent disabled:cursor-not-allowed disabled:opacity-50" :disabled="savingTtl" :aria-label="t('redis.expiry')" @click="startEditTtl">
@@ -2871,16 +2871,16 @@ useUpdateBlocker(() => (hasUnsavedRedisDraft.value || editingTtl.value || saving
           :enable-builtin-find="false"
           @save="saveString"
         />
-        <div v-else-if="activeStructuredStringDetail && stringValueView !== 'hex' && stringValueView !== 'base64'" class="gauss-horizon-editor-font-family min-h-0 flex-1 overflow-auto bg-background p-4 text-sm leading-6">
+        <div v-else-if="activeStructuredStringDetail && stringValueView !== 'hex' && stringValueView !== 'base64'" class="chiron-horizon-editor-font-family min-h-0 flex-1 overflow-auto bg-background p-4 text-sm leading-6">
           <JsonTree v-if="stringValueView === 'json'" :value="activeStructuredStringDetail.value" :word-wrap="redisJsonWordWrap" :highlight-json="highlightRedisJson" virtualized />
           <pre v-else class="w-full min-w-0 max-w-full" :class="redisJsonWordWrap ? 'whitespace-pre-wrap break-words' : 'whitespace-pre'">{{ stringDecodedText }}</pre>
         </div>
-        <div v-else-if="stringValueCodec === 'base64' && stringBase64Detail" class="gauss-horizon-editor-font-family min-h-0 flex-1 overflow-auto bg-background p-4 text-sm leading-6">
+        <div v-else-if="stringValueCodec === 'base64' && stringBase64Detail" class="chiron-horizon-editor-font-family min-h-0 flex-1 overflow-auto bg-background p-4 text-sm leading-6">
           <JsonTree v-if="stringValueView === 'json' && stringBase64Detail.json" :value="stringBase64Detail.json.value" :word-wrap="redisJsonWordWrap" :highlight-json="highlightRedisJson" virtualized />
           <pre v-else class="w-full min-w-0 max-w-full" :class="redisJsonWordWrap ? 'whitespace-pre-wrap break-words' : 'whitespace-pre'">{{ stringDecodedText }}</pre>
         </div>
         <div v-else-if="stringCodecMismatch" class="min-h-0 flex-1 flex flex-col overflow-hidden">
-          <pre class="gauss-horizon-editor-font-family min-h-0 w-full min-w-0 max-w-full flex-1 overflow-auto bg-background p-4 text-sm leading-6">{{ detailTextForFormat(stringValueDetail, stringValueDetail.defaultFormat) }}</pre>
+          <pre class="chiron-horizon-editor-font-family min-h-0 w-full min-w-0 max-w-full flex-1 overflow-auto bg-background p-4 text-sm leading-6">{{ detailTextForFormat(stringValueDetail, stringValueDetail.defaultFormat) }}</pre>
           <div class="flex shrink-0 flex-wrap items-center gap-2 border-t px-4 py-2 text-xs text-muted-foreground">{{ t("redis.codecMismatch") }}</div>
         </div>
         <div v-else-if="stringValueView === 'hex'" class="min-h-0 flex-1 overflow-auto bg-background p-4 text-xs leading-5">
@@ -2888,25 +2888,25 @@ useUpdateBlocker(() => (hasUnsavedRedisDraft.value || editingTtl.value || saving
             <span>{{ t("grid.hexViewer") }}</span>
             <span>{{ t("grid.hexViewerByteCount", { count: stringValueDetail.byteCount }) }}</span>
           </div>
-          <pre v-if="stringValueDetail.hexRows.length > 0 && canHighlightStringSurface" class="gauss-horizon-editor-font-family w-full min-w-0 max-w-full select-all whitespace-pre-wrap break-all" v-html="contentSearchHighlightedHtml" />
-          <pre v-else-if="stringValueDetail.hexRows.length > 0" class="gauss-horizon-editor-font-family w-full min-w-0 max-w-full select-all whitespace-pre-wrap break-all">{{ detailTextForFormat(stringValueDetail, "hex") }}</pre>
+          <pre v-if="stringValueDetail.hexRows.length > 0 && canHighlightStringSurface" class="chiron-horizon-editor-font-family w-full min-w-0 max-w-full select-all whitespace-pre-wrap break-all" v-html="contentSearchHighlightedHtml" />
+          <pre v-else-if="stringValueDetail.hexRows.length > 0" class="chiron-horizon-editor-font-family w-full min-w-0 max-w-full select-all whitespace-pre-wrap break-all">{{ detailTextForFormat(stringValueDetail, "hex") }}</pre>
           <div v-else class="text-muted-foreground">{{ t("grid.hexViewerEmpty") }}</div>
         </div>
-        <pre v-else-if="stringValueView === 'base64' && canHighlightStringSurface" class="gauss-horizon-editor-font-family min-h-0 w-full min-w-0 max-w-full flex-1 overflow-auto bg-background p-4 text-sm leading-6 whitespace-pre-wrap break-all" v-html="contentSearchHighlightedHtml" />
-        <pre v-else-if="stringValueView === 'base64'" class="gauss-horizon-editor-font-family min-h-0 w-full min-w-0 max-w-full flex-1 overflow-auto bg-background p-4 text-sm leading-6 whitespace-pre-wrap break-all">{{ stringValueDetail.base64Text }}</pre>
+        <pre v-else-if="stringValueView === 'base64' && canHighlightStringSurface" class="chiron-horizon-editor-font-family min-h-0 w-full min-w-0 max-w-full flex-1 overflow-auto bg-background p-4 text-sm leading-6 whitespace-pre-wrap break-all" v-html="contentSearchHighlightedHtml" />
+        <pre v-else-if="stringValueView === 'base64'" class="chiron-horizon-editor-font-family min-h-0 w-full min-w-0 max-w-full flex-1 overflow-auto bg-background p-4 text-sm leading-6 whitespace-pre-wrap break-all">{{ stringValueDetail.base64Text }}</pre>
         <div v-else-if="isDecompressCodec(stringValueCodec)" class="min-h-0 flex-1 flex flex-col overflow-hidden">
           <div v-if="decompressedState.status === 'loading'" class="flex min-h-0 flex-1 items-center justify-center gap-2 text-muted-foreground">
             <Loader2 class="h-4 w-4 animate-spin" />
             {{ t("redis.decompressedLoading") }}
           </div>
-          <div v-else-if="decompressedState.status === 'success'" class="gauss-horizon-editor-font-family min-h-0 flex-1 overflow-auto bg-background">
+          <div v-else-if="decompressedState.status === 'success'" class="chiron-horizon-editor-font-family min-h-0 flex-1 overflow-auto bg-background">
             <div v-if="stringValueView === 'json' && decompressedJsonDetail" class="h-full p-4">
               <JsonTree :value="decompressedJsonDetail.value" :word-wrap="redisJsonWordWrap" :highlight-json="highlightRedisJson" virtualized />
             </div>
             <pre v-else class="w-full min-w-0 max-w-full p-4 text-sm leading-6" :class="detailTextClass('utf8')">{{ stringDecodedText }}</pre>
           </div>
           <template v-else>
-            <pre class="gauss-horizon-editor-font-family min-h-0 w-full min-w-0 max-w-full flex-1 overflow-auto bg-background p-4 text-sm leading-6" :class="detailTextClass('utf8')">{{ decompressedRawFallbackText }}</pre>
+            <pre class="chiron-horizon-editor-font-family min-h-0 w-full min-w-0 max-w-full flex-1 overflow-auto bg-background p-4 text-sm leading-6" :class="detailTextClass('utf8')">{{ decompressedRawFallbackText }}</pre>
             <div v-if="decompressedFailureMessage" class="flex shrink-0 flex-wrap items-center gap-2 border-t px-4 py-2 text-xs text-muted-foreground">
               <span>{{ decompressedFailureMessage }}</span>
               <Button
@@ -2927,13 +2927,13 @@ useUpdateBlocker(() => (hasUnsavedRedisDraft.value || editingTtl.value || saving
           v-else-if="stringValueView === 'utf8' && canEditCurrentStringFormat && stringValueCodec === 'none'"
           ref="stringTextareaRef"
           v-model="editValue"
-          class="gauss-horizon-editor-font-family flex-1 resize-none bg-background p-4 text-sm outline-none"
+          class="chiron-horizon-editor-font-family flex-1 resize-none bg-background p-4 text-sm outline-none"
           :class="redisJsonWordWrap ? 'whitespace-pre-wrap break-words' : 'whitespace-pre'"
           :readonly="!canEditCurrentStringFormat || savingString"
           spellcheck="false"
         />
-        <pre v-else-if="canHighlightStringSurface" class="gauss-horizon-editor-font-family min-h-0 w-full min-w-0 max-w-full flex-1 overflow-auto bg-background p-4 text-sm leading-6" :class="detailTextClass(stringValueView)" v-html="contentSearchHighlightedHtml" />
-        <pre v-else class="gauss-horizon-editor-font-family min-h-0 w-full min-w-0 max-w-full flex-1 overflow-auto bg-background p-4 text-sm leading-6" :class="detailTextClass(stringValueView)">{{ detailTextForFormat(stringValueDetail, stringValueView) }}</pre>
+        <pre v-else-if="canHighlightStringSurface" class="chiron-horizon-editor-font-family min-h-0 w-full min-w-0 max-w-full flex-1 overflow-auto bg-background p-4 text-sm leading-6" :class="detailTextClass(stringValueView)" v-html="contentSearchHighlightedHtml" />
+        <pre v-else class="chiron-horizon-editor-font-family min-h-0 w-full min-w-0 max-w-full flex-1 overflow-auto bg-background p-4 text-sm leading-6" :class="detailTextClass(stringValueView)">{{ detailTextForFormat(stringValueDetail, stringValueView) }}</pre>
         <div v-if="isStringValueTruncated" data-redis-large-string-preview class="flex shrink-0 items-center gap-2 border-t bg-muted/30 px-4 py-2 text-xs text-muted-foreground">
           <Eye class="h-3.5 w-3.5 shrink-0" />
           <span>{{ largeStringPreviewHint }}</span>
@@ -2989,7 +2989,7 @@ useUpdateBlocker(() => (hasUnsavedRedisDraft.value || editingTtl.value || saving
           <template #default="{ item: row }">
             <div
               data-redis-value-row
-              class="gauss-horizon-editor-font-family grid grid-cols-[60px_1fr_84px] border-b text-sm hover:bg-accent/50 group cursor-pointer"
+              class="chiron-horizon-editor-font-family grid grid-cols-[60px_1fr_84px] border-b text-sm hover:bg-accent/50 group cursor-pointer"
               :class="{ 'bg-accent/60': isSelectedMember(`#${row.value.index}`, row.value.value) }"
               :style="{ height: `${REDIS_COLLECTION_ROW_HEIGHT}px` }"
               @click="viewMember(`#${row.value.index}`, row.value.value, { kind: 'list', index: row.value.index, canEdit: canEditRedisMemberDetail('list', row.value.value) })"
@@ -3036,7 +3036,7 @@ useUpdateBlocker(() => (hasUnsavedRedisDraft.value || editingTtl.value || saving
           <template #default="{ item: row }">
             <div
               data-redis-value-row
-              class="gauss-horizon-editor-font-family grid grid-cols-[1fr_84px] border-b text-sm hover:bg-accent/50 group cursor-pointer"
+              class="chiron-horizon-editor-font-family grid grid-cols-[1fr_84px] border-b text-sm hover:bg-accent/50 group cursor-pointer"
               :class="{ 'bg-accent/60': isSelectedMember(t('redis.member'), row.value.member) }"
               :style="{ height: `${REDIS_COLLECTION_ROW_HEIGHT}px` }"
               @click="viewMember(t('redis.member'), row.value.member, { kind: 'set', member: redisBlobText(row.value.member), canEdit: redisBlobText(row.value.member) != null && canEditRedisMemberDetail('set', row.value.member) })"
@@ -3103,7 +3103,7 @@ useUpdateBlocker(() => (hasUnsavedRedisDraft.value || editingTtl.value || saving
           <template #default="{ item: row }">
             <div
               data-redis-value-row
-              class="gauss-horizon-editor-font-family grid border-b text-sm hover:bg-accent/50 group cursor-pointer"
+              class="chiron-horizon-editor-font-family grid border-b text-sm hover:bg-accent/50 group cursor-pointer"
               :style="{ ...hashGridStyle, height: `${REDIS_COLLECTION_ROW_HEIGHT}px` }"
               :class="{ 'bg-accent/60': isSelectedMember(formatValue(row.value.field), row.value.value) }"
               @click="viewMember(formatValue(row.value.field), row.value.value, { kind: 'hash', field: redisBlobText(row.value.field), canEdit: redisBlobText(row.value.field) != null && canEditRedisMemberDetail('hash', row.value.value) })"
@@ -3188,14 +3188,14 @@ useUpdateBlocker(() => (hasUnsavedRedisDraft.value || editingTtl.value || saving
         </div>
         <RecycleScroller class="flex-1 overflow-y-auto" :items="zsetRows" :item-size="REDIS_COLLECTION_ROW_HEIGHT" :buffer="600" :skip-hover="true" key-field="id">
           <template #default="{ item: row }">
-            <div data-redis-value-row class="gauss-horizon-editor-font-family grid border-b text-sm hover:bg-accent/50 group" :class="{ 'bg-accent/60': isEditingZsetRow(row.value) }" :style="{ ...zsetGridStyle, height: `${REDIS_COLLECTION_ROW_HEIGHT}px` }">
+            <div data-redis-value-row class="chiron-horizon-editor-font-family grid border-b text-sm hover:bg-accent/50 group" :class="{ 'bg-accent/60': isEditingZsetRow(row.value) }" :style="{ ...zsetGridStyle, height: `${REDIS_COLLECTION_ROW_HEIGHT}px` }">
               <div class="px-3 py-1.5 text-center text-xs text-muted-foreground border-r tabular-nums">{{ row.index + 1 }}</div>
               <div class="flex min-w-0 items-center border-r px-3 py-1.5 text-xs text-muted-foreground">
                 <Input v-if="isEditingZsetRow(row.value)" v-model="zsetInlineScore" aria-label="Score" class="h-6 min-w-0 text-xs tabular-nums" :disabled="savingZsetMember" inputmode="decimal" @keydown.enter.prevent="saveZsetInlineEdit(row.value)" />
                 <span v-else class="min-w-0 truncate" :title="String(row.value.score)">{{ row.value.score }}</span>
               </div>
               <div class="flex min-w-0 items-center px-3 py-1.5">
-                <Input v-if="isEditingZsetRow(row.value)" v-model="zsetInlineMember" aria-label="Member" class="gauss-horizon-editor-font-family h-6 min-w-0 text-sm" :disabled="savingZsetMember" @keydown.enter.prevent="saveZsetInlineEdit(row.value)" />
+                <Input v-if="isEditingZsetRow(row.value)" v-model="zsetInlineMember" aria-label="Member" class="chiron-horizon-editor-font-family h-6 min-w-0 text-sm" :disabled="savingZsetMember" @keydown.enter.prevent="saveZsetInlineEdit(row.value)" />
                 <span v-else class="min-w-0 truncate" :title="formatValue(row.value.member)">{{ formatValue(row.value.member) }}</span>
               </div>
               <div class="flex items-center justify-center gap-1">
@@ -3264,12 +3264,12 @@ useUpdateBlocker(() => (hasUnsavedRedisDraft.value || editingTtl.value || saving
                 :title="formatValue(selectedStreamGroup.name)"
                 @click="resetStreamConsumerDetail"
               >
-                <span class="gauss-horizon-editor-font-family truncate">{{ formatValue(selectedStreamGroup.name) }}</span>
+                <span class="chiron-horizon-editor-font-family truncate">{{ formatValue(selectedStreamGroup.name) }}</span>
               </button>
               <span
                 v-if="selectedStreamConsumer"
                 data-redis-stream-consumer-crumb
-                class="gauss-horizon-editor-font-family inline-flex h-full max-w-48 shrink-0 items-center truncate border-b-2 border-foreground px-3 text-xs font-medium text-foreground"
+                class="chiron-horizon-editor-font-family inline-flex h-full max-w-48 shrink-0 items-center truncate border-b-2 border-foreground px-3 text-xs font-medium text-foreground"
                 :title="formatValue(selectedStreamConsumer.name)"
               >
                 <span class="truncate">{{ formatValue(selectedStreamConsumer.name) }}</span>
@@ -3281,7 +3281,7 @@ useUpdateBlocker(() => (hasUnsavedRedisDraft.value || editingTtl.value || saving
             <DynamicScroller class="flex-1 overflow-y-auto" :items="streamRows" :min-item-size="REDIS_STREAM_MIN_ROW_HEIGHT" :buffer="600" key-field="id">
               <template #default="{ item: row, active }">
                 <DynamicScrollerItem :item="row" :active="active" :size-dependencies="[streamFieldCount(row)]" :data-index="row.index">
-                  <div data-redis-stream-entry class="gauss-horizon-editor-font-family px-4 py-2 border-b text-sm hover:bg-accent/50">
+                  <div data-redis-stream-entry class="chiron-horizon-editor-font-family px-4 py-2 border-b text-sm hover:bg-accent/50">
                     <div class="mb-1 text-xs text-muted-foreground">{{ row.entry.id }}</div>
                     <div
                       v-for="(field, fieldIndex) in row.entry.fields"
@@ -3354,10 +3354,10 @@ useUpdateBlocker(() => (hasUnsavedRedisDraft.value || editingTtl.value || saving
                   </thead>
                   <tbody>
                     <tr v-for="group in streamGroups" :key="group.name.raw_base64" data-redis-stream-group-row class="cursor-pointer border-t hover:bg-accent/50" @click="selectStreamGroup(group)">
-                      <td class="gauss-horizon-editor-font-family max-w-72 truncate px-4 py-2" :title="formatValue(group.name)">{{ formatValue(group.name) }}</td>
+                      <td class="chiron-horizon-editor-font-family max-w-72 truncate px-4 py-2" :title="formatValue(group.name)">{{ formatValue(group.name) }}</td>
                       <td class="px-3 py-2 text-right tabular-nums">{{ formatStreamMetric(group.consumers) }}</td>
                       <td class="px-3 py-2 text-right tabular-nums">{{ formatStreamMetric(group.pending) }}</td>
-                      <td class="gauss-horizon-editor-font-family max-w-56 truncate px-3 py-2 text-muted-foreground" :title="group.last_delivered_id">{{ group.last_delivered_id }}</td>
+                      <td class="chiron-horizon-editor-font-family max-w-56 truncate px-3 py-2 text-muted-foreground" :title="group.last_delivered_id">{{ group.last_delivered_id }}</td>
                       <td class="px-3 py-2 text-right tabular-nums">{{ formatStreamMetric(group.entries_read) }}</td>
                       <td class="px-4 py-2 text-right tabular-nums">{{ formatStreamMetric(group.lag) }}</td>
                     </tr>
@@ -3444,7 +3444,7 @@ useUpdateBlocker(() => (hasUnsavedRedisDraft.value || editingTtl.value || saving
                                 :title="t('redis.openConsumerDetails')"
                                 @click="selectStreamConsumer(consumer)"
                               >
-                                <span class="gauss-horizon-editor-font-family block truncate">{{ formatValue(consumer.name) }}</span>
+                                <span class="chiron-horizon-editor-font-family block truncate">{{ formatValue(consumer.name) }}</span>
                               </button>
                             </td>
                             <td class="px-2 py-2 text-right tabular-nums">{{ formatStreamMetric(consumer.pending) }}</td>
@@ -3459,7 +3459,7 @@ useUpdateBlocker(() => (hasUnsavedRedisDraft.value || editingTtl.value || saving
                   <section v-if="selectedStreamConsumer" data-redis-stream-pending class="overflow-hidden rounded-lg border bg-card text-card-foreground">
                     <div class="flex min-h-10 items-center gap-2 border-b px-3 py-2">
                       <span class="text-sm font-medium">{{ t("redis.pendingEntries") }}</span>
-                      <Badge v-if="selectedStreamConsumer" variant="outline" class="gauss-horizon-editor-font-family min-w-0 max-w-48 truncate px-1.5 text-[10px]" :title="formatValue(selectedStreamConsumer.name)">{{ formatValue(selectedStreamConsumer.name) }}</Badge>
+                      <Badge v-if="selectedStreamConsumer" variant="outline" class="chiron-horizon-editor-font-family min-w-0 max-w-48 truncate px-1.5 text-[10px]" :title="formatValue(selectedStreamConsumer.name)">{{ formatValue(selectedStreamConsumer.name) }}</Badge>
                       <Badge v-if="streamPendingEntries.length" variant="secondary" class="h-5 min-w-5 justify-center px-1.5 text-[10px] tabular-nums">{{ formatStreamMetric(streamPendingEntries.length) }}</Badge>
                       <Loader2 v-if="streamPendingLoading || streamPendingLoadingMore" class="ml-auto h-3.5 w-3.5 animate-spin text-muted-foreground" />
                     </div>
@@ -3494,7 +3494,7 @@ useUpdateBlocker(() => (hasUnsavedRedisDraft.value || editingTtl.value || saving
                         <tbody>
                           <tr v-for="entry in streamPendingEntries" :key="entry.id" class="border-t hover:bg-muted/20">
                             <td class="px-3 py-2 text-left" :title="entry.id">
-                              <div class="gauss-horizon-editor-font-family truncate">{{ entry.id }}</div>
+                              <div class="chiron-horizon-editor-font-family truncate">{{ entry.id }}</div>
                             </td>
                             <td class="px-2 py-2 text-left tabular-nums" :title="formatStreamDurationTitle(entry.idle_ms)">{{ formatStreamLastDelivery(entry.idle_ms) }}</td>
                             <td class="px-3 py-2 text-right tabular-nums">{{ formatStreamMetric(entry.deliveries) }}</td>
@@ -3519,7 +3519,7 @@ useUpdateBlocker(() => (hasUnsavedRedisDraft.value || editingTtl.value || saving
 
       <!-- Unknown -->
       <div v-else class="flex-1 overflow-auto p-4">
-        <pre class="gauss-horizon-editor-font-family text-sm whitespace-pre-wrap">{{ formatValue(data.data) }}</pre>
+        <pre class="chiron-horizon-editor-font-family text-sm whitespace-pre-wrap">{{ formatValue(data.data) }}</pre>
       </div>
     </template>
 
@@ -3532,7 +3532,7 @@ useUpdateBlocker(() => (hasUnsavedRedisDraft.value || editingTtl.value || saving
         </DialogHeader>
         <label class="grid gap-1.5 text-xs font-medium">
           <span>{{ t("redis.renameKeyName") }}</span>
-          <Input v-model="renameKeyName" class="gauss-horizon-editor-font-family" :disabled="renamingKey" autofocus spellcheck="false" @keydown.enter.prevent="renameKey" />
+          <Input v-model="renameKeyName" class="chiron-horizon-editor-font-family" :disabled="renamingKey" autofocus spellcheck="false" @keydown.enter.prevent="renameKey" />
         </label>
         <p v-if="renameKeyError" class="text-xs text-destructive">{{ renameKeyError }}</p>
         <DialogFooter>
@@ -3607,7 +3607,7 @@ useUpdateBlocker(() => (hasUnsavedRedisDraft.value || editingTtl.value || saving
           </DialogTitle>
         </DialogHeader>
         <template v-if="isEditingMember">
-          <textarea ref="memberTextareaRef" data-redis-member-utf8-editor v-model="memberEditValue" class="gauss-horizon-editor-font-family min-h-0 flex-1 resize-none bg-background p-5 text-[13px] leading-6 outline-none" :readonly="savingMember" spellcheck="false" />
+          <textarea ref="memberTextareaRef" data-redis-member-utf8-editor v-model="memberEditValue" class="chiron-horizon-editor-font-family min-h-0 flex-1 resize-none bg-background p-5 text-[13px] leading-6 outline-none" :readonly="savingMember" spellcheck="false" />
         </template>
         <template v-else>
           <div class="flex h-9 items-center gap-2 border-b px-5 text-xs">
@@ -3647,19 +3647,19 @@ useUpdateBlocker(() => (hasUnsavedRedisDraft.value || editingTtl.value || saving
             </div>
           </div>
           <RedisJsonEditor v-if="isEditingHashJson" ref="memberJsonEditorRef" v-model="memberEditValue" class="min-h-0 flex-1" :save-disabled="savingMember || !memberValueChanged" :read-only="savingMember" :word-wrap="redisJsonWordWrap" :enable-builtin-find="false" @save="saveMemberEdit" />
-          <div v-else-if="memberValueView === 'json' && selectedMemberDetail.json && memberValueCodec === 'none'" class="gauss-horizon-editor-font-family min-h-0 flex-1 overflow-auto bg-background p-5 text-[13px] leading-6">
+          <div v-else-if="memberValueView === 'json' && selectedMemberDetail.json && memberValueCodec === 'none'" class="chiron-horizon-editor-font-family min-h-0 flex-1 overflow-auto bg-background p-5 text-[13px] leading-6">
             <JsonTree :value="selectedMemberDetail.json.value" :word-wrap="redisJsonWordWrap" :highlight-json="highlightRedisJson" virtualized />
           </div>
-          <div v-else-if="activeStructuredMemberDetail && memberValueView !== 'hex' && memberValueView !== 'base64'" class="gauss-horizon-editor-font-family min-h-0 flex-1 overflow-auto bg-background p-5 text-[13px] leading-6">
+          <div v-else-if="activeStructuredMemberDetail && memberValueView !== 'hex' && memberValueView !== 'base64'" class="chiron-horizon-editor-font-family min-h-0 flex-1 overflow-auto bg-background p-5 text-[13px] leading-6">
             <JsonTree v-if="memberValueView === 'json'" :value="activeStructuredMemberDetail.value" :word-wrap="redisJsonWordWrap" :highlight-json="highlightRedisJson" virtualized />
             <pre v-else class="w-full min-w-0 max-w-full" :class="redisJsonWordWrap ? 'whitespace-pre-wrap break-words' : 'whitespace-pre'">{{ memberDecodedText }}</pre>
           </div>
-          <div v-else-if="memberValueCodec === 'base64' && memberBase64Detail" class="gauss-horizon-editor-font-family min-h-0 flex-1 overflow-auto bg-background p-5 text-[13px] leading-6">
+          <div v-else-if="memberValueCodec === 'base64' && memberBase64Detail" class="chiron-horizon-editor-font-family min-h-0 flex-1 overflow-auto bg-background p-5 text-[13px] leading-6">
             <JsonTree v-if="memberValueView === 'json' && memberBase64Detail.json" :value="memberBase64Detail.json.value" :word-wrap="redisJsonWordWrap" :highlight-json="highlightRedisJson" virtualized />
             <pre v-else class="w-full min-w-0 max-w-full" :class="redisJsonWordWrap ? 'whitespace-pre-wrap break-words' : 'whitespace-pre'">{{ memberDecodedText }}</pre>
           </div>
           <div v-else-if="memberCodecMismatch" class="min-h-0 flex-1 flex flex-col overflow-hidden">
-            <pre class="gauss-horizon-editor-font-family min-h-0 w-full min-w-0 max-w-full flex-1 overflow-auto bg-background p-5 text-[13px] leading-6">{{ detailTextForFormat(selectedMemberDetail, selectedMemberDetail.defaultFormat) }}</pre>
+            <pre class="chiron-horizon-editor-font-family min-h-0 w-full min-w-0 max-w-full flex-1 overflow-auto bg-background p-5 text-[13px] leading-6">{{ detailTextForFormat(selectedMemberDetail, selectedMemberDetail.defaultFormat) }}</pre>
             <div class="flex shrink-0 flex-wrap items-center gap-2 border-t px-5 py-2 text-xs text-muted-foreground">{{ t("redis.codecMismatch") }}</div>
           </div>
           <div v-else-if="memberValueView === 'hex'" class="min-h-0 flex-1 overflow-auto bg-background p-5 text-xs leading-5">
@@ -3667,25 +3667,25 @@ useUpdateBlocker(() => (hasUnsavedRedisDraft.value || editingTtl.value || saving
               <span>{{ t("grid.hexViewer") }}</span>
               <span>{{ t("grid.hexViewerByteCount", { count: selectedMemberDetail.byteCount }) }}</span>
             </div>
-            <pre v-if="selectedMemberDetail.hexRows.length > 0 && canHighlightMemberSurface" class="gauss-horizon-editor-font-family w-full min-w-0 max-w-full select-all whitespace-pre-wrap break-all" v-html="contentSearchHighlightedHtml" />
-            <pre v-else-if="selectedMemberDetail.hexRows.length > 0" class="gauss-horizon-editor-font-family w-full min-w-0 max-w-full select-all whitespace-pre-wrap break-all">{{ detailTextForFormat(selectedMemberDetail, "hex") }}</pre>
+            <pre v-if="selectedMemberDetail.hexRows.length > 0 && canHighlightMemberSurface" class="chiron-horizon-editor-font-family w-full min-w-0 max-w-full select-all whitespace-pre-wrap break-all" v-html="contentSearchHighlightedHtml" />
+            <pre v-else-if="selectedMemberDetail.hexRows.length > 0" class="chiron-horizon-editor-font-family w-full min-w-0 max-w-full select-all whitespace-pre-wrap break-all">{{ detailTextForFormat(selectedMemberDetail, "hex") }}</pre>
             <div v-else class="text-muted-foreground">{{ t("grid.hexViewerEmpty") }}</div>
           </div>
-          <pre v-else-if="memberValueView === 'base64' && canHighlightMemberSurface" class="gauss-horizon-editor-font-family min-h-0 w-full min-w-0 max-w-full flex-1 overflow-auto bg-background p-5 text-[13px] leading-6 whitespace-pre-wrap break-all" v-html="contentSearchHighlightedHtml" />
-          <pre v-else-if="memberValueView === 'base64'" class="gauss-horizon-editor-font-family min-h-0 w-full min-w-0 max-w-full flex-1 overflow-auto bg-background p-5 text-[13px] leading-6 whitespace-pre-wrap break-all">{{ selectedMemberDetail.base64Text }}</pre>
+          <pre v-else-if="memberValueView === 'base64' && canHighlightMemberSurface" class="chiron-horizon-editor-font-family min-h-0 w-full min-w-0 max-w-full flex-1 overflow-auto bg-background p-5 text-[13px] leading-6 whitespace-pre-wrap break-all" v-html="contentSearchHighlightedHtml" />
+          <pre v-else-if="memberValueView === 'base64'" class="chiron-horizon-editor-font-family min-h-0 w-full min-w-0 max-w-full flex-1 overflow-auto bg-background p-5 text-[13px] leading-6 whitespace-pre-wrap break-all">{{ selectedMemberDetail.base64Text }}</pre>
           <div v-else-if="isDecompressCodec(memberValueCodec)" class="min-h-0 flex-1 flex flex-col overflow-hidden">
             <div v-if="decompressedState.status === 'loading'" class="flex min-h-0 flex-1 items-center justify-center gap-2 text-muted-foreground">
               <Loader2 class="h-4 w-4 animate-spin" />
               {{ t("redis.decompressedLoading") }}
             </div>
-            <div v-else-if="decompressedState.status === 'success'" class="gauss-horizon-editor-font-family min-h-0 flex-1 overflow-auto bg-background">
+            <div v-else-if="decompressedState.status === 'success'" class="chiron-horizon-editor-font-family min-h-0 flex-1 overflow-auto bg-background">
               <div v-if="memberValueView === 'json' && decompressedJsonDetail" class="h-full p-5">
                 <JsonTree :value="decompressedJsonDetail.value" :word-wrap="redisJsonWordWrap" :highlight-json="highlightRedisJson" virtualized />
               </div>
               <pre v-else class="w-full min-w-0 max-w-full p-5 text-[13px] leading-6" :class="detailTextClass('utf8')">{{ memberDecodedText }}</pre>
             </div>
             <template v-else>
-              <pre class="gauss-horizon-editor-font-family min-h-0 w-full min-w-0 max-w-full flex-1 overflow-auto bg-background p-5 text-[13px] leading-6" :class="detailTextClass('utf8')">{{ decompressedRawFallbackText }}</pre>
+              <pre class="chiron-horizon-editor-font-family min-h-0 w-full min-w-0 max-w-full flex-1 overflow-auto bg-background p-5 text-[13px] leading-6" :class="detailTextClass('utf8')">{{ decompressedRawFallbackText }}</pre>
               <div v-if="decompressedFailureMessage" class="flex shrink-0 flex-wrap items-center gap-2 border-t px-5 py-2 text-xs text-muted-foreground">
                 <span>{{ decompressedFailureMessage }}</span>
                 <Button
@@ -3705,14 +3705,14 @@ useUpdateBlocker(() => (hasUnsavedRedisDraft.value || editingTtl.value || saving
           <div
             v-else-if="memberValueView === 'utf8' && canEditCurrentMemberFormat && memberValueCodec === 'none'"
             data-redis-member-utf8-viewer
-            class="gauss-horizon-editor-font-family min-h-0 flex-1 overflow-auto bg-background text-[13px] leading-6 cursor-text"
+            class="chiron-horizon-editor-font-family min-h-0 flex-1 overflow-auto bg-background text-[13px] leading-6 cursor-text"
             @dblclick.self.prevent="startEditMember"
           >
             <pre v-if="canHighlightMemberSurface" data-redis-member-utf8-text class="inline-block min-w-0 p-5 align-top select-text" :class="[detailTextClass('utf8'), redisJsonWordWrap ? 'max-w-full' : 'min-w-max']" v-html="contentSearchHighlightedHtml" />
             <pre v-else data-redis-member-utf8-text class="inline-block min-w-0 p-5 align-top select-text" :class="[detailTextClass('utf8'), redisJsonWordWrap ? 'max-w-full' : 'min-w-max']">{{ detailTextForFormat(selectedMemberDetail, "utf8") }}</pre>
           </div>
-          <pre v-else-if="canHighlightMemberSurface" class="gauss-horizon-editor-font-family min-h-0 w-full min-w-0 max-w-full flex-1 overflow-auto bg-background p-5 text-[13px] leading-6" :class="detailTextClass(memberValueView)" v-html="contentSearchHighlightedHtml" />
-          <pre v-else class="gauss-horizon-editor-font-family min-h-0 w-full min-w-0 max-w-full flex-1 overflow-auto bg-background p-5 text-[13px] leading-6" :class="detailTextClass(memberValueView)">{{ detailTextForFormat(selectedMemberDetail, memberValueView) }}</pre>
+          <pre v-else-if="canHighlightMemberSurface" class="chiron-horizon-editor-font-family min-h-0 w-full min-w-0 max-w-full flex-1 overflow-auto bg-background p-5 text-[13px] leading-6" :class="detailTextClass(memberValueView)" v-html="contentSearchHighlightedHtml" />
+          <pre v-else class="chiron-horizon-editor-font-family min-h-0 w-full min-w-0 max-w-full flex-1 overflow-auto bg-background p-5 text-[13px] leading-6" :class="detailTextClass(memberValueView)">{{ detailTextForFormat(selectedMemberDetail, memberValueView) }}</pre>
         </template>
         <DialogFooter class="mx-0 mb-0 shrink-0 border-t px-5 py-3">
           <template v-if="isEditingMember">

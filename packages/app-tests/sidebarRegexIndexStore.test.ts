@@ -4,7 +4,7 @@ import { createPinia, setActivePinia } from "pinia";
 import { decodeSchemaTreeCache, encodeSchemaTreeCache, encodeTableSearchIndexManifest, type TableSearchIndexManifestEntry } from "../../apps/desktop/src/lib/metadata/schemaTreeCache.ts";
 import type { ConnectionConfig, TreeNode } from "../../apps/desktop/src/types/database.ts";
 
-const MANIFEST_CACHE_KEY = "gauss-horizon:sidebar-table-search-index-manifest-v1";
+const MANIFEST_CACHE_KEY = "chiron-horizon:sidebar-table-search-index-manifest-v1";
 
 const { loadSchemaCacheMock, saveSchemaCacheMock, deleteSchemaCachePrefixMock, saveConnectionsMock, listTablesMock, checkConnectionHealthMock, persistedCache } = vi.hoisted(() => {
   const persisted = new Map<string, unknown>();

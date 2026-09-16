@@ -8,12 +8,12 @@ use tokio::sync::RwLock;
 use tokio_util::sync::CancellationToken;
 
 use crate::commands::connection::{ensure_connection_writable, AppState};
-use gauss_horizon_core::sql_file_import::{
+use chiron_horizon_core::sql_file_import::{
     execute_sql_file_paths, mysql_like_sql_file_bootstrap_analysis, read_sql_file_preview, sql_file_progress,
     SqlFileProgressEmitter,
 };
 
-pub use gauss_horizon_core::sql::{SqlFilePreview, SqlFileRequest, SqlFileStatus};
+pub use chiron_horizon_core::sql::{SqlFilePreview, SqlFileRequest, SqlFileStatus};
 
 static SQL_FILE_EXECUTIONS: OnceLock<RwLock<HashMap<String, CancellationToken>>> = OnceLock::new();
 
@@ -33,8 +33,8 @@ struct SqlFileSummary {
 #[tauri::command]
 pub async fn inspect_sql_file_tables(
     file_path: String,
-) -> Result<Vec<gauss_horizon_core::sql_file_import::SqlFileTable>, String> {
-    gauss_horizon_core::sql_file_import::inspect_sql_file_tables(std::path::Path::new(&file_path)).await
+) -> Result<Vec<chiron_horizon_core::sql_file_import::SqlFileTable>, String> {
+    chiron_horizon_core::sql_file_import::inspect_sql_file_tables(std::path::Path::new(&file_path)).await
 }
 
 #[tauri::command]

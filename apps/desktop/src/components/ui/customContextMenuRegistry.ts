@@ -20,7 +20,7 @@ export interface ContextMenuItem {
 export type ContextMenuClose = () => void;
 
 /** Marker attribute on scrollable context menu / submenu roots. */
-export const CONTEXT_MENU_SCROLL_ROOT_ATTR = "data-gauss-horizon-context-menu";
+export const CONTEXT_MENU_SCROLL_ROOT_ATTR = "data-chiron-horizon-context-menu";
 
 export function isContextMenuInternalScroll(event: Event): boolean {
   const target = event.target;

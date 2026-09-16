@@ -185,7 +185,7 @@ export function useAppUpdater(options: UseAppUpdaterOptions = {}) {
   }
   function openUrl(url: string) {
     if (url.includes("distribution-disabled.invalid")) {
-      updateCheckMessage.value = "This Gauss Horizon service is not available in 0.1.0.";
+      updateCheckMessage.value = "This Chiron Horizon service is not available in 0.1.0.";
       return;
     }
     if (isTauriRuntime()) void import("@tauri-apps/plugin-shell").then(({ open }) => open(url));

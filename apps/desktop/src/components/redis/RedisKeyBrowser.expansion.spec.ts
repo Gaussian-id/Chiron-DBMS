@@ -468,7 +468,7 @@ describe("RedisKeyBrowser expansion persistence across refresh (issue #7173)", (
     await settle();
     expect(leafVisible(host, "grp:sub:x")).toBe(true);
 
-    window.dispatchEvent(new CustomEvent("gauss-horizon-redis-db-flushed", { detail: { connectionId: "connection", db: 0 } }));
+    window.dispatchEvent(new CustomEvent("chiron-horizon-redis-db-flushed", { detail: { connectionId: "connection", db: 0 } }));
     await settle();
     clickRefresh(host);
     await settle();

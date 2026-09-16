@@ -1,7 +1,7 @@
 use std::path::{Path, PathBuf};
 
 #[cfg(target_os = "windows")]
-const PORTABLE_MARKER: &str = "portable.gauss-horizon";
+const PORTABLE_MARKER: &str = "portable.chiron-horizon";
 #[cfg(target_os = "windows")]
 const INSTALLER_MARKER: &str = "uninstall.exe";
 
@@ -35,7 +35,7 @@ impl DataDirResolution {
 }
 
 pub fn resolve_data_dir_with_mode(default_app_data_dir: PathBuf) -> DataDirResolution {
-    let env_data_dir = gauss_horizon_core::legacy::var_os("GAUSS_HORIZON_DATA_DIR")
+    let env_data_dir = chiron_horizon_core::legacy::var_os("CHIRON_HORIZON_DATA_DIR")
         .filter(|value| !value.is_empty())
         .map(PathBuf::from);
 
@@ -62,6 +62,19 @@ pub fn alternative_data_dir(resolution: &DataDirResolution) -> Option<PathBuf> {
         DataDirMode::Default => resolution.portable_data_dir.clone(),
         DataDirMode::EnvOverride => None,
     }
+}
+
+/// Returns the default data directory used before the Chiron Horizon bundle
+/// identifier changed. Custom and portable installations retain their own
+/// explicit locations, so they must not import from an implicit legacy path.
+pub fn legacy_product_data_dir(resolution: &DataDirResolution) -> Option<PathBuf> {
+    if !matches!(resolution.mode, DataDirMode::Default) {
+        return None;
+    }
+
+    let parent = resolution.default_data_dir.parent()?;
+    let legacy_data_dir = parent.join("id.gaussian.gauss-horizon");
+    (legacy_data_dir != resolution.data_dir).then_some(legacy_data_dir)
 }
 
 pub fn is_portable_mode() -> bool {
@@ -134,12 +147,12 @@ fn resolve_data_dir_from_inputs(
 mod tests {
     use std::path::PathBuf;
 
-    use super::{alternative_data_dir, resolve_data_dir_from_inputs, DataDirMode};
+    use super::{alternative_data_dir, legacy_product_data_dir, resolve_data_dir_from_inputs, DataDirMode};
 
     #[test]
     fn uses_portable_data_dir_when_marker_exists_without_installer_marker() {
-        let default_dir = PathBuf::from(r"C:\Users\Administrator\AppData\Roaming\id.gaussian.gauss-horizon");
-        let exe_dir = PathBuf::from(r"D:\Apps\Gauss Horizon");
+        let default_dir = PathBuf::from(r"C:\Users\Administrator\AppData\Roaming\id.chiron.horizon");
+        let exe_dir = PathBuf::from(r"D:\Apps\Chiron Horizon");
 
         let resolution = resolve_data_dir_from_inputs(default_dir, Some(exe_dir.clone()), true, false, None);
 
@@ -152,8 +165,8 @@ mod tests {
 
     #[test]
     fn installer_marker_keeps_installed_mode_even_when_portable_marker_exists() {
-        let default_dir = PathBuf::from(r"C:\Users\Administrator\AppData\Roaming\id.gaussian.gauss-horizon");
-        let exe_dir = PathBuf::from(r"C:\Program Files\Gauss Horizon");
+        let default_dir = PathBuf::from(r"C:\Users\Administrator\AppData\Roaming\id.chiron.horizon");
+        let exe_dir = PathBuf::from(r"C:\Program Files\Chiron Horizon");
 
         let resolution = resolve_data_dir_from_inputs(default_dir.clone(), Some(exe_dir), true, true, None);
 
@@ -166,9 +179,9 @@ mod tests {
 
     #[test]
     fn env_override_wins_over_installer_and_portable_markers() {
-        let default_dir = PathBuf::from(r"C:\Users\Administrator\AppData\Roaming\id.gaussian.gauss-horizon");
-        let exe_dir = PathBuf::from(r"C:\Program Files\Gauss Horizon");
-        let env_dir = PathBuf::from(r"E:\GaussHorizonData");
+        let default_dir = PathBuf::from(r"C:\Users\Administrator\AppData\Roaming\id.chiron.horizon");
+        let exe_dir = PathBuf::from(r"C:\Program Files\Chiron Horizon");
+        let env_dir = PathBuf::from(r"E:\ChironHorizonData");
 
         let resolution = resolve_data_dir_from_inputs(default_dir, Some(exe_dir), true, true, Some(env_dir.clone()));
 
@@ -181,8 +194,8 @@ mod tests {
 
     #[test]
     fn portable_mode_can_import_from_default_data_dir() {
-        let default_dir = PathBuf::from(r"C:\Users\Administrator\AppData\Roaming\id.gaussian.gauss-horizon");
-        let exe_dir = PathBuf::from(r"D:\Apps\Gauss Horizon");
+        let default_dir = PathBuf::from(r"C:\Users\Administrator\AppData\Roaming\id.chiron.horizon");
+        let exe_dir = PathBuf::from(r"D:\Apps\Chiron Horizon");
 
         let resolution = resolve_data_dir_from_inputs(default_dir.clone(), Some(exe_dir), true, false, None);
 
@@ -191,8 +204,8 @@ mod tests {
 
     #[test]
     fn installed_mode_can_import_from_leftover_portable_data_dir() {
-        let default_dir = PathBuf::from(r"C:\Users\Administrator\AppData\Roaming\id.gaussian.gauss-horizon");
-        let exe_dir = PathBuf::from(r"C:\Program Files\Gauss Horizon");
+        let default_dir = PathBuf::from(r"C:\Users\Administrator\AppData\Roaming\id.chiron.horizon");
+        let exe_dir = PathBuf::from(r"C:\Program Files\Chiron Horizon");
 
         let resolution = resolve_data_dir_from_inputs(default_dir, Some(exe_dir.clone()), true, true, None);
 
@@ -201,17 +214,42 @@ mod tests {
 
     #[test]
     fn env_override_does_not_import_from_implicit_alternative_dir() {
-        let default_dir = PathBuf::from(r"C:\Users\Administrator\AppData\Roaming\id.gaussian.gauss-horizon");
-        let exe_dir = PathBuf::from(r"D:\Apps\Gauss Horizon");
+        let default_dir = PathBuf::from(r"C:\Users\Administrator\AppData\Roaming\id.chiron.horizon");
+        let exe_dir = PathBuf::from(r"D:\Apps\Chiron Horizon");
 
         let resolution = resolve_data_dir_from_inputs(
             default_dir,
             Some(exe_dir),
             true,
             false,
-            Some(PathBuf::from(r"E:\GaussHorizonData")),
+            Some(PathBuf::from(r"E:\ChironHorizonData")),
         );
 
         assert_eq!(alternative_data_dir(&resolution), None);
+    }
+
+    #[test]
+    fn default_mode_imports_from_the_former_gauss_horizon_data_dir() {
+        let default_dir = PathBuf::from("app-data").join("id.chiron.horizon");
+        let resolution = resolve_data_dir_from_inputs(default_dir, None, false, false, None);
+
+        assert_eq!(
+            legacy_product_data_dir(&resolution),
+            Some(PathBuf::from("app-data").join("id.gaussian.gauss-horizon"))
+        );
+    }
+
+    #[test]
+    fn custom_modes_do_not_import_from_the_former_product_data_dir() {
+        let default_dir = PathBuf::from(r"C:\Users\Administrator\AppData\Roaming\id.chiron.horizon");
+        let resolution = resolve_data_dir_from_inputs(
+            default_dir,
+            Some(PathBuf::from(r"D:\Apps\Chiron Horizon")),
+            true,
+            false,
+            Some(PathBuf::from(r"E:\ChironHorizonData")),
+        );
+
+        assert_eq!(legacy_product_data_dir(&resolution), None);
     }
 }

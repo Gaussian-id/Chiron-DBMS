@@ -1,6 +1,6 @@
 use std::path::PathBuf;
 
-use gauss_horizon_core::sql_dialect::{
+use chiron_horizon_core::sql_dialect::{
     descriptor::DialectKind, dialect_check, dialect_check_all, dialect_yaml::DialectYaml, DialectInfo,
 };
 
@@ -130,5 +130,5 @@ identifier_rules:
 
 #[tauri::command]
 pub async fn list_dialect_data_types(dialect_name: String) -> Vec<String> {
-    gauss_horizon_core::sql_dialect::dialect_types::list_dialect_type_names(&dialect_name)
+    chiron_horizon_core::sql_dialect::dialect_types::list_dialect_type_names(&dialect_name)
 }

@@ -28,9 +28,9 @@ func TestLiveXuguTypeMemberCatalog(t *testing.T) {
 	defer db.Close()
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
-	typeName := "GAUSS_HORIZON_TYPE_MEMBER_LIVE"
+	typeName := "CHIRON_HORIZON_TYPE_MEMBER_LIVE"
 	_, _ = db.ExecContext(ctx, "DROP TYPE "+quoteIdentifier(typeName))
-	_, err = db.ExecContext(ctx, `CREATE OR REPLACE TYPE GAUSS_HORIZON_TYPE_MEMBER_LIVE AS OBJECT (
+	_, err = db.ExecContext(ctx, `CREATE OR REPLACE TYPE CHIRON_HORIZON_TYPE_MEMBER_LIVE AS OBJECT (
   item_id INTEGER,
   item_name VARCHAR(80),
   STATIC FUNCTION compute_total(quantity INTEGER, price NUMERIC(12,2)) RETURN NUMERIC(18,2),
@@ -40,7 +40,7 @@ func TestLiveXuguTypeMemberCatalog(t *testing.T) {
 		t.Skipf("cannot create live test type: %v", err)
 	}
 	defer func() { _, _ = db.ExecContext(context.Background(), "DROP TYPE "+quoteIdentifier(typeName)) }()
-	_, err = db.ExecContext(ctx, `CREATE OR REPLACE TYPE BODY GAUSS_HORIZON_TYPE_MEMBER_LIVE AS
+	_, err = db.ExecContext(ctx, `CREATE OR REPLACE TYPE BODY CHIRON_HORIZON_TYPE_MEMBER_LIVE AS
   STATIC FUNCTION compute_total(quantity INTEGER, price NUMERIC(12,2)) RETURN NUMERIC(18,2) IS
   BEGIN RETURN quantity * price; END;
   MEMBER PROCEDURE rename_item(new_name VARCHAR(40)) IS
@@ -81,7 +81,7 @@ END;`)
 	if _, err := db.ExecContext(ctx, "DROP TYPE "+quoteIdentifier(typeName)); err != nil {
 		t.Fatalf("drop live type: %v", err)
 	}
-	_, err = db.ExecContext(ctx, "CREATE OR REPLACE TYPE GAUSS_HORIZON_TYPE_MEMBER_LIVE AS VARRAY(3) OF INTEGER")
+	_, err = db.ExecContext(ctx, "CREATE OR REPLACE TYPE CHIRON_HORIZON_TYPE_MEMBER_LIVE AS VARRAY(3) OF INTEGER")
 	if err != nil {
 		t.Fatalf("create live collection type: %v", err)
 	}

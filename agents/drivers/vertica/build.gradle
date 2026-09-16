@@ -5,6 +5,6 @@ dependencies {
 
 tasks.named('shadowJar') {
     manifest {
-        attributes('Agent-Label': 'Vertica', 'Main-Class': 'com.gauss.horizon.agent.vertica.VerticaAgent')
+        attributes('Agent-Label': 'Vertica', 'Main-Class': 'com.chiron.horizon.agent.vertica.VerticaAgent')
     }
 }

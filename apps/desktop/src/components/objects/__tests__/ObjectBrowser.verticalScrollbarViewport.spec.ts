@@ -19,11 +19,11 @@ describe("ObjectBrowser vertical scrollbar viewport lock", () => {
   it("moves the content min-width onto the scroller's inner wrapper", () => {
     const scrollerMatch = /<RecycleScroller[^>]*listScrollerRef[^>]*>/.exec(source);
     expect(scrollerMatch).not.toBeNull();
-    expect(scrollerMatch![0]).toContain("--gauss-horizon-object-grid-min-width");
+    expect(scrollerMatch![0]).toContain("--chiron-horizon-object-grid-min-width");
     expect(scrollerMatch![0]).not.toContain("minWidth:");
     expect(source).toContain(".object-browser-scroller {");
     expect(source).toContain("overflow-x: auto;");
-    expect(source).toContain("min-width: var(--gauss-horizon-object-grid-min-width, 0px);");
+    expect(source).toContain("min-width: var(--chiron-horizon-object-grid-min-width, 0px);");
   });
 
   it("clips the header and syncs its scroll position with the scroller", () => {

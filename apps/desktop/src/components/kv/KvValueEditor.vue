@@ -68,7 +68,7 @@ onMounted(() => {
         wordWrapCompartment.of(wordWrapExtension()),
         EditorView.theme({
           "&": { height: "100%", fontSize: "13px", backgroundColor: "transparent" },
-          ".cm-scroller": { fontFamily: "var(--gauss-horizon-editor-font-family, ui-monospace)", overflow: "auto" },
+          ".cm-scroller": { fontFamily: "var(--chiron-horizon-editor-font-family, ui-monospace)", overflow: "auto" },
           ".cm-content": { minHeight: "13rem" },
           "&.cm-focused": { outline: "none" },
         }),

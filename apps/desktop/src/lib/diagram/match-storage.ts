@@ -1,7 +1,7 @@
 import { safeLocalStorageGet, safeLocalStorageSet } from "@/lib/backend/safeStorage";
 
 function matchStorageKey(type: "match-confirms" | "match-ignores" | "match-rules", connectionId: string, database: string, schema: string): string {
-  return ["gauss-horizon", "diagram", type, "v1", connectionId, database, schema].join(":");
+  return ["chiron-horizon", "diagram", type, "v1", connectionId, database, schema].join(":");
 }
 
 export function loadMatchConfirms(connectionId: string, database: string, schema: string): string[] {
@@ -47,11 +47,11 @@ export function saveMatchRules(rules: MatchRule[], connectionId: string, databas
 }
 
 export function isAutoMatchEnabled(): boolean {
-  return safeLocalStorageGet("gauss-horizon:diagram:match-enabled") !== "false";
+  return safeLocalStorageGet("chiron-horizon:diagram:match-enabled") !== "false";
 }
 
 export function setAutoMatchEnabled(enabled: boolean): void {
-  safeLocalStorageSet("gauss-horizon:diagram:match-enabled", String(enabled));
+  safeLocalStorageSet("chiron-horizon:diagram:match-enabled", String(enabled));
 }
 
 export interface MatchRule {

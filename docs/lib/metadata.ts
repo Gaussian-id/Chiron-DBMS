@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
 
 export const SITE_URL = "https://github.com/Gaussian-id/Gauss-Horizon";
-export const SITE_NAME = "Gauss Horizon";
-export const DEFAULT_DESCRIPTION = "Gauss Horizon desktop database workbench with AI and MCP support.";
+export const SITE_NAME = "Chiron Horizon";
+export const DEFAULT_DESCRIPTION = "Chiron Horizon desktop database workbench with AI and MCP support.";
 export const DEFAULT_OG_IMAGE = "/logo.png";
 
 const LOCALE_MAP: Record<string, string> = {

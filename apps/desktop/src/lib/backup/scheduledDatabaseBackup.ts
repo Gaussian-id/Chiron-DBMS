@@ -2,12 +2,12 @@ import { safeLocalStorageGet, safeLocalStorageSet } from "@/lib/backend/safeStor
 import { isSystemDatabaseName } from "@/lib/database/visibleDatabases";
 import type { DatabaseType } from "@/types/database";
 
-export const DATABASE_BACKUP_SCHEDULES_STORAGE_KEY = "gauss-horizon-database-backup-schedules";
-export const DATABASE_BACKUP_RUNS_STORAGE_KEY = "gauss-horizon-database-backup-runs";
-export const DATABASE_BACKUP_CONFIG_CHANGED_EVENT = "gauss-horizon:database-backup-config-changed";
+export const DATABASE_BACKUP_SCHEDULES_STORAGE_KEY = "chiron-horizon-database-backup-schedules";
+export const DATABASE_BACKUP_RUNS_STORAGE_KEY = "chiron-horizon-database-backup-runs";
+export const DATABASE_BACKUP_CONFIG_CHANGED_EVENT = "chiron-horizon:database-backup-config-changed";
 export const MAX_DATABASE_BACKUP_HISTORY = 200;
-export const DEFAULT_DATABASE_BACKUP_RUN_DIRECTORY_PATTERN = "gauss-horizon-backup__{schedule}__{timestamp}__{runId}";
-export const DEFAULT_DATABASE_BACKUP_FILE_NAME_PATTERN = "gauss-horizon-backup__{schedule}__{timestamp}__{database}__{runId}";
+export const DEFAULT_DATABASE_BACKUP_RUN_DIRECTORY_PATTERN = "chiron-horizon-backup__{schedule}__{timestamp}__{runId}";
+export const DEFAULT_DATABASE_BACKUP_FILE_NAME_PATTERN = "chiron-horizon-backup__{schedule}__{timestamp}__{database}__{runId}";
 
 export type DatabaseBackupFrequency = "hourly" | "daily" | "weekly";
 export type DatabaseBackupExportStatus = "Running" | "Done" | "Error" | "Cancelled";

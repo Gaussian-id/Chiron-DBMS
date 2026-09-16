@@ -9,12 +9,12 @@ import { resolveLang } from "@/lib/i18n";
 
 const pageMetadata = {
   en: {
-    title: "Gauss Horizon Contributors",
-    description: "Explore the people building Gauss Horizon and download a certificate generated from public GitHub activity.",
+    title: "Chiron Horizon Contributors",
+    description: "Explore the people building Chiron Horizon and download a certificate generated from public GitHub activity.",
   },
   cn: {
-    title: "Gauss Horizon 贡献者",
-    description: "查看共同建设 Gauss Horizon 的开源贡献者，并根据公开 GitHub 活动生成贡献证书。",
+    title: "Chiron Horizon 贡献者",
+    description: "查看共同建设 Chiron Horizon 的开源贡献者，并根据公开 GitHub 活动生成贡献证书。",
   },
 };
 

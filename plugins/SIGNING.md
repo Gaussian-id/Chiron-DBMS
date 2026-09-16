@@ -1,25 +1,25 @@
-# Gauss Horizon plugin signing model
+# Chiron Horizon plugin signing model
 
-Gauss Horizon plugin signing v1 uses one signature owned by the repository that distributes the package. It does not require every plugin author to maintain a private signing key.
+Chiron Horizon plugin signing v1 uses one signature owned by the repository that distributes the package. It does not require every plugin author to maintain a private signing key.
 
 ## Trust boundary
 
 The official flow is:
 
-1. The plugin author publishes source and unsigned `.gauss-horizonp` candidates.
-2. Gauss Horizon Store reviews the source, Manifest, permissions, candidate hashes, and release metadata.
-3. A protected store workflow signs the approved candidate with the Gauss Horizon Store repository key.
+1. The plugin author publishes source and unsigned `.chiron-horizonp` candidates.
+2. Chiron Horizon Store reviews the source, Manifest, permissions, candidate hashes, and release metadata.
+3. A protected store workflow signs the approved candidate with the Chiron Horizon Store repository key.
 4. The catalog references the final signed artifact, SHA-256, size, and `signingKeyId`.
-5. Gauss Horizon verifies the catalog metadata, package checksums, repository signature, Manifest identity, version, publisher, and permissions before activation.
+5. Chiron Horizon verifies the catalog metadata, package checksums, repository signature, Manifest identity, version, publisher, and permissions before activation.
 
 The `publisher` field records authorship and catalog ownership. It is not a signing-key owner. The repository signature proves that the repository approved and published the exact installed bytes; it does not replace code review or sandbox native code.
 
 ## Official and custom repositories
 
-- The official repository key is controlled by Gauss Horizon Store and its public key is shipped with Gauss Horizon.
+- The official repository key is controlled by Chiron Horizon Store and its public key is shipped with Chiron Horizon.
 - A custom or private repository controls one or more repository keys and distributes the public keys to its users through an independent trusted channel.
-- Plugin authors do not need `gauss-horizon-plugin keygen` for official submissions.
-- `gauss-horizon-plugin keygen` exists only for operators of custom or private repositories.
+- Plugin authors do not need `chiron-horizon-plugin keygen` for official submissions.
+- `chiron-horizon-plugin keygen` exists only for operators of custom or private repositories.
 - Unsigned packages are accepted only through the explicit local-development installation option.
 
 ## Key rotation

@@ -383,7 +383,7 @@ function resetDragState() {
 
 function createDragGhost(sourceEl: HTMLElement, x: number, y: number) {
   const ghost = document.createElement("div");
-  const textNode = sourceEl.querySelector(".gauss-horizon-transfer-task-drag-label");
+  const textNode = sourceEl.querySelector(".chiron-horizon-transfer-task-drag-label");
   ghost.textContent = textNode?.textContent || "";
   ghost.style.cssText = `
     position: fixed;
@@ -391,7 +391,7 @@ function createDragGhost(sourceEl: HTMLElement, x: number, y: number) {
     z-index: 9999;
     opacity: 0.9;
     box-shadow: 0 2px 8px rgba(0,0,0,0.12);
-    border-radius: var(--gauss-horizon-radius-fixed-4);
+    border-radius: var(--chiron-horizon-radius-fixed-4);
     background: var(--background, #fff);
     border: 1px solid var(--border, #e5e7eb);
     max-width: 220px;
@@ -635,7 +635,7 @@ function taskRowClass(taskId: string) {
                     @click.stop
                   />
                 </template>
-                <span v-else class="gauss-horizon-transfer-task-drag-label min-w-0 flex-1 truncate">
+                <span v-else class="chiron-horizon-transfer-task-drag-label min-w-0 flex-1 truncate">
                   {{ row.folder.name }}
                   <span class="ml-1 text-muted-foreground">({{ folderTaskCount(row.folder.id) }})</span>
                 </span>
@@ -672,7 +672,7 @@ function taskRowClass(taskId: string) {
                     @click.stop
                   />
                 </template>
-                <span v-else class="gauss-horizon-transfer-task-drag-label min-w-0 flex-1 truncate" :title="`${row.task.config.sourceDatabase} → ${row.task.config.targetDatabase}`">{{ row.task.name }}</span>
+                <span v-else class="chiron-horizon-transfer-task-drag-label min-w-0 flex-1 truncate" :title="`${row.task.config.sourceDatabase} → ${row.task.config.targetDatabase}`">{{ row.task.name }}</span>
               </div>
             </div>
 
@@ -717,7 +717,7 @@ function taskRowClass(taskId: string) {
                     @click.stop
                   />
                 </template>
-                <span v-else class="gauss-horizon-transfer-task-drag-label min-w-0 flex-1 truncate" :title="`${task.config.sourceDatabase} → ${task.config.targetDatabase}`">{{ task.name }}</span>
+                <span v-else class="chiron-horizon-transfer-task-drag-label min-w-0 flex-1 truncate" :title="`${task.config.sourceDatabase} → ${task.config.targetDatabase}`">{{ task.name }}</span>
               </div>
             </div>
 

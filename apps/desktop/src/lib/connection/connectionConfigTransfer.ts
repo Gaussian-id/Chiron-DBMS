@@ -87,7 +87,7 @@ export function parseConnectionConfigObject(value: unknown): ConnectionConfigBun
     tunnelProfiles?: unknown;
   };
 
-  if ((parsed.format === "gauss-horizon-config" || parsed.format === LEGACY_CONFIG_FORMAT) && Array.isArray(parsed.connections)) {
+  if ((parsed.format === "chiron-horizon-config" || parsed.format === LEGACY_CONFIG_FORMAT) && Array.isArray(parsed.connections)) {
     return { connections: parsed.connections as ConnectionConfig[] };
   }
 

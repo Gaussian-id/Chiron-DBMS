@@ -174,26 +174,26 @@ export function selectionMatchOccurrences(): Extension {
     selectionMatchScrollbar,
     EditorView.theme({
       "&": {
-        "--gauss-horizon-selection-match-background": "rgb(59 130 246 / 0.07)",
-        "--gauss-horizon-selection-match-border": "rgb(59 130 246 / 0.24)",
-        "--gauss-horizon-selection-match-main-background": "rgb(59 130 246 / 0.11)",
-        "--gauss-horizon-selection-match-main-border": "rgb(59 130 246 / 0.36)",
+        "--chiron-horizon-selection-match-background": "rgb(59 130 246 / 0.07)",
+        "--chiron-horizon-selection-match-border": "rgb(59 130 246 / 0.24)",
+        "--chiron-horizon-selection-match-main-background": "rgb(59 130 246 / 0.11)",
+        "--chiron-horizon-selection-match-main-border": "rgb(59 130 246 / 0.36)",
         position: "relative",
       },
       ".dark &": {
-        "--gauss-horizon-selection-match-background": "rgb(147 197 253 / 0.12)",
-        "--gauss-horizon-selection-match-border": "rgb(147 197 253 / 0.3)",
-        "--gauss-horizon-selection-match-main-background": "rgb(147 197 253 / 0.18)",
-        "--gauss-horizon-selection-match-main-border": "rgb(147 197 253 / 0.42)",
+        "--chiron-horizon-selection-match-background": "rgb(147 197 253 / 0.12)",
+        "--chiron-horizon-selection-match-border": "rgb(147 197 253 / 0.3)",
+        "--chiron-horizon-selection-match-main-background": "rgb(147 197 253 / 0.18)",
+        "--chiron-horizon-selection-match-main-border": "rgb(147 197 253 / 0.42)",
       },
       ".cm-selectionMatch": {
-        backgroundColor: "var(--gauss-horizon-selection-match-background)",
+        backgroundColor: "var(--chiron-horizon-selection-match-background)",
         borderRadius: "2px",
-        boxShadow: "inset 0 0 0 1px var(--gauss-horizon-selection-match-border)",
+        boxShadow: "inset 0 0 0 1px var(--chiron-horizon-selection-match-border)",
       },
       ".cm-selectionMatch-main": {
-        backgroundColor: "var(--gauss-horizon-selection-match-main-background)",
-        boxShadow: "inset 0 0 0 1px var(--gauss-horizon-selection-match-main-border)",
+        backgroundColor: "var(--chiron-horizon-selection-match-main-background)",
+        boxShadow: "inset 0 0 0 1px var(--chiron-horizon-selection-match-main-border)",
       },
       ".cm-selectionMatchScrollbarLayer": {
         bottom: "2px",

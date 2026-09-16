@@ -3,9 +3,9 @@ import { filterKvKeysBySearch, kvKeyMatchesSearch } from "@/lib/kv/kvKeySearch";
 
 describe("KV Key path search", () => {
   it("matches the query anywhere in the complete Key path", () => {
-    const keys = ["/a/b/c", "/gauss-horizon/a", "/test/a", "/test/c", "a", "aaa", "bb"].map((key) => ({ key }));
+    const keys = ["/a/b/c", "/chiron-horizon/a", "/test/a", "/test/c", "a", "aaa", "bb"].map((key) => ({ key }));
 
-    expect(filterKvKeysBySearch(keys, "a").map((key) => key.key)).toEqual(["/a/b/c", "/gauss-horizon/a", "/test/a", "a", "aaa"]);
+    expect(filterKvKeysBySearch(keys, "a").map((key) => key.key)).toEqual(["/a/b/c", "/chiron-horizon/a", "/test/a", "a", "aaa"]);
   });
 
   it("matches case-insensitively and ignores surrounding whitespace", () => {

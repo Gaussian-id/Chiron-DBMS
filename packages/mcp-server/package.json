@@ -1,12 +1,12 @@
 {
-  "name": "@gauss-horizon/mcp-server",
+  "name": "@chiron-horizon/mcp-server",
   "version": "0.1.0",
-  "description": "MCP server for Gauss Horizon \u2014 query databases from Claude Code, Cursor, and other AI agents",
+  "description": "MCP server for Chiron Horizon \u2014 query databases from Claude Code, Cursor, and other AI agents",
   "keywords": [
     "ai-agent",
     "claude",
     "database",
-    "gauss-horizon",
+    "chiron-horizon",
     "mcp",
     "mysql",
     "postgresql"
@@ -19,8 +19,8 @@
     "directory": "packages/mcp-server"
   },
   "bin": {
-    "gauss-horizon-mcp-server": "bin/gauss-horizon-mcp-server.js",
-    "mcp-server": "bin/gauss-horizon-mcp-server.js"
+    "chiron-horizon-mcp-server": "bin/chiron-horizon-mcp-server.js",
+    "mcp-server": "bin/chiron-horizon-mcp-server.js"
   },
   "files": [
     "bin",
@@ -28,18 +28,18 @@
   ],
   "type": "module",
   "scripts": {
-    "start": "cargo run -p gauss-horizon-mcp --",
-    "test": "cargo build -p gauss-horizon-mcp && vitest run --config vitest.config.ts",
-    "build": "node --check bin/gauss-horizon-mcp-server.js",
-    "prepublishOnly": "node bin/gauss-horizon-mcp-server.js --verify-platform"
+    "start": "cargo run -p chiron-horizon-mcp --",
+    "test": "cargo build -p chiron-horizon-mcp && vitest run --config vitest.config.ts",
+    "build": "node --check bin/chiron-horizon-mcp-server.js",
+    "prepublishOnly": "node bin/chiron-horizon-mcp-server.js --verify-platform"
   },
   "optionalDependencies": {
-    "@gauss-horizon/mcp-darwin-arm64": "workspace:*",
-    "@gauss-horizon/mcp-darwin-x64": "workspace:*",
-    "@gauss-horizon/mcp-linux-arm64-gnu": "workspace:*",
-    "@gauss-horizon/mcp-linux-x64-gnu": "workspace:*",
-    "@gauss-horizon/mcp-win32-arm64": "workspace:*",
-    "@gauss-horizon/mcp-win32-x64": "workspace:*"
+    "@chiron-horizon/mcp-darwin-arm64": "workspace:*",
+    "@chiron-horizon/mcp-darwin-x64": "workspace:*",
+    "@chiron-horizon/mcp-linux-arm64-gnu": "workspace:*",
+    "@chiron-horizon/mcp-linux-x64-gnu": "workspace:*",
+    "@chiron-horizon/mcp-win32-arm64": "workspace:*",
+    "@chiron-horizon/mcp-win32-x64": "workspace:*"
   },
   "devDependencies": {
     "@types/node": "^22.15.21",

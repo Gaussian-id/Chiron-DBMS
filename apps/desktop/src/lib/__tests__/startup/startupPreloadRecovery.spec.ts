@@ -36,9 +36,9 @@ describe("startup preload recovery", () => {
 
   it("clears the retry marker after startup succeeds", () => {
     const { env, values } = environment();
-    values.set("gauss-horizon-startup-preload-retry", "1");
+    values.set("chiron-horizon-startup-preload-retry", "1");
 
     clearStartupPreloadRetry(env);
-    expect(values.has("gauss-horizon-startup-preload-retry")).toBe(false);
+    expect(values.has("chiron-horizon-startup-preload-retry")).toBe(false);
   });
 });

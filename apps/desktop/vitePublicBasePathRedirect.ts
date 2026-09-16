@@ -27,7 +27,7 @@ export function publicBasePathRedirectMiddleware(publicBasePath: string): Connec
 
 export function publicBasePathRedirectPlugin(publicBasePath: string): Plugin {
   return {
-    name: "gauss-horizon-public-base-path-redirect",
+    name: "chiron-horizon-public-base-path-redirect",
     configureServer(server) {
       server.middlewares.use(publicBasePathRedirectMiddleware(publicBasePath));
     },

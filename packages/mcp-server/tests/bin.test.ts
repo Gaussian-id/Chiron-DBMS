@@ -7,8 +7,8 @@ import { fileURLToPath } from "node:url";
 import { test } from "vitest";
 
 const packageDir = fileURLToPath(new URL("..", import.meta.url));
-const mcpBin = fileURLToPath(new URL("../bin/gauss-horizon-mcp-server.js", import.meta.url));
-const rustBinary = join(process.env.CARGO_TARGET_DIR || resolve(packageDir, "../..", "target"), "debug", process.platform === "win32" ? "gauss-horizon-mcp.exe" : "gauss-horizon-mcp");
+const mcpBin = fileURLToPath(new URL("../bin/chiron-horizon-mcp-server.js", import.meta.url));
+const rustBinary = join(process.env.CARGO_TARGET_DIR || resolve(packageDir, "../..", "target"), "debug", process.platform === "win32" ? "chiron-horizon-mcp.exe" : "chiron-horizon-mcp");
 
 type InitializeResponse = {
   id: number;
@@ -40,8 +40,8 @@ test("falls back from server discovery when invoked through an npm-style symlink
       cwd: packageDir,
       env: {
         ...process.env,
-        GAUSS_HORIZON_MCP_BINARY: rustBinary,
-        GAUSS_HORIZON_DATA_DIR: bin.dir,
+        CHIRON_HORIZON_MCP_BINARY: rustBinary,
+        CHIRON_HORIZON_DATA_DIR: bin.dir,
       },
     });
 
@@ -68,7 +68,7 @@ test("falls back from server discovery when invoked through an npm-style symlink
         params: {
           protocolVersion: "2024-11-05",
           capabilities: {},
-          clientInfo: { name: "gauss-horizon-test", version: "0.0.0" },
+          clientInfo: { name: "chiron-horizon-test", version: "0.0.0" },
         },
       }),
     );
@@ -76,7 +76,7 @@ test("falls back from server discovery when invoked through an npm-style symlink
     const response = await responsePromise;
 
     assert.equal(response.id, 2);
-    assert.equal(response.result.serverInfo.name, "gauss-horizon");
+    assert.equal(response.result.serverInfo.name, "chiron-horizon");
   } finally {
     child?.kill();
     await rm(bin.dir, { recursive: true, force: true });
@@ -84,8 +84,8 @@ test("falls back from server discovery when invoked through an npm-style symlink
 });
 
 async function symlinkedMcpServer() {
-  const dir = await mkdtemp(join(tmpdir(), "gauss-horizon-mcp-bin-"));
-  const path = join(dir, "gauss-horizon-mcp-server");
+  const dir = await mkdtemp(join(tmpdir(), "chiron-horizon-mcp-bin-"));
+  const path = join(dir, "chiron-horizon-mcp-server");
   await symlink(mcpBin, path);
   return { dir, path };
 }

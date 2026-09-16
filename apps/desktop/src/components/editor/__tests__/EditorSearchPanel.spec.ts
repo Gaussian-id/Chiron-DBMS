@@ -8,7 +8,7 @@ const contentAreaSource = readFileSync(new URL("../../layout/ContentArea.vue", i
 
 describe("EditorSearchPanel corner style", () => {
   it("uses the configurable five-pixel radius token for editor inputs", () => {
-    expect(editorSearchPanelSource).toContain("border-radius: var(--gauss-horizon-radius-fixed-5);");
+    expect(editorSearchPanelSource).toContain("border-radius: var(--chiron-horizon-radius-fixed-5);");
   });
 });
 

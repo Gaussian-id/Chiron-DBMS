@@ -9,14 +9,14 @@ describe("DataTransferDialog layout", () => {
     const resizableDialogs = dialogContentTags.filter((tag) => tag.includes(" resize"));
 
     expect(resizableDialogs).toHaveLength(1);
-    expect(resizableDialogs[0]).toContain('class="gauss-horizon-transfer-dialog sm:max-w-[1120px] max-h-[80vh] flex flex-col overflow-hidden resize"');
+    expect(resizableDialogs[0]).toContain('class="chiron-horizon-transfer-dialog sm:max-w-[1120px] max-h-[80vh] flex flex-col overflow-hidden resize"');
     expect(resizableDialogs[0]).toContain(':style="transferDialogStyle"');
     expect(dialogSource).toContain('width: "min(1120px, calc(100vw - 2rem))"');
-    expect(dialogSource).toContain('height: "min(80vh, calc(var(--gauss-horizon-viewport-height) - 2rem))"');
+    expect(dialogSource).toContain('height: "min(80vh, calc(var(--chiron-horizon-viewport-height) - 2rem))"');
     expect(dialogSource).toContain('minWidth: "min(780px, calc(100vw - 2rem))"');
-    expect(dialogSource).toContain('minHeight: "min(480px, calc(var(--gauss-horizon-viewport-height) - 2rem))"');
+    expect(dialogSource).toContain('minHeight: "min(480px, calc(var(--chiron-horizon-viewport-height) - 2rem))"');
     expect(dialogSource).toContain('maxWidth: "calc(100vw - 2rem)"');
-    expect(dialogSource).toContain('maxHeight: "calc(var(--gauss-horizon-viewport-height) - 2rem)"');
+    expect(dialogSource).toContain('maxHeight: "calc(var(--chiron-horizon-viewport-height) - 2rem)"');
   });
 
   it("keeps source and target side by side while the dialog changes size", () => {

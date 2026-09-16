@@ -22,8 +22,8 @@ describe("omitDdlIdentifierQuotes", () => {
   });
 
   it("removes quotes from ordinary uppercase Oracle identifiers", () => {
-    const ddl = 'CREATE TABLE "GAUSS_HORIZON_TEST"."PRODUCTS" ("ID" NUMBER(10), "SKU" VARCHAR2(32)) TABLESPACE "USERS";';
-    expect(omitDdlIdentifierQuotes(ddl, "oracle")).toBe("CREATE TABLE GAUSS_HORIZON_TEST.PRODUCTS (ID NUMBER(10), SKU VARCHAR2(32)) TABLESPACE USERS;");
+    const ddl = 'CREATE TABLE "CHIRON_HORIZON_TEST"."PRODUCTS" ("ID" NUMBER(10), "SKU" VARCHAR2(32)) TABLESPACE "USERS";';
+    expect(omitDdlIdentifierQuotes(ddl, "oracle")).toBe("CREATE TABLE CHIRON_HORIZON_TEST.PRODUCTS (ID NUMBER(10), SKU VARCHAR2(32)) TABLESPACE USERS;");
   });
 
   it("keeps quotes required by Oracle case and naming rules", () => {
@@ -32,8 +32,8 @@ describe("omitDdlIdentifierQuotes", () => {
   });
 
   it("removes quotes from ordinary uppercase Dameng identifiers", () => {
-    const ddl = 'CREATE TABLE "GAUSS_HORIZON_TEST"."PRODUCTS" ("ID" INT, "NAME" VARCHAR(128)) STORAGE (ON "MAIN", CLUSTERBTR)';
-    expect(omitDdlIdentifierQuotes(ddl, "dameng")).toBe("CREATE TABLE GAUSS_HORIZON_TEST.PRODUCTS (ID INT, NAME VARCHAR(128)) STORAGE (ON MAIN, CLUSTERBTR)");
+    const ddl = 'CREATE TABLE "CHIRON_HORIZON_TEST"."PRODUCTS" ("ID" INT, "NAME" VARCHAR(128)) STORAGE (ON "MAIN", CLUSTERBTR)';
+    expect(omitDdlIdentifierQuotes(ddl, "dameng")).toBe("CREATE TABLE CHIRON_HORIZON_TEST.PRODUCTS (ID INT, NAME VARCHAR(128)) STORAGE (ON MAIN, CLUSTERBTR)");
   });
 
   it("keeps quotes required by Dameng case, naming, and reserved-word rules", () => {

@@ -1,6 +1,6 @@
-# Contributing to Gauss Horizon
+# Contributing to Chiron Horizon
 
-Thanks for taking a look at Gauss Horizon. Whether you fix a typo, improve docs, or tackle a database-specific bug, every PR helps.
+Thanks for taking a look at Chiron Horizon. Whether you fix a typo, improve docs, or tackle a database-specific bug, every PR helps.
 
 ## Where to Start
 
@@ -26,7 +26,7 @@ Linux desktop builds also need WebKit/GTK packages. See [README.md](README.md#ge
 
 ```bash
 git clone https://github.com/Gaussian-id/Gauss-Horizon.git
-cd gauss-horizon
+cd chiron-horizon
 make
 ```
 
@@ -53,7 +53,7 @@ cd agents
 
 Do not manually edit `agents/versions.json` when changing an existing agent; the release workflow automatically bumps changed modules. Only new drivers add an initial version. New Java/JDBC drivers also update `agents/settings.gradle` and the supported-agent table; native drivers register their artifacts through the agent authoring/release checklist.
 
-For a real local Java agent test, build the target `shadowJar`, back up and replace `~/.gauss-horizon/agents/drivers/<db_type>/agent.jar`, then restart Gauss Horizon or reconnect the database. See the [complete website tutorial](https://distribution-disabled.invalid/en/docs/contributing) for exact commands.
+For a real local Java agent test, build the target `shadowJar`, back up and replace `~/.chiron-horizon/agents/drivers/<db_type>/agent.jar`, then restart Chiron Horizon or reconnect the database. See the [complete website tutorial](https://distribution-disabled.invalid/en/docs/contributing) for exact commands.
 
 ## Project Layout
 
@@ -61,11 +61,11 @@ For a real local Java agent test, build the target `shadowJar`, back up and repl
 | --- | --- |
 | `apps/desktop/src/` | Vue frontend |
 | `src-tauri/` | Tauri desktop shell and command layer |
-| `crates/gauss-horizon-core/` | Shared Rust database logic |
-| `crates/gauss-horizon-web/` | Docker / Web HTTP backend |
-| `packages/cli/` | `@gauss-horizon/cli` |
-| `packages/mcp-server/` | `@gauss-horizon/mcp-server` |
-| `packages/plugin-cli/` | Precompiled `@gauss-horizon/plugin-cli` launcher and bundled plugin SDKs |
+| `crates/chiron-horizon-core/` | Shared Rust database logic |
+| `crates/chiron-horizon-web/` | Docker / Web HTTP backend |
+| `packages/cli/` | `@chiron-horizon/cli` |
+| `packages/mcp-server/` | `@chiron-horizon/mcp-server` |
+| `packages/plugin-cli/` | Precompiled `@chiron-horizon/plugin-cli` launcher and bundled plugin SDKs |
 | `packages/mongo-shell/` | Private MongoDB editor parsing helpers |
 | `docs/` | Official documentation site |
 | `examples/` | Sample configs and automation scripts |
@@ -151,6 +151,6 @@ Small PRs are easier to review and merge.
 
 - [Discord](https://discord.gg/W7NyVDRt6a)
 - [GitHub Issues](https://github.com/Gaussian-id/Gauss-Horizon/issues)
-- [Official docs](https://distribution-disabled.invalid/en/docs/what-is-gauss-horizon)
+- [Official docs](https://distribution-disabled.invalid/en/docs/what-is-chiron-horizon)
 
-Merged contributors appear on the [Gauss Horizon contributors wall](https://distribution-disabled.invalid/en/community).
+Merged contributors appear on the [Chiron Horizon contributors wall](https://distribution-disabled.invalid/en/community).

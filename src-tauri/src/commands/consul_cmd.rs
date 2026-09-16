@@ -4,7 +4,7 @@ use serde::Serialize;
 use tauri::{AppHandle, Emitter, State};
 
 use crate::commands::connection::{ensure_connection_writable, AppState};
-use gauss_horizon_core::agent_kv::{
+use chiron_horizon_core::agent_kv::{
     KvDeleteOptions, KvDeleteResponse, KvGetResponse, KvListPrefixResponse, KvPutOptions, KvPutResponse, KvValue,
 };
 
@@ -12,8 +12,8 @@ use gauss_horizon_core::agent_kv::{
 pub async fn consul_capabilities(
     state: State<'_, Arc<AppState>>,
     connection_id: String,
-) -> Result<gauss_horizon_core::consul::ConsulCapabilities, String> {
-    gauss_horizon_core::consul::consul_capabilities_core(&state, &connection_id).await
+) -> Result<chiron_horizon_core::consul::ConsulCapabilities, String> {
+    chiron_horizon_core::consul::consul_capabilities_core(&state, &connection_id).await
 }
 
 #[tauri::command]
@@ -24,8 +24,14 @@ pub async fn consul_list_prefix(
     limit: usize,
     continuation: Option<String>,
 ) -> Result<KvListPrefixResponse, String> {
-    gauss_horizon_core::consul::consul_list_prefix_core(&state, &connection_id, &prefix, limit, continuation.as_deref())
-        .await
+    chiron_horizon_core::consul::consul_list_prefix_core(
+        &state,
+        &connection_id,
+        &prefix,
+        limit,
+        continuation.as_deref(),
+    )
+    .await
 }
 
 #[tauri::command]
@@ -35,8 +41,8 @@ pub async fn consul_list_recursive(
     prefix: String,
     max_entries: usize,
     max_value_bytes: usize,
-) -> Result<gauss_horizon_core::consul::ConsulRecursiveListResponse, String> {
-    gauss_horizon_core::consul::consul_list_recursive_core(
+) -> Result<chiron_horizon_core::consul::ConsulRecursiveListResponse, String> {
+    chiron_horizon_core::consul::consul_list_recursive_core(
         &state,
         &connection_id,
         &prefix,
@@ -50,39 +56,39 @@ pub async fn consul_list_recursive(
 pub async fn consul_search(
     state: State<'_, Arc<AppState>>,
     connection_id: String,
-    request: gauss_horizon_core::consul::ConsulSearchRequest,
-) -> Result<gauss_horizon_core::consul::ConsulSearchResponse, String> {
-    gauss_horizon_core::consul::consul_search_core(&state, &connection_id, request).await
+    request: chiron_horizon_core::consul::ConsulSearchRequest,
+) -> Result<chiron_horizon_core::consul::ConsulSearchResponse, String> {
+    chiron_horizon_core::consul::consul_search_core(&state, &connection_id, request).await
 }
 
 #[tauri::command]
 pub async fn consul_search_progress(
     connection_id: String,
     request_id: String,
-    scope: gauss_horizon_core::consul::ConsulScope,
+    scope: chiron_horizon_core::consul::ConsulScope,
     generation: u64,
-) -> Result<gauss_horizon_core::consul::ConsulSearchProgress, String> {
-    Ok(gauss_horizon_core::consul::consul_search_progress_core(&connection_id, &scope, generation, &request_id))
+) -> Result<chiron_horizon_core::consul::ConsulSearchProgress, String> {
+    Ok(chiron_horizon_core::consul::consul_search_progress_core(&connection_id, &scope, generation, &request_id))
 }
 
 #[tauri::command]
 pub async fn consul_cancel_search(
     connection_id: String,
     request_id: String,
-    scope: gauss_horizon_core::consul::ConsulScope,
+    scope: chiron_horizon_core::consul::ConsulScope,
     generation: u64,
 ) -> Result<bool, String> {
-    Ok(gauss_horizon_core::consul::consul_cancel_search_core(&connection_id, &scope, generation, &request_id))
+    Ok(chiron_horizon_core::consul::consul_cancel_search_core(&connection_id, &scope, generation, &request_id))
 }
 
 #[tauri::command]
 pub async fn consul_txn(
     state: State<'_, Arc<AppState>>,
     connection_id: String,
-    request: gauss_horizon_core::consul::ConsulTxnRequest,
-) -> Result<gauss_horizon_core::consul::ConsulTxnResult, String> {
+    request: chiron_horizon_core::consul::ConsulTxnRequest,
+) -> Result<chiron_horizon_core::consul::ConsulTxnResult, String> {
     ensure_connection_writable(&state, &connection_id, "Execute Consul transaction").await?;
-    gauss_horizon_core::consul::consul_txn_core(&state, &connection_id, request).await
+    chiron_horizon_core::consul::consul_txn_core(&state, &connection_id, request).await
 }
 
 #[tauri::command]
@@ -91,10 +97,10 @@ pub async fn consul_rename_key(
     connection_id: String,
     source: String,
     target: String,
-    expected_modify_index: gauss_horizon_core::agent_kv::KvInt64,
+    expected_modify_index: chiron_horizon_core::agent_kv::KvInt64,
     copy: bool,
-) -> Result<gauss_horizon_core::consul::ConsulTxnResult, String> {
-    gauss_horizon_core::consul::consul_rename_key_core(
+) -> Result<chiron_horizon_core::consul::ConsulTxnResult, String> {
+    chiron_horizon_core::consul::consul_rename_key_core(
         &state,
         &connection_id,
         &source,
@@ -109,28 +115,28 @@ pub async fn consul_rename_key(
 pub async fn consul_blocking_query(
     state: State<'_, Arc<AppState>>,
     connection_id: String,
-    request: gauss_horizon_core::consul::ConsulBlockingRequest,
-) -> Result<gauss_horizon_core::consul::ConsulBlockingResponse, String> {
-    gauss_horizon_core::consul::consul_blocking_query_core(&state, &connection_id, request).await
+    request: chiron_horizon_core::consul::ConsulBlockingRequest,
+) -> Result<chiron_horizon_core::consul::ConsulBlockingResponse, String> {
+    chiron_horizon_core::consul::consul_blocking_query_core(&state, &connection_id, request).await
 }
 
 #[tauri::command]
 pub async fn consul_domain_watch(
     state: State<'_, Arc<AppState>>,
     connection_id: String,
-    request: gauss_horizon_core::consul::ConsulDomainWatchRequest,
-) -> Result<gauss_horizon_core::consul::ConsulDomainWatchResponse, String> {
-    gauss_horizon_core::consul::consul_domain_watch_core(&state, &connection_id, request).await
+    request: chiron_horizon_core::consul::ConsulDomainWatchRequest,
+) -> Result<chiron_horizon_core::consul::ConsulDomainWatchResponse, String> {
+    chiron_horizon_core::consul::consul_domain_watch_core(&state, &connection_id, request).await
 }
 
 #[tauri::command]
 pub async fn consul_cancel_blocking(
     connection_id: String,
-    scope: gauss_horizon_core::consul::ConsulScope,
+    scope: chiron_horizon_core::consul::ConsulScope,
     generation: u64,
     operation_id: String,
 ) -> Result<bool, String> {
-    Ok(gauss_horizon_core::consul::consul_cancel_blocking_core(&connection_id, &scope, generation, &operation_id))
+    Ok(chiron_horizon_core::consul::consul_cancel_blocking_core(&connection_id, &scope, generation, &operation_id))
 }
 
 #[derive(Clone, Serialize)]
@@ -139,7 +145,7 @@ struct ConsulWatchEvent {
     connection_id: String,
     operation_id: String,
     generation: u64,
-    result: Option<gauss_horizon_core::consul::ConsulBlockingResponse>,
+    result: Option<chiron_horizon_core::consul::ConsulBlockingResponse>,
     error: Option<String>,
 }
 
@@ -148,7 +154,7 @@ pub async fn consul_watch_start(
     app: AppHandle,
     state: State<'_, Arc<AppState>>,
     connection_id: String,
-    request: gauss_horizon_core::consul::ConsulBlockingRequest,
+    request: chiron_horizon_core::consul::ConsulBlockingRequest,
 ) -> Result<String, String> {
     let operation_id = request.operation_id.clone();
     let event_operation_id = operation_id.clone();
@@ -156,7 +162,7 @@ pub async fn consul_watch_start(
     let app_state = Arc::clone(state.inner());
     tauri::async_runtime::spawn(async move {
         let response =
-            gauss_horizon_core::consul::consul_blocking_query_core(&app_state, &connection_id, request).await;
+            chiron_horizon_core::consul::consul_blocking_query_core(&app_state, &connection_id, request).await;
         let event = match response {
             Ok(result) => ConsulWatchEvent {
                 connection_id,
@@ -182,28 +188,28 @@ pub async fn consul_watch_start(
 pub async fn consul_export_bundle(
     state: State<'_, Arc<AppState>>,
     connection_id: String,
-    request: gauss_horizon_core::consul::ConsulExportRequest,
-) -> Result<gauss_horizon_core::consul::ConsulKvBundle, String> {
-    gauss_horizon_core::consul::consul_export_bundle_core(&state, &connection_id, request).await
+    request: chiron_horizon_core::consul::ConsulExportRequest,
+) -> Result<chiron_horizon_core::consul::ConsulKvBundle, String> {
+    chiron_horizon_core::consul::consul_export_bundle_core(&state, &connection_id, request).await
 }
 
 #[tauri::command]
 pub async fn consul_import_preview(
     state: State<'_, Arc<AppState>>,
     connection_id: String,
-    request: gauss_horizon_core::consul::ConsulImportRequest,
-) -> Result<gauss_horizon_core::consul::ConsulImportPreview, String> {
-    gauss_horizon_core::consul::consul_import_preview_core(&state, &connection_id, request).await
+    request: chiron_horizon_core::consul::ConsulImportRequest,
+) -> Result<chiron_horizon_core::consul::ConsulImportPreview, String> {
+    chiron_horizon_core::consul::consul_import_preview_core(&state, &connection_id, request).await
 }
 
 #[tauri::command]
 pub async fn consul_import_execute(
     state: State<'_, Arc<AppState>>,
     connection_id: String,
-    request: gauss_horizon_core::consul::ConsulImportRequest,
-) -> Result<gauss_horizon_core::consul::ConsulImportReport, String> {
+    request: chiron_horizon_core::consul::ConsulImportRequest,
+) -> Result<chiron_horizon_core::consul::ConsulImportReport, String> {
     ensure_connection_writable(&state, &connection_id, "Import Consul KV bundle").await?;
-    gauss_horizon_core::consul::consul_import_execute_core(&state, &connection_id, request).await
+    chiron_horizon_core::consul::consul_import_execute_core(&state, &connection_id, request).await
 }
 
 #[tauri::command]
@@ -211,18 +217,18 @@ pub async fn consul_delete_prefix_preview(
     state: State<'_, Arc<AppState>>,
     connection_id: String,
     prefix: String,
-) -> Result<gauss_horizon_core::consul::ConsulDeletePrefixPreview, String> {
-    gauss_horizon_core::consul::consul_delete_prefix_preview_core(&state, &connection_id, &prefix).await
+) -> Result<chiron_horizon_core::consul::ConsulDeletePrefixPreview, String> {
+    chiron_horizon_core::consul::consul_delete_prefix_preview_core(&state, &connection_id, &prefix).await
 }
 
 #[tauri::command]
 pub async fn consul_delete_prefix_execute(
     state: State<'_, Arc<AppState>>,
     connection_id: String,
-    request: gauss_horizon_core::consul::ConsulDeletePrefixRequest,
-) -> Result<gauss_horizon_core::consul::ConsulDeletePrefixReport, String> {
+    request: chiron_horizon_core::consul::ConsulDeletePrefixRequest,
+) -> Result<chiron_horizon_core::consul::ConsulDeletePrefixReport, String> {
     ensure_connection_writable(&state, &connection_id, "Delete Consul KV prefix").await?;
-    gauss_horizon_core::consul::consul_delete_prefix_execute_core(&state, &connection_id, request).await
+    chiron_horizon_core::consul::consul_delete_prefix_execute_core(&state, &connection_id, request).await
 }
 
 #[tauri::command]
@@ -231,7 +237,7 @@ pub async fn consul_get(
     connection_id: String,
     key: String,
 ) -> Result<KvGetResponse, String> {
-    gauss_horizon_core::consul::consul_get_core(&state, &connection_id, &key).await
+    chiron_horizon_core::consul::consul_get_core(&state, &connection_id, &key).await
 }
 
 #[tauri::command]
@@ -243,7 +249,7 @@ pub async fn consul_put(
     options: Option<KvPutOptions>,
 ) -> Result<KvPutResponse, String> {
     ensure_connection_writable(&state, &connection_id, "Put Consul KV key").await?;
-    gauss_horizon_core::consul::consul_put_core(&state, &connection_id, &key, value, options.unwrap_or_default()).await
+    chiron_horizon_core::consul::consul_put_core(&state, &connection_id, &key, value, options.unwrap_or_default()).await
 }
 
 #[tauri::command]
@@ -254,15 +260,15 @@ pub async fn consul_delete(
     options: Option<KvDeleteOptions>,
 ) -> Result<KvDeleteResponse, String> {
     ensure_connection_writable(&state, &connection_id, "Delete Consul KV key").await?;
-    gauss_horizon_core::consul::consul_delete_core(&state, &connection_id, &key, options.unwrap_or_default()).await
+    chiron_horizon_core::consul::consul_delete_core(&state, &connection_id, &key, options.unwrap_or_default()).await
 }
 
 #[tauri::command]
 pub async fn consul_prepared_query_list(
     state: State<'_, Arc<AppState>>,
     connection_id: String,
-) -> Result<Vec<gauss_horizon_core::consul::ConsulPreparedQuery>, String> {
-    gauss_horizon_core::consul::consul_prepared_query_list_core(&state, &connection_id).await
+) -> Result<Vec<chiron_horizon_core::consul::ConsulPreparedQuery>, String> {
+    chiron_horizon_core::consul::consul_prepared_query_list_core(&state, &connection_id).await
 }
 
 #[tauri::command]
@@ -270,18 +276,18 @@ pub async fn consul_prepared_query_read(
     state: State<'_, Arc<AppState>>,
     connection_id: String,
     id: String,
-) -> Result<gauss_horizon_core::consul::ConsulPreparedQuery, String> {
-    gauss_horizon_core::consul::consul_prepared_query_read_core(&state, &connection_id, &id).await
+) -> Result<chiron_horizon_core::consul::ConsulPreparedQuery, String> {
+    chiron_horizon_core::consul::consul_prepared_query_read_core(&state, &connection_id, &id).await
 }
 
 #[tauri::command]
 pub async fn consul_prepared_query_create(
     state: State<'_, Arc<AppState>>,
     connection_id: String,
-    input: gauss_horizon_core::consul::ConsulPreparedQueryInput,
+    input: chiron_horizon_core::consul::ConsulPreparedQueryInput,
 ) -> Result<String, String> {
     ensure_connection_writable(&state, &connection_id, "Create Consul prepared query").await?;
-    gauss_horizon_core::consul::consul_prepared_query_create_core(&state, &connection_id, input).await
+    chiron_horizon_core::consul::consul_prepared_query_create_core(&state, &connection_id, input).await
 }
 
 #[tauri::command]
@@ -289,10 +295,10 @@ pub async fn consul_prepared_query_update(
     state: State<'_, Arc<AppState>>,
     connection_id: String,
     id: String,
-    input: gauss_horizon_core::consul::ConsulPreparedQueryInput,
+    input: chiron_horizon_core::consul::ConsulPreparedQueryInput,
 ) -> Result<(), String> {
     ensure_connection_writable(&state, &connection_id, "Update Consul prepared query").await?;
-    gauss_horizon_core::consul::consul_prepared_query_update_core(&state, &connection_id, &id, input).await
+    chiron_horizon_core::consul::consul_prepared_query_update_core(&state, &connection_id, &id, input).await
 }
 
 #[tauri::command]
@@ -302,16 +308,16 @@ pub async fn consul_prepared_query_delete(
     id: String,
 ) -> Result<(), String> {
     ensure_connection_writable(&state, &connection_id, "Delete Consul prepared query").await?;
-    gauss_horizon_core::consul::consul_prepared_query_delete_core(&state, &connection_id, &id).await
+    chiron_horizon_core::consul::consul_prepared_query_delete_core(&state, &connection_id, &id).await
 }
 
 #[tauri::command]
 pub async fn consul_prepared_query_execute(
     state: State<'_, Arc<AppState>>,
     connection_id: String,
-    request: gauss_horizon_core::consul::ConsulPreparedQueryExecuteRequest,
-) -> Result<gauss_horizon_core::consul::ConsulPreparedQueryExecuteResponse, String> {
-    gauss_horizon_core::consul::consul_prepared_query_execute_core(&state, &connection_id, request).await
+    request: chiron_horizon_core::consul::ConsulPreparedQueryExecuteRequest,
+) -> Result<chiron_horizon_core::consul::ConsulPreparedQueryExecuteResponse, String> {
+    chiron_horizon_core::consul::consul_prepared_query_execute_core(&state, &connection_id, request).await
 }
 
 #[tauri::command]
@@ -320,7 +326,7 @@ pub async fn consul_prepared_query_explain(
     connection_id: String,
     query: String,
 ) -> Result<serde_json::Value, String> {
-    gauss_horizon_core::consul::consul_prepared_query_explain_core(&state, &connection_id, &query).await
+    chiron_horizon_core::consul::consul_prepared_query_explain_core(&state, &connection_id, &query).await
 }
 
 #[tauri::command]
@@ -328,109 +334,109 @@ pub async fn consul_event_list(
     state: State<'_, Arc<AppState>>,
     connection_id: String,
     name: Option<String>,
-) -> Result<Vec<gauss_horizon_core::consul::ConsulEvent>, String> {
-    gauss_horizon_core::consul::consul_event_list_core(&state, &connection_id, name.as_deref()).await
+) -> Result<Vec<chiron_horizon_core::consul::ConsulEvent>, String> {
+    chiron_horizon_core::consul::consul_event_list_core(&state, &connection_id, name.as_deref()).await
 }
 
 #[tauri::command]
 pub async fn consul_event_fire(
     state: State<'_, Arc<AppState>>,
     connection_id: String,
-    request: gauss_horizon_core::consul::ConsulEventFireRequest,
-) -> Result<gauss_horizon_core::consul::ConsulEvent, String> {
+    request: chiron_horizon_core::consul::ConsulEventFireRequest,
+) -> Result<chiron_horizon_core::consul::ConsulEvent, String> {
     ensure_connection_writable(&state, &connection_id, "Fire Consul event").await?;
-    gauss_horizon_core::consul::consul_event_fire_core(&state, &connection_id, request).await
+    chiron_horizon_core::consul::consul_event_fire_core(&state, &connection_id, request).await
 }
 
 #[tauri::command]
 pub async fn consul_coordinate_nodes(
     state: State<'_, Arc<AppState>>,
     connection_id: String,
-) -> Result<Vec<gauss_horizon_core::consul::ConsulCoordinate>, String> {
-    gauss_horizon_core::consul::consul_coordinate_nodes_core(&state, &connection_id).await
+) -> Result<Vec<chiron_horizon_core::consul::ConsulCoordinate>, String> {
+    chiron_horizon_core::consul::consul_coordinate_nodes_core(&state, &connection_id).await
 }
 
 #[tauri::command]
 pub async fn consul_operator_read(
     state: State<'_, Arc<AppState>>,
     connection_id: String,
-    kind: gauss_horizon_core::consul::ConsulOperatorReadKind,
-) -> Result<gauss_horizon_core::consul::ConsulOperatorDocument, String> {
-    gauss_horizon_core::consul::consul_operator_read_core(&state, &connection_id, kind).await
+    kind: chiron_horizon_core::consul::ConsulOperatorReadKind,
+) -> Result<chiron_horizon_core::consul::ConsulOperatorDocument, String> {
+    chiron_horizon_core::consul::consul_operator_read_core(&state, &connection_id, kind).await
 }
 
 #[tauri::command]
 pub async fn consul_snapshot_generate(
     state: State<'_, Arc<AppState>>,
     connection_id: String,
-) -> Result<gauss_horizon_core::consul::ConsulSnapshot, String> {
-    gauss_horizon_core::consul::consul_snapshot_generate_core(&state, &connection_id).await
+) -> Result<chiron_horizon_core::consul::ConsulSnapshot, String> {
+    chiron_horizon_core::consul::consul_snapshot_generate_core(&state, &connection_id).await
 }
 
 #[tauri::command]
 pub async fn consul_snapshot_restore(
     state: State<'_, Arc<AppState>>,
     connection_id: String,
-    request: gauss_horizon_core::consul::ConsulSnapshotRestoreRequest,
+    request: chiron_horizon_core::consul::ConsulSnapshotRestoreRequest,
 ) -> Result<(), String> {
     ensure_connection_writable(&state, &connection_id, "Restore Consul snapshot").await?;
-    gauss_horizon_core::consul::consul_snapshot_restore_core(&state, &connection_id, request).await
+    chiron_horizon_core::consul::consul_snapshot_restore_core(&state, &connection_id, request).await
 }
 
 #[tauri::command]
 pub async fn consul_autopilot_update(
     state: State<'_, Arc<AppState>>,
     connection_id: String,
-    update: gauss_horizon_core::consul::ConsulAutopilotUpdate,
+    update: chiron_horizon_core::consul::ConsulAutopilotUpdate,
     confirmation: String,
 ) -> Result<(), String> {
     ensure_connection_writable(&state, &connection_id, "Update Consul Autopilot").await?;
-    gauss_horizon_core::consul::consul_autopilot_update_core(&state, &connection_id, update, &confirmation).await
+    chiron_horizon_core::consul::consul_autopilot_update_core(&state, &connection_id, update, &confirmation).await
 }
 
 #[tauri::command]
 pub async fn consul_raft_transfer(
     state: State<'_, Arc<AppState>>,
     connection_id: String,
-    request: gauss_horizon_core::consul::ConsulRaftWriteRequest,
+    request: chiron_horizon_core::consul::ConsulRaftWriteRequest,
 ) -> Result<(), String> {
     ensure_connection_writable(&state, &connection_id, "Transfer Consul Raft leadership").await?;
-    gauss_horizon_core::consul::consul_raft_transfer_core(&state, &connection_id, request).await
+    chiron_horizon_core::consul::consul_raft_transfer_core(&state, &connection_id, request).await
 }
 
 #[tauri::command]
 pub async fn consul_raft_remove(
     state: State<'_, Arc<AppState>>,
     connection_id: String,
-    request: gauss_horizon_core::consul::ConsulRaftWriteRequest,
+    request: chiron_horizon_core::consul::ConsulRaftWriteRequest,
 ) -> Result<(), String> {
     ensure_connection_writable(&state, &connection_id, "Remove Consul Raft peer").await?;
-    gauss_horizon_core::consul::consul_raft_remove_core(&state, &connection_id, request).await
+    chiron_horizon_core::consul::consul_raft_remove_core(&state, &connection_id, request).await
 }
 
 #[tauri::command]
 pub async fn consul_keyring_write(
     state: State<'_, Arc<AppState>>,
     connection_id: String,
-    request: gauss_horizon_core::consul::ConsulKeyringWriteRequest,
+    request: chiron_horizon_core::consul::ConsulKeyringWriteRequest,
 ) -> Result<(), String> {
     ensure_connection_writable(&state, &connection_id, "Modify Consul gossip keyring").await?;
-    gauss_horizon_core::consul::consul_keyring_write_core(&state, &connection_id, request).await
+    chiron_horizon_core::consul::consul_keyring_write_core(&state, &connection_id, request).await
 }
 
 #[tauri::command]
 pub async fn consul_license_write(
     state: State<'_, Arc<AppState>>,
     connection_id: String,
-    request: gauss_horizon_core::consul::ConsulLicenseWriteRequest,
+    request: chiron_horizon_core::consul::ConsulLicenseWriteRequest,
 ) -> Result<(), String> {
     ensure_connection_writable(&state, &connection_id, "Update Consul license").await?;
-    gauss_horizon_core::consul::consul_license_write_core(&state, &connection_id, request).await
+    chiron_horizon_core::consul::consul_license_write_core(&state, &connection_id, request).await
 }
 
 #[tauri::command]
 pub async fn consul_status_leader(state: State<'_, Arc<AppState>>, connection_id: String) -> Result<String, String> {
-    gauss_horizon_core::consul::consul_status_leader_core(&state, &connection_id).await
+    chiron_horizon_core::consul::consul_status_leader_core(&state, &connection_id).await
 }
 
 #[tauri::command]
@@ -438,15 +444,15 @@ pub async fn consul_status_peers(
     state: State<'_, Arc<AppState>>,
     connection_id: String,
 ) -> Result<Vec<String>, String> {
-    gauss_horizon_core::consul::consul_status_peers_core(&state, &connection_id).await
+    chiron_horizon_core::consul::consul_status_peers_core(&state, &connection_id).await
 }
 
 #[tauri::command]
 pub async fn consul_agent_self(
     state: State<'_, Arc<AppState>>,
     connection_id: String,
-) -> Result<gauss_horizon_core::consul::ConsulAgentIdentity, String> {
-    gauss_horizon_core::consul::consul_agent_self_core(&state, &connection_id).await
+) -> Result<chiron_horizon_core::consul::ConsulAgentIdentity, String> {
+    chiron_horizon_core::consul::consul_agent_self_core(&state, &connection_id).await
 }
 
 #[tauri::command]
@@ -455,16 +461,16 @@ pub async fn consul_agent_members(
     connection_id: String,
     wan: bool,
     segment: Option<String>,
-) -> Result<Vec<gauss_horizon_core::consul::ConsulAgentMember>, String> {
-    gauss_horizon_core::consul::consul_agent_members_core(&state, &connection_id, wan, segment.as_deref()).await
+) -> Result<Vec<chiron_horizon_core::consul::ConsulAgentMember>, String> {
+    chiron_horizon_core::consul::consul_agent_members_core(&state, &connection_id, wan, segment.as_deref()).await
 }
 
 #[tauri::command]
 pub async fn consul_agent_metrics(
     state: State<'_, Arc<AppState>>,
     connection_id: String,
-) -> Result<gauss_horizon_core::consul::ConsulAgentMetrics, String> {
-    gauss_horizon_core::consul::consul_agent_metrics_core(&state, &connection_id).await
+) -> Result<chiron_horizon_core::consul::ConsulAgentMetrics, String> {
+    chiron_horizon_core::consul::consul_agent_metrics_core(&state, &connection_id).await
 }
 
 #[tauri::command]
@@ -472,26 +478,26 @@ pub async fn consul_catalog_datacenters(
     state: State<'_, Arc<AppState>>,
     connection_id: String,
 ) -> Result<Vec<String>, String> {
-    gauss_horizon_core::consul::consul_catalog_datacenters_core(&state, &connection_id).await
+    chiron_horizon_core::consul::consul_catalog_datacenters_core(&state, &connection_id).await
 }
 
 #[tauri::command]
 pub async fn consul_catalog_nodes(
     state: State<'_, Arc<AppState>>,
     connection_id: String,
-    options: gauss_horizon_core::consul::ConsulReadOptions,
-) -> Result<gauss_horizon_core::consul::ConsulListResponse<Vec<gauss_horizon_core::consul::ConsulCatalogNode>>, String>
+    options: chiron_horizon_core::consul::ConsulReadOptions,
+) -> Result<chiron_horizon_core::consul::ConsulListResponse<Vec<chiron_horizon_core::consul::ConsulCatalogNode>>, String>
 {
-    gauss_horizon_core::consul::consul_catalog_nodes_core(&state, &connection_id, options).await
+    chiron_horizon_core::consul::consul_catalog_nodes_core(&state, &connection_id, options).await
 }
 
 #[tauri::command]
 pub async fn consul_catalog_services(
     state: State<'_, Arc<AppState>>,
     connection_id: String,
-    options: gauss_horizon_core::consul::ConsulReadOptions,
-) -> Result<gauss_horizon_core::consul::ConsulListResponse<std::collections::BTreeMap<String, Vec<String>>>, String> {
-    gauss_horizon_core::consul::consul_catalog_services_core(&state, &connection_id, options).await
+    options: chiron_horizon_core::consul::ConsulReadOptions,
+) -> Result<chiron_horizon_core::consul::ConsulListResponse<std::collections::BTreeMap<String, Vec<String>>>, String> {
+    chiron_horizon_core::consul::consul_catalog_services_core(&state, &connection_id, options).await
 }
 
 #[tauri::command]
@@ -499,12 +505,12 @@ pub async fn consul_catalog_service_nodes(
     state: State<'_, Arc<AppState>>,
     connection_id: String,
     service: String,
-    options: gauss_horizon_core::consul::ConsulReadOptions,
+    options: chiron_horizon_core::consul::ConsulReadOptions,
 ) -> Result<
-    gauss_horizon_core::consul::ConsulListResponse<Vec<gauss_horizon_core::consul::ConsulCatalogServiceNode>>,
+    chiron_horizon_core::consul::ConsulListResponse<Vec<chiron_horizon_core::consul::ConsulCatalogServiceNode>>,
     String,
 > {
-    gauss_horizon_core::consul::consul_catalog_service_nodes_core(&state, &connection_id, &service, options).await
+    chiron_horizon_core::consul::consul_catalog_service_nodes_core(&state, &connection_id, &service, options).await
 }
 
 #[tauri::command]
@@ -512,9 +518,9 @@ pub async fn consul_catalog_node_services(
     state: State<'_, Arc<AppState>>,
     connection_id: String,
     node: String,
-    options: gauss_horizon_core::consul::ConsulReadOptions,
-) -> Result<gauss_horizon_core::consul::ConsulListResponse<gauss_horizon_core::consul::ConsulNodeServices>, String> {
-    gauss_horizon_core::consul::consul_catalog_node_services_core(&state, &connection_id, &node, options).await
+    options: chiron_horizon_core::consul::ConsulReadOptions,
+) -> Result<chiron_horizon_core::consul::ConsulListResponse<chiron_horizon_core::consul::ConsulNodeServices>, String> {
+    chiron_horizon_core::consul::consul_catalog_node_services_core(&state, &connection_id, &node, options).await
 }
 
 #[tauri::command]
@@ -522,10 +528,10 @@ pub async fn consul_health_node(
     state: State<'_, Arc<AppState>>,
     connection_id: String,
     node: String,
-    options: gauss_horizon_core::consul::ConsulReadOptions,
-) -> Result<gauss_horizon_core::consul::ConsulListResponse<Vec<gauss_horizon_core::consul::ConsulHealthCheck>>, String>
+    options: chiron_horizon_core::consul::ConsulReadOptions,
+) -> Result<chiron_horizon_core::consul::ConsulListResponse<Vec<chiron_horizon_core::consul::ConsulHealthCheck>>, String>
 {
-    gauss_horizon_core::consul::consul_health_node_core(&state, &connection_id, &node, options).await
+    chiron_horizon_core::consul::consul_health_node_core(&state, &connection_id, &node, options).await
 }
 
 #[tauri::command]
@@ -533,10 +539,10 @@ pub async fn consul_health_checks(
     state: State<'_, Arc<AppState>>,
     connection_id: String,
     service: String,
-    options: gauss_horizon_core::consul::ConsulReadOptions,
-) -> Result<gauss_horizon_core::consul::ConsulListResponse<Vec<gauss_horizon_core::consul::ConsulHealthCheck>>, String>
+    options: chiron_horizon_core::consul::ConsulReadOptions,
+) -> Result<chiron_horizon_core::consul::ConsulListResponse<Vec<chiron_horizon_core::consul::ConsulHealthCheck>>, String>
 {
-    gauss_horizon_core::consul::consul_health_checks_core(&state, &connection_id, &service, options).await
+    chiron_horizon_core::consul::consul_health_checks_core(&state, &connection_id, &service, options).await
 }
 
 #[tauri::command]
@@ -545,12 +551,12 @@ pub async fn consul_health_service(
     connection_id: String,
     service: String,
     passing: Option<bool>,
-    options: gauss_horizon_core::consul::ConsulReadOptions,
+    options: chiron_horizon_core::consul::ConsulReadOptions,
 ) -> Result<
-    gauss_horizon_core::consul::ConsulListResponse<Vec<gauss_horizon_core::consul::ConsulServiceInstance>>,
+    chiron_horizon_core::consul::ConsulListResponse<Vec<chiron_horizon_core::consul::ConsulServiceInstance>>,
     String,
 > {
-    gauss_horizon_core::consul::consul_health_service_core(&state, &connection_id, &service, passing, options).await
+    chiron_horizon_core::consul::consul_health_service_core(&state, &connection_id, &service, passing, options).await
 }
 
 #[tauri::command]
@@ -558,18 +564,18 @@ pub async fn consul_health_state(
     state: State<'_, Arc<AppState>>,
     connection_id: String,
     health_state: String,
-    options: gauss_horizon_core::consul::ConsulReadOptions,
-) -> Result<gauss_horizon_core::consul::ConsulListResponse<Vec<gauss_horizon_core::consul::ConsulHealthCheck>>, String>
+    options: chiron_horizon_core::consul::ConsulReadOptions,
+) -> Result<chiron_horizon_core::consul::ConsulListResponse<Vec<chiron_horizon_core::consul::ConsulHealthCheck>>, String>
 {
-    gauss_horizon_core::consul::consul_health_state_core(&state, &connection_id, &health_state, options).await
+    chiron_horizon_core::consul::consul_health_state_core(&state, &connection_id, &health_state, options).await
 }
 
 #[tauri::command]
 pub async fn consul_agent_services(
     state: State<'_, Arc<AppState>>,
     connection_id: String,
-) -> Result<std::collections::BTreeMap<String, gauss_horizon_core::consul::ConsulAgentService>, String> {
-    gauss_horizon_core::consul::consul_agent_services_core(&state, &connection_id).await
+) -> Result<std::collections::BTreeMap<String, chiron_horizon_core::consul::ConsulAgentService>, String> {
+    chiron_horizon_core::consul::consul_agent_services_core(&state, &connection_id).await
 }
 
 #[tauri::command]
@@ -577,26 +583,26 @@ pub async fn consul_agent_service(
     state: State<'_, Arc<AppState>>,
     connection_id: String,
     id: String,
-) -> Result<gauss_horizon_core::consul::ConsulAgentService, String> {
-    gauss_horizon_core::consul::consul_agent_service_core(&state, &connection_id, &id).await
+) -> Result<chiron_horizon_core::consul::ConsulAgentService, String> {
+    chiron_horizon_core::consul::consul_agent_service_core(&state, &connection_id, &id).await
 }
 
 #[tauri::command]
 pub async fn consul_agent_checks(
     state: State<'_, Arc<AppState>>,
     connection_id: String,
-) -> Result<std::collections::BTreeMap<String, gauss_horizon_core::consul::ConsulHealthCheck>, String> {
-    gauss_horizon_core::consul::consul_agent_checks_core(&state, &connection_id).await
+) -> Result<std::collections::BTreeMap<String, chiron_horizon_core::consul::ConsulHealthCheck>, String> {
+    chiron_horizon_core::consul::consul_agent_checks_core(&state, &connection_id).await
 }
 
 #[tauri::command]
 pub async fn consul_agent_register_service(
     state: State<'_, Arc<AppState>>,
     connection_id: String,
-    registration: gauss_horizon_core::consul::ConsulAgentServiceRegistration,
-) -> Result<gauss_horizon_core::consul::ConsulAgentWriteResult, String> {
+    registration: chiron_horizon_core::consul::ConsulAgentServiceRegistration,
+) -> Result<chiron_horizon_core::consul::ConsulAgentWriteResult, String> {
     ensure_connection_writable(&state, &connection_id, "Register Consul Agent service").await?;
-    gauss_horizon_core::consul::consul_agent_register_service_core(&state, &connection_id, registration).await
+    chiron_horizon_core::consul::consul_agent_register_service_core(&state, &connection_id, registration).await
 }
 
 #[tauri::command]
@@ -604,9 +610,9 @@ pub async fn consul_agent_deregister_service(
     state: State<'_, Arc<AppState>>,
     connection_id: String,
     id: String,
-) -> Result<gauss_horizon_core::consul::ConsulAgentWriteResult, String> {
+) -> Result<chiron_horizon_core::consul::ConsulAgentWriteResult, String> {
     ensure_connection_writable(&state, &connection_id, "Deregister Consul Agent service").await?;
-    gauss_horizon_core::consul::consul_agent_deregister_service_core(&state, &connection_id, &id).await
+    chiron_horizon_core::consul::consul_agent_deregister_service_core(&state, &connection_id, &id).await
 }
 
 #[tauri::command]
@@ -616,9 +622,9 @@ pub async fn consul_agent_service_maintenance(
     id: String,
     enable: bool,
     reason: Option<String>,
-) -> Result<gauss_horizon_core::consul::ConsulAgentWriteResult, String> {
+) -> Result<chiron_horizon_core::consul::ConsulAgentWriteResult, String> {
     ensure_connection_writable(&state, &connection_id, "Change Consul Agent service maintenance").await?;
-    gauss_horizon_core::consul::consul_agent_service_maintenance_core(
+    chiron_horizon_core::consul::consul_agent_service_maintenance_core(
         &state,
         &connection_id,
         &id,
@@ -632,10 +638,10 @@ pub async fn consul_agent_service_maintenance(
 pub async fn consul_agent_register_check(
     state: State<'_, Arc<AppState>>,
     connection_id: String,
-    registration: gauss_horizon_core::consul::ConsulAgentCheckRegistration,
-) -> Result<gauss_horizon_core::consul::ConsulAgentWriteResult, String> {
+    registration: chiron_horizon_core::consul::ConsulAgentCheckRegistration,
+) -> Result<chiron_horizon_core::consul::ConsulAgentWriteResult, String> {
     ensure_connection_writable(&state, &connection_id, "Register Consul Agent check").await?;
-    gauss_horizon_core::consul::consul_agent_register_check_core(&state, &connection_id, registration).await
+    chiron_horizon_core::consul::consul_agent_register_check_core(&state, &connection_id, registration).await
 }
 
 #[tauri::command]
@@ -643,9 +649,9 @@ pub async fn consul_agent_deregister_check(
     state: State<'_, Arc<AppState>>,
     connection_id: String,
     id: String,
-) -> Result<gauss_horizon_core::consul::ConsulAgentWriteResult, String> {
+) -> Result<chiron_horizon_core::consul::ConsulAgentWriteResult, String> {
     ensure_connection_writable(&state, &connection_id, "Deregister Consul Agent check").await?;
-    gauss_horizon_core::consul::consul_agent_deregister_check_core(&state, &connection_id, &id).await
+    chiron_horizon_core::consul::consul_agent_deregister_check_core(&state, &connection_id, &id).await
 }
 
 #[tauri::command]
@@ -653,11 +659,11 @@ pub async fn consul_agent_update_ttl(
     state: State<'_, Arc<AppState>>,
     connection_id: String,
     id: String,
-    status: gauss_horizon_core::consul::ConsulCheckStatus,
+    status: chiron_horizon_core::consul::ConsulCheckStatus,
     output: Option<String>,
-) -> Result<gauss_horizon_core::consul::ConsulAgentWriteResult, String> {
+) -> Result<chiron_horizon_core::consul::ConsulAgentWriteResult, String> {
     ensure_connection_writable(&state, &connection_id, "Update Consul Agent TTL check").await?;
-    gauss_horizon_core::consul::consul_agent_update_ttl_core(&state, &connection_id, &id, status, output.as_deref())
+    chiron_horizon_core::consul::consul_agent_update_ttl_core(&state, &connection_id, &id, status, output.as_deref())
         .await
 }
 
@@ -665,9 +671,9 @@ pub async fn consul_agent_update_ttl(
 pub async fn consul_sessions(
     state: State<'_, Arc<AppState>>,
     connection_id: String,
-    options: gauss_horizon_core::consul::ConsulReadOptions,
-) -> Result<gauss_horizon_core::consul::ConsulListResponse<Vec<gauss_horizon_core::consul::ConsulSession>>, String> {
-    gauss_horizon_core::consul::consul_sessions_core(&state, &connection_id, options).await
+    options: chiron_horizon_core::consul::ConsulReadOptions,
+) -> Result<chiron_horizon_core::consul::ConsulListResponse<Vec<chiron_horizon_core::consul::ConsulSession>>, String> {
+    chiron_horizon_core::consul::consul_sessions_core(&state, &connection_id, options).await
 }
 
 #[tauri::command]
@@ -675,9 +681,9 @@ pub async fn consul_node_sessions(
     state: State<'_, Arc<AppState>>,
     connection_id: String,
     node: String,
-    options: gauss_horizon_core::consul::ConsulReadOptions,
-) -> Result<gauss_horizon_core::consul::ConsulListResponse<Vec<gauss_horizon_core::consul::ConsulSession>>, String> {
-    gauss_horizon_core::consul::consul_node_sessions_core(&state, &connection_id, &node, options).await
+    options: chiron_horizon_core::consul::ConsulReadOptions,
+) -> Result<chiron_horizon_core::consul::ConsulListResponse<Vec<chiron_horizon_core::consul::ConsulSession>>, String> {
+    chiron_horizon_core::consul::consul_node_sessions_core(&state, &connection_id, &node, options).await
 }
 
 #[tauri::command]
@@ -685,8 +691,8 @@ pub async fn consul_session(
     state: State<'_, Arc<AppState>>,
     connection_id: String,
     id: String,
-) -> Result<Option<gauss_horizon_core::consul::ConsulSession>, String> {
-    gauss_horizon_core::consul::consul_session_core(&state, &connection_id, &id).await
+) -> Result<Option<chiron_horizon_core::consul::ConsulSession>, String> {
+    chiron_horizon_core::consul::consul_session_core(&state, &connection_id, &id).await
 }
 
 #[tauri::command]
@@ -694,8 +700,8 @@ pub async fn consul_session_keys(
     state: State<'_, Arc<AppState>>,
     connection_id: String,
     id: String,
-) -> Result<gauss_horizon_core::consul::ConsulSessionKeysResponse, String> {
-    gauss_horizon_core::consul::consul_session_keys_core(&state, &connection_id, &id).await
+) -> Result<chiron_horizon_core::consul::ConsulSessionKeysResponse, String> {
+    chiron_horizon_core::consul::consul_session_keys_core(&state, &connection_id, &id).await
 }
 
 #[tauri::command]
@@ -703,18 +709,18 @@ pub async fn consul_session_destroy_impact(
     state: State<'_, Arc<AppState>>,
     connection_id: String,
     id: String,
-) -> Result<gauss_horizon_core::consul::ConsulSessionDestroyImpact, String> {
-    gauss_horizon_core::consul::consul_session_destroy_impact_core(&state, &connection_id, &id).await
+) -> Result<chiron_horizon_core::consul::ConsulSessionDestroyImpact, String> {
+    chiron_horizon_core::consul::consul_session_destroy_impact_core(&state, &connection_id, &id).await
 }
 
 #[tauri::command]
 pub async fn consul_create_session(
     state: State<'_, Arc<AppState>>,
     connection_id: String,
-    request: gauss_horizon_core::consul::ConsulSessionCreateRequest,
-) -> Result<gauss_horizon_core::consul::ConsulSession, String> {
+    request: chiron_horizon_core::consul::ConsulSessionCreateRequest,
+) -> Result<chiron_horizon_core::consul::ConsulSession, String> {
     ensure_connection_writable(&state, &connection_id, "Create Consul Session").await?;
-    gauss_horizon_core::consul::consul_create_session_core(&state, &connection_id, request).await
+    chiron_horizon_core::consul::consul_create_session_core(&state, &connection_id, request).await
 }
 
 #[tauri::command]
@@ -722,29 +728,29 @@ pub async fn consul_renew_session(
     state: State<'_, Arc<AppState>>,
     connection_id: String,
     id: String,
-) -> Result<gauss_horizon_core::consul::ConsulSession, String> {
+) -> Result<chiron_horizon_core::consul::ConsulSession, String> {
     ensure_connection_writable(&state, &connection_id, "Renew Consul Session").await?;
-    gauss_horizon_core::consul::consul_renew_session_core(&state, &connection_id, &id).await
+    chiron_horizon_core::consul::consul_renew_session_core(&state, &connection_id, &id).await
 }
 
 #[tauri::command]
 pub async fn consul_destroy_session(
     state: State<'_, Arc<AppState>>,
     connection_id: String,
-    request: gauss_horizon_core::consul::ConsulSessionDestroyRequest,
+    request: chiron_horizon_core::consul::ConsulSessionDestroyRequest,
 ) -> Result<bool, String> {
     ensure_connection_writable(&state, &connection_id, "Destroy Consul Session").await?;
-    gauss_horizon_core::consul::consul_destroy_session_core(&state, &connection_id, request).await
+    chiron_horizon_core::consul::consul_destroy_session_core(&state, &connection_id, request).await
 }
 
 #[tauri::command]
 pub async fn consul_acquire_lock(
     state: State<'_, Arc<AppState>>,
     connection_id: String,
-    request: gauss_horizon_core::consul::ConsulLockRequest,
-) -> Result<gauss_horizon_core::consul::ConsulLockResponse, String> {
+    request: chiron_horizon_core::consul::ConsulLockRequest,
+) -> Result<chiron_horizon_core::consul::ConsulLockResponse, String> {
     ensure_connection_writable(&state, &connection_id, "Acquire Consul KV lock").await?;
-    gauss_horizon_core::consul::consul_acquire_lock_core(&state, &connection_id, request).await
+    chiron_horizon_core::consul::consul_acquire_lock_core(&state, &connection_id, request).await
 }
 
 #[tauri::command]
@@ -753,121 +759,121 @@ pub async fn consul_release_lock(
     connection_id: String,
     key: String,
     session: String,
-) -> Result<gauss_horizon_core::consul::ConsulLockResponse, String> {
+) -> Result<chiron_horizon_core::consul::ConsulLockResponse, String> {
     ensure_connection_writable(&state, &connection_id, "Release Consul KV lock").await?;
-    gauss_horizon_core::consul::consul_release_lock_core(&state, &connection_id, &key, &session).await
+    chiron_horizon_core::consul::consul_release_lock_core(&state, &connection_id, &key, &session).await
 }
 
 #[tauri::command]
 pub async fn consul_acl_list(
     state: State<'_, Arc<AppState>>,
     connection_id: String,
-    kind: gauss_horizon_core::consul::ConsulAclKind,
-) -> Result<gauss_horizon_core::consul::ConsulAclList, String> {
-    gauss_horizon_core::consul::consul_acl_list_core(&state, &connection_id, kind).await
+    kind: chiron_horizon_core::consul::ConsulAclKind,
+) -> Result<chiron_horizon_core::consul::ConsulAclList, String> {
+    chiron_horizon_core::consul::consul_acl_list_core(&state, &connection_id, kind).await
 }
 #[tauri::command]
 pub async fn consul_acl_token_self(
     state: State<'_, Arc<AppState>>,
     connection_id: String,
-) -> Result<gauss_horizon_core::consul::ConsulAclToken, String> {
-    gauss_horizon_core::consul::consul_acl_token_self_core(&state, &connection_id).await
+) -> Result<chiron_horizon_core::consul::ConsulAclToken, String> {
+    chiron_horizon_core::consul::consul_acl_token_self_core(&state, &connection_id).await
 }
 #[tauri::command]
 pub async fn consul_acl_token_clone(
     state: State<'_, Arc<AppState>>,
     connection_id: String,
     accessor_id: String,
-    request: gauss_horizon_core::consul::ConsulAclTokenClone,
-) -> Result<gauss_horizon_core::consul::ConsulAclToken, String> {
+    request: chiron_horizon_core::consul::ConsulAclTokenClone,
+) -> Result<chiron_horizon_core::consul::ConsulAclToken, String> {
     ensure_connection_writable(&state, &connection_id, "Clone Consul ACL token").await?;
-    gauss_horizon_core::consul::consul_acl_token_clone_core(&state, &connection_id, &accessor_id, request).await
+    chiron_horizon_core::consul::consul_acl_token_clone_core(&state, &connection_id, &accessor_id, request).await
 }
 #[tauri::command]
 pub async fn consul_acl_get(
     state: State<'_, Arc<AppState>>,
     connection_id: String,
-    kind: gauss_horizon_core::consul::ConsulAclKind,
+    kind: chiron_horizon_core::consul::ConsulAclKind,
     id: String,
-) -> Result<gauss_horizon_core::consul::ConsulAclItem, String> {
-    gauss_horizon_core::consul::consul_acl_get_core(&state, &connection_id, kind, &id).await
+) -> Result<chiron_horizon_core::consul::ConsulAclItem, String> {
+    chiron_horizon_core::consul::consul_acl_get_core(&state, &connection_id, kind, &id).await
 }
 #[tauri::command]
 pub async fn consul_acl_apply(
     state: State<'_, Arc<AppState>>,
     connection_id: String,
     id: Option<String>,
-    value: gauss_horizon_core::consul::ConsulAclWrite,
-) -> Result<gauss_horizon_core::consul::ConsulAclItem, String> {
+    value: chiron_horizon_core::consul::ConsulAclWrite,
+) -> Result<chiron_horizon_core::consul::ConsulAclItem, String> {
     ensure_connection_writable(&state, &connection_id, "Write Consul ACL resource").await?;
-    gauss_horizon_core::consul::consul_acl_apply_core(&state, &connection_id, id.as_deref(), value).await
+    chiron_horizon_core::consul::consul_acl_apply_core(&state, &connection_id, id.as_deref(), value).await
 }
 #[tauri::command]
 pub async fn consul_acl_references(
     state: State<'_, Arc<AppState>>,
     connection_id: String,
-    kind: gauss_horizon_core::consul::ConsulAclKind,
+    kind: chiron_horizon_core::consul::ConsulAclKind,
     id: String,
-) -> Result<gauss_horizon_core::consul::ConsulAclReferences, String> {
-    gauss_horizon_core::consul::consul_acl_references_core(&state, &connection_id, kind, &id).await
+) -> Result<chiron_horizon_core::consul::ConsulAclReferences, String> {
+    chiron_horizon_core::consul::consul_acl_references_core(&state, &connection_id, kind, &id).await
 }
 #[tauri::command]
 pub async fn consul_acl_delete(
     state: State<'_, Arc<AppState>>,
     connection_id: String,
-    kind: gauss_horizon_core::consul::ConsulAclKind,
+    kind: chiron_horizon_core::consul::ConsulAclKind,
     id: String,
-) -> Result<gauss_horizon_core::consul::ConsulAclReferences, String> {
+) -> Result<chiron_horizon_core::consul::ConsulAclReferences, String> {
     ensure_connection_writable(&state, &connection_id, "Delete Consul ACL resource").await?;
-    gauss_horizon_core::consul::consul_acl_delete_core(&state, &connection_id, kind, &id).await
+    chiron_horizon_core::consul::consul_acl_delete_core(&state, &connection_id, kind, &id).await
 }
 
 #[tauri::command]
 pub async fn consul_enterprise_list(
     state: State<'_, Arc<AppState>>,
     connection_id: String,
-    kind: gauss_horizon_core::consul::ConsulEnterpriseKind,
-) -> Result<gauss_horizon_core::consul::ConsulEnterpriseList, String> {
-    gauss_horizon_core::consul::consul_enterprise_list_core(&state, &connection_id, kind).await
+    kind: chiron_horizon_core::consul::ConsulEnterpriseKind,
+) -> Result<chiron_horizon_core::consul::ConsulEnterpriseList, String> {
+    chiron_horizon_core::consul::consul_enterprise_list_core(&state, &connection_id, kind).await
 }
 #[tauri::command]
 pub async fn consul_enterprise_get(
     state: State<'_, Arc<AppState>>,
     connection_id: String,
-    kind: gauss_horizon_core::consul::ConsulEnterpriseKind,
+    kind: chiron_horizon_core::consul::ConsulEnterpriseKind,
     name: String,
-) -> Result<gauss_horizon_core::consul::ConsulEnterpriseItem, String> {
-    gauss_horizon_core::consul::consul_enterprise_get_core(&state, &connection_id, kind, &name).await
+) -> Result<chiron_horizon_core::consul::ConsulEnterpriseItem, String> {
+    chiron_horizon_core::consul::consul_enterprise_get_core(&state, &connection_id, kind, &name).await
 }
 #[tauri::command]
 pub async fn consul_enterprise_apply(
     state: State<'_, Arc<AppState>>,
     connection_id: String,
     existing_name: Option<String>,
-    item: gauss_horizon_core::consul::ConsulEnterpriseWrite,
-) -> Result<gauss_horizon_core::consul::ConsulEnterpriseItem, String> {
+    item: chiron_horizon_core::consul::ConsulEnterpriseWrite,
+) -> Result<chiron_horizon_core::consul::ConsulEnterpriseItem, String> {
     ensure_connection_writable(&state, &connection_id, "Write Consul Enterprise scope").await?;
-    gauss_horizon_core::consul::consul_enterprise_apply_core(&state, &connection_id, existing_name.as_deref(), item)
+    chiron_horizon_core::consul::consul_enterprise_apply_core(&state, &connection_id, existing_name.as_deref(), item)
         .await
 }
 #[tauri::command]
 pub async fn consul_enterprise_impact(
     state: State<'_, Arc<AppState>>,
     connection_id: String,
-    kind: gauss_horizon_core::consul::ConsulEnterpriseKind,
+    kind: chiron_horizon_core::consul::ConsulEnterpriseKind,
     name: String,
-) -> Result<gauss_horizon_core::consul::ConsulScopeImpact, String> {
-    gauss_horizon_core::consul::consul_enterprise_impact_core(&state, &connection_id, kind, &name).await
+) -> Result<chiron_horizon_core::consul::ConsulScopeImpact, String> {
+    chiron_horizon_core::consul::consul_enterprise_impact_core(&state, &connection_id, kind, &name).await
 }
 #[tauri::command]
 pub async fn consul_enterprise_delete(
     state: State<'_, Arc<AppState>>,
     connection_id: String,
-    kind: gauss_horizon_core::consul::ConsulEnterpriseKind,
+    kind: chiron_horizon_core::consul::ConsulEnterpriseKind,
     name: String,
-) -> Result<gauss_horizon_core::consul::ConsulScopeImpact, String> {
+) -> Result<chiron_horizon_core::consul::ConsulScopeImpact, String> {
     ensure_connection_writable(&state, &connection_id, "Delete Consul Enterprise scope").await?;
-    gauss_horizon_core::consul::consul_enterprise_delete_core(&state, &connection_id, kind, &name).await
+    chiron_horizon_core::consul::consul_enterprise_delete_core(&state, &connection_id, kind, &name).await
 }
 
 #[tauri::command]
@@ -875,8 +881,8 @@ pub async fn consul_mesh_config_list(
     state: State<'_, Arc<AppState>>,
     connection_id: String,
     kind: String,
-) -> Result<Vec<gauss_horizon_core::consul::mesh::ConsulConfigEntry>, String> {
-    gauss_horizon_core::consul::mesh::consul_mesh_config_list_core(&state, &connection_id, &kind).await
+) -> Result<Vec<chiron_horizon_core::consul::mesh::ConsulConfigEntry>, String> {
+    chiron_horizon_core::consul::mesh::consul_mesh_config_list_core(&state, &connection_id, &kind).await
 }
 #[tauri::command]
 pub async fn consul_mesh_config_get(
@@ -884,17 +890,17 @@ pub async fn consul_mesh_config_get(
     connection_id: String,
     kind: String,
     name: String,
-) -> Result<gauss_horizon_core::consul::mesh::ConsulConfigEntry, String> {
-    gauss_horizon_core::consul::mesh::consul_mesh_config_get_core(&state, &connection_id, &kind, &name).await
+) -> Result<chiron_horizon_core::consul::mesh::ConsulConfigEntry, String> {
+    chiron_horizon_core::consul::mesh::consul_mesh_config_get_core(&state, &connection_id, &kind, &name).await
 }
 #[tauri::command]
 pub async fn consul_mesh_config_apply(
     state: State<'_, Arc<AppState>>,
     connection_id: String,
-    request: gauss_horizon_core::consul::mesh::ConsulConfigEntryApply,
-) -> Result<gauss_horizon_core::consul::mesh::ConsulConfigEntry, String> {
+    request: chiron_horizon_core::consul::mesh::ConsulConfigEntryApply,
+) -> Result<chiron_horizon_core::consul::mesh::ConsulConfigEntry, String> {
     ensure_connection_writable(&state, &connection_id, "Write Consul Service Mesh config entry").await?;
-    gauss_horizon_core::consul::mesh::consul_mesh_config_apply_core(&state, &connection_id, request).await
+    chiron_horizon_core::consul::mesh::consul_mesh_config_apply_core(&state, &connection_id, request).await
 }
 #[tauri::command]
 pub async fn consul_mesh_config_delete(
@@ -905,7 +911,7 @@ pub async fn consul_mesh_config_delete(
     expected_modify_index: u64,
 ) -> Result<bool, String> {
     ensure_connection_writable(&state, &connection_id, "Delete Consul Service Mesh config entry").await?;
-    gauss_horizon_core::consul::mesh::consul_mesh_config_delete_core(
+    chiron_horizon_core::consul::mesh::consul_mesh_config_delete_core(
         &state,
         &connection_id,
         &kind,
@@ -918,33 +924,33 @@ pub async fn consul_mesh_config_delete(
 pub async fn consul_mesh_intentions_list(
     state: State<'_, Arc<AppState>>,
     connection_id: String,
-) -> Result<Vec<gauss_horizon_core::consul::mesh::ConsulIntention>, String> {
-    gauss_horizon_core::consul::mesh::consul_mesh_intentions_list_core(&state, &connection_id).await
+) -> Result<Vec<chiron_horizon_core::consul::mesh::ConsulIntention>, String> {
+    chiron_horizon_core::consul::mesh::consul_mesh_intentions_list_core(&state, &connection_id).await
 }
 #[tauri::command]
 pub async fn consul_mesh_intention_get(
     state: State<'_, Arc<AppState>>,
     connection_id: String,
     id: String,
-) -> Result<gauss_horizon_core::consul::mesh::ConsulIntention, String> {
-    gauss_horizon_core::consul::mesh::consul_mesh_intention_get_core(&state, &connection_id, &id).await
+) -> Result<chiron_horizon_core::consul::mesh::ConsulIntention, String> {
+    chiron_horizon_core::consul::mesh::consul_mesh_intention_get_core(&state, &connection_id, &id).await
 }
 #[tauri::command]
 pub async fn consul_mesh_intention_get_exact(
     state: State<'_, Arc<AppState>>,
     connection_id: String,
-    request: gauss_horizon_core::consul::mesh::ConsulIntentionExactRequest,
-) -> Result<gauss_horizon_core::consul::mesh::ConsulIntention, String> {
-    gauss_horizon_core::consul::mesh::consul_mesh_intention_get_exact_core(&state, &connection_id, request).await
+    request: chiron_horizon_core::consul::mesh::ConsulIntentionExactRequest,
+) -> Result<chiron_horizon_core::consul::mesh::ConsulIntention, String> {
+    chiron_horizon_core::consul::mesh::consul_mesh_intention_get_exact_core(&state, &connection_id, request).await
 }
 #[tauri::command]
 pub async fn consul_mesh_intention_upsert(
     state: State<'_, Arc<AppState>>,
     connection_id: String,
-    item: gauss_horizon_core::consul::mesh::ConsulIntention,
-) -> Result<gauss_horizon_core::consul::mesh::ConsulIntention, String> {
+    item: chiron_horizon_core::consul::mesh::ConsulIntention,
+) -> Result<chiron_horizon_core::consul::mesh::ConsulIntention, String> {
     ensure_connection_writable(&state, &connection_id, "Write Consul intention").await?;
-    gauss_horizon_core::consul::mesh::consul_mesh_intention_upsert_core(&state, &connection_id, item).await
+    chiron_horizon_core::consul::mesh::consul_mesh_intention_upsert_core(&state, &connection_id, item).await
 }
 #[tauri::command]
 pub async fn consul_mesh_intention_delete(
@@ -953,73 +959,73 @@ pub async fn consul_mesh_intention_delete(
     id: String,
 ) -> Result<bool, String> {
     ensure_connection_writable(&state, &connection_id, "Delete Consul intention").await?;
-    gauss_horizon_core::consul::mesh::consul_mesh_intention_delete_core(&state, &connection_id, &id).await
+    chiron_horizon_core::consul::mesh::consul_mesh_intention_delete_core(&state, &connection_id, &id).await
 }
 #[tauri::command]
 pub async fn consul_mesh_intention_delete_exact(
     state: State<'_, Arc<AppState>>,
     connection_id: String,
-    request: gauss_horizon_core::consul::mesh::ConsulIntentionExactRequest,
+    request: chiron_horizon_core::consul::mesh::ConsulIntentionExactRequest,
 ) -> Result<bool, String> {
     ensure_connection_writable(&state, &connection_id, "Delete exact Consul intention").await?;
-    gauss_horizon_core::consul::mesh::consul_mesh_intention_delete_exact_core(&state, &connection_id, request).await
+    chiron_horizon_core::consul::mesh::consul_mesh_intention_delete_exact_core(&state, &connection_id, request).await
 }
 #[tauri::command]
 pub async fn consul_mesh_intention_match(
     state: State<'_, Arc<AppState>>,
     connection_id: String,
-    request: gauss_horizon_core::consul::mesh::ConsulIntentionMatchRequest,
-) -> Result<Vec<gauss_horizon_core::consul::mesh::ConsulIntention>, String> {
-    gauss_horizon_core::consul::mesh::consul_mesh_intention_match_core(&state, &connection_id, request).await
+    request: chiron_horizon_core::consul::mesh::ConsulIntentionMatchRequest,
+) -> Result<Vec<chiron_horizon_core::consul::mesh::ConsulIntention>, String> {
+    chiron_horizon_core::consul::mesh::consul_mesh_intention_match_core(&state, &connection_id, request).await
 }
 #[tauri::command]
 pub async fn consul_mesh_intention_check(
     state: State<'_, Arc<AppState>>,
     connection_id: String,
-    request: gauss_horizon_core::consul::mesh::ConsulIntentionCheckRequest,
-) -> Result<gauss_horizon_core::consul::mesh::ConsulIntentionCheckResponse, String> {
-    gauss_horizon_core::consul::mesh::consul_mesh_intention_check_core(&state, &connection_id, request).await
+    request: chiron_horizon_core::consul::mesh::ConsulIntentionCheckRequest,
+) -> Result<chiron_horizon_core::consul::mesh::ConsulIntentionCheckResponse, String> {
+    chiron_horizon_core::consul::mesh::consul_mesh_intention_check_core(&state, &connection_id, request).await
 }
 #[tauri::command]
 pub async fn consul_mesh_discovery_chain(
     state: State<'_, Arc<AppState>>,
     connection_id: String,
     service: String,
-) -> Result<gauss_horizon_core::consul::mesh::ConsulDiscoveryChain, String> {
-    gauss_horizon_core::consul::mesh::consul_mesh_discovery_chain_core(&state, &connection_id, &service).await
+) -> Result<chiron_horizon_core::consul::mesh::ConsulDiscoveryChain, String> {
+    chiron_horizon_core::consul::mesh::consul_mesh_discovery_chain_core(&state, &connection_id, &service).await
 }
 #[tauri::command]
 pub async fn consul_mesh_peering_list(
     state: State<'_, Arc<AppState>>,
     connection_id: String,
-) -> Result<Vec<gauss_horizon_core::consul::mesh::ConsulPeering>, String> {
-    gauss_horizon_core::consul::mesh::consul_mesh_peering_list_core(&state, &connection_id).await
+) -> Result<Vec<chiron_horizon_core::consul::mesh::ConsulPeering>, String> {
+    chiron_horizon_core::consul::mesh::consul_mesh_peering_list_core(&state, &connection_id).await
 }
 #[tauri::command]
 pub async fn consul_mesh_peering_get(
     state: State<'_, Arc<AppState>>,
     connection_id: String,
     name: String,
-) -> Result<gauss_horizon_core::consul::mesh::ConsulPeering, String> {
-    gauss_horizon_core::consul::mesh::consul_mesh_peering_get_core(&state, &connection_id, &name).await
+) -> Result<chiron_horizon_core::consul::mesh::ConsulPeering, String> {
+    chiron_horizon_core::consul::mesh::consul_mesh_peering_get_core(&state, &connection_id, &name).await
 }
 #[tauri::command]
 pub async fn consul_mesh_peering_generate_token(
     state: State<'_, Arc<AppState>>,
     connection_id: String,
-    request: gauss_horizon_core::consul::mesh::ConsulPeeringGenerateRequest,
-) -> Result<gauss_horizon_core::consul::mesh::ConsulPeeringToken, String> {
+    request: chiron_horizon_core::consul::mesh::ConsulPeeringGenerateRequest,
+) -> Result<chiron_horizon_core::consul::mesh::ConsulPeeringToken, String> {
     ensure_connection_writable(&state, &connection_id, "Generate Consul peering token").await?;
-    gauss_horizon_core::consul::mesh::consul_mesh_peering_generate_token_core(&state, &connection_id, request).await
+    chiron_horizon_core::consul::mesh::consul_mesh_peering_generate_token_core(&state, &connection_id, request).await
 }
 #[tauri::command]
 pub async fn consul_mesh_peering_establish(
     state: State<'_, Arc<AppState>>,
     connection_id: String,
-    request: gauss_horizon_core::consul::mesh::ConsulPeeringEstablishRequest,
-) -> Result<gauss_horizon_core::consul::mesh::ConsulPeering, String> {
+    request: chiron_horizon_core::consul::mesh::ConsulPeeringEstablishRequest,
+) -> Result<chiron_horizon_core::consul::mesh::ConsulPeering, String> {
     ensure_connection_writable(&state, &connection_id, "Establish Consul peering").await?;
-    gauss_horizon_core::consul::mesh::consul_mesh_peering_establish_core(&state, &connection_id, request).await
+    chiron_horizon_core::consul::mesh::consul_mesh_peering_establish_core(&state, &connection_id, request).await
 }
 #[tauri::command]
 pub async fn consul_mesh_peering_delete(
@@ -1028,14 +1034,14 @@ pub async fn consul_mesh_peering_delete(
     name: String,
 ) -> Result<bool, String> {
     ensure_connection_writable(&state, &connection_id, "Delete Consul peering").await?;
-    gauss_horizon_core::consul::mesh::consul_mesh_peering_delete_core(&state, &connection_id, &name).await
+    chiron_horizon_core::consul::mesh::consul_mesh_peering_delete_core(&state, &connection_id, &name).await
 }
 #[tauri::command]
 pub async fn consul_mesh_exported_services_list(
     state: State<'_, Arc<AppState>>,
     connection_id: String,
-) -> Result<Vec<gauss_horizon_core::consul::mesh::ConsulExportedService>, String> {
-    gauss_horizon_core::consul::mesh::consul_mesh_exported_services_list_core(&state, &connection_id).await
+) -> Result<Vec<chiron_horizon_core::consul::mesh::ConsulExportedService>, String> {
+    chiron_horizon_core::consul::mesh::consul_mesh_exported_services_list_core(&state, &connection_id).await
 }
 #[tauri::command]
 pub async fn consul_mesh_exported_services_apply(
@@ -1044,9 +1050,9 @@ pub async fn consul_mesh_exported_services_apply(
     name: String,
     expected_modify_index: u64,
     raw: serde_json::Value,
-) -> Result<gauss_horizon_core::consul::mesh::ConsulConfigEntry, String> {
+) -> Result<chiron_horizon_core::consul::mesh::ConsulConfigEntry, String> {
     ensure_connection_writable(&state, &connection_id, "Write Consul exported services").await?;
-    gauss_horizon_core::consul::mesh::consul_mesh_exported_services_apply_core(
+    chiron_horizon_core::consul::mesh::consul_mesh_exported_services_apply_core(
         &state,
         &connection_id,
         &name,

@@ -37,9 +37,9 @@ test("builds procedure execution templates from parameter values", () => {
       parameters,
     }),
     [
-      "DECLARE @gauss_horizon_output_4 text;",
-      "EXEC [dbo].[refresh_stats] @p_message = 'it''s ready', @p_count = 3, @p_debug = 1, @p_result = @gauss_horizon_output_4 OUTPUT;",
-      "SELECT @gauss_horizon_output_4 AS [p_result];",
+      "DECLARE @chiron_horizon_output_4 text;",
+      "EXEC [dbo].[refresh_stats] @p_message = 'it''s ready', @p_count = 3, @p_debug = 1, @p_result = @chiron_horizon_output_4 OUTPUT;",
+      "SELECT @chiron_horizon_output_4 AS [p_result];",
     ].join("\n"),
   );
 });

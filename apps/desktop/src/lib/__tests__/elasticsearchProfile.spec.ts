@@ -26,7 +26,7 @@ const PROFILE_BODY = JSON.stringify({
                 children: [
                   {
                     type: "TermQuery",
-                    description: "title:gauss-horizon",
+                    description: "title:chiron-horizon",
                     time_in_nanos: 500000,
                     breakdown: { score: 250000, next_doc: 100000 },
                     children: [],
@@ -51,7 +51,7 @@ const PROFILE_BODY = JSON.stringify({
             query: [
               {
                 type: "TermQuery",
-                description: "title:gauss-horizon",
+                description: "title:chiron-horizon",
                 time_in_nanos: 900000,
                 breakdown: { score: 300000 },
                 children: [],
@@ -114,7 +114,7 @@ describe("parseElasticsearchProfile", () => {
   it("marks the critical path recursively to the leaf", () => {
     const tree = parseElasticsearchProfile(PROFILE_BODY)!.shards[0]!.tree;
     const [left, right] = tree.children;
-    // The highest-cost child is TermQuery title:gauss-horizon (500000).
+    // The highest-cost child is TermQuery title:chiron-horizon (500000).
     expect(tree.isCriticalPath).toBe(true);
     expect(left!.isCriticalPath).toBe(true);
     expect(right!.isCriticalPath).toBe(false);

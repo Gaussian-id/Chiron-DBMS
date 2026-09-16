@@ -281,7 +281,7 @@ async function exportConsulScope(connectionId: string, request: KvExportScopeReq
   exporting.value = true;
   try {
     const bundle = await api.consulExportBundle(connectionId, { path: request.path, kind: request.kind });
-    const filename = `gauss-horizon-consul-${kvExportFilenameStem(request.path)}-${Date.now()}.json`;
+    const filename = `chiron-horizon-consul-${kvExportFilenameStem(request.path)}-${Date.now()}.json`;
     const saved = await saveBundle(bundle, filename);
     if (saved) toast(t("consul.tools.exported", { count: bundle.entries.length }), 2500);
   } catch (error) {
@@ -372,7 +372,7 @@ async function exportSearchResults() {
   exportingSearchResults.value = true;
   try {
     const report = {
-      format: "gauss-horizon-consul-kv-search-results",
+      format: "chiron-horizon-consul-kv-search-results",
       version: 1,
       exportedAtUnixMs: Date.now(),
       source: currentScope(),
@@ -388,7 +388,7 @@ async function exportSearchResults() {
       },
       results: searchResults.value,
     };
-    const saved = await saveJsonFile(report, `gauss-horizon-consul-search-${Date.now()}.json`, t("consul.tools.searchResultsFileType"));
+    const saved = await saveJsonFile(report, `chiron-horizon-consul-search-${Date.now()}.json`, t("consul.tools.searchResultsFileType"));
     if (saved) toast(t("consul.tools.searchResultsExported", { count: searchResults.value.length }), 2500);
   } catch (error) {
     toast(error instanceof Error ? error.message : String(error), 5000);
@@ -448,7 +448,7 @@ async function openSearchResult(result: ConsulSearchMatch) {
 
 function validateBundle(value: unknown): ConsulKvBundle {
   const bundle = value as Partial<ConsulKvBundle>;
-  if (bundle.format !== "gauss-horizon-consul-kv-bundle" || bundle.version !== 1 || !Array.isArray(bundle.entries)) {
+  if (bundle.format !== "chiron-horizon-consul-kv-bundle" || bundle.version !== 1 || !Array.isArray(bundle.entries)) {
     throw new Error(t("consul.tools.invalidBundle"));
   }
   return bundle as ConsulKvBundle;
@@ -754,8 +754,8 @@ defineExpose({ focusSearch, refresh });
       :on-delete-prefix="openDeletePrefix"
       :watch-active-key="watchRunning && watchMode === 'key' ? watchPrefix : null"
       :search-highlight="searchHighlight"
-      export-format="gauss-horizon-consul-kv-bundle"
-      export-file-extension=".gauss-horizon-consul.json"
+      export-format="chiron-horizon-consul-kv-bundle"
+      export-file-extension=".chiron-horizon-consul.json"
       export-fallback-name="consul-key"
     >
       <template #toolbar-trailing>

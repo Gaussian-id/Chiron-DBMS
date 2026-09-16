@@ -50,7 +50,7 @@ describe("query editor table reference drop", () => {
     });
 
     expect(payload).toEqual({
-      kind: "gauss-horizon-table-reference",
+      kind: "chiron-horizon-table-reference",
       connectionId: "conn-1",
       database: "app-db",
       columnNames: ["id", "order no"],

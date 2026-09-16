@@ -1,6 +1,6 @@
 import { normalizeConnectTimeoutSecs, normalizeQueryTimeoutSecs } from "@/lib/connection/timeoutLimits";
 
-export const TIMEOUT_INHERITANCE_BACKUP_STORAGE_KEY = "gauss-horizon-timeout-inheritance-backup-v1";
+export const TIMEOUT_INHERITANCE_BACKUP_STORAGE_KEY = "chiron-horizon-timeout-inheritance-backup-v1";
 
 export interface TimeoutInheritanceBackup {
   version: 1;

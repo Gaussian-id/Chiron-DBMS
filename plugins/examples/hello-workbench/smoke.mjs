@@ -6,13 +6,13 @@ import process from "node:process";
 import { fileURLToPath } from "node:url";
 
 const root = path.dirname(fileURLToPath(import.meta.url));
-const packagePath = process.argv[2] ? path.resolve(process.argv[2]) : path.join(root, "dist", `gauss.horizon.example.hello-1.0.0-${platformTarget()}.gauss-horizonp`);
-const ownedBuildRoot = process.env.CARGO_TARGET_DIR ? null : await mkdtemp(path.join(os.tmpdir(), "gauss-horizon-plugin-smoke-"));
+const packagePath = process.argv[2] ? path.resolve(process.argv[2]) : path.join(root, "dist", `chiron.horizon.example.hello-1.0.0-${platformTarget()}.chiron-horizonp`);
+const ownedBuildRoot = process.env.CARGO_TARGET_DIR ? null : await mkdtemp(path.join(os.tmpdir(), "chiron-horizon-plugin-smoke-"));
 const cargoTarget = process.env.CARGO_TARGET_DIR || path.join(ownedBuildRoot, "cargo-target");
 
 try {
   if (!process.argv[2]) run(process.execPath, [path.join(root, "package.mjs")]);
-  run("cargo", ["run", "--locked", "-p", "gauss-horizon-core", "--no-default-features", "--example", "plugin_package_smoke", "--", packagePath], {
+  run("cargo", ["run", "--locked", "-p", "chiron-horizon-core", "--no-default-features", "--example", "plugin_package_smoke", "--", packagePath], {
     CARGO_TARGET_DIR: cargoTarget,
   });
 } finally {

@@ -7,7 +7,7 @@
   "platforms": ["linux/amd64", "linux/arm64"],
   "service": "database",
   "defaultPort": 2379,
-  "connection": { "host": "127.0.0.1", "port": 10710, "username": "root", "password": "123456", "database": "gauss-horizon", "peerPort": 10711 },
+  "connection": { "host": "127.0.0.1", "port": 10710, "username": "root", "password": "123456", "database": "chiron-horizon", "peerPort": 10711 },
   "hostPorts": { "DB_PORT": 10710, "ETCD_PEER_PORT": 10711 },
   "bootstrap": {
     "check": { "command": ["/usr/local/bin/etcdctl", "--endpoints=http://127.0.0.1:2379", "--user", "root:${DB_PASSWORD}", "auth", "status"], "expect": "Authentication Status: true" },
@@ -19,5 +19,5 @@
     ]
   },
   "shell": ["/usr/local/bin/etcdctl", "--endpoints=http://127.0.0.1:2379", "--user", "root:${DB_PASSWORD}"],
-  "smoke": { "steps": [{ "name": "write authenticated smoke key", "command": ["/usr/local/bin/etcdctl", "--endpoints=http://127.0.0.1:2379", "--user", "root:${DB_PASSWORD}", "put", "gauss-horizon:smoke", "Gauss Horizon smoke"], "expect": "OK" }, { "name": "read authenticated smoke key", "command": ["/usr/local/bin/etcdctl", "--endpoints=http://127.0.0.1:2379", "--user", "root:${DB_PASSWORD}", "get", "gauss-horizon:smoke"], "expect": "Gauss Horizon smoke" }] }
+  "smoke": { "steps": [{ "name": "write authenticated smoke key", "command": ["/usr/local/bin/etcdctl", "--endpoints=http://127.0.0.1:2379", "--user", "root:${DB_PASSWORD}", "put", "chiron-horizon:smoke", "Chiron Horizon smoke"], "expect": "OK" }, { "name": "read authenticated smoke key", "command": ["/usr/local/bin/etcdctl", "--endpoints=http://127.0.0.1:2379", "--user", "root:${DB_PASSWORD}", "get", "chiron-horizon:smoke"], "expect": "Chiron Horizon smoke" }] }
 }

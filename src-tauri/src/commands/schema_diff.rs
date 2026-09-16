@@ -1,25 +1,25 @@
 #[tauri::command]
 pub fn prepare_schema_diff(
-    options: gauss_horizon_core::schema_diff::SchemaDiffPreparationOptions,
-) -> Result<gauss_horizon_core::schema_diff::SchemaDiffPreparation, String> {
-    Ok(gauss_horizon_core::schema_diff::prepare_schema_diff(options))
+    options: chiron_horizon_core::schema_diff::SchemaDiffPreparationOptions,
+) -> Result<chiron_horizon_core::schema_diff::SchemaDiffPreparation, String> {
+    Ok(chiron_horizon_core::schema_diff::prepare_schema_diff(options))
 }
 
 #[tauri::command]
 #[allow(clippy::too_many_arguments)]
 pub fn generate_schema_sync_sql(
-    diffs: Vec<gauss_horizon_core::schema_diff::TableDiff>,
-    function_diffs: Option<Vec<gauss_horizon_core::schema_diff::FunctionDiff>>,
-    sequence_diffs: Option<Vec<gauss_horizon_core::schema_diff::SequenceDiff>>,
-    rule_diffs: Option<Vec<gauss_horizon_core::schema_diff::RuleDiff>>,
-    owner_diffs: Option<Vec<gauss_horizon_core::schema_diff::OwnerDiff>>,
-    database_type: gauss_horizon_core::models::connection::DatabaseType,
+    diffs: Vec<chiron_horizon_core::schema_diff::TableDiff>,
+    function_diffs: Option<Vec<chiron_horizon_core::schema_diff::FunctionDiff>>,
+    sequence_diffs: Option<Vec<chiron_horizon_core::schema_diff::SequenceDiff>>,
+    rule_diffs: Option<Vec<chiron_horizon_core::schema_diff::RuleDiff>>,
+    owner_diffs: Option<Vec<chiron_horizon_core::schema_diff::OwnerDiff>>,
+    database_type: chiron_horizon_core::models::connection::DatabaseType,
     target_schema: Option<String>,
     cascade_delete: Option<bool>,
-    source_dialect: Option<gauss_horizon_core::sql_dialect::descriptor::DialectKind>,
-    field_mappings: Option<Vec<gauss_horizon_core::schema_diff::FieldMapping>>,
+    source_dialect: Option<chiron_horizon_core::sql_dialect::descriptor::DialectKind>,
+    field_mappings: Option<Vec<chiron_horizon_core::schema_diff::FieldMapping>>,
 ) -> Result<String, String> {
-    Ok(gauss_horizon_core::schema_diff::generate_schema_sync_sql(
+    Ok(chiron_horizon_core::schema_diff::generate_schema_sync_sql(
         &diffs,
         function_diffs.as_deref().unwrap_or_default(),
         sequence_diffs.as_deref().unwrap_or_default(),
@@ -36,19 +36,19 @@ pub fn generate_schema_sync_sql(
 #[tauri::command]
 #[allow(clippy::too_many_arguments)]
 pub fn generate_schema_sync_plan(
-    diffs: Vec<gauss_horizon_core::schema_diff::TableDiff>,
-    function_diffs: Option<Vec<gauss_horizon_core::schema_diff::FunctionDiff>>,
-    sequence_diffs: Option<Vec<gauss_horizon_core::schema_diff::SequenceDiff>>,
-    rule_diffs: Option<Vec<gauss_horizon_core::schema_diff::RuleDiff>>,
-    owner_diffs: Option<Vec<gauss_horizon_core::schema_diff::OwnerDiff>>,
-    database_type: gauss_horizon_core::models::connection::DatabaseType,
+    diffs: Vec<chiron_horizon_core::schema_diff::TableDiff>,
+    function_diffs: Option<Vec<chiron_horizon_core::schema_diff::FunctionDiff>>,
+    sequence_diffs: Option<Vec<chiron_horizon_core::schema_diff::SequenceDiff>>,
+    rule_diffs: Option<Vec<chiron_horizon_core::schema_diff::RuleDiff>>,
+    owner_diffs: Option<Vec<chiron_horizon_core::schema_diff::OwnerDiff>>,
+    database_type: chiron_horizon_core::models::connection::DatabaseType,
     target_schema: Option<String>,
     cascade_delete: Option<bool>,
-    source_dialect: Option<gauss_horizon_core::sql_dialect::descriptor::DialectKind>,
-    field_mappings: Option<Vec<gauss_horizon_core::schema_diff::FieldMapping>>,
+    source_dialect: Option<chiron_horizon_core::sql_dialect::descriptor::DialectKind>,
+    field_mappings: Option<Vec<chiron_horizon_core::schema_diff::FieldMapping>>,
     enable_rollback: Option<bool>,
-) -> Result<gauss_horizon_core::schema_diff::SchemaSyncSqlPlan, String> {
-    Ok(gauss_horizon_core::schema_diff::generate_schema_sync_sql_plan(
+) -> Result<chiron_horizon_core::schema_diff::SchemaSyncSqlPlan, String> {
+    Ok(chiron_horizon_core::schema_diff::generate_schema_sync_sql_plan(
         &diffs,
         function_diffs.as_deref().unwrap_or_default(),
         sequence_diffs.as_deref().unwrap_or_default(),

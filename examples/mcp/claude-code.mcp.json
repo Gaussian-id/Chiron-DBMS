@@ -1,7 +1,7 @@
 {
   "mcpServers": {
-    "gauss-horizon": {
-      "command": "gauss-horizon-mcp-server"
+    "chiron-horizon": {
+      "command": "chiron-horizon-mcp-server"
     }
   }
 }

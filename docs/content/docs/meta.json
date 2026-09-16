@@ -1,8 +1,8 @@
 {
-  "title": "Gauss Horizon Docs",
+  "title": "Chiron Horizon Docs",
   "pages": [
     "---Introduction---",
-    "what-is-gauss-horizon",
+    "what-is-chiron-horizon",
     "getting-started",
     "user-guide",
     "databases",

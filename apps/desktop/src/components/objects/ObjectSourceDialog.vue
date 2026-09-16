@@ -193,7 +193,7 @@ function closeDialog() {
 
 <template>
   <Dialog :open="props.open" @update:open="(value) => emit('update:open', value)">
-    <DialogContent class="h-[min(760px,calc(var(--gauss-horizon-viewport-height)-2rem))] grid-rows-[auto_minmax(0,1fr)_auto] sm:max-w-[900px]">
+    <DialogContent class="h-[min(760px,calc(var(--chiron-horizon-viewport-height)-2rem))] grid-rows-[auto_minmax(0,1fr)_auto] sm:max-w-[900px]">
       <DialogHeader>
         <DialogTitle>{{ title }}</DialogTitle>
       </DialogHeader>

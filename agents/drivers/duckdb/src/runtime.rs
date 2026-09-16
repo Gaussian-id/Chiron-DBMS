@@ -584,7 +584,7 @@ mod tests {
 
     #[test]
     fn worker_session_attaches_database() {
-        let dir = std::env::temp_dir().join(format!("gauss-horizon-duckdb-worker-{}", uuid::Uuid::new_v4()));
+        let dir = std::env::temp_dir().join(format!("chiron-horizon-duckdb-worker-{}", uuid::Uuid::new_v4()));
         std::fs::create_dir_all(&dir).expect("create temp dir");
         let attached_path = dir.join("analytics.duckdb");
         {
@@ -619,7 +619,7 @@ mod tests {
 
     #[test]
     fn worker_session_runs_init_script_and_tracks_attached_alias() {
-        let dir = std::env::temp_dir().join(format!("gauss-horizon-duckdb-worker-{}", uuid::Uuid::new_v4()));
+        let dir = std::env::temp_dir().join(format!("chiron-horizon-duckdb-worker-{}", uuid::Uuid::new_v4()));
         std::fs::create_dir_all(&dir).expect("create temp dir");
         let attached_path = dir.join("warehouse.duckdb");
         {
@@ -652,7 +652,7 @@ mod tests {
 
     #[test]
     fn worker_session_tracks_init_script_attach_without_alias() {
-        let dir = std::env::temp_dir().join(format!("gauss-horizon-duckdb-worker-{}", uuid::Uuid::new_v4()));
+        let dir = std::env::temp_dir().join(format!("chiron-horizon-duckdb-worker-{}", uuid::Uuid::new_v4()));
         std::fs::create_dir_all(&dir).expect("create temp dir");
         let attached_path = dir.join("noalias.duckdb");
         {
@@ -692,7 +692,7 @@ mod tests {
 
     #[test]
     fn worker_session_tracks_attach_sql_alias() {
-        let dir = std::env::temp_dir().join(format!("gauss-horizon-duckdb-worker-{}", uuid::Uuid::new_v4()));
+        let dir = std::env::temp_dir().join(format!("chiron-horizon-duckdb-worker-{}", uuid::Uuid::new_v4()));
         std::fs::create_dir_all(&dir).expect("create temp dir");
         let attached_path = dir.join("sales.duckdb");
         {

@@ -1,6 +1,6 @@
 # Apps
 
-Runnable Gauss Horizon applications live here.
+Runnable Chiron Horizon applications live here.
 
 ## Directories
 

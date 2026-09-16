@@ -1,11 +1,11 @@
 services:
-  gauss-horizon:
+  chiron-horizon:
     image: Gaussian-id/Gauss-Horizon:latest
     container_name: ${CONTAINER_NAME}
     ports:
       - "${PANEL_APP_PORT_HTTP}:4224"
     environment:
-      - GAUSS_HORIZON_PASSWORD=${PANEL_DB_PASSWORD}
+      - CHIRON_HORIZON_PASSWORD=${PANEL_DB_PASSWORD}
     volumes:
       - ./data:/app/data
     restart: unless-stopped

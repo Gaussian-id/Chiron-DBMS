@@ -106,7 +106,7 @@ const contracts: Contract[] = [
 
 const sourceCache = new Map<string, string>();
 function source(file: string): string {
-  if (!sourceCache.has(file)) sourceCache.set(file, readFileSync(join(process.cwd(), "crates/gauss-horizon-core/src/consul", file), "utf8"));
+  if (!sourceCache.has(file)) sourceCache.set(file, readFileSync(join(process.cwd(), "crates/chiron-horizon-core/src/consul", file), "utf8"));
   return sourceCache.get(file)!;
 }
 

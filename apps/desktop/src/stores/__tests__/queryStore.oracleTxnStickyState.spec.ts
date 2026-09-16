@@ -76,7 +76,7 @@ function noOpResult(): OracleResult[] {
 function expiredTransactionError() {
   return {
     version: 1 as const,
-    code: "Gauss Horizon-TXN-1001",
+    code: "Chiron Horizon-TXN-1001",
     messageKey: "backendErrors.transaction.sessionExpired",
     messageParams: { timeoutSecs: 300 },
     source: "legacyBackend" as const,
@@ -261,7 +261,7 @@ describe("queryStore Oracle manual-transaction sticky state", () => {
     expect(tab.oracleTxnPossiblyDirty).not.toBe(true);
   });
 
-  it("clears the sticky state together with the session on Gauss Horizon rollback", async () => {
+  it("clears the sticky state together with the session on Chiron Horizon rollback", async () => {
     mocks.executeInManualTransaction.mockResolvedValue(dirtyUpdate());
 
     const { useQueryStore } = await import("@/stores/queryStore");

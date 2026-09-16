@@ -3,15 +3,15 @@ use std::sync::Arc;
 use tauri::State;
 
 use crate::commands::connection::AppState;
-use gauss_horizon_core::connection::PoolKind;
-use gauss_horizon_core::mqtt::service;
-use gauss_horizon_core::mqtt::types::*;
+use chiron_horizon_core::connection::PoolKind;
+use chiron_horizon_core::mqtt::service;
+use chiron_horizon_core::mqtt::types::*;
 
 /// Gets the MQTT client from the connection map.
 async fn get_mqtt_client(
     state: &AppState,
     connection_id: &str,
-) -> Result<Arc<gauss_horizon_core::mqtt::client::MqttClient>, String> {
+) -> Result<Arc<chiron_horizon_core::mqtt::client::MqttClient>, String> {
     let pool = state
         .pool_handle(connection_id)
         .await
@@ -25,7 +25,7 @@ async fn get_mqtt_client(
 async fn persist_mqtt_topics(
     state: &AppState,
     connection_id: &str,
-    client: &gauss_horizon_core::mqtt::client::MqttClient,
+    client: &chiron_horizon_core::mqtt::client::MqttClient,
 ) -> Result<(), String> {
     let saved_topics = client.desired_topic_configs().await;
     if !state.configs.read().await.contains_key(connection_id) {

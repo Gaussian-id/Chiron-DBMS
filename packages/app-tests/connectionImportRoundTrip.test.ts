@@ -142,7 +142,7 @@ async function exportFromMachineA(protection: ConnectionExportProtection = { mod
   }
 }
 
-test("importing a gauss-horizon export merges into the existing sidebar instead of replacing it", async () => {
+test("importing a chiron-horizon export merges into the existing sidebar instead of replacing it", async () => {
   const exported = await exportFromMachineA();
 
   const localLayout: SidebarLayout = {
@@ -174,7 +174,7 @@ test("importing a gauss-horizon export merges into the existing sidebar instead 
   }
 });
 
-test("re-importing the same gauss-horizon export does not duplicate connections", async () => {
+test("re-importing the same chiron-horizon export does not duplicate connections", async () => {
   const exported = await exportFromMachineA();
   const backend = installBackend([], null);
   const storage = installMemoryStorage();
@@ -405,7 +405,7 @@ test("wrong passphrase and preview-only parse do not mutate local connections", 
   }
 });
 
-test("plaintext gauss-horizon export round-trips through the password-free import path", async () => {
+test("plaintext chiron-horizon export round-trips through the password-free import path", async () => {
   const exported = await exportFromMachineA({ mode: "plaintext" });
   const backend = installBackend([], null);
   const storage = installMemoryStorage();
@@ -468,7 +468,7 @@ test("encrypted export fails closed when Web Crypto is unavailable", async () =>
   }
 });
 
-test("plain legacy gauss-horizon config still imports a selected subset", async () => {
+test("plain legacy chiron-horizon config still imports a selected subset", async () => {
   const backend = installBackend([], null);
   const storage = installMemoryStorage();
   try {

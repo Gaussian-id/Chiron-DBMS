@@ -1,7 +1,7 @@
 import { strict as assert } from "node:assert";
 import { test } from "vitest";
 import {
-  GAUSS_HORIZON_TABLE_REFERENCE_MIME,
+  CHIRON_HORIZON_TABLE_REFERENCE_MIME,
   activeTableReferencePayloadValue,
   clearActiveTableReferencePayload,
   createTableReferencePayload,
@@ -22,7 +22,7 @@ test("creates table drag payload only when table context is complete", () => {
       databaseType: "sqlite",
     }),
     {
-      kind: "gauss-horizon-table-reference",
+      kind: "chiron-horizon-table-reference",
       connectionId: "c1",
       database: "",
       tableName: "catalogless_table",
@@ -38,7 +38,7 @@ test("creates table drag payload only when table context is complete", () => {
       databaseType: "postgres",
     }),
     {
-      kind: "gauss-horizon-table-reference",
+      kind: "chiron-horizon-table-reference",
       connectionId: "c1",
       database: "db",
       schema: "public",
@@ -59,7 +59,7 @@ test("creates column drag payload when column context is complete", () => {
       databaseType: "postgres",
     }),
     {
-      kind: "gauss-horizon-table-reference",
+      kind: "chiron-horizon-table-reference",
       connectionId: "c1",
       database: "db",
       schema: "public",
@@ -83,25 +83,25 @@ test("round trips table drag payload and rejects unrelated data", () => {
   assert.deepEqual(
     parseTableReferencePayload(
       JSON.stringify({
-        kind: "gauss-horizon-table-reference",
+        kind: "chiron-horizon-table-reference",
         connectionId: "c1",
         database: "",
         tableName: "orders",
       }),
     ),
     {
-      kind: "gauss-horizon-table-reference",
+      kind: "chiron-horizon-table-reference",
       connectionId: "c1",
       database: "",
       tableName: "orders",
     },
   );
   assert.equal(parseTableReferencePayload("not json"), null);
-  assert.equal(parseTableReferencePayload(JSON.stringify({ kind: "gauss-horizon-table-reference", tableName: "orders" })), null);
+  assert.equal(parseTableReferencePayload(JSON.stringify({ kind: "chiron-horizon-table-reference", tableName: "orders" })), null);
   assert.equal(
     parseTableReferencePayload(
       JSON.stringify({
-        kind: "gauss-horizon-table-reference",
+        kind: "chiron-horizon-table-reference",
         connectionId: "c1",
         database: "db",
         tableName: "orders",
@@ -129,13 +129,13 @@ test("tracks the active in-app table drag payload without dataTransfer reads", (
 test("detects table drag payload type without reading drag data", () => {
   assert.equal(hasTableReferencePayloadType(undefined), false);
   assert.equal(hasTableReferencePayloadType(["text/plain"]), false);
-  assert.equal(hasTableReferencePayloadType(["text/plain", GAUSS_HORIZON_TABLE_REFERENCE_MIME]), true);
+  assert.equal(hasTableReferencePayloadType(["text/plain", CHIRON_HORIZON_TABLE_REFERENCE_MIME]), true);
 });
 
 test("formats dropped table reference for the source database type", () => {
   assert.equal(
     tableReferenceInsertText({
-      kind: "gauss-horizon-table-reference",
+      kind: "chiron-horizon-table-reference",
       connectionId: "c1",
       database: "db",
       schema: "sales",
@@ -146,7 +146,7 @@ test("formats dropped table reference for the source database type", () => {
   );
   assert.equal(
     tableReferenceInsertText({
-      kind: "gauss-horizon-table-reference",
+      kind: "chiron-horizon-table-reference",
       connectionId: "c1",
       database: "db",
       schema: "dbo",
@@ -157,7 +157,7 @@ test("formats dropped table reference for the source database type", () => {
   );
   assert.equal(
     tableReferenceInsertText({
-      kind: "gauss-horizon-table-reference",
+      kind: "chiron-horizon-table-reference",
       connectionId: "c1",
       database: "db",
       schema: "ignored",
@@ -171,7 +171,7 @@ test("formats dropped table reference for the source database type", () => {
 test("formats dropped column references for the source database type", () => {
   assert.equal(
     tableReferenceInsertText({
-      kind: "gauss-horizon-table-reference",
+      kind: "chiron-horizon-table-reference",
       connectionId: "c1",
       database: "db",
       tableName: "users",

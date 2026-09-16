@@ -9,7 +9,7 @@ const MONGO_INTEGER_PATTERN = /^-?\d+$/;
 // These values are internal to the MongoDB collection grid. BSON strings may
 // contain any UTF-8 text, so strings in this reserved namespace are escaped
 // before entering the grid and restored before being saved.
-const MONGO_DOCUMENT_GRID_PREFIX = "\u0000gauss-horizon:mongo-document-grid:";
+const MONGO_DOCUMENT_GRID_PREFIX = "\u0000chiron-horizon:mongo-document-grid:";
 const MONGO_DOCUMENT_GRID_ESCAPED_STRING_PREFIX = `${MONGO_DOCUMENT_GRID_PREFIX}string:`;
 export const MONGO_DOCUMENT_GRID_NULL = `${MONGO_DOCUMENT_GRID_PREFIX}null`;
 const MAX_SAFE_BIGINT = BigInt(Number.MAX_SAFE_INTEGER);
@@ -367,7 +367,7 @@ export function formatMongoShellLiteral(value: unknown): string {
 }
 
 export function serializeMongoDocumentId(value: unknown): string {
-  if (typeof value === "string") return `__gauss_horizon_mongo_string_id__${JSON.stringify(value)}`;
+  if (typeof value === "string") return `__chiron_horizon_mongo_string_id__${JSON.stringify(value)}`;
   if (isMongoExtendedJsonId(value)) return JSON.stringify(value);
   return String(value);
 }

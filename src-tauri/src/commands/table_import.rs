@@ -9,7 +9,7 @@ use crate::commands::connection::{ensure_connection_writable, AppState};
 use crate::commands::transfer::get_db_type;
 
 // Re-export types for backward compatibility
-pub use gauss_horizon_core::table_import::{
+pub use chiron_horizon_core::table_import::{
     TableImportPreview, TableImportPreviewRequest, TableImportProgress, TableImportRequest, TableImportSummary,
 };
 
@@ -29,15 +29,15 @@ fn split_command_progress(
     // Core import completion precedes session-pool cleanup. Publish a synthetic finalizing
     // state first so the UI cannot show 100% until command-level cleanup has finished.
     match progress.status {
-        gauss_horizon_core::table_import::TableImportStatus::Running => (Some(progress), None),
-        gauss_horizon_core::table_import::TableImportStatus::Done => {
+        chiron_horizon_core::table_import::TableImportStatus::Running => (Some(progress), None),
+        chiron_horizon_core::table_import::TableImportStatus::Done => {
             let terminal = progress.clone();
-            progress.status = gauss_horizon_core::table_import::TableImportStatus::Running;
-            progress.phase = gauss_horizon_core::table_import::TableImportPhase::Finalizing;
+            progress.status = chiron_horizon_core::table_import::TableImportStatus::Running;
+            progress.phase = chiron_horizon_core::table_import::TableImportPhase::Finalizing;
             (Some(progress), Some(terminal))
         }
-        gauss_horizon_core::table_import::TableImportStatus::Error
-        | gauss_horizon_core::table_import::TableImportStatus::Cancelled => (None, Some(progress)),
+        chiron_horizon_core::table_import::TableImportStatus::Error
+        | chiron_horizon_core::table_import::TableImportStatus::Cancelled => (None, Some(progress)),
     }
 }
 
@@ -51,7 +51,7 @@ async fn clear_cancelled(import_id: &str) {
 
 #[tauri::command]
 pub async fn preview_table_import_file(request: TableImportPreviewRequest) -> Result<TableImportPreview, String> {
-    gauss_horizon_core::table_import::preview_table_import_file_with_request(request).await
+    chiron_horizon_core::table_import::preview_table_import_file_with_request(request).await
 }
 
 #[tauri::command]
@@ -66,13 +66,13 @@ pub async fn import_table_file(
     ensure_connection_writable(&state, &request.connection_id, "Import").await?;
     let db_type = get_db_type(&state, &request.connection_id).await?;
     let database = (!request.database.trim().is_empty()).then_some(request.database.as_str());
-    let client_session_id = gauss_horizon_core::table_import::table_import_client_session_id(&request.import_id);
+    let client_session_id = chiron_horizon_core::table_import::table_import_client_session_id(&request.import_id);
     let pool_key =
         state.get_or_create_pool_for_session(&request.connection_id, database, Some(&client_session_id)).await?;
 
     let core_started_at = Instant::now();
     let mut deferred_terminal = None;
-    let mut result = gauss_horizon_core::table_import::import_table_file_core(
+    let mut result = chiron_horizon_core::table_import::import_table_file_core(
         &state,
         &request,
         &db_type,
@@ -129,7 +129,7 @@ pub async fn cancel_table_import(import_id: String) -> Result<bool, String> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use gauss_horizon_core::table_import::{TableImportPhase, TableImportStatus};
+    use chiron_horizon_core::table_import::{TableImportPhase, TableImportStatus};
 
     fn progress(status: TableImportStatus) -> TableImportProgress {
         TableImportProgress {

@@ -61,7 +61,7 @@ describe("saveBrowserAppState", () => {
 
     await expect(saveBrowserAppState("transfer_task_library", { version: 1 })).resolves.toBeUndefined();
 
-    expect(globalThis.localStorage.setItem).toHaveBeenCalledWith("gauss-horizon-app-state:transfer_task_library", JSON.stringify({ version: 1 }));
+    expect(globalThis.localStorage.setItem).toHaveBeenCalledWith("chiron-horizon-app-state:transfer_task_library", JSON.stringify({ version: 1 }));
   });
 
   it("throws when localStorage quota prevents the fallback write", async () => {

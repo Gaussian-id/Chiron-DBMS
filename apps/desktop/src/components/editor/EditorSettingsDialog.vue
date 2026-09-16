@@ -362,7 +362,7 @@ const settingsRootProps = computed(() => (isSettingsPage.value ? {} : { open: pr
 const settingsRootClass = computed(() => (isSettingsPage.value ? "settings-shell h-full min-h-0 overflow-hidden bg-background" : ""));
 const settingsContentComponent = computed(() => (isSettingsPage.value ? "div" : DialogContent));
 const settingsContentClass = computed(() =>
-  isSettingsPage.value ? "flex h-full min-h-0 flex-col gap-4 overflow-hidden bg-background p-4" : "settings-shell h-[min(660px,calc(var(--gauss-horizon-viewport-height)-80px))] !max-w-[min(920px,calc(100vw-32px))] grid-rows-[auto_minmax(0,1fr)] gap-3 p-4 sm:!max-w-[min(920px,calc(100vw-48px))]",
+  isSettingsPage.value ? "flex h-full min-h-0 flex-col gap-4 overflow-hidden bg-background p-4" : "settings-shell h-[min(660px,calc(var(--chiron-horizon-viewport-height)-80px))] !max-w-[min(920px,calc(100vw-32px))] grid-rows-[auto_minmax(0,1fr)] gap-3 p-4 sm:!max-w-[min(920px,calc(100vw-48px))]",
 );
 const settingsTitleComponent = computed(() => (isSettingsPage.value ? "h2" : DialogTitle));
 
@@ -877,7 +877,7 @@ async function pickBackgroundImage() {
   } catch (error) {
     // Surface every failure (missing command in a stale binary, fs scope, copy
     // errors): Tauri rejections are plain strings, so String() keeps the detail.
-    console.error("[gauss-horizon] background image selection failed", error);
+    console.error("[chiron-horizon] background image selection failed", error);
     toast(`${t("settings.backgroundImageSaveFailed")}: ${error instanceof Error ? error.message : String(error)}`, 6000);
   }
 }
@@ -1645,7 +1645,7 @@ async function applySettingsAndClose() {
   }
 }
 
-async function restartGaussHorizonForDuckDbIsolation() {
+async function restartChironHorizonForDuckDbIsolation() {
   if (duckDbRestarting.value || hasApplyBlocker.value || isWeb) return;
   duckDbRestarting.value = true;
   try {
@@ -1653,7 +1653,7 @@ async function restartGaussHorizonForDuckDbIsolation() {
     const { relaunch } = await import("@tauri-apps/plugin-process");
     await relaunch();
   } catch (e: any) {
-    toast(t("settings.restartGaussHorizonFailed", { error: e?.message || String(e) }), 5000);
+    toast(t("settings.restartChironHorizonFailed", { error: e?.message || String(e) }), 5000);
   } finally {
     duckDbRestarting.value = false;
   }
@@ -2447,7 +2447,7 @@ async function resetSettingsContentScroll() {
 
 function openExternalUrl(url: string) {
   if (url.includes("distribution-disabled.invalid")) {
-    window.alert("This Gauss Horizon service is not available in 0.1.0.");
+    window.alert("This Chiron Horizon service is not available in 0.1.0.");
     return;
   }
   if (isTauriRuntime()) {
@@ -2622,8 +2622,8 @@ const mcpHttpError = ref("");
 const mcpHttpAllowedHostsText = ref("");
 const mcpHttpAllowedOriginsText = ref("");
 const mcpHttpPersistedSettings = ref<McpHttpServerSettings | null>(null);
-const MCP_READONLY_STORAGE_KEY = "gauss-horizon-mcp-config-readonly";
-const MCP_SCOPE_CONNECTION_STORAGE_KEY = "gauss-horizon-mcp-config-scope-connection";
+const MCP_READONLY_STORAGE_KEY = "chiron-horizon-mcp-config-readonly";
+const MCP_SCOPE_CONNECTION_STORAGE_KEY = "chiron-horizon-mcp-config-scope-connection";
 const mcpPolicyLoading = ref(false);
 const mcpPolicySaving = ref(false);
 const mcpPolicyLoadError = ref("");
@@ -3133,14 +3133,14 @@ async function rotateMcpHttpToken() {
 const mcpLaunchConfig = computed<McpLaunchConfig | undefined>(() => {
   if (isWeb) {
     return {
-      command: "gauss-horizon-mcp-server",
+      command: "chiron-horizon-mcp-server",
       env: {
-        GAUSS_HORIZON_WEB_URL: mcpWebBackendUrl(window.location.origin, apiUrl("/api")),
-        GAUSS_HORIZON_WEB_PASSWORD: "your-web-login-password",
+        CHIRON_HORIZON_WEB_URL: mcpWebBackendUrl(window.location.origin, apiUrl("/api")),
+        CHIRON_HORIZON_WEB_PASSWORD: "your-web-login-password",
       },
     };
   }
-  const env = mcpStatus.value?.data_dir ? { GAUSS_HORIZON_DATA_DIR: mcpStatus.value.data_dir } : undefined;
+  const env = mcpStatus.value?.data_dir ? { CHIRON_HORIZON_DATA_DIR: mcpStatus.value.data_dir } : undefined;
   if (mcpStatus.value?.node_path && mcpStatus.value.script_path) {
     return {
       command: mcpStatus.value.node_path,
@@ -3151,7 +3151,7 @@ const mcpLaunchConfig = computed<McpLaunchConfig | undefined>(() => {
   if (mcpStatus.value?.bin_path) {
     return { command: mcpStatus.value.bin_path, env };
   }
-  return env ? { command: "gauss-horizon-mcp-server", env } : undefined;
+  return env ? { command: "chiron-horizon-mcp-server", env } : undefined;
 });
 
 const mcpJsonRecommendedConfig = computed(() => buildMcpJsonConfig(mcpLaunchConfig.value));
@@ -3194,11 +3194,11 @@ const mcpStatusLabel = computed(() => {
 });
 
 const mcpCommand = computed(() => {
-  if (!mcpStatus.value) return "The npm MCP package is deferred for Gauss Horizon 0.1.0. Use the desktop MCP service or build the stdio server from this source tree.";
+  if (!mcpStatus.value) return "The npm MCP package is deferred for Chiron Horizon 0.1.0. Use the desktop MCP service or build the stdio server from this source tree.";
   return mcpStatus.value.installed ? mcpStatus.value.update_command : mcpStatus.value.install_command;
 });
 
-const mcpUninstallCommand = computed(() => mcpStatus.value?.uninstall_command || "npm uninstall -g @gauss-horizon/mcp-server");
+const mcpUninstallCommand = computed(() => mcpStatus.value?.uninstall_command || "npm uninstall -g @chiron-horizon/mcp-server");
 
 async function refreshMcpStatus() {
   if (mcpStatusLoading.value) return;
@@ -3209,7 +3209,7 @@ async function refreshMcpStatus() {
     mcpStatus.value = await checkMcpServerStatus();
     // Keep the toolbar badge synchronized without checking an external package registry.
     window.dispatchEvent(
-      new CustomEvent("gauss-horizon-mcp-status-changed", {
+      new CustomEvent("chiron-horizon-mcp-status-changed", {
         detail: { updateAvailable: mcpUpdateAvailability(mcpStatus.value), requestId },
       }),
     );
@@ -3279,26 +3279,26 @@ async function uninstallMcp() {
 }
 
 // ---------- WebDAV Sync ----------
-const webdavEndpoint = ref(localStorage.getItem("gauss-horizon-webdav-endpoint") || "");
-const webdavUsername = ref(localStorage.getItem("gauss-horizon-webdav-username") || "");
+const webdavEndpoint = ref(localStorage.getItem("chiron-horizon-webdav-endpoint") || "");
+const webdavUsername = ref(localStorage.getItem("chiron-horizon-webdav-username") || "");
 const webdavPassword = ref("");
-const webdavRememberPassword = ref(localStorage.getItem("gauss-horizon-webdav-remember-password") === "true");
+const webdavRememberPassword = ref(localStorage.getItem("chiron-horizon-webdav-remember-password") === "true");
 const webdavHasSavedPassword = ref(false);
-const webdavRemotePath = ref(localStorage.getItem("gauss-horizon-webdav-remote-path") || DEFAULT_WEB_DAV_REMOTE_PATH);
+const webdavRemotePath = ref(localStorage.getItem("chiron-horizon-webdav-remote-path") || DEFAULT_WEB_DAV_REMOTE_PATH);
 const webdavSyncSecrets = ref(false);
 const webdavSecretsPassphrase = ref("");
 const webdavHasSavedSecretsPassphrase = ref(false);
-const webdavAutoUploadEnabled = ref(localStorage.getItem("gauss-horizon-webdav-auto-upload-enabled") === "true");
-const webdavAutoUploadIntervalMinutes = ref(Number(localStorage.getItem("gauss-horizon-webdav-auto-upload-interval-minutes") || String(DEFAULT_WEB_DAV_AUTO_UPLOAD_INTERVAL_MINUTES)));
+const webdavAutoUploadEnabled = ref(localStorage.getItem("chiron-horizon-webdav-auto-upload-enabled") === "true");
+const webdavAutoUploadIntervalMinutes = ref(Number(localStorage.getItem("chiron-horizon-webdav-auto-upload-interval-minutes") || String(DEFAULT_WEB_DAV_AUTO_UPLOAD_INTERVAL_MINUTES)));
 const webdavBusy = ref<"" | "test" | "upload" | "download">("");
 const webdavMessage = ref("");
 const webdavError = ref(false);
 const syncMethodTab = ref<"webdav" | "snippet">("webdav");
 
-const snippetProvider = ref<SnippetProvider>((localStorage.getItem("gauss-horizon-snippet-provider") as SnippetProvider) || "github");
+const snippetProvider = ref<SnippetProvider>((localStorage.getItem("chiron-horizon-snippet-provider") as SnippetProvider) || "github");
 const snippetId = ref("");
 const snippetToken = ref("");
-const snippetRememberToken = ref(localStorage.getItem(`gauss-horizon-snippet-remember-token-${snippetProvider.value}`) === "true");
+const snippetRememberToken = ref(localStorage.getItem(`chiron-horizon-snippet-remember-token-${snippetProvider.value}`) === "true");
 const snippetHasSavedToken = ref(false);
 const snippetPassphrase = ref("");
 const snippetSecretsPassphrase = ref("");
@@ -3351,10 +3351,10 @@ async function refreshSnippetSyncSettings(provider = snippetProvider.value) {
       snippetId.value = settings.snippetId;
       return;
     }
-    const legacyId = localStorage.getItem(`gauss-horizon-snippet-id-${provider}`)?.trim();
+    const legacyId = localStorage.getItem(`chiron-horizon-snippet-id-${provider}`)?.trim();
     if (legacyId) {
       await saveSnippetSyncId(provider, legacyId);
-      localStorage.removeItem(`gauss-horizon-snippet-id-${provider}`);
+      localStorage.removeItem(`chiron-horizon-snippet-id-${provider}`);
     }
     if (provider !== snippetProvider.value) return;
     snippetId.value = legacyId || "";
@@ -3390,14 +3390,14 @@ async function runSnippetAction(kind: "test" | "upload" | "download" | "migrate"
   snippetMessage.value = "";
   snippetError.value = false;
   try {
-    localStorage.setItem("gauss-horizon-snippet-provider", snippetProvider.value);
-    localStorage.setItem(`gauss-horizon-snippet-remember-token-${snippetProvider.value}`, String(snippetRememberToken.value));
+    localStorage.setItem("chiron-horizon-snippet-provider", snippetProvider.value);
+    localStorage.setItem(`chiron-horizon-snippet-remember-token-${snippetProvider.value}`, String(snippetRememberToken.value));
     if (persistCurrentSnippetId) await persistSnippetSyncId();
     await applySnippetTokenPreference();
     snippetMessage.value = await action();
   } catch (e: any) {
     snippetMessage.value = e?.message || String(e);
-    if (kind === "upload" && snippetMessage.value.includes("legacy unencrypted Gauss Horizon snapshot")) {
+    if (kind === "upload" && snippetMessage.value.includes("legacy unencrypted Chiron Horizon snapshot")) {
       legacySnippetId.value = snippetId.value.trim();
     }
     snippetError.value = true;
@@ -3507,7 +3507,7 @@ function rememberWebDavFields() {
     enabled: webdavAutoUploadEnabled.value,
     intervalMinutes: webdavAutoUploadIntervalMinutes.value,
   });
-  window.dispatchEvent(new Event("gauss-horizon:webdav-auto-upload-config-changed"));
+  window.dispatchEvent(new Event("chiron-horizon:webdav-auto-upload-config-changed"));
 }
 
 function setWebDavResult(message: string, error = false) {
@@ -3767,16 +3767,16 @@ watch([webdavEndpoint, webdavUsername], () => {
   void refreshWebDavPasswordStatus();
 });
 watch(webdavRememberPassword, (val) => {
-  localStorage.setItem("gauss-horizon-webdav-remember-password", String(val));
+  localStorage.setItem("chiron-horizon-webdav-remember-password", String(val));
 });
 watch([webdavAutoUploadEnabled, webdavAutoUploadIntervalMinutes], () => {
   webdavAutoUploadIntervalMinutes.value = normalizedWebDavAutoUploadInterval(webdavAutoUploadIntervalMinutes.value);
   rememberWebDavFields();
 });
 watch(snippetProvider, (provider) => {
-  localStorage.setItem("gauss-horizon-snippet-provider", provider);
+  localStorage.setItem("chiron-horizon-snippet-provider", provider);
   snippetId.value = "";
-  snippetRememberToken.value = localStorage.getItem(`gauss-horizon-snippet-remember-token-${provider}`) === "true";
+  snippetRememberToken.value = localStorage.getItem(`chiron-horizon-snippet-remember-token-${provider}`) === "true";
   snippetToken.value = "";
   legacySnippetId.value = "";
   pendingLegacyCleanupId.value = "";
@@ -4019,8 +4019,8 @@ function globalInstructionsTooLong(): boolean {
   return promptTemplateCharacterCount(editGlobalInstructions.value) > GLOBAL_INSTRUCTIONS_MAX;
 }
 
-// Agent turn limit for Gauss Horizon's API-backed agent loop. CLI providers enforce their own limits.
-// Mirrors DEFAULT/MIN/MAX_MAX_AGENT_TURNS in crates/gauss-horizon-core/src/agent_loop.rs —
+// Agent turn limit for Chiron Horizon's API-backed agent loop. CLI providers enforce their own limits.
+// Mirrors DEFAULT/MIN/MAX_MAX_AGENT_TURNS in crates/chiron-horizon-core/src/agent_loop.rs —
 // keep in sync; the backend clamp on save/load is the actual source of truth.
 const editMaxAgentTurns = ref<number | undefined>(undefined);
 const maxAgentTurnsSaving = ref(false);
@@ -4423,7 +4423,7 @@ function cliEnvFromRows(rows = aiEditCliEnvRows.value): Record<string, string> {
   const result: Record<string, string> = {};
   for (const row of rows) {
     const key = row.key.trim();
-    if (!key || !/^[A-Za-z_][A-Za-z0-9_]*$/.test(key) || key.toUpperCase().startsWith("GAUSS_HORIZON_MCP_")) continue;
+    if (!key || !/^[A-Za-z_][A-Za-z0-9_]*$/.test(key) || key.toUpperCase().startsWith("CHIRON_HORIZON_MCP_")) continue;
     result[key] = row.value;
   }
   return result;
@@ -4434,7 +4434,7 @@ function cliEnvValidationError(): string {
     const key = row.key.trim();
     if (key && !/^[A-Za-z_][A-Za-z0-9_]*$/.test(key)) return t("ai.cliEnvInvalidName", { name: key });
     const upper = key.toUpperCase();
-    if (upper.startsWith("GAUSS_HORIZON_MCP_") || (aiIsPiAgentCli.value && upper.startsWith("GAUSS_HORIZON_PI_")) || (aiIsOpenCodeCli.value && OPENCODE_CONTROL_ENV.has(upper)) || (aiIsCursorCli.value && CURSOR_CONTROL_ENV.has(upper))) {
+    if (upper.startsWith("CHIRON_HORIZON_MCP_") || (aiIsPiAgentCli.value && upper.startsWith("CHIRON_HORIZON_PI_")) || (aiIsOpenCodeCli.value && OPENCODE_CONTROL_ENV.has(upper)) || (aiIsCursorCli.value && CURSOR_CONTROL_ENV.has(upper))) {
       return t("ai.cliEnvReservedName", { name: key });
     }
   }
@@ -6064,7 +6064,7 @@ onUnmounted(() => {
                       variant="outline"
                       size="sm"
                       class="settings-choice-button h-8 gap-1.5 px-3"
-                      :class="themeMode === option.value ? 'gauss-horizon-choice-selected' : 'text-foreground'"
+                      :class="themeMode === option.value ? 'chiron-horizon-choice-selected' : 'text-foreground'"
                       @click="setThemeMode(option.value)"
                     >
                       <component :is="option.icon" class="h-3.5 w-3.5" />
@@ -6083,7 +6083,7 @@ onUnmounted(() => {
                       variant="outline"
                       size="sm"
                       class="settings-choice-button h-8 px-3"
-                      :class="cornerStyle === option.value ? 'gauss-horizon-choice-selected' : 'text-foreground'"
+                      :class="cornerStyle === option.value ? 'chiron-horizon-choice-selected' : 'text-foreground'"
                       :style="{ borderRadius: option.previewRadius }"
                       @click="setCornerStyle(option.value)"
                     >
@@ -6098,7 +6098,7 @@ onUnmounted(() => {
               <div class="settings-appearance-group">
                 <Label>{{ t("settings.appLayout") }}</Label>
                 <div class="settings-appearance-choice-grid">
-                  <Button type="button" variant="outline" class="settings-choice-card h-auto justify-start border p-3" :class="editAppLayout === 'separated' ? 'gauss-horizon-choice-selected' : ''" @click="setAppLayout('separated')">
+                  <Button type="button" variant="outline" class="settings-choice-card h-auto justify-start border p-3" :class="editAppLayout === 'separated' ? 'chiron-horizon-choice-selected' : ''" @click="setAppLayout('separated')">
                     <TooltipProvider>
                       <Tooltip>
                         <TooltipTrigger as-child>
@@ -6117,7 +6117,7 @@ onUnmounted(() => {
                       </Tooltip>
                     </TooltipProvider>
                   </Button>
-                  <Button type="button" variant="outline" class="settings-choice-card h-auto justify-start border p-3" :class="editAppLayout === 'classic' ? 'gauss-horizon-choice-selected' : ''" @click="setAppLayout('classic')">
+                  <Button type="button" variant="outline" class="settings-choice-card h-auto justify-start border p-3" :class="editAppLayout === 'classic' ? 'chiron-horizon-choice-selected' : ''" @click="setAppLayout('classic')">
                     <TooltipProvider>
                       <Tooltip>
                         <TooltipTrigger as-child>
@@ -6144,7 +6144,7 @@ onUnmounted(() => {
               <div class="settings-appearance-group">
                 <Label>{{ t("settings.tabLayout") }}</Label>
                 <div class="settings-appearance-choice-grid">
-                  <Button type="button" variant="outline" class="settings-choice-card h-auto min-w-0 justify-start overflow-hidden whitespace-normal border p-3" :class="editTabLayout === 'scroll' ? 'gauss-horizon-choice-selected' : ''" @click="setTabLayout('scroll')">
+                  <Button type="button" variant="outline" class="settings-choice-card h-auto min-w-0 justify-start overflow-hidden whitespace-normal border p-3" :class="editTabLayout === 'scroll' ? 'chiron-horizon-choice-selected' : ''" @click="setTabLayout('scroll')">
                     <div class="w-full min-w-0 text-left">
                       <div class="text-sm font-medium">
                         {{ t("settings.tabLayoutScroll") }}
@@ -6154,7 +6154,7 @@ onUnmounted(() => {
                       </div>
                     </div>
                   </Button>
-                  <Button type="button" variant="outline" class="settings-choice-card h-auto min-w-0 justify-start overflow-hidden whitespace-normal border p-3" :class="editTabLayout === 'wrap' ? 'gauss-horizon-choice-selected' : ''" @click="setTabLayout('wrap')">
+                  <Button type="button" variant="outline" class="settings-choice-card h-auto min-w-0 justify-start overflow-hidden whitespace-normal border p-3" :class="editTabLayout === 'wrap' ? 'chiron-horizon-choice-selected' : ''" @click="setTabLayout('wrap')">
                     <div class="w-full min-w-0 text-left">
                       <div class="text-sm font-medium">
                         {{ t("settings.tabLayoutWrap") }}
@@ -6244,9 +6244,9 @@ onUnmounted(() => {
               <div class="settings-appearance-group" data-icon-theme-settings>
                 <Label>{{ t("settings.iconTheme") }}</Label>
                 <div class="settings-appearance-choice-grid settings-icon-theme-grid">
-                  <Button type="button" variant="outline" class="settings-choice-card h-auto min-w-0 justify-start overflow-hidden whitespace-normal border p-3" :class="editIconTheme === 'default' ? 'gauss-horizon-choice-selected' : ''" @click="setIconTheme('default')">
+                  <Button type="button" variant="outline" class="settings-choice-card h-auto min-w-0 justify-start overflow-hidden whitespace-normal border p-3" :class="editIconTheme === 'default' ? 'chiron-horizon-choice-selected' : ''" @click="setIconTheme('default')">
                     <div class="flex w-full min-w-0 items-center gap-3 text-left">
-                      <img :src="webPath('/logo.png')" alt="Gauss Horizon by Gaussian" class="h-12 w-12 shrink-0 object-contain" />
+                      <img :src="webPath('/logo.png')" alt="Chiron Horizon" class="h-12 w-12 shrink-0 object-contain" />
                       <div class="min-w-0 text-left">
                         <div class="text-sm font-medium">
                           {{ t("settings.iconThemeDefault") }}
@@ -6257,9 +6257,9 @@ onUnmounted(() => {
                       </div>
                     </div>
                   </Button>
-                  <Button type="button" variant="outline" class="settings-choice-card h-auto min-w-0 justify-start overflow-hidden whitespace-normal border p-3" :class="editIconTheme === 'black' ? 'gauss-horizon-choice-selected' : ''" @click="setIconTheme('black')">
+                  <Button type="button" variant="outline" class="settings-choice-card h-auto min-w-0 justify-start overflow-hidden whitespace-normal border p-3" :class="editIconTheme === 'black' ? 'chiron-horizon-choice-selected' : ''" @click="setIconTheme('black')">
                     <div class="flex w-full min-w-0 items-center gap-3 text-left">
-                      <img :src="webPath('/logo-black.png')" alt="Gauss Horizon by Gaussian" class="h-12 w-12 shrink-0 object-contain" />
+                      <img :src="webPath('/logo-black.png')" alt="Chiron Horizon" class="h-12 w-12 shrink-0 object-contain" />
                       <div class="min-w-0 text-left">
                         <div class="text-sm font-medium">
                           {{ t("settings.iconThemeBlack") }}
@@ -6353,7 +6353,7 @@ onUnmounted(() => {
               <div class="space-y-2">
                 <Label>{{ t("settings.sidebarActivation") }}</Label>
                 <div class="settings-responsive-grid grid grid-cols-2 gap-2">
-                  <Button type="button" variant="outline" class="settings-choice-card h-auto min-w-0 whitespace-normal justify-start border p-3" :class="editSidebarActivation === 'single' ? 'gauss-horizon-choice-selected' : ''" @click="setSidebarActivation('single')">
+                  <Button type="button" variant="outline" class="settings-choice-card h-auto min-w-0 whitespace-normal justify-start border p-3" :class="editSidebarActivation === 'single' ? 'chiron-horizon-choice-selected' : ''" @click="setSidebarActivation('single')">
                     <div class="text-left">
                       <div class="text-sm font-medium">
                         {{ t("settings.sidebarActivationSingle") }}
@@ -6363,7 +6363,7 @@ onUnmounted(() => {
                       </div>
                     </div>
                   </Button>
-                  <Button type="button" variant="outline" class="settings-choice-card h-auto min-w-0 whitespace-normal justify-start border p-3" :class="editSidebarActivation === 'double' ? 'gauss-horizon-choice-selected' : ''" @click="setSidebarActivation('double')">
+                  <Button type="button" variant="outline" class="settings-choice-card h-auto min-w-0 whitespace-normal justify-start border p-3" :class="editSidebarActivation === 'double' ? 'chiron-horizon-choice-selected' : ''" @click="setSidebarActivation('double')">
                     <div class="text-left">
                       <div class="text-sm font-medium">
                         {{ t("settings.sidebarActivationDouble") }}
@@ -6396,7 +6396,7 @@ onUnmounted(() => {
                     type="button"
                     variant="outline"
                     class="settings-choice-card h-auto min-w-0 items-start justify-start overflow-hidden whitespace-normal border p-3"
-                    :class="editDataTabReuseMode === 'always-new' ? 'gauss-horizon-choice-selected' : ''"
+                    :class="editDataTabReuseMode === 'always-new' ? 'chiron-horizon-choice-selected' : ''"
                     @click="editDataTabReuseMode = 'always-new'"
                   >
                     <div class="w-full min-w-0 text-left">
@@ -6419,7 +6419,7 @@ onUnmounted(() => {
                     type="button"
                     variant="outline"
                     class="settings-choice-card h-auto min-w-0 items-start justify-start overflow-hidden whitespace-normal border p-3"
-                    :class="editDataTabReuseMode === 'same-table' ? 'gauss-horizon-choice-selected' : ''"
+                    :class="editDataTabReuseMode === 'same-table' ? 'chiron-horizon-choice-selected' : ''"
                     @click="editDataTabReuseMode = 'same-table'"
                   >
                     <div class="w-full min-w-0 text-left">
@@ -6442,7 +6442,7 @@ onUnmounted(() => {
                     type="button"
                     variant="outline"
                     class="settings-choice-card h-auto min-w-0 items-start justify-start overflow-hidden whitespace-normal border p-3"
-                    :class="editDataTabReuseMode === 'active-tab' ? 'gauss-horizon-choice-selected' : ''"
+                    :class="editDataTabReuseMode === 'active-tab' ? 'chiron-horizon-choice-selected' : ''"
                     @click="editDataTabReuseMode = 'active-tab'"
                   >
                     <div class="w-full min-w-0 text-left">
@@ -6475,7 +6475,7 @@ onUnmounted(() => {
               <div class="space-y-2">
                 <Label>{{ t("settings.sidebarObjectDisplay") }}</Label>
                 <div class="settings-responsive-grid grid grid-cols-2 gap-2">
-                  <Button type="button" variant="outline" class="settings-choice-card h-auto min-w-0 whitespace-normal justify-start border p-3" :class="editSidebarObjectDisplay === 'grouped' ? 'gauss-horizon-choice-selected' : ''" @click="setSidebarObjectDisplay('grouped')">
+                  <Button type="button" variant="outline" class="settings-choice-card h-auto min-w-0 whitespace-normal justify-start border p-3" :class="editSidebarObjectDisplay === 'grouped' ? 'chiron-horizon-choice-selected' : ''" @click="setSidebarObjectDisplay('grouped')">
                     <div class="text-left">
                       <div class="flex items-center gap-2">
                         <div class="text-sm font-medium">
@@ -6494,7 +6494,7 @@ onUnmounted(() => {
                       </div>
                     </div>
                   </Button>
-                  <Button type="button" variant="outline" class="settings-choice-card h-auto min-w-0 whitespace-normal justify-start border p-3" :class="editSidebarObjectDisplay === 'simple' ? 'gauss-horizon-choice-selected' : ''" @click="setSidebarObjectDisplay('simple')">
+                  <Button type="button" variant="outline" class="settings-choice-card h-auto min-w-0 whitespace-normal justify-start border p-3" :class="editSidebarObjectDisplay === 'simple' ? 'chiron-horizon-choice-selected' : ''" @click="setSidebarObjectDisplay('simple')">
                     <div class="text-left">
                       <div class="flex items-center gap-2">
                         <div class="text-sm font-medium">
@@ -6523,7 +6523,7 @@ onUnmounted(() => {
                   </HelpTooltip>
                 </div>
                 <div class="settings-responsive-grid grid grid-cols-2 gap-2">
-                  <Button type="button" variant="outline" class="settings-choice-card h-auto min-w-0 justify-start overflow-hidden whitespace-normal border p-3" :class="editRoutineSourceOpenMode === 'query-tab' ? 'gauss-horizon-choice-selected' : ''" @click="setRoutineSourceOpenMode('query-tab')">
+                  <Button type="button" variant="outline" class="settings-choice-card h-auto min-w-0 justify-start overflow-hidden whitespace-normal border p-3" :class="editRoutineSourceOpenMode === 'query-tab' ? 'chiron-horizon-choice-selected' : ''" @click="setRoutineSourceOpenMode('query-tab')">
                     <div class="w-full min-w-0 text-left">
                       <div class="text-sm font-medium">{{ t("settings.routineSourceOpenModeQueryTab") }}</div>
                       <div class="break-words whitespace-normal text-xs text-muted-foreground">
@@ -6531,7 +6531,7 @@ onUnmounted(() => {
                       </div>
                     </div>
                   </Button>
-                  <Button type="button" variant="outline" class="settings-choice-card h-auto min-w-0 justify-start overflow-hidden whitespace-normal border p-3" :class="editRoutineSourceOpenMode === 'dialog' ? 'gauss-horizon-choice-selected' : ''" @click="setRoutineSourceOpenMode('dialog')">
+                  <Button type="button" variant="outline" class="settings-choice-card h-auto min-w-0 justify-start overflow-hidden whitespace-normal border p-3" :class="editRoutineSourceOpenMode === 'dialog' ? 'chiron-horizon-choice-selected' : ''" @click="setRoutineSourceOpenMode('dialog')">
                     <div class="w-full min-w-0 text-left">
                       <div class="text-sm font-medium">{{ t("settings.routineSourceOpenModeDialog") }}</div>
                       <div class="break-words whitespace-normal text-xs text-muted-foreground">
@@ -6818,7 +6818,7 @@ onUnmounted(() => {
                       type="button"
                       variant="outline"
                       class="settings-choice-card h-10 min-w-0 justify-start overflow-hidden whitespace-normal border px-3"
-                      :class="editDataGridFilterEditorView === 'quick' ? 'gauss-horizon-choice-selected' : ''"
+                      :class="editDataGridFilterEditorView === 'quick' ? 'chiron-horizon-choice-selected' : ''"
                       :aria-pressed="editDataGridFilterEditorView === 'quick'"
                       @click="editDataGridFilterEditorView = 'quick'"
                     >
@@ -6828,7 +6828,7 @@ onUnmounted(() => {
                       type="button"
                       variant="outline"
                       class="settings-choice-card h-10 min-w-0 justify-start overflow-hidden whitespace-normal border px-3"
-                      :class="editDataGridFilterEditorView === 'conditions' ? 'gauss-horizon-choice-selected' : ''"
+                      :class="editDataGridFilterEditorView === 'conditions' ? 'chiron-horizon-choice-selected' : ''"
                       :aria-pressed="editDataGridFilterEditorView === 'conditions'"
                       @click="editDataGridFilterEditorView = 'conditions'"
                     >
@@ -6838,7 +6838,7 @@ onUnmounted(() => {
                       type="button"
                       variant="outline"
                       class="settings-choice-card h-10 min-w-0 justify-start overflow-hidden whitespace-normal border px-3"
-                      :class="editDataGridFilterEditorView === 'text' ? 'gauss-horizon-choice-selected' : ''"
+                      :class="editDataGridFilterEditorView === 'text' ? 'chiron-horizon-choice-selected' : ''"
                       :aria-pressed="editDataGridFilterEditorView === 'text'"
                       @click="editDataGridFilterEditorView = 'text'"
                     >
@@ -7213,10 +7213,10 @@ onUnmounted(() => {
                       <p class="text-xs font-medium text-amber-600 dark:text-amber-400">
                         {{ t("settings.duckDbWorkerProcessIsolationRestartRequired") }}
                       </p>
-                      <Button type="button" variant="outline" size="sm" class="h-7 gap-1.5 px-2 text-xs" :disabled="duckDbRestarting || hasApplyBlocker" @click="restartGaussHorizonForDuckDbIsolation">
+                      <Button type="button" variant="outline" size="sm" class="h-7 gap-1.5 px-2 text-xs" :disabled="duckDbRestarting || hasApplyBlocker" @click="restartChironHorizonForDuckDbIsolation">
                         <Loader2 v-if="duckDbRestarting" class="size-3.5 animate-spin" />
                         <RefreshCw v-else class="size-3.5" />
-                        {{ t("settings.restartGaussHorizon") }}
+                        {{ t("settings.restartChironHorizon") }}
                       </Button>
                     </div>
                   </div>
@@ -7301,7 +7301,7 @@ onUnmounted(() => {
                   <textarea
                     id="redis-key-templates-input"
                     v-model="editRedisKeyTemplates"
-                    class="gauss-horizon-editor-font-family min-h-24 w-full rounded-md border border-input bg-background px-3 py-2 text-xs outline-none transition-colors placeholder:text-muted-foreground focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring"
+                    class="chiron-horizon-editor-font-family min-h-24 w-full rounded-md border border-input bg-background px-3 py-2 text-xs outline-none transition-colors placeholder:text-muted-foreground focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring"
                     :placeholder="t('settings.redisKeyTemplatesPlaceholder')"
                     spellcheck="false"
                   />
@@ -8447,7 +8447,7 @@ LIMIT 100;</pre
                 <div v-if="!aiIsCliProvider" class="grid grid-cols-3 items-center gap-3">
                   <Label class="text-right text-xs">{{ aiCredentialLabel }}</Label>
                   <div class="col-span-2 flex min-w-0 flex-wrap items-center gap-2">
-                    <template v-if="aiEditApiKey.startsWith('gauss-horizon-ai-secret:v1:')">
+                    <template v-if="aiEditApiKey.startsWith('chiron-horizon-ai-secret:v1:')">
                       <span class="text-xs text-muted-foreground">Credential configured (kept unchanged)</span>
                       <Button size="sm" variant="outline" @click="aiEditApiKey = ''">Replace / remove</Button>
                     </template>
@@ -8479,7 +8479,7 @@ LIMIT 100;</pre
                     <div class="space-y-1.5">
                       <div v-for="row in aiEditCustomHeaderRows" :key="row.id" class="grid grid-cols-[minmax(0,0.9fr)_minmax(0,1.3fr)_2rem] gap-2">
                         <Input v-model="row.name" autocomplete="off" class="h-8 font-mono text-xs" :placeholder="t('ai.customHeadersNamePlaceholder')" />
-                        <Button v-if="row.value.startsWith('gauss-horizon-ai-secret:v1:')" size="sm" variant="outline" @click="row.value = ''">Saved value · replace</Button>
+                        <Button v-if="row.value.startsWith('chiron-horizon-ai-secret:v1:')" size="sm" variant="outline" @click="row.value = ''">Saved value · replace</Button>
                         <PasswordInput v-else v-model="row.value" autocomplete="off" class="min-w-0" inputClass="h-8 font-mono text-xs" :placeholder="t('ai.customHeadersValuePlaceholder')" />
                         <Button type="button" variant="ghost" size="icon" class="h-8 w-8" :title="t('common.remove')" :aria-label="t('common.remove')" @click="removeAiCustomHeaderRow(row.id)">
                           <X class="h-3.5 w-3.5" />
@@ -8549,7 +8549,7 @@ LIMIT 100;</pre
                       variant="outline"
                       class="h-8 flex-1 text-xs"
                       :class="{
-                        'gauss-horizon-choice-selected': aiEditApiStyle === 'completions',
+                        'chiron-horizon-choice-selected': aiEditApiStyle === 'completions',
                       }"
                       @click="aiSelectApiStyle('completions')"
                       >/chat/completions</Button
@@ -8559,7 +8559,7 @@ LIMIT 100;</pre
                       variant="outline"
                       class="h-8 flex-1 text-xs"
                       :class="{
-                        'gauss-horizon-choice-selected': aiEditApiStyle === 'responses',
+                        'chiron-horizon-choice-selected': aiEditApiStyle === 'responses',
                       }"
                       @click="aiSelectApiStyle('responses')"
                       >/responses</Button
@@ -8570,7 +8570,7 @@ LIMIT 100;</pre
                       variant="outline"
                       class="h-8 flex-1 text-xs"
                       :class="{
-                        'gauss-horizon-choice-selected': aiEditApiStyle === 'anthropic-messages',
+                        'chiron-horizon-choice-selected': aiEditApiStyle === 'anthropic-messages',
                       }"
                       @click="aiSelectApiStyle('anthropic-messages')"
                       >/messages</Button
@@ -8998,7 +8998,7 @@ LIMIT 100;</pre
                               :tabindex="mcpExecutionMode === mode ? 0 : -1"
                               variant="outline"
                               class="settings-choice-card h-10 justify-center"
-                              :class="mcpExecutionMode === mode ? 'gauss-horizon-choice-selected' : ''"
+                              :class="mcpExecutionMode === mode ? 'chiron-horizon-choice-selected' : ''"
                               @click="onMcpExecutionModeChange(mode)"
                               @keydown="onMcpExecutionModeKeydown($event, mode)"
                             >
@@ -9362,7 +9362,7 @@ LIMIT 100;</pre
                 <AppLogo class="h-12 w-12 shrink-0" />
                 <div>
                   <h3 class="font-semibold">{{ t("app.name") }}</h3>
-                  <p class="text-sm text-muted-foreground">Gauss Horizon by Gaussian. Version 0.1.0 is an unreleased development build. Original licenses and attribution are preserved.</p>
+                  <p class="text-sm text-muted-foreground">Chiron Horizon. Version 0.1.0 is an unreleased development build. Original licenses and attribution are preserved.</p>
                 </div>
               </div>
               <div class="rounded-lg border p-4">
@@ -9444,7 +9444,7 @@ LIMIT 100;</pre
                 </div>
               </div>
 
-              <div class="rounded-lg border p-4 text-sm text-muted-foreground">Automatic updates and driver downloads are unavailable in Gauss Horizon 0.1.0. Use locally supplied builds and packages.</div>
+              <div class="rounded-lg border p-4 text-sm text-muted-foreground">Automatic updates and driver downloads are unavailable in Chiron Horizon 0.1.0. Use locally supplied builds and packages.</div>
 
               <ChangelogPanel :checking-updates="props.checkingUpdates" @check-updates="emit('check-updates')" />
 
@@ -9947,47 +9947,47 @@ LIMIT 100;</pre
   background: color-mix(in oklab, var(--muted-foreground) 38%, transparent);
 }
 
-html.gauss-horizon-legacy-webview .settings-shortcut-row:hover .settings-shortcut-action-button,
-html.gauss-horizon-legacy-webview .settings-shortcut-row:focus-within .settings-shortcut-action-button {
+html.chiron-horizon-legacy-webview .settings-shortcut-row:hover .settings-shortcut-action-button,
+html.chiron-horizon-legacy-webview .settings-shortcut-row:focus-within .settings-shortcut-action-button {
   opacity: 1 !important;
 }
 
-html.gauss-horizon-legacy-webview .settings-layout [data-slot="select-trigger"][data-size="default"]:not(.h-7) {
+html.chiron-horizon-legacy-webview .settings-layout [data-slot="select-trigger"][data-size="default"]:not(.h-7) {
   height: 2rem !important;
   min-height: 2rem !important;
   box-sizing: border-box !important;
 }
 
-html.gauss-horizon-legacy-webview .settings-layout [data-slot="select-trigger"].h-9 {
+html.chiron-horizon-legacy-webview .settings-layout [data-slot="select-trigger"].h-9 {
   height: 2rem !important;
   min-height: 2rem !important;
   box-sizing: border-box !important;
 }
 
-html.gauss-horizon-legacy-webview .settings-layout [data-slot="select-trigger"][data-size="sm"],
-html.gauss-horizon-legacy-webview .settings-layout [data-slot="select-trigger"].h-7 {
+html.chiron-horizon-legacy-webview .settings-layout [data-slot="select-trigger"][data-size="sm"],
+html.chiron-horizon-legacy-webview .settings-layout [data-slot="select-trigger"].h-7 {
   height: 1.75rem !important;
   min-height: 1.75rem !important;
   box-sizing: border-box !important;
 }
 
-html.gauss-horizon-legacy-webview .settings-layout .settings-shortcut-row {
+html.chiron-horizon-legacy-webview .settings-layout .settings-shortcut-row {
   grid-template-columns: minmax(0, 1fr) auto !important;
   align-items: center !important;
   column-gap: 0.75rem !important;
 }
 
-html.gauss-horizon-legacy-webview .settings-layout .settings-shortcut-label {
+html.chiron-horizon-legacy-webview .settings-layout .settings-shortcut-label {
   align-self: center !important;
 }
 
-html.gauss-horizon-legacy-webview .settings-layout .settings-shortcut-actions {
+html.chiron-horizon-legacy-webview .settings-layout .settings-shortcut-actions {
   justify-self: end !important;
   align-self: center !important;
   text-align: right !important;
 }
 
-html.gauss-horizon-legacy-webview .settings-layout .settings-shortcut-controls {
+html.chiron-horizon-legacy-webview .settings-layout .settings-shortcut-controls {
   display: flex !important;
   flex-direction: row !important;
   align-items: center !important;
@@ -9995,7 +9995,7 @@ html.gauss-horizon-legacy-webview .settings-layout .settings-shortcut-controls {
   gap: 0.375rem !important;
 }
 
-html.gauss-horizon-legacy-webview .settings-layout .settings-export-number-input {
+html.chiron-horizon-legacy-webview .settings-layout .settings-export-number-input {
   height: 2rem !important;
   min-height: 2rem !important;
   padding-top: 0.25rem !important;
@@ -10004,15 +10004,15 @@ html.gauss-horizon-legacy-webview .settings-layout .settings-export-number-input
   font-variant-numeric: tabular-nums;
 }
 
-html.gauss-horizon-legacy-webview .settings-layout .settings-export-number-input::-webkit-inner-spin-button,
-html.gauss-horizon-legacy-webview .settings-layout .settings-export-number-input::-webkit-outer-spin-button {
+html.chiron-horizon-legacy-webview .settings-layout .settings-export-number-input::-webkit-inner-spin-button,
+html.chiron-horizon-legacy-webview .settings-layout .settings-export-number-input::-webkit-outer-spin-button {
   -webkit-appearance: inner-spin-button !important;
   appearance: auto !important;
   min-height: 1.5rem !important;
   opacity: 1 !important;
 }
 
-html.gauss-horizon-legacy-webview .settings-layout .settings-mcp-config-tabs {
+html.chiron-horizon-legacy-webview .settings-layout .settings-mcp-config-tabs {
   display: flex !important;
   flex-direction: row !important;
   align-items: center !important;
@@ -10023,7 +10023,7 @@ html.gauss-horizon-legacy-webview .settings-layout .settings-mcp-config-tabs {
   white-space: nowrap !important;
 }
 
-html.gauss-horizon-legacy-webview .settings-layout .settings-mcp-config-tab {
+html.chiron-horizon-legacy-webview .settings-layout .settings-mcp-config-tab {
   display: inline-flex !important;
   flex: 0 0 auto !important;
   width: max-content !important;
@@ -10034,11 +10034,11 @@ html.gauss-horizon-legacy-webview .settings-layout .settings-mcp-config-tab {
   white-space: nowrap !important;
 }
 
-html.gauss-horizon-legacy-webview .settings-ai-back-button {
+html.chiron-horizon-legacy-webview .settings-ai-back-button {
   margin-left: -0.625rem !important;
 }
 
-html.gauss-horizon-legacy-webview .settings-about-section-header {
+html.chiron-horizon-legacy-webview .settings-about-section-header {
   display: flex !important;
   flex-direction: row !important;
   align-items: flex-start !important;
@@ -10046,7 +10046,7 @@ html.gauss-horizon-legacy-webview .settings-about-section-header {
   gap: 0.75rem !important;
 }
 
-html.gauss-horizon-legacy-webview .settings-about-section-actions {
+html.chiron-horizon-legacy-webview .settings-about-section-actions {
   display: flex !important;
   flex-wrap: wrap !important;
   align-items: center !important;
@@ -10056,11 +10056,11 @@ html.gauss-horizon-legacy-webview .settings-about-section-actions {
 }
 
 @media (max-width: 640px) {
-  html.gauss-horizon-legacy-webview .settings-about-section-header {
+  html.chiron-horizon-legacy-webview .settings-about-section-header {
     flex-direction: column !important;
   }
 
-  html.gauss-horizon-legacy-webview .settings-about-section-actions {
+  html.chiron-horizon-legacy-webview .settings-about-section-actions {
     justify-content: flex-start !important;
     margin-left: 0 !important;
   }

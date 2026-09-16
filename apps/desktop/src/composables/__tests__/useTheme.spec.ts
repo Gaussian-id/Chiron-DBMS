@@ -41,7 +41,7 @@ function installBrowserStubs() {
 }
 
 async function loadTheme(mode: "light" | "dark" | "system" = "system") {
-  window.localStorage.setItem("gauss-horizon-theme", mode);
+  window.localStorage.setItem("chiron-horizon-theme", mode);
   const { useTheme } = await import("@/composables/useTheme");
   return useTheme();
 }
@@ -84,27 +84,27 @@ describe("useTheme on Linux", () => {
     expect(setTheme).not.toHaveBeenCalled();
   });
 
-  it("starts unsaved installations in Gaussian/light even on a dark system", async () => {
+  it("starts unsaved installations in Chiron Horizon light even on a dark system", async () => {
     mediaQueryMatches = true;
     const { useTheme } = await import("@/composables/useTheme");
     const theme = useTheme();
     theme.applyTheme();
-    expect(theme.themePalette.value).toBe("gaussian");
+    expect(theme.themePalette.value).toBe("chiron");
     expect(theme.themeMode.value).toBe("light");
-    expect(document.documentElement.classList.contains("theme-gaussian")).toBe(true);
+    expect(document.documentElement.classList.contains("theme-chiron")).toBe(true);
     expect(document.documentElement.classList.contains("dark")).toBe(false);
   });
 
   it("preserves an explicit palette and legacy soft-theme installations", async () => {
-    window.localStorage.setItem("gauss-horizon-theme-palette", "cobalt");
+    window.localStorage.setItem("chiron-horizon-theme-palette", "cobalt");
     const theme = await loadTheme("dark");
     theme.applyTheme();
     expect(theme.themePalette.value).toBe("cobalt");
     expect(theme.isDark.value).toBe(true);
-    expect(window.localStorage.getItem("gauss-horizon-theme-palette")).toBe("cobalt");
+    expect(window.localStorage.getItem("chiron-horizon-theme-palette")).toBe("cobalt");
     vi.resetModules();
-    window.localStorage.removeItem("gauss-horizon-theme-palette");
-    window.localStorage.setItem("gauss-horizon-theme", "soft-dark");
+    window.localStorage.removeItem("chiron-horizon-theme-palette");
+    window.localStorage.setItem("chiron-horizon-theme", "soft-dark");
     const legacy = (await import("@/composables/useTheme")).useTheme();
     expect(legacy.themePalette.value).toBe("mist");
     expect(legacy.isDark.value).toBe(true);
@@ -144,21 +144,21 @@ describe("useTheme on Linux", () => {
 
     expect(theme.themePalette.value).toBe("cobalt");
     expect(document.documentElement.classList.contains("theme-cobalt")).toBe(true);
-    expect(window.localStorage.getItem("gauss-horizon-theme-palette")).toBe("pearl");
+    expect(window.localStorage.getItem("chiron-horizon-theme-palette")).toBe("pearl");
     expect(setTheme).not.toHaveBeenCalled();
 
     theme.clearThemePalettePreview();
 
     expect(theme.themePalette.value).toBe("pearl");
     expect(document.documentElement.classList.contains("theme-cobalt")).toBe(false);
-    expect(window.localStorage.getItem("gauss-horizon-theme-palette")).toBe("pearl");
+    expect(window.localStorage.getItem("chiron-horizon-theme-palette")).toBe("pearl");
 
     theme.previewThemePalette("sage");
     theme.setThemePalette("sage");
     theme.clearThemePalettePreview();
 
     expect(theme.themePalette.value).toBe("sage");
-    expect(window.localStorage.getItem("gauss-horizon-theme-palette")).toBe("sage");
+    expect(window.localStorage.getItem("chiron-horizon-theme-palette")).toBe("sage");
   });
 
   it("injects custom UI colors as inline CSS variables and removes them when leaving the custom palette", async () => {
@@ -170,7 +170,7 @@ describe("useTheme on Linux", () => {
     expect(theme.themePalette.value).toBe("custom");
     expect(document.documentElement.style.getPropertyValue("--background")).toBe("rgb(18 52 86)");
     expect(document.documentElement.style.getPropertyValue("--primary")).toBe("rgb(171 205 239)");
-    expect(document.documentElement.style.getPropertyValue("--gauss-horizon-primary-rgb")).toBe("171, 205, 239");
+    expect(document.documentElement.style.getPropertyValue("--chiron-horizon-primary-rgb")).toBe("171, 205, 239");
     expect(document.documentElement.style.getPropertyValue("--sidebar")).toBe("rgb(250 250 250)");
     // Derived paired foregrounds are applied and readable against their surfaces.
     expect(document.documentElement.style.getPropertyValue("--card-foreground")).toBe("rgb(10 10 10)");
@@ -179,7 +179,7 @@ describe("useTheme on Linux", () => {
     theme.setThemePalette("pearl");
     await flushDynamicImport();
     expect(document.documentElement.style.getPropertyValue("--background")).toBe("");
-    expect(document.documentElement.style.getPropertyValue("--gauss-horizon-primary-rgb")).toBe("");
+    expect(document.documentElement.style.getPropertyValue("--chiron-horizon-primary-rgb")).toBe("");
   });
 
   it("applies a separate custom color set in dark mode and switches sets with the mode", async () => {

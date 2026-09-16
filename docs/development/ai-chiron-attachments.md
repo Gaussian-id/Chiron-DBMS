@@ -1,6 +1,6 @@
 # ChironDB AI attachments
 
-Date: 2026-09-15 (Asia/Jakarta). Branch: `codex/gauss-horizon-0.1.0`.
+Date: 2026-09-15 (Asia/Jakarta). Branch: `codex/chiron-horizon-0.1.0`.
 
 Kevin reported that attaching files remained unavailable after the composer/actions/template updates. The ChironDB-only disabled button and native rejection have been removed. The shared picker, drag/drop, image paste, preview/removal and text encoding controls now feed the native AI path.
 
@@ -30,10 +30,10 @@ Kevin reported that attaching files remained unavailable after the composer/acti
 - The first PNG test constant had an invalid IDAT checksum. It was replaced with a generated, valid one-pixel PNG before native verification, and all 20 Rust tests passed again. This fixture correction did not change application code.
 - Temporary browser/Vite, provider/web/ChironDB fixture processes and the native test app were stopped. Fixture files and evidence were retained. Kevin's updated app was reopened on the existing `test@ChironQL` workspace, preserving its query, saved connections and MiniMax-M3 model selection. Its attachment button is enabled and privacy copy includes attached files/images. The pre-existing connection timeout for `test` remains; no data query or AI request was submitted on that profile.
 
-Final app: `target/release/bundle/macos/Gauss Horizon.app`. Executable SHA-256: `d9fa7e0464a8106a33b866f0b0bdccce988eabfd86aa35f001e63efbb86fca1b`. The DMG was not rebuilt. Windows/Linux/macOS Intel native acceptance was not rerun. No installation into `/Applications`, commit, push, tag or publication occurred.
+Final app: `target/release/bundle/macos/Chiron Horizon.app`. Executable SHA-256: `d9fa7e0464a8106a33b866f0b0bdccce988eabfd86aa35f001e63efbb86fca1b`. The DMG was not rebuilt. Windows/Linux/macOS Intel native acceptance was not rerun. No installation into `/Applications`, commit, push, tag or publication occurred.
 
 AI verification used synthetic files, a synthetic local OpenAI-compatible provider and disposable ChironDB. This proves attachment transport and application behavior, not a live model's visual understanding. No user file was uploaded to a live provider.
 
-Sources: `apps/desktop/src/components/editor/AiAssistant.vue`, `apps/desktop/src/types/chirondb.ts`, `crates/gauss-horizon-core/src/ai_chiron.rs`, `crates/gauss-horizon-core/tests/chirondb_connector.rs`, `crates/gauss-horizon-core/tests/ai_credentials.rs`.
+Sources: `apps/desktop/src/components/editor/AiAssistant.vue`, `apps/desktop/src/types/chirondb.ts`, `crates/chiron-horizon-core/src/ai_chiron.rs`, `crates/chiron-horizon-core/tests/chirondb_connector.rs`, `crates/chiron-horizon-core/tests/ai_credentials.rs`.
 
-Logs: `/tmp/gauss-horizon-attachments-tests-final.log`, `/tmp/gauss-horizon-attachments-types-final.log`, `/tmp/gauss-horizon-attachments-rust-final.log`, `/tmp/gauss-horizon-attachments-build-final.log`, `/tmp/gauss-horizon-attachments-fixture-final.log`. Initial/pre-correction logs retain the same prefix without `-final`.
+Logs: `/tmp/chiron-horizon-attachments-tests-final.log`, `/tmp/chiron-horizon-attachments-types-final.log`, `/tmp/chiron-horizon-attachments-rust-final.log`, `/tmp/chiron-horizon-attachments-build-final.log`, `/tmp/chiron-horizon-attachments-fixture-final.log`. Initial/pre-correction logs retain the same prefix without `-final`.

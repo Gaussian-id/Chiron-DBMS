@@ -6,7 +6,7 @@ tasks.named('shadowJar') {
     manifest {
         attributes(
             'Agent-Label': 'GBase 8a',
-            'Main-Class': 'com.gauss.horizon.agent.gbase8a.Gbase8aAgent'
+            'Main-Class': 'com.chiron.horizon.agent.gbase8a.Gbase8aAgent'
         )
     }
 }

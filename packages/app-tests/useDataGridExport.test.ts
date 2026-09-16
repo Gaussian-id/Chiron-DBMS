@@ -636,7 +636,7 @@ test("table data SQL export keeps source column names", async () => {
 
 test("complete local query result export removes only internal hidden columns", async () => {
   const completeLocalResult: QueryResult = {
-    columns: ["id", "name", "__GAUSS_HORIZON_PK_id"],
+    columns: ["id", "name", "__CHIRON_HORIZON_PK_id"],
     column_types: ["int4", "text", "int4"],
     rows: [
       [1, "Ada", 1],

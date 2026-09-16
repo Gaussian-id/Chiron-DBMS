@@ -155,7 +155,7 @@ async function copyResult() {
           >
           <Button variant="outline" size="sm" class="h-6 text-xs" @click="copyResult">{{ t("cellTransform.copy") }}</Button>
         </div>
-        <textarea :value="result.text" :aria-label="t('cellTransform.result')" readonly class="gauss-horizon-data-grid-value-font h-64 min-h-24 w-full resize-y rounded border bg-muted/20 p-3 text-xs" spellcheck="false" />
+        <textarea :value="result.text" :aria-label="t('cellTransform.result')" readonly class="chiron-horizon-data-grid-value-font h-64 min-h-24 w-full resize-y rounded border bg-muted/20 p-3 text-xs" spellcheck="false" />
       </template>
     </DialogContent>
   </Dialog>

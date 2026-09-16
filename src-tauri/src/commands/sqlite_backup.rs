@@ -2,10 +2,10 @@ use std::sync::Arc;
 
 use tauri::State;
 
-use gauss_horizon_core::connection::{AppState, PoolKind};
-use gauss_horizon_core::db::sqlite::{is_memory_database_path, SqliteHandle};
-use gauss_horizon_core::models::connection::DatabaseType;
-use gauss_horizon_core::sqlite_backup::{
+use chiron_horizon_core::connection::{AppState, PoolKind};
+use chiron_horizon_core::db::sqlite::{is_memory_database_path, SqliteHandle};
+use chiron_horizon_core::models::connection::DatabaseType;
+use chiron_horizon_core::sqlite_backup::{
     backup_sqlite_database as backup_sqlite_database_core, restore_sqlite_database as restore_sqlite_database_core,
     SqliteBackupOptions,
 };

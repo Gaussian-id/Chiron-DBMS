@@ -1,6 +1,6 @@
 import { LEGACY_ENCRYPTED_FORMAT } from "@/lib/compat/legacyProfile";
 export interface EncryptedPayload {
-  format: "gauss-horizon-encrypted" | typeof LEGACY_ENCRYPTED_FORMAT;
+  format: "chiron-horizon-encrypted" | typeof LEGACY_ENCRYPTED_FORMAT;
   version: 1;
   salt: string;
   iv: string;
@@ -8,7 +8,7 @@ export interface EncryptedPayload {
 }
 
 export interface PlainConfigPayload {
-  format: "gauss-horizon-config";
+  format: "chiron-horizon-config";
   version: 1;
   connections: unknown[];
 }
@@ -63,7 +63,7 @@ export async function encryptConfig(json: string, passphrase: string): Promise<E
   const encoded = new TextEncoder().encode(json);
   const ciphertext = await runtimeCrypto.subtle.encrypt({ name: "AES-GCM", iv }, key, encoded);
   return {
-    format: "gauss-horizon-encrypted",
+    format: "chiron-horizon-encrypted",
     version: 1,
     salt: toBase64(salt),
     iv: toBase64(iv),
@@ -99,5 +99,5 @@ export async function decryptConfig(payload: EncryptedPayload, passphrase: strin
 export function isEncryptedConfig(data: unknown): data is EncryptedPayload {
   if (typeof data !== "object" || data === null) return false;
   const obj = data as Record<string, unknown>;
-  return (obj.format === "gauss-horizon-encrypted" || obj.format === LEGACY_ENCRYPTED_FORMAT) && obj.version === 1 && typeof obj.salt === "string" && typeof obj.iv === "string" && typeof obj.data === "string";
+  return (obj.format === "chiron-horizon-encrypted" || obj.format === LEGACY_ENCRYPTED_FORMAT) && obj.version === 1 && typeof obj.salt === "string" && typeof obj.iv === "string" && typeof obj.data === "string";
 }

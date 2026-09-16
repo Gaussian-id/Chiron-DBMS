@@ -1,5 +1,5 @@
 {
-  "name": "@gauss-horizon/plugin-dev-host-source",
+  "name": "@chiron-horizon/plugin-dev-host-source",
   "private": true,
   "type": "module",
   "scripts": {

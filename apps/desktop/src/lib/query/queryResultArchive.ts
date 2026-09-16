@@ -2,7 +2,7 @@ import { decode, encode } from "@msgpack/msgpack";
 import type { QueryTab } from "@/types/database";
 import { decodeTabResultSnapshot, encodeTabResultSnapshot, type TabResultSnapshot } from "@/lib/tabs/tabResultCache";
 
-const ARCHIVE_MAGIC = "GAUSS_HORIZON_QUERY_RESULT_ARCHIVE";
+const ARCHIVE_MAGIC = "CHIRON_HORIZON_QUERY_RESULT_ARCHIVE";
 const ARCHIVE_VERSION = 1;
 const ARCHIVE_CODEC = "msgpack-tab-result-snapshot";
 
@@ -103,7 +103,7 @@ export function defaultQueryResultArchiveFileName(title: string | undefined): st
     .replace(/[^A-Za-z0-9._-]+/g, "_")
     .replace(/^_+|_+$/g, "")
     .slice(0, 80);
-  return `${base || "query-results"}.gauss-horizonresults`;
+  return `${base || "query-results"}.chiron-horizonresults`;
 }
 
 export async function encodeQueryResultArchive(tab: QueryTab, snapshot: TabResultSnapshot): Promise<Uint8Array> {

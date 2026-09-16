@@ -6,13 +6,13 @@ use std::path::{Path, PathBuf};
 use serde::Serialize;
 use tauri::{AppHandle, Manager};
 
-const MCP_PACKAGE_NAME: &str = "@gauss-horizon/mcp-server";
-const MCP_NPM_DEFERRED_MESSAGE: &str = "The npm MCP package is deferred for Gauss Horizon 0.1.0. Use the desktop MCP service or build the stdio server from this source tree.";
-const MCP_UNINSTALL_COMMAND: &str = "npm uninstall -g @gauss-horizon/mcp-server";
-const MCP_PNPM_UNINSTALL_COMMAND: &str = "pnpm remove -g @gauss-horizon/mcp-server";
+const MCP_PACKAGE_NAME: &str = "@chiron-horizon/mcp-server";
+const MCP_NPM_DEFERRED_MESSAGE: &str = "The npm MCP package is deferred for Chiron Horizon 0.1.0. Use the desktop MCP service or build the stdio server from this source tree.";
+const MCP_UNINSTALL_COMMAND: &str = "npm uninstall -g @chiron-horizon/mcp-server";
+const MCP_PNPM_UNINSTALL_COMMAND: &str = "pnpm remove -g @chiron-horizon/mcp-server";
 const MCP_MIN_NODE_VERSION: NodeVersion = NodeVersion { major: 18, minor: 18, patch: 0 };
 const MCP_MIN_NODE_VERSION_REQUIREMENT: &str = ">=18.18.0";
-const SHELL_COMMAND_MARKER: &str = "__GAUSS_HORIZON_MCP_COMMAND_OUTPUT_START__";
+const SHELL_COMMAND_MARKER: &str = "__CHIRON_HORIZON_MCP_COMMAND_OUTPUT_START__";
 
 #[derive(Debug, Serialize)]
 pub struct McpServerStatus {
@@ -302,7 +302,7 @@ pub async fn uninstall_mcp_server() -> Result<String, String> {
 pub(crate) async fn resolve_mcp_server_command() -> Result<(String, Vec<String>), String> {
     let command = tauri::async_runtime::spawn_blocking(resolve_mcp_server_command_sync)
         .await
-        .map_err(|err| format!("Failed to resolve Gauss Horizon MCP Server runtime: {err}"))?;
+        .map_err(|err| format!("Failed to resolve Chiron Horizon MCP Server runtime: {err}"))?;
     require_managed_mcp_command(command)
 }
 
@@ -351,7 +351,7 @@ fn resolve_mise_mcp_command(
 
     let shim_path = canonical_runtime_path(shim_path)?;
     let script_path =
-        resolve_mise_command("gauss-horizon-mcp-server").and_then(|path| canonical_runtime_path(&path))?;
+        resolve_mise_command("chiron-horizon-mcp-server").and_then(|path| canonical_runtime_path(&path))?;
     if script_path == shim_path {
         return None;
     }
@@ -391,7 +391,7 @@ fn resolve_managed_mcp_command(
 fn require_managed_mcp_command(command: Option<(String, Vec<String>)>) -> Result<(String, Vec<String>), String> {
     command.ok_or_else(|| {
         format!(
-            "[gaussHorizonMcpMissing] No compatible Node.js ({}) installation containing {} was found.",
+            "[chironHorizonMcpMissing] No compatible Node.js ({}) installation containing {} was found.",
             MCP_MIN_NODE_VERSION_REQUIREMENT, MCP_PACKAGE_NAME
         )
     })
@@ -472,7 +472,7 @@ fn parse_node_version_part(value: &str) -> Option<u64> {
 }
 
 fn current_path_node_candidate() -> Option<NodeRuntimeCandidate> {
-    let path = gauss_horizon_core::legacy::var_os("PATH")?;
+    let path = chiron_horizon_core::legacy::var_os("PATH")?;
     let node_path = find_command_in_path("node", &path)?;
     Some(NodeRuntimeCandidate { node_path })
 }
@@ -502,7 +502,7 @@ fn command_file_names(command: &str) -> Vec<OsString> {
     }
 
     let mut extensions = vec![".exe".to_string(), ".com".to_string(), ".cmd".to_string(), ".bat".to_string()];
-    if let Ok(path_ext) = gauss_horizon_core::legacy::var("PATHEXT") {
+    if let Ok(path_ext) = chiron_horizon_core::legacy::var("PATHEXT") {
         for extension in path_ext.split(';').map(str::trim).filter(|extension| !extension.is_empty()) {
             let normalized = if extension.starts_with('.') {
                 extension.to_ascii_lowercase()
@@ -523,7 +523,7 @@ fn command_file_names(command: &str) -> Vec<OsString> {
 #[cfg(not(windows))]
 fn common_node_dirs() -> Vec<PathBuf> {
     let mut dirs = Vec::new();
-    if let Some(home) = gauss_horizon_core::legacy::var_os("HOME") {
+    if let Some(home) = chiron_horizon_core::legacy::var_os("HOME") {
         dirs.push(PathBuf::from(home).join(".local").join("bin"));
     }
     dirs.extend(["/opt/homebrew/bin", "/usr/local/bin", "/usr/bin", "/bin"].into_iter().map(PathBuf::from));
@@ -738,11 +738,11 @@ fn npm_output(node_path: &Path, npm_cli_path: &Path, args: &[&str]) -> Result<Co
     let mut command_args = Vec::with_capacity(args.len() + 1);
     command_args.push(npm_cli_path.as_os_str().to_os_string());
     command_args.extend(args.iter().map(|arg| OsString::from(*arg)));
-    let mut command = gauss_horizon_core::process::new_std_command(node_path);
+    let mut command = chiron_horizon_core::process::new_std_command(node_path);
     command.args(&command_args);
     if let Some(node_dir) = node_path.parent() {
         let mut paths = vec![node_dir.to_path_buf()];
-        if let Some(current_path) = gauss_horizon_core::legacy::var_os("PATH") {
+        if let Some(current_path) = chiron_horizon_core::legacy::var_os("PATH") {
             paths.extend(env::split_paths(&current_path));
         }
         if let Ok(path) = env::join_paths(paths) {
@@ -758,13 +758,13 @@ fn run_package_manager_command(
     node_launcher_path: &Path,
     pnpm_home: &Path,
 ) -> Result<CommandOutput, String> {
-    let mut command = gauss_horizon_core::process::new_std_command(command_path);
+    let mut command = chiron_horizon_core::process::new_std_command(command_path);
     command.args(args);
     let mut paths = command_path.parent().into_iter().map(Path::to_path_buf).collect::<Vec<_>>();
     if let Some(node_dir) = node_launcher_path.parent() {
         paths.push(node_dir.to_path_buf());
     }
-    if let Some(current_path) = gauss_horizon_core::legacy::var_os("PATH") {
+    if let Some(current_path) = chiron_horizon_core::legacy::var_os("PATH") {
         paths.extend(env::split_paths(&current_path));
     }
     if let Ok(path) = env::join_paths(paths) {
@@ -799,7 +799,7 @@ fn mcp_package(package_root: &Path) -> Option<McpPackage> {
     let entry = match value.get("bin")? {
         serde_json::Value::String(entry) => entry.as_str(),
         serde_json::Value::Object(entries) => {
-            entries.get("gauss-horizon-mcp-server").or_else(|| entries.get("mcp-server"))?.as_str()?
+            entries.get("chiron-horizon-mcp-server").or_else(|| entries.get("mcp-server"))?.as_str()?
         }
         _ => return None,
     };
@@ -850,7 +850,7 @@ fn mcp_package_supports_node(package: &McpPackage, node_version: NodeVersion) ->
 }
 
 fn mcp_package_from_command_dir(dir: &Path) -> Option<LocatedMcpPackage> {
-    ["gauss-horizon-mcp-server", "mcp-server"].into_iter().find_map(|command| {
+    ["chiron-horizon-mcp-server", "mcp-server"].into_iter().find_map(|command| {
         command_file_names(command).into_iter().map(|name| dir.join(name)).find_map(|path| {
             if !path.is_file() {
                 return None;
@@ -1011,17 +1011,17 @@ fn mcp_native_binary_path_for(
 
 fn mcp_native_package() -> Option<(&'static str, &'static str)> {
     if cfg!(all(target_os = "macos", target_arch = "aarch64")) {
-        Some(("@gauss-horizon/mcp-darwin-arm64", "gauss-horizon-mcp"))
+        Some(("@chiron-horizon/mcp-darwin-arm64", "chiron-horizon-mcp"))
     } else if cfg!(all(target_os = "macos", target_arch = "x86_64")) {
-        Some(("@gauss-horizon/mcp-darwin-x64", "gauss-horizon-mcp"))
+        Some(("@chiron-horizon/mcp-darwin-x64", "chiron-horizon-mcp"))
     } else if cfg!(all(target_os = "linux", target_arch = "aarch64")) {
-        Some(("@gauss-horizon/mcp-linux-arm64-gnu", "gauss-horizon-mcp"))
+        Some(("@chiron-horizon/mcp-linux-arm64-gnu", "chiron-horizon-mcp"))
     } else if cfg!(all(target_os = "linux", target_arch = "x86_64")) {
-        Some(("@gauss-horizon/mcp-linux-x64-gnu", "gauss-horizon-mcp"))
+        Some(("@chiron-horizon/mcp-linux-x64-gnu", "chiron-horizon-mcp"))
     } else if cfg!(all(target_os = "windows", target_arch = "aarch64")) {
-        Some(("@gauss-horizon/mcp-win32-arm64", "gauss-horizon-mcp.exe"))
+        Some(("@chiron-horizon/mcp-win32-arm64", "chiron-horizon-mcp.exe"))
     } else if cfg!(all(target_os = "windows", target_arch = "x86_64")) {
-        Some(("@gauss-horizon/mcp-win32-x64", "gauss-horizon-mcp.exe"))
+        Some(("@chiron-horizon/mcp-win32-x64", "chiron-horizon-mcp.exe"))
     } else {
         None
     }
@@ -1044,17 +1044,17 @@ fn npm_prefix_from_root(npm_root: &Path) -> PathBuf {
 
 #[cfg(not(windows))]
 fn mcp_bin_path(npm_prefix: &Path) -> Option<PathBuf> {
-    let path = npm_prefix.join("bin").join("gauss-horizon-mcp-server");
+    let path = npm_prefix.join("bin").join("chiron-horizon-mcp-server");
     path.is_file().then_some(path)
 }
 
 #[cfg(windows)]
 fn mcp_bin_path(npm_prefix: &Path) -> Option<PathBuf> {
     [
-        "gauss-horizon-mcp-server.cmd",
-        "gauss-horizon-mcp-server.exe",
-        "gauss-horizon-mcp-server.bat",
-        "gauss-horizon-mcp-server",
+        "chiron-horizon-mcp-server.cmd",
+        "chiron-horizon-mcp-server.exe",
+        "chiron-horizon-mcp-server.bat",
+        "chiron-horizon-mcp-server",
     ]
     .into_iter()
     .map(|name| npm_prefix.join(name))
@@ -1092,7 +1092,7 @@ pub(crate) fn locate_command(command: &str) -> Option<String> {
 }
 
 fn locate_mcp_bin() -> Option<PathBuf> {
-    locate_command("gauss-horizon-mcp-server").map(PathBuf::from)
+    locate_command("chiron-horizon-mcp-server").map(PathBuf::from)
 }
 
 #[cfg(windows)]
@@ -1173,7 +1173,7 @@ where
     I: IntoIterator<Item = S>,
     S: AsRef<OsStr>,
 {
-    let mut cmd = gauss_horizon_core::process::new_std_command(command);
+    let mut cmd = chiron_horizon_core::process::new_std_command(command);
     cmd.args(args);
     command_output_from_process(cmd)
 }
@@ -1217,16 +1217,16 @@ fn windows_command_candidates(command: &str) -> Vec<String> {
 #[cfg(windows)]
 fn windows_common_command_dirs() -> Vec<std::path::PathBuf> {
     let mut dirs = Vec::new();
-    if let Ok(nvm_symlink) = gauss_horizon_core::legacy::var("NVM_SYMLINK") {
+    if let Ok(nvm_symlink) = chiron_horizon_core::legacy::var("NVM_SYMLINK") {
         dirs.push(nvm_symlink.into());
     }
-    if let Ok(app_data) = gauss_horizon_core::legacy::var("APPDATA") {
+    if let Ok(app_data) = chiron_horizon_core::legacy::var("APPDATA") {
         dirs.push(std::path::PathBuf::from(app_data).join("npm"));
     }
-    if let Ok(program_files) = gauss_horizon_core::legacy::var("ProgramFiles") {
+    if let Ok(program_files) = chiron_horizon_core::legacy::var("ProgramFiles") {
         dirs.push(std::path::PathBuf::from(program_files).join("nodejs"));
     }
-    if let Ok(program_files_x86) = gauss_horizon_core::legacy::var("ProgramFiles(x86)") {
+    if let Ok(program_files_x86) = chiron_horizon_core::legacy::var("ProgramFiles(x86)") {
         dirs.push(std::path::PathBuf::from(program_files_x86).join("nodejs"));
     }
     dirs.push(std::path::PathBuf::from(r"C:\nvm4w\nodejs"));
@@ -1266,7 +1266,7 @@ fn run_command_through_user_shell(command: &str, args: &[&str]) -> Result<Comman
 
 #[cfg(not(windows))]
 fn user_shell_invocation_args(script: &str) -> (String, Vec<String>) {
-    let shell = gauss_horizon_core::legacy::var("SHELL")
+    let shell = chiron_horizon_core::legacy::var("SHELL")
         .ok()
         .filter(|value| !value.trim().is_empty())
         .unwrap_or_else(default_user_shell);
@@ -1290,9 +1290,9 @@ fn user_shell_invocation_args(script: &str) -> (String, Vec<String>) {
 #[cfg(not(windows))]
 fn bash_login_script(script: &str) -> String {
     format!(
-        "for gauss_horizon_profile in ~/.bash_profile ~/.bash_login ~/.profile ~/.bashrc; do \
-         [ -r \"$gauss_horizon_profile\" ] && . \"$gauss_horizon_profile\"; \
-         done; unset gauss_horizon_profile; {script}"
+        "for chiron_horizon_profile in ~/.bash_profile ~/.bash_login ~/.profile ~/.bashrc; do \
+         [ -r \"$chiron_horizon_profile\" ] && . \"$chiron_horizon_profile\"; \
+         done; unset chiron_horizon_profile; {script}"
     )
 }
 
@@ -1346,10 +1346,10 @@ mod tests {
     use super::{shell_command_script, shell_quote};
     use std::path::PathBuf;
 
-    const PNPM_10_27_POSIX_SHIM: &str = include_str!("../../tests/fixtures/pnpm/10.27.0/gauss-horizon-mcp-server");
-    const PNPM_10_27_CMD_SHIM: &str = include_str!("../../tests/fixtures/pnpm/10.27.0/gauss-horizon-mcp-server.cmd");
+    const PNPM_10_27_POSIX_SHIM: &str = include_str!("../../tests/fixtures/pnpm/10.27.0/chiron-horizon-mcp-server");
+    const PNPM_10_27_CMD_SHIM: &str = include_str!("../../tests/fixtures/pnpm/10.27.0/chiron-horizon-mcp-server.cmd");
     const PNPM_10_27_POWERSHELL_SHIM: &str =
-        include_str!("../../tests/fixtures/pnpm/10.27.0/gauss-horizon-mcp-server.ps1");
+        include_str!("../../tests/fixtures/pnpm/10.27.0/chiron-horizon-mcp-server.ps1");
 
     struct PnpmFixture {
         root: PathBuf,
@@ -1372,29 +1372,29 @@ mod tests {
 
         let nonce = SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_nanos();
         let root =
-            std::env::temp_dir().join(format!("gauss-horizon-pnpm-10-27-fixture-{}-{nonce}", std::process::id()));
+            std::env::temp_dir().join(format!("chiron-horizon-pnpm-10-27-fixture-{}-{nonce}", std::process::id()));
         let pnpm_home = root.join("pnpm-home");
         let launcher_path = pnpm_home.join(launcher_name);
         let pnpm_path = pnpm_home.join(if cfg!(windows) { "pnpm.cmd" } else { "pnpm" });
         let global_dir = root.join("global").join("5");
         let package_root = global_dir
             .join(".pnpm")
-            .join("@gauss-horizon+mcp-server@0.4.71")
+            .join("@chiron-horizon+mcp-server@0.4.71")
             .join("node_modules")
-            .join("@gauss-horizon")
+            .join("@chiron-horizon")
             .join("mcp-server");
-        let script_path = package_root.join("bin").join("gauss-horizon-mcp-server.js");
+        let script_path = package_root.join("bin").join("chiron-horizon-mcp-server.js");
 
         std::fs::create_dir_all(script_path.parent().unwrap()).unwrap();
         std::fs::create_dir_all(&pnpm_home).unwrap();
         std::fs::write(&launcher_path, launcher).unwrap();
         std::fs::write(&pnpm_path, "pnpm 10.27.0 fixture\n").unwrap();
-        std::fs::write(&script_path, "// @gauss-horizon/mcp-server fixture\n").unwrap();
-        std::fs::write(global_dir.join("package.json"), r#"{"dependencies":{"@gauss-horizon/mcp-server":"^0.4.71"}}"#)
+        std::fs::write(&script_path, "// @chiron-horizon/mcp-server fixture\n").unwrap();
+        std::fs::write(global_dir.join("package.json"), r#"{"dependencies":{"@chiron-horizon/mcp-server":"^0.4.71"}}"#)
             .unwrap();
         std::fs::write(
             package_root.join("package.json"),
-            r#"{"name":"@gauss-horizon/mcp-server","version":"0.4.71","bin":{"gauss-horizon-mcp-server":"bin/gauss-horizon-mcp-server.js"},"engines":{"node":">=18.18.0"}}"#,
+            r#"{"name":"@chiron-horizon/mcp-server","version":"0.4.71","bin":{"chiron-horizon-mcp-server":"bin/chiron-horizon-mcp-server.js"},"engines":{"node":">=18.18.0"}}"#,
         )
         .unwrap();
 
@@ -1455,10 +1455,10 @@ mod tests {
     #[cfg(not(windows))]
     #[test]
     fn shell_command_script_marks_command_output_after_startup_noise() {
-        let script = shell_command_script("npm", &["list", "-g", "@gauss-horizon/mcp-server", "--json"]);
+        let script = shell_command_script("npm", &["list", "-g", "@chiron-horizon/mcp-server", "--json"]);
 
         assert!(script.contains(SHELL_COMMAND_MARKER));
-        assert!(script.contains("'@gauss-horizon/mcp-server'"));
+        assert!(script.contains("'@chiron-horizon/mcp-server'"));
     }
 
     #[cfg(not(windows))]
@@ -1489,7 +1489,7 @@ mod tests {
 
     #[test]
     fn reported_global_root_can_be_resolved_before_it_exists() {
-        let path = std::env::temp_dir().join(format!("gauss-horizon-mcp-missing-root-{}", std::process::id()));
+        let path = std::env::temp_dir().join(format!("chiron-horizon-mcp-missing-root-{}", std::process::id()));
         let _ = std::fs::remove_dir_all(&path);
 
         assert_eq!(normalized_reported_path(&path), Some(path));
@@ -1515,7 +1515,7 @@ mod tests {
     #[test]
     fn incompatible_runtime_cannot_win_with_shared_mcp_package() {
         let shared_npm_root = "/runtime/shared/node_modules";
-        let shared_script = "/runtime/shared/node_modules/@gauss-horizon/mcp-server/dist/index.js";
+        let shared_script = "/runtime/shared/node_modules/@chiron-horizon/mcp-server/dist/index.js";
         let old_runtime =
             runtime_with_version_and_root("/runtime/node-18", shared_npm_root, Some(shared_script), "v18.17.1");
         let compatible_runtime =
@@ -1554,13 +1554,13 @@ mod tests {
         use std::time::{SystemTime, UNIX_EPOCH};
 
         let nonce = SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_nanos();
-        let dir = std::env::temp_dir().join(format!("gauss-horizon-mcp-package-test-{}-{nonce}", std::process::id()));
-        let current_entry = dir.join("bin").join("gauss-horizon-mcp-server.js");
+        let dir = std::env::temp_dir().join(format!("chiron-horizon-mcp-package-test-{}-{nonce}", std::process::id()));
+        let current_entry = dir.join("bin").join("chiron-horizon-mcp-server.js");
         std::fs::create_dir_all(current_entry.parent().unwrap()).unwrap();
         std::fs::write(&current_entry, "// native launcher\n").unwrap();
         std::fs::write(
             dir.join("package.json"),
-            r#"{"name":"@gauss-horizon/mcp-server","version":"0.4.38","bin":{"gauss-horizon-mcp-server":"bin/gauss-horizon-mcp-server.js"},"engines":{"node":">=18.18.0"}}"#,
+            r#"{"name":"@chiron-horizon/mcp-server","version":"0.4.38","bin":{"chiron-horizon-mcp-server":"bin/chiron-horizon-mcp-server.js"},"engines":{"node":">=18.18.0"}}"#,
         )
         .unwrap();
 
@@ -1574,7 +1574,7 @@ mod tests {
         std::fs::write(&legacy_entry, "// legacy server\n").unwrap();
         std::fs::write(
             dir.join("package.json"),
-            r#"{"name":"@gauss-horizon/mcp-server","version":"0.4.32","bin":{"gauss-horizon-mcp-server":"dist/index.js"},"engines":{"node":">=22.13.0"}}"#,
+            r#"{"name":"@chiron-horizon/mcp-server","version":"0.4.32","bin":{"chiron-horizon-mcp-server":"dist/index.js"},"engines":{"node":">=22.13.0"}}"#,
         )
         .unwrap();
 
@@ -1592,9 +1592,9 @@ mod tests {
 
         let nonce = SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_nanos();
         let dir =
-            std::env::temp_dir().join(format!("gauss-horizon-mcp-script-entry-test-{}-{nonce}", std::process::id()));
-        let package_root = dir.join("@gauss-horizon").join("mcp-server");
-        let declared_entry = package_root.join("bin").join("gauss-horizon-mcp-server.js");
+            std::env::temp_dir().join(format!("chiron-horizon-mcp-script-entry-test-{}-{nonce}", std::process::id()));
+        let package_root = dir.join("@chiron-horizon").join("mcp-server");
+        let declared_entry = package_root.join("bin").join("chiron-horizon-mcp-server.js");
         let undeclared_entry = package_root.join("bin").join("other.js");
 
         std::fs::create_dir_all(declared_entry.parent().unwrap()).unwrap();
@@ -1602,7 +1602,7 @@ mod tests {
         std::fs::write(&undeclared_entry, "// undeclared entry\n").unwrap();
         std::fs::write(
             package_root.join("package.json"),
-            r#"{"name":"@gauss-horizon/mcp-server","version":"0.4.44","bin":{"gauss-horizon-mcp-server":"bin/gauss-horizon-mcp-server.js"},"engines":{"node":">=18.18.0"}}"#,
+            r#"{"name":"@chiron-horizon/mcp-server","version":"0.4.44","bin":{"chiron-horizon-mcp-server":"bin/chiron-horizon-mcp-server.js"},"engines":{"node":">=18.18.0"}}"#,
         )
         .unwrap();
 
@@ -1638,17 +1638,17 @@ mod tests {
 
     #[test]
     fn parses_real_pnpm_10_27_posix_global_shim() {
-        assert_real_pnpm_launcher("gauss-horizon-mcp-server", PNPM_10_27_POSIX_SHIM);
+        assert_real_pnpm_launcher("chiron-horizon-mcp-server", PNPM_10_27_POSIX_SHIM);
     }
 
     #[test]
     fn parses_real_pnpm_10_27_windows_cmd_global_shim() {
-        assert_real_pnpm_launcher("gauss-horizon-mcp-server.cmd", PNPM_10_27_CMD_SHIM);
+        assert_real_pnpm_launcher("chiron-horizon-mcp-server.cmd", PNPM_10_27_CMD_SHIM);
     }
 
     #[test]
     fn parses_real_pnpm_10_27_windows_powershell_global_shim() {
-        assert_real_pnpm_launcher("gauss-horizon-mcp-server.ps1", PNPM_10_27_POWERSHELL_SHIM);
+        assert_real_pnpm_launcher("chiron-horizon-mcp-server.ps1", PNPM_10_27_POWERSHELL_SHIM);
     }
 
     #[test]
@@ -1657,9 +1657,9 @@ mod tests {
 
         let nonce = SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_nanos();
         let root =
-            std::env::temp_dir().join(format!("gauss-horizon-mcp-unrecognized-shim-{}-{nonce}", std::process::id()));
+            std::env::temp_dir().join(format!("chiron-horizon-mcp-unrecognized-shim-{}-{nonce}", std::process::id()));
         let target = root.join("target.js");
-        let launcher = root.join("gauss-horizon-mcp-server");
+        let launcher = root.join("chiron-horizon-mcp-server");
         std::fs::create_dir_all(&root).unwrap();
         std::fs::write(&target, "// untrusted target\n").unwrap();
         std::fs::write(&launcher, format!("#!/bin/sh\nexit 1\n# cmd-shim-target={}\n", target.display())).unwrap();
@@ -1675,17 +1675,17 @@ mod tests {
 
         let nonce = SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_nanos();
         let dir =
-            std::env::temp_dir().join(format!("gauss-horizon-mcp-native-package-test-{}-{nonce}", std::process::id()));
+            std::env::temp_dir().join(format!("chiron-horizon-mcp-native-package-test-{}-{nonce}", std::process::id()));
         let npm_root = dir.join("node_modules");
-        let package_root = npm_root.join("@gauss-horizon").join("mcp-server");
-        let package_name = "@gauss-horizon/mcp-win32-x64";
-        let binary_name = "gauss-horizon-mcp.exe";
+        let package_root = npm_root.join("@chiron-horizon").join("mcp-server");
+        let package_name = "@chiron-horizon/mcp-win32-x64";
+        let binary_name = "chiron-horizon-mcp.exe";
         let nested_binary = package_root.join("node_modules").join(package_name).join("bin").join(binary_name);
         std::fs::create_dir_all(nested_binary.parent().unwrap()).unwrap();
         std::fs::write(&nested_binary, "nested binary").unwrap();
         std::fs::write(
             nested_binary.parent().unwrap().parent().unwrap().join("package.json"),
-            r#"{"name":"@gauss-horizon/mcp-win32-x64","version":"0.4.71"}"#,
+            r#"{"name":"@chiron-horizon/mcp-win32-x64","version":"0.4.71"}"#,
         )
         .unwrap();
 
@@ -1707,7 +1707,7 @@ mod tests {
         std::fs::write(&hoisted_binary, "hoisted binary").unwrap();
         std::fs::write(
             hoisted_binary.parent().unwrap().parent().unwrap().join("package.json"),
-            r#"{"name":"@gauss-horizon/mcp-win32-x64","version":"0.4.71"}"#,
+            r#"{"name":"@chiron-horizon/mcp-win32-x64","version":"0.4.71"}"#,
         )
         .unwrap();
 
@@ -1740,7 +1740,7 @@ mod tests {
 
     #[test]
     fn mcp_command_binds_script_to_the_installation_node() {
-        let script_path = "/runtime/node-24-root/@gauss-horizon/mcp-server/dist/index.js";
+        let script_path = "/runtime/node-24-root/@chiron-horizon/mcp-server/dist/index.js";
         let installed = runtime("/runtime/node-24", Some(script_path));
 
         let command = mcp_command_for_runtime(&installed).unwrap();
@@ -1755,18 +1755,18 @@ mod tests {
         use std::time::{SystemTime, UNIX_EPOCH};
 
         let nonce = SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_nanos();
-        let dir = std::env::temp_dir().join(format!("gauss-horizon mise shim test {} {nonce}", std::process::id()));
+        let dir = std::env::temp_dir().join(format!("chiron-horizon mise shim test {} {nonce}", std::process::id()));
         let shim_dir = dir.join("mise").join("shims");
-        let shim_path = shim_dir.join("gauss-horizon-mcp-server.exe");
+        let shim_path = shim_dir.join("chiron-horizon-mcp-server.exe");
         let node_path = dir.join("mise").join("installs").join("node").join("22.23.1").join("node.exe");
         let package_root = dir
             .join("mise")
             .join("installs")
             .join("npm-db-server")
             .join("node_modules")
-            .join("@gauss-horizon")
+            .join("@chiron-horizon")
             .join("mcp-server");
-        let script_path = package_root.join("bin").join("gauss-horizon-mcp-server.js");
+        let script_path = package_root.join("bin").join("chiron-horizon-mcp-server.js");
 
         std::fs::create_dir_all(&shim_dir).unwrap();
         std::fs::create_dir_all(node_path.parent().unwrap()).unwrap();
@@ -1776,7 +1776,7 @@ mod tests {
         std::fs::write(&script_path, "// declared MCP entry\n").unwrap();
         std::fs::write(
             package_root.join("package.json"),
-            r#"{"name":"@gauss-horizon/mcp-server","version":"0.4.44","bin":{"gauss-horizon-mcp-server":"bin/gauss-horizon-mcp-server.js"},"engines":{"node":">=18.18.0"}}"#,
+            r#"{"name":"@chiron-horizon/mcp-server","version":"0.4.44","bin":{"chiron-horizon-mcp-server":"bin/chiron-horizon-mcp-server.js"},"engines":{"node":">=18.18.0"}}"#,
         )
         .unwrap();
 
@@ -1792,7 +1792,7 @@ mod tests {
 
         let command = resolve_mise_mcp_command(Some(&compatible_runtime), Some(&shim_path), |command| match command {
             "node" => Some(node_path.clone()),
-            "gauss-horizon-mcp-server" => Some(script_path.clone()),
+            "chiron-horizon-mcp-server" => Some(script_path.clone()),
             _ => None,
         })
         .unwrap();
@@ -1804,7 +1804,7 @@ mod tests {
         std::fs::write(&wrong_node, "wrong node runtime\n").unwrap();
         assert!(resolve_mise_mcp_command(Some(&compatible_runtime), Some(&shim_path), |command| match command {
             "node" => Some(wrong_node.clone()),
-            "gauss-horizon-mcp-server" => Some(script_path.clone()),
+            "chiron-horizon-mcp-server" => Some(script_path.clone()),
             _ => None,
         })
         .is_none());
@@ -1817,7 +1817,7 @@ mod tests {
         );
         assert!(resolve_mise_mcp_command(Some(&old_runtime), Some(&shim_path), |command| match command {
             "node" => Some(node_path.clone()),
-            "gauss-horizon-mcp-server" => Some(script_path.clone()),
+            "chiron-horizon-mcp-server" => Some(script_path.clone()),
             _ => None,
         })
         .is_none());
@@ -1827,13 +1827,13 @@ mod tests {
         std::fs::write(&unrelated_script, "// not the declared entry\n").unwrap();
         assert!(resolve_mise_mcp_command(Some(&compatible_runtime), Some(&shim_path), |command| match command {
             "node" => Some(node_path.clone()),
-            "gauss-horizon-mcp-server" => Some(unrelated_script.clone()),
+            "chiron-horizon-mcp-server" => Some(unrelated_script.clone()),
             _ => None,
         })
         .is_none());
 
         let ordinary_bin = dir.join("bin");
-        let ordinary_shim = ordinary_bin.join("gauss-horizon-mcp-server.exe");
+        let ordinary_shim = ordinary_bin.join("chiron-horizon-mcp-server.exe");
         std::fs::create_dir_all(&ordinary_bin).unwrap();
         std::fs::write(&ordinary_shim, "ordinary native shim\n").unwrap();
         let resolver_calls = Cell::new(0);
@@ -1846,12 +1846,12 @@ mod tests {
 
         std::fs::write(
             package_root.join("package.json"),
-            r#"{"name":"@gauss-horizon/mcp-server","version":"0.4.44","bin":{"gauss-horizon-mcp-server":"bin/gauss-horizon-mcp-server.js"},"engines":{"node":">=23.0.0"}}"#,
+            r#"{"name":"@chiron-horizon/mcp-server","version":"0.4.44","bin":{"chiron-horizon-mcp-server":"bin/chiron-horizon-mcp-server.js"},"engines":{"node":">=23.0.0"}}"#,
         )
         .unwrap();
         assert!(resolve_mise_mcp_command(Some(&compatible_runtime), Some(&shim_path), |command| match command {
             "node" => Some(node_path.clone()),
-            "gauss-horizon-mcp-server" => Some(script_path.clone()),
+            "chiron-horizon-mcp-server" => Some(script_path.clone()),
             _ => None,
         })
         .is_none());
@@ -1865,31 +1865,31 @@ mod tests {
 
         let nonce = SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_nanos();
         let root =
-            std::env::temp_dir().join(format!("gauss-horizon-pnpm-local-fixture-{}-{nonce}", std::process::id()));
+            std::env::temp_dir().join(format!("chiron-horizon-pnpm-local-fixture-{}-{nonce}", std::process::id()));
         let node_modules = root.join("project").join("node_modules");
         let launcher_dir = node_modules.join(".bin");
-        let launcher_path = launcher_dir.join("gauss-horizon-mcp-server");
-        let package_relative = ".pnpm/@gauss-horizon+mcp-server@0.4.71/node_modules/@gauss-horizon/mcp-server";
+        let launcher_path = launcher_dir.join("chiron-horizon-mcp-server");
+        let package_relative = ".pnpm/@chiron-horizon+mcp-server@0.4.71/node_modules/@chiron-horizon/mcp-server";
         let package_root = node_modules.join(package_relative);
-        let script_path = package_root.join("bin").join("gauss-horizon-mcp-server.js");
+        let script_path = package_root.join("bin").join("chiron-horizon-mcp-server.js");
         std::fs::create_dir_all(script_path.parent().unwrap()).unwrap();
         std::fs::create_dir_all(&launcher_dir).unwrap();
         std::fs::write(&script_path, "// local MCP fixture\n").unwrap();
         std::fs::write(
             package_root.join("package.json"),
-            r#"{"name":"@gauss-horizon/mcp-server","version":"0.4.71","bin":{"gauss-horizon-mcp-server":"bin/gauss-horizon-mcp-server.js"},"engines":{"node":">=18.18.0"}}"#,
+            r#"{"name":"@chiron-horizon/mcp-server","version":"0.4.71","bin":{"chiron-horizon-mcp-server":"bin/chiron-horizon-mcp-server.js"},"engines":{"node":">=18.18.0"}}"#,
         )
         .unwrap();
         std::fs::write(
             node_modules.join("package.json"),
-            r#"{"dependencies":{"@gauss-horizon/mcp-server":"^0.4.71"}}"#,
+            r#"{"dependencies":{"@chiron-horizon/mcp-server":"^0.4.71"}}"#,
         )
         .unwrap();
         std::fs::write(launcher_dir.join(if cfg!(windows) { "pnpm.cmd" } else { "pnpm" }), "pnpm fixture\n").unwrap();
         std::fs::write(
             &launcher_path,
             format!(
-                "#!/bin/sh\nbasedir=$(dirname \"$0\")\nexec node \"$basedir/../{package_relative}/bin/gauss-horizon-mcp-server.js\" \"$@\"\n"
+                "#!/bin/sh\nbasedir=$(dirname \"$0\")\nexec node \"$basedir/../{package_relative}/bin/chiron-horizon-mcp-server.js\" \"$@\"\n"
             ),
         )
         .unwrap();
@@ -1907,7 +1907,7 @@ mod tests {
 
     #[test]
     fn mcp_command_rejects_script_outside_installation_package_root() {
-        let installed = runtime("/runtime/node-24", Some("/outside/@gauss-horizon/mcp-server/dist/index.js"));
+        let installed = runtime("/runtime/node-24", Some("/outside/@chiron-horizon/mcp-server/dist/index.js"));
 
         assert!(mcp_command_for_runtime(&installed).is_none());
     }
@@ -1918,15 +1918,15 @@ mod tests {
 
         let nonce = SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_nanos();
         let root =
-            std::env::temp_dir().join(format!("gauss-horizon-mcp-npm-regression-{}-{nonce}", std::process::id()));
+            std::env::temp_dir().join(format!("chiron-horizon-mcp-npm-regression-{}-{nonce}", std::process::id()));
         let npm_root = root.join("lib").join("node_modules");
         let package_root = npm_root.join(MCP_PACKAGE_NAME);
-        let script_path = package_root.join("bin").join("gauss-horizon-mcp-server.js");
+        let script_path = package_root.join("bin").join("chiron-horizon-mcp-server.js");
         std::fs::create_dir_all(script_path.parent().unwrap()).unwrap();
         std::fs::write(&script_path, "// npm global MCP\n").unwrap();
         std::fs::write(
             package_root.join("package.json"),
-            r#"{"name":"@gauss-horizon/mcp-server","version":"0.4.65","bin":{"gauss-horizon-mcp-server":"bin/gauss-horizon-mcp-server.js"},"engines":{"node":">=18.18.0"}}"#,
+            r#"{"name":"@chiron-horizon/mcp-server","version":"0.4.65","bin":{"chiron-horizon-mcp-server":"bin/chiron-horizon-mcp-server.js"},"engines":{"node":">=18.18.0"}}"#,
         )
         .unwrap();
         let located = super::LocatedMcpPackage {
@@ -1955,7 +1955,7 @@ mod tests {
 
     #[test]
     fn split_pnpm_installation_is_shared_by_status_launch_update_and_uninstall() {
-        let fixture = pnpm_fixture("gauss-horizon-mcp-server", PNPM_10_27_POSIX_SHIM);
+        let fixture = pnpm_fixture("chiron-horizon-mcp-server", PNPM_10_27_POSIX_SHIM);
         let node_prefix = fixture.root.join("selected-node-runtime");
         let node_path = node_prefix.join(if cfg!(windows) { "node.exe" } else { "bin/node" });
         let npm_root = node_prefix.join("lib").join("node_modules");
@@ -2012,7 +2012,7 @@ mod tests {
 
     #[test]
     fn split_pnpm_without_verified_pnpm_disables_update_and_uninstall() {
-        let fixture = pnpm_fixture("gauss-horizon-mcp-server", PNPM_10_27_POSIX_SHIM);
+        let fixture = pnpm_fixture("chiron-horizon-mcp-server", PNPM_10_27_POSIX_SHIM);
         std::fs::remove_file(&fixture.pnpm_path).unwrap();
         let located = mcp_package_from_command_path(&fixture.launcher_path).unwrap();
         let installation = bind_mcp_installation(
@@ -2036,12 +2036,12 @@ mod tests {
         let incompatible = runtime_with_version_and_root(
             "/runtime/node-18",
             "/runtime/node-18-root",
-            Some("/runtime/node-18-root/bin/gauss-horizon-mcp-server"),
+            Some("/runtime/node-18-root/bin/chiron-horizon-mcp-server"),
             "v18.17.1",
         );
 
         let command = resolve_managed_mcp_command(Some(&incompatible), || {
-            Some(PathBuf::from("/path/bin/gauss-horizon-mcp-server"))
+            Some(PathBuf::from("/path/bin/chiron-horizon-mcp-server"))
         });
 
         assert!(command.is_none());
@@ -2049,10 +2049,10 @@ mod tests {
 
     #[test]
     fn path_shim_rejects_wrong_package_identity() {
-        let fixture = pnpm_fixture("gauss-horizon-mcp-server", PNPM_10_27_POSIX_SHIM);
+        let fixture = pnpm_fixture("chiron-horizon-mcp-server", PNPM_10_27_POSIX_SHIM);
         std::fs::write(
             fixture.package_root.join("package.json"),
-            r#"{"name":"untrusted-package","version":"0.4.71","bin":{"gauss-horizon-mcp-server":"bin/gauss-horizon-mcp-server.js"},"engines":{"node":">=18.18.0"}}"#,
+            r#"{"name":"untrusted-package","version":"0.4.71","bin":{"chiron-horizon-mcp-server":"bin/chiron-horizon-mcp-server.js"},"engines":{"node":">=18.18.0"}}"#,
         )
         .unwrap();
 
@@ -2061,10 +2061,10 @@ mod tests {
 
     #[test]
     fn path_shim_rejects_package_bin_outside_package_root() {
-        let fixture = pnpm_fixture("gauss-horizon-mcp-server", PNPM_10_27_POSIX_SHIM);
+        let fixture = pnpm_fixture("chiron-horizon-mcp-server", PNPM_10_27_POSIX_SHIM);
         std::fs::write(
             fixture.package_root.join("package.json"),
-            r#"{"name":"@gauss-horizon/mcp-server","version":"0.4.71","bin":{"gauss-horizon-mcp-server":"../../outside.js"},"engines":{"node":">=18.18.0"}}"#,
+            r#"{"name":"@chiron-horizon/mcp-server","version":"0.4.71","bin":{"chiron-horizon-mcp-server":"../../outside.js"},"engines":{"node":">=18.18.0"}}"#,
         )
         .unwrap();
 
@@ -2073,10 +2073,10 @@ mod tests {
 
     #[test]
     fn path_shim_rejects_incompatible_node_engine() {
-        let fixture = pnpm_fixture("gauss-horizon-mcp-server", PNPM_10_27_POSIX_SHIM);
+        let fixture = pnpm_fixture("chiron-horizon-mcp-server", PNPM_10_27_POSIX_SHIM);
         std::fs::write(
             fixture.package_root.join("package.json"),
-            r#"{"name":"@gauss-horizon/mcp-server","version":"0.4.71","bin":{"gauss-horizon-mcp-server":"bin/gauss-horizon-mcp-server.js"},"engines":{"node":">=25.0.0"}}"#,
+            r#"{"name":"@chiron-horizon/mcp-server","version":"0.4.71","bin":{"chiron-horizon-mcp-server":"bin/chiron-horizon-mcp-server.js"},"engines":{"node":">=25.0.0"}}"#,
         )
         .unwrap();
         let located = mcp_package_from_command_path(&fixture.launcher_path).unwrap();
@@ -2091,7 +2091,7 @@ mod tests {
 
         assert!(error.contains(MCP_MIN_NODE_VERSION_REQUIREMENT));
         assert!(error.contains(MCP_PACKAGE_NAME));
-        assert!(error.starts_with("[gaussHorizonMcpMissing]"));
+        assert!(error.starts_with("[chironHorizonMcpMissing]"));
     }
 
     #[test]
@@ -2109,11 +2109,11 @@ mod tests {
         use std::time::{SystemTime, UNIX_EPOCH};
 
         let nonce = SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_nanos();
-        let dir = std::env::temp_dir().join(format!("gauss-horizon-mcp-runtime-test-{}-{nonce}", std::process::id()));
+        let dir = std::env::temp_dir().join(format!("chiron-horizon-mcp-runtime-test-{}-{nonce}", std::process::id()));
         let prefix = dir.join("prefix");
         let npm_root = prefix.join("lib").join("node_modules");
         let package_root = npm_root.join(super::MCP_PACKAGE_NAME);
-        let script_path = package_root.join("bin").join("gauss-horizon-mcp-server.js");
+        let script_path = package_root.join("bin").join("chiron-horizon-mcp-server.js");
         let node_path = dir.join("node-v24");
         let node_alias = dir.join("node");
         let npm_cli_path = dir.join("npm");
@@ -2124,7 +2124,7 @@ mod tests {
         std::fs::write(&script_path, "// fake mcp server\n").unwrap();
         std::fs::write(
             package_root.join("package.json"),
-            r#"{"name":"@gauss-horizon/mcp-server","version":"0.4.38","bin":{"gauss-horizon-mcp-server":"bin/gauss-horizon-mcp-server.js"},"engines":{"node":">=18.18.0"}}"#,
+            r#"{"name":"@chiron-horizon/mcp-server","version":"0.4.38","bin":{"chiron-horizon-mcp-server":"bin/chiron-horizon-mcp-server.js"},"engines":{"node":">=18.18.0"}}"#,
         )
         .unwrap();
         let node_script = format!(
@@ -2168,7 +2168,7 @@ mod tests {
     #[test]
     fn runtime_probe_resolves_pnpm_global_shims_and_update_command() {
         use std::os::unix::fs::{symlink, PermissionsExt};
-        let fixture = pnpm_fixture("gauss-horizon-mcp-server", PNPM_10_27_POSIX_SHIM);
+        let fixture = pnpm_fixture("chiron-horizon-mcp-server", PNPM_10_27_POSIX_SHIM);
         let bin_dir = fixture.root.join("selected-node-runtime").join("bin");
         let npm_root = fixture.root.join("selected-node-runtime").join("lib").join("node_modules");
         let npm_prefix = fixture.root.join("selected-node-runtime");
@@ -2231,7 +2231,7 @@ mod tests {
         let uninstall_output = probed.uninstall().unwrap();
         assert!(uninstall_output.success);
         let pnpm_log = std::fs::read_to_string(&pnpm_log_path).unwrap();
-        assert!(pnpm_log.contains("ARGS=remove -g @gauss-horizon/mcp-server --global-dir"));
+        assert!(pnpm_log.contains("ARGS=remove -g @chiron-horizon/mcp-server --global-dir"));
         assert!(pnpm_log.contains(fixture.global_dir.to_string_lossy().as_ref()));
         assert!(
             pnpm_log.contains(&format!("PNPM_HOME={}", canonical_runtime_path(&fixture.pnpm_home).unwrap().display()))
@@ -2242,7 +2242,7 @@ mod tests {
     #[cfg(windows)]
     #[test]
     fn windows_command_lookup_prefers_cmd_over_extensionless_shim() {
-        let dir = std::env::temp_dir().join(format!("gauss-horizon-mcp-command-test-{}", std::process::id()));
+        let dir = std::env::temp_dir().join(format!("chiron-horizon-mcp-command-test-{}", std::process::id()));
         std::fs::create_dir_all(&dir).unwrap();
         let extensionless = dir.join("codex");
         let cmd = dir.join("codex.cmd");
@@ -2262,7 +2262,7 @@ mod tests {
     #[test]
     fn windows_command_lookup_rejects_extensionless_only_shim() {
         let dir =
-            std::env::temp_dir().join(format!("gauss-horizon-mcp-command-extensionless-test-{}", std::process::id()));
+            std::env::temp_dir().join(format!("chiron-horizon-mcp-command-extensionless-test-{}", std::process::id()));
         std::fs::create_dir_all(&dir).unwrap();
         let extensionless = dir.join("codex");
         std::fs::write(&extensionless, "#!/bin/sh\n").unwrap();

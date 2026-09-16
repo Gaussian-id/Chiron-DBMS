@@ -68,7 +68,7 @@ export function mongoCollectionTableTypeFromNode(node: Pick<TreeNode, "meta">): 
 
 /** MongoDB materializes a database when its initialization collection is created. */
 export function mongoCreateDatabasePreview(database: string): string {
-  return `db.getSiblingDB(${JSON.stringify(database)}).createCollection("gauss_horizon_init");`;
+  return `db.getSiblingDB(${JSON.stringify(database)}).createCollection("chiron_horizon_init");`;
 }
 
 export function toMongoCollectionKind(kind?: string | null): MongoCollectionKind {
@@ -90,7 +90,7 @@ export function mongoRenameCollectionPreview(database: string, oldName: string, 
 }
 
 /**
- * Gauss Horizon executes these stable primitives in the backend instead of MongoDB's
+ * Chiron Horizon executes these stable primitives in the backend instead of MongoDB's
  * deprecated clone commands, which vary across server generations.
  */
 export function mongoCloneCollectionPreview(database: string, sourceName: string, targetName: string): string {
@@ -98,7 +98,7 @@ export function mongoCloneCollectionPreview(database: string, sourceName: string
   const source = `${db}.getCollection(${JSON.stringify(sourceName)})`;
   const target = `${db}.getCollection(${JSON.stringify(targetName)})`;
   return [
-    `// Gauss Horizon copies collection options, documents, and non-_id indexes.`,
+    `// Chiron Horizon copies collection options, documents, and non-_id indexes.`,
     `${db}.createCollection(${JSON.stringify(targetName)}, /* source options */);`,
     `${source}.find({}).forEach(function (document) { ${target}.insertOne(document); });`,
     `// Recreate source indexes except the target's automatic _id index.`,

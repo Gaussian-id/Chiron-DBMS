@@ -23,7 +23,7 @@ import { useHistoryStore } from "@/stores/historyStore";
 import { useSettingsStore, type StructureEditorDensity } from "@/stores/settingsStore";
 import { useTheme } from "@/composables/useTheme";
 import { editorFontTheme, loadEditorTheme } from "@/lib/editor/editorThemes";
-import { createGaussHorizonCodeMirrorSqlDialect } from "@/lib/editor/codemirrorSqlDialect";
+import { createChironHorizonCodeMirrorSqlDialect } from "@/lib/editor/codemirrorSqlDialect";
 import { useToast } from "@/composables/useToast";
 import { type SqlHighlighter, createShikiSqlHighlighter } from "@/lib/sql/sqlHighlighter";
 import { joinSqlStatementsForScript } from "@/lib/sql/sqlBatchScript";
@@ -273,7 +273,7 @@ async function initDdlEditor(content: string) {
   if (requestId !== ddlEditorInitRequestId || activeTab.value !== "ddl" || loading.value || ddlLoading.value || ddlEditorContainer.value !== container) return;
 
   const fontExt = editorFontTheme(EditorView, editorSettings.fontSize, editorSettings.fontFamily, { fixedHeight: true, scrollable: true });
-  const dialect = createGaussHorizonCodeMirrorSqlDialect(langSql, codeMirrorSqlDialectForConnection(connection.value), databaseType.value, connection.value?.driver_profile);
+  const dialect = createChironHorizonCodeMirrorSqlDialect(langSql, codeMirrorSqlDialectForConnection(connection.value), databaseType.value, connection.value?.driver_profile);
   const state = EditorState.create({
     doc: content,
     extensions: [
@@ -517,9 +517,9 @@ function isPlainModShortcut(event: KeyboardEvent, key: string): boolean {
 }
 
 const structureDensityValues: StructureEditorDensity[] = ["compact", "standard", "comfortable"];
-const STRUCTURE_COLUMNS_WIDTHS_STORAGE_KEY = "gauss-horizon-structure-editor-column-widths";
-const STRUCTURE_INDEX_COLUMNS_WIDTHS_STORAGE_KEY = "gauss-horizon-structure-editor-index-column-widths";
-const STRUCTURE_SQL_PREVIEW_COLLAPSED_STORAGE_KEY = "gauss-horizon-structure-editor-sql-preview-collapsed";
+const STRUCTURE_COLUMNS_WIDTHS_STORAGE_KEY = "chiron-horizon-structure-editor-column-widths";
+const STRUCTURE_INDEX_COLUMNS_WIDTHS_STORAGE_KEY = "chiron-horizon-structure-editor-index-column-widths";
+const STRUCTURE_SQL_PREVIEW_COLLAPSED_STORAGE_KEY = "chiron-horizon-structure-editor-sql-preview-collapsed";
 const FIELD_SHORTCUT_TOOLTIP_DELAY_MS = 500;
 const STRUCTURE_COLUMN_WIDTH_COUNT = 12;
 const STRUCTURE_INDEX_COLUMN_WIDTH_COUNT = 9;
@@ -1511,7 +1511,7 @@ async function hydrateRestoredDraftFromDatabase() {
     markDraftHydratedAndSync();
     shouldRefreshPreview = true;
   } catch (e: any) {
-    console.warn("[Gauss Horizon][structure-editor:draft-hydration-failed]", e);
+    console.warn("[Chiron Horizon][structure-editor:draft-hydration-failed]", e);
   } finally {
     hydratingRestoredDraft = false;
     if (shouldRefreshPreview) scheduleSqlPreviewRefresh();
@@ -1950,7 +1950,7 @@ async function loadVisibleTableComment(force = false, preserveDraft = false) {
       if (!preserveDraft || !hasCommentDraft) tableComment.value = value;
       loadedMetadataFacets.add("comment");
     } catch (error) {
-      if (requestId === tableCommentLoadRequestId) console.warn("[Gauss Horizon][structure-editor:comment-metadata-failed]", error);
+      if (requestId === tableCommentLoadRequestId) console.warn("[Chiron Horizon][structure-editor:comment-metadata-failed]", error);
     }
   })();
   tableCommentLoadPromise = loadPromise;
@@ -2212,7 +2212,7 @@ async function loadStructure(
       ];
       const failedFacets = secondaryResults.filter((entry): entry is { facet: ObjectMetadataFacet; result: PromiseRejectedResult } => entry.result.status === "rejected");
       for (const { facet, result } of failedFacets) {
-        console.warn(`[Gauss Horizon][structure-editor:${facet}-metadata-failed]`, result.reason);
+        console.warn(`[Chiron Horizon][structure-editor:${facet}-metadata-failed]`, result.reason);
       }
       if (showErrors && failedFacets.length > 0) {
         for (const { facet, result } of failedFacets) {
@@ -2247,7 +2247,7 @@ async function loadStructure(
     secondaryMetadataScheduled = true;
     const secondaryMetadataPromise = applySecondaryMetadata()
       .catch((error) => {
-        console.warn("[Gauss Horizon][structure-editor:secondary-metadata-failed]", error);
+        console.warn("[Chiron Horizon][structure-editor:secondary-metadata-failed]", error);
       })
       .finally(() => {
         if (requestId === structureLoadRequestId) setSecondaryMetadataLoading(effectiveScope, false);
@@ -2268,7 +2268,7 @@ async function loadStructure(
     if (showErrors) {
       errorMessage.value = e?.message || String(e);
     } else {
-      console.warn("[Gauss Horizon][structure-editor:refresh-failed]", e);
+      console.warn("[Chiron Horizon][structure-editor:refresh-failed]", e);
     }
   } finally {
     if (!secondaryMetadataScheduled && requestId === structureLoadRequestId) {
@@ -2307,8 +2307,8 @@ async function revalidateCachedStructureMetadata(loadRequestId: number, scope: {
     const [columnsResult, commentResult] = await Promise.allSettled([columnsPromise, commentPromise] as const);
     // A newer load or revalidation supersedes this one.
     if (revalidationId !== structureMetadataRevalidationId || loadRequestId !== structureLoadRequestId) return;
-    if (columnsResult.status === "rejected") console.warn("[Gauss Horizon][structure-editor:columns-metadata-revalidation-failed]", columnsResult.reason);
-    if (commentResult.status === "rejected") console.warn("[Gauss Horizon][structure-editor:comment-metadata-revalidation-failed]", commentResult.reason);
+    if (columnsResult.status === "rejected") console.warn("[Chiron Horizon][structure-editor:columns-metadata-revalidation-failed]", columnsResult.reason);
+    if (commentResult.status === "rejected") console.warn("[Chiron Horizon][structure-editor:comment-metadata-revalidation-failed]", commentResult.reason);
 
     let applied = false;
     const nextColumns = columnsResult.status === "fulfilled" ? columnsResult.value?.value : undefined;
@@ -2325,7 +2325,7 @@ async function revalidateCachedStructureMetadata(loadRequestId: number, scope: {
     }
     if (applied) syncDraftToParent();
   } catch (e) {
-    console.warn("[Gauss Horizon][structure-editor:metadata-revalidation-failed]", e);
+    console.warn("[Chiron Horizon][structure-editor:metadata-revalidation-failed]", e);
   }
 }
 
@@ -2333,7 +2333,7 @@ async function refreshStructureAfterSave(scope: TableStructureRefreshScope, char
   try {
     await Promise.all([loadStructure(true, scope, false, { blockSecondaryMetadata: true, characterLengthUnitsAfterSave }), loadTableOwner(true), loadMysqlTableEngine(false)]);
   } catch (e) {
-    console.warn("[Gauss Horizon][structure-editor:post-save-refresh-failed]", e);
+    console.warn("[Chiron Horizon][structure-editor:post-save-refresh-failed]", e);
   } finally {
     postSaveRefreshing.value = false;
     if (mysqlAutoIncrementValue.value !== originalMysqlAutoIncrementValue.value) scheduleSqlPreviewRefresh();
@@ -3648,7 +3648,7 @@ async function recordStructureHistory(sql: string, start: number, success: boole
       affected_rows: success ? result?.affected_rows : undefined,
     });
   } catch (e) {
-    console.warn("[Gauss Horizon][structure-history:save-failed]", e);
+    console.warn("[Chiron Horizon][structure-history:save-failed]", e);
   }
 }
 
@@ -5363,11 +5363,11 @@ watch(
 
 .structure-ddl-editor :deep(.cm-selectionBackground),
 .structure-ddl-editor :deep(.cm-focused > .cm-scroller > .cm-selectionLayer .cm-selectionBackground) {
-  background: var(--gauss-horizon-editor-selection-background, rgba(59, 130, 246, 0.35)) !important;
+  background: var(--chiron-horizon-editor-selection-background, rgba(59, 130, 246, 0.35)) !important;
 }
 
 .structure-ddl-editor :deep(.cm-content ::selection) {
-  background: var(--gauss-horizon-editor-selection-background, rgba(59, 130, 246, 0.35)) !important;
+  background: var(--chiron-horizon-editor-selection-background, rgba(59, 130, 246, 0.35)) !important;
 }
 
 .structure-table-scroller::-webkit-scrollbar {

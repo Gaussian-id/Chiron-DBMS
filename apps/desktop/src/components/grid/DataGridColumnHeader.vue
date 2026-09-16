@@ -87,7 +87,7 @@ const emit = defineEmits<{
           }}</span>
         </span>
         <template #content>
-          <div class="gauss-horizon-column-info-tooltip grid min-w-56 grid-cols-[auto_minmax(0,1fr)] gap-x-2 gap-y-1 px-3 py-2">
+          <div class="chiron-horizon-column-info-tooltip grid min-w-56 grid-cols-[auto_minmax(0,1fr)] gap-x-2 gap-y-1 px-3 py-2">
             <span class="text-background/70">{{ columnNameLabel }}</span>
             <span class="flex min-w-0 items-center gap-2">
               <span class="min-w-0 flex-1 truncate font-mono">{{ name }}</span>
@@ -165,11 +165,11 @@ const emit = defineEmits<{
 </style>
 
 <style>
-html.gauss-horizon-legacy-webview [data-column-header-copy-name]:hover {
+html.chiron-horizon-legacy-webview [data-column-header-copy-name]:hover {
   background-color: rgba(255, 255, 255, 0.1);
 }
 
-html.gauss-horizon-legacy-webview.dark [data-column-header-copy-name]:hover {
+html.chiron-horizon-legacy-webview.dark [data-column-header-copy-name]:hover {
   background-color: rgba(0, 0, 0, 0.1);
 }
 </style>

@@ -1,5 +1,5 @@
 /dist/
-/.gauss-horizon-dev/
-.gauss-horizon-repository-signing-key.env
+/.chiron-horizon-dev/
+.chiron-horizon-repository-signing-key.env
 .DS_Store
 *.log

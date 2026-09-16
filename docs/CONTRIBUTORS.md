@@ -45,4 +45,4 @@ pnpm dlx wrangler secret put ISSUE_AI_MODEL
 
 `ISSUE_AI_API_BASE` may end at the host, `/v1`, or `/chat/completions`. The model must accept `image_url` data URLs when screenshots are attached.
 
-`docs/wrangler.json` binds `ISSUE_IMAGES` to the existing `gauss-horizon` R2 bucket and publishes generated image URLs under `https://distribution-disabled.invalid` by default. Set `ISSUE_IMAGE_PUBLIC_BASE_URL` if the bucket's public origin changes. Set `ISSUE_GITHUB_REPOSITORY` only when testing against a different repository; production defaults to `Gaussian-id/Gauss-Horizon`.
+`docs/wrangler.json` binds `ISSUE_IMAGES` to the existing `chiron-horizon` R2 bucket and publishes generated image URLs under `https://distribution-disabled.invalid` by default. Set `ISSUE_IMAGE_PUBLIC_BASE_URL` if the bucket's public origin changes. Set `ISSUE_GITHUB_REPOSITORY` only when testing against a different repository; production defaults to `Gaussian-id/Gauss-Horizon`.

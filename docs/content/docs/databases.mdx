@@ -1,11 +1,11 @@
 ---
 title: Database Support
-description: Understand Gauss Horizon connection profiles, driver runtimes, specialized workspaces, and capability-gated advanced features.
+description: Understand Chiron Horizon connection profiles, driver runtimes, specialized workspaces, and capability-gated advanced features.
 ---
 
 The new-connection picker provides 90+ database and service profiles. A profile defines defaults, form fields, presentation, and a driver entry point, but being able to connect does not mean every advanced feature is available.
 
-<Callout type="info">The installed connection picker and `crates/gauss-horizon-core/assets/database-drivers.manifest.json` are authoritative for current types and capabilities. This page intentionally avoids a brittle exhaustive matrix.</Callout>
+<Callout type="info">The installed connection picker and `crates/chiron-horizon-core/assets/database-drivers.manifest.json` are authoritative for current types and capabilities. This page intentionally avoids a brittle exhaustive matrix.</Callout>
 
 ## Connection Families
 
@@ -18,7 +18,7 @@ The new-connection picker provides 90+ database and service profiles. A profile 
 - Agent/JDBC analytics engines such as Snowflake, Trino, PrestoSQL, Hive, Spark, DB2, Informix, Databricks, and BigQuery
 - Cloud-managed relational services such as Google Cloud Spanner (Agent/JDBC, GoogleSQL and PostgreSQL dialects)
 
-Protocol compatibility covers only connection and selected dialect behavior. Versions, system catalogs, DDL, privileges, and management APIs differ, so Gauss Horizon uses separate profiles and capability overrides instead of enabling features by family name alone.
+Protocol compatibility covers only connection and selected dialect behavior. Versions, system catalogs, DDL, privileges, and management APIs differ, so Chiron Horizon uses separate profiles and capability overrides instead of enabling features by family name alone.
 
 ### File, Edge, and Hosted Databases
 
@@ -44,8 +44,8 @@ These connections use key-value, document, search, vector, messaging, or configu
 
 | Runtime | Description | Typical boundary |
 | --- | --- | --- |
-| Built-in native | Rust driver compiled into Gauss Horizon | Available immediately after installation |
-| Native Agent / sidecar | Gauss Horizon-managed Go, Rust, or external process | Requires platform files; DuckDB, Oracle, KingbaseES, XuguDB, RabbitMQ, and similar paths may use separate runtimes |
+| Built-in native | Rust driver compiled into Chiron Horizon | Available immediately after installation |
+| Native Agent / sidecar | Chiron Horizon-managed Go, Rust, or external process | Requires platform files; DuckDB, Oracle, KingbaseES, XuguDB, RabbitMQ, and similar paths may use separate runtimes |
 | JDBC Agent | Java Agent plus a vendor JDBC driver | Requires a JRE, Agent, and legally obtained vendor JAR |
 | JDBC plugin | Optional generic JDBC extension | Unknown engines run with generic JDBC capabilities |
 
@@ -71,7 +71,7 @@ Individual capabilities then control features such as:
 - Field lineage and query explain
 - Database creation, user administration, and driver management
 
-Menu availability is therefore more meaningful than a static database name list. When an action is missing, check the Gauss Horizon version, database profile, runtime mode, and installed components.
+Menu availability is therefore more meaningful than a static database name list. When an action is missing, check the Chiron Horizon version, database profile, runtime mode, and installed components.
 
 ## Feature Boundaries
 
@@ -87,7 +87,7 @@ Redis, MongoDB, search, vector, HBase, configuration-center, and message-queue w
 
 - [Database Export](/en/docs/database-export) is a capability-driven logical SQL export
 - [Database Backup](/en/docs/database-backup) currently schedules consistent MySQL and PostgreSQL backups in Desktop only
-- Cloud Sync and configuration export migrate Gauss Horizon settings, not business database contents
+- Cloud Sync and configuration export migrate Chiron Horizon settings, not business database contents
 
 ### Desktop and Docker/Web
 
@@ -99,7 +99,7 @@ Profiles prefill common defaults such as MySQL `3306`, PostgreSQL `5432`, Redis 
 
 Services such as RabbitMQ may expose separate business and management ports. A custom AMQP port must not be used to infer the Management API port. SSH tunnels, HTTP proxies, TLS SNI, and physical dial targets should also be verified independently.
 
-Gauss Horizon parses many common DSNs and URLs, but parameters vary by version and cloud vendor. After a successful connection test, still verify the actual database, schema, SSL, and privilege scope.
+Chiron Horizon parses many common DSNs and URLs, but parameters vary by version and cloud vendor. After a successful connection test, still verify the actual database, schema, SSL, and privilege scope.
 
 ## Local Test Environments
 

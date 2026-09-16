@@ -584,11 +584,11 @@ fn duckdb_completion_like_pattern(request: &db::CompletionAssistantRequest) -> S
 #[cfg(test)]
 mod tests {
     use super::*;
-    use gauss_horizon_core::models::connection::DatabaseType;
+    use chiron_horizon_core::models::connection::DatabaseType;
     #[test]
     fn duckdb_list_databases_includes_attached_database() {
         let unique = uuid::Uuid::new_v4();
-        let path = std::env::temp_dir().join(format!("gauss-horizon-attached-{unique}.duckdb"));
+        let path = std::env::temp_dir().join(format!("chiron-horizon-attached-{unique}.duckdb"));
         let _ = std::fs::remove_file(&path);
         let con = duckdb::Connection::open_in_memory().unwrap();
 
@@ -604,7 +604,7 @@ mod tests {
     #[test]
     fn duckdb_query_tables_filters_by_attached_database() {
         let unique = uuid::Uuid::new_v4();
-        let path = std::env::temp_dir().join(format!("gauss-horizon-attached-tables-{unique}.duckdb"));
+        let path = std::env::temp_dir().join(format!("chiron-horizon-attached-tables-{unique}.duckdb"));
         let _ = std::fs::remove_file(&path);
         let con = duckdb::Connection::open_in_memory().unwrap();
 
@@ -641,7 +641,7 @@ mod tests {
     #[test]
     fn duckdb_table_ddl_filters_by_database_schema_and_table_name() {
         let unique = uuid::Uuid::new_v4();
-        let path = std::env::temp_dir().join(format!("gauss-horizon-attached-ddl-{unique}.duckdb"));
+        let path = std::env::temp_dir().join(format!("chiron-horizon-attached-ddl-{unique}.duckdb"));
         let _ = std::fs::remove_file(&path);
         let con = duckdb::Connection::open_in_memory().unwrap();
 
@@ -774,10 +774,10 @@ mod tests {
         let edited_source = source.replace("SELECT 1", "SELECT 2");
         assert_ne!(edited_source, source);
 
-        let statements = gauss_horizon_core::object_source_sql::build_executable_object_source_statements(
-            gauss_horizon_core::object_source_sql::EditableObjectSourceSqlInput {
+        let statements = chiron_horizon_core::object_source_sql::build_executable_object_source_statements(
+            chiron_horizon_core::object_source_sql::EditableObjectSourceSqlInput {
                 database_type: DatabaseType::DuckDb,
-                object_type: gauss_horizon_core::db::ObjectSourceKind::View,
+                object_type: chiron_horizon_core::db::ObjectSourceKind::View,
                 schema: Some("main".to_string()),
                 name: "active_orders".to_string(),
                 source: edited_source,

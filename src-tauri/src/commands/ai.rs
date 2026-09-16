@@ -3,7 +3,7 @@ use std::sync::Arc;
 use tauri::{AppHandle, Emitter, State};
 
 use super::connection::AppState;
-pub use gauss_horizon_core::ai::*;
+pub use chiron_horizon_core::ai::*;
 
 #[tauri::command]
 pub fn ai_resolve_endpoint(config: AiConfig) -> Result<String, String> {
@@ -21,9 +21,9 @@ pub async fn ai_test_connection(
     let mut config = resolve_cli_provider_config(state.storage.resolve_ai_config(&config).await?);
     merge_global_max_retries(
         &mut config,
-        state.storage.load_max_retries().await.unwrap_or(gauss_horizon_core::ai::DEFAULT_MAX_RETRIES),
+        state.storage.load_max_retries().await.unwrap_or(chiron_horizon_core::ai::DEFAULT_MAX_RETRIES),
     );
-    gauss_horizon_core::ai::test_connection_core(&config).await
+    chiron_horizon_core::ai::test_connection_core(&config).await
 }
 
 #[tauri::command]
@@ -31,9 +31,9 @@ pub async fn ai_list_models(state: State<'_, Arc<AppState>>, config: AiConfig) -
     let mut config = resolve_cli_provider_config(state.storage.resolve_ai_config(&config).await?);
     merge_global_max_retries(
         &mut config,
-        state.storage.load_max_retries().await.unwrap_or(gauss_horizon_core::ai::DEFAULT_MAX_RETRIES),
+        state.storage.load_max_retries().await.unwrap_or(chiron_horizon_core::ai::DEFAULT_MAX_RETRIES),
     );
-    gauss_horizon_core::ai::list_models_core(&config).await
+    chiron_horizon_core::ai::list_models_core(&config).await
 }
 
 #[tauri::command]
@@ -45,9 +45,9 @@ pub async fn ai_resolve_model_effort(
     let mut config = resolve_cli_provider_config(state.storage.resolve_ai_config(&config).await?);
     merge_global_max_retries(
         &mut config,
-        state.storage.load_max_retries().await.unwrap_or(gauss_horizon_core::ai::DEFAULT_MAX_RETRIES),
+        state.storage.load_max_retries().await.unwrap_or(chiron_horizon_core::ai::DEFAULT_MAX_RETRIES),
     );
-    gauss_horizon_core::ai::resolve_model_effort_core(&config, &model_id).await
+    chiron_horizon_core::ai::resolve_model_effort_core(&config, &model_id).await
 }
 
 #[tauri::command]
@@ -99,9 +99,9 @@ pub async fn ai_complete(state: State<'_, Arc<AppState>>, request: AiCompletionR
     request.config = state.storage.resolve_ai_config(&request.config).await?;
     merge_global_max_retries(
         &mut request.config,
-        state.storage.load_max_retries().await.unwrap_or(gauss_horizon_core::ai::DEFAULT_MAX_RETRIES),
+        state.storage.load_max_retries().await.unwrap_or(chiron_horizon_core::ai::DEFAULT_MAX_RETRIES),
     );
-    gauss_horizon_core::ai::complete(&request).await
+    chiron_horizon_core::ai::complete(&request).await
 }
 
 #[tauri::command]
@@ -115,23 +115,24 @@ pub async fn ai_stream(
     request.config = state.storage.resolve_ai_config(&request.config).await?;
     merge_global_max_retries(
         &mut request.config,
-        state.storage.load_max_retries().await.unwrap_or(gauss_horizon_core::ai::DEFAULT_MAX_RETRIES),
+        state.storage.load_max_retries().await.unwrap_or(chiron_horizon_core::ai::DEFAULT_MAX_RETRIES),
     );
-    let cancelled = gauss_horizon_core::ai::register_stream(&session_id).await;
+    let cancelled = chiron_horizon_core::ai::register_stream(&session_id).await;
 
     let batcher = AiStreamChunkBatcher::new(app.clone(), session_id.clone());
-    let result = gauss_horizon_core::ai::stream(&session_id, &request, &cancelled, |chunk| batcher.handle(chunk)).await;
+    let result =
+        chiron_horizon_core::ai::stream(&session_id, &request, &cancelled, |chunk| batcher.handle(chunk)).await;
     // Emit tail deltas the interval gate was still holding when the stream ended.
     batcher.flush();
 
-    gauss_horizon_core::ai::unregister_stream(&session_id).await;
+    chiron_horizon_core::ai::unregister_stream(&session_id).await;
     result
 }
 
-use gauss_horizon_core::agent_events::AgentEvent;
-use gauss_horizon_core::agent_loop::{run_agent_loop, AgentLoopContext};
-use gauss_horizon_core::ai_cli_agent::CliAgentCommandSpec;
-use gauss_horizon_core::models::connection::DatabaseType;
+use chiron_horizon_core::agent_events::AgentEvent;
+use chiron_horizon_core::agent_loop::{run_agent_loop, AgentLoopContext};
+use chiron_horizon_core::ai_cli_agent::CliAgentCommandSpec;
+use chiron_horizon_core::models::connection::DatabaseType;
 
 #[derive(serde::Serialize)]
 struct AiAgentEventPayload {
@@ -323,7 +324,7 @@ impl<R: tauri::Runtime> AiStreamChunkBatcher<R> {
 
 #[tauri::command]
 pub async fn ai_cancel_stream(session_id: String) -> Result<bool, String> {
-    Ok(gauss_horizon_core::ai::cancel_stream(&session_id).await)
+    Ok(chiron_horizon_core::ai::cancel_stream(&session_id).await)
 }
 
 #[tauri::command]
@@ -348,7 +349,7 @@ pub async fn ai_agent_stream(
     request.config = state.storage.resolve_ai_config(&request.config).await?;
     merge_global_max_retries(
         &mut request.config,
-        state.storage.load_max_retries().await.unwrap_or(gauss_horizon_core::ai::DEFAULT_MAX_RETRIES),
+        state.storage.load_max_retries().await.unwrap_or(chiron_horizon_core::ai::DEFAULT_MAX_RETRIES),
     );
 
     let parsed_db_type: DatabaseType =
@@ -360,22 +361,22 @@ pub async fn ai_agent_stream(
     } else {
         None
     };
-    let cancelled = gauss_horizon_core::ai::register_stream(&session_id).await;
+    let cancelled = chiron_horizon_core::ai::register_stream(&session_id).await;
     let production_database = state
         .configs
         .read()
         .await
         .get(&connection_id)
-        .is_some_and(|config| gauss_horizon_core::production_safety::is_production_database(config, &database));
+        .is_some_and(|config| chiron_horizon_core::production_safety::is_production_database(config, &database));
     let max_agent_turns = state.storage.load_max_agent_turns().await.unwrap_or_else(|err| {
         log::warn!("Failed to load max_agent_turns setting, using default: {err}");
-        gauss_horizon_core::agent_loop::DEFAULT_MAX_AGENT_TURNS
+        chiron_horizon_core::agent_loop::DEFAULT_MAX_AGENT_TURNS
     });
     // Reject the confirmed-write grant when the connection or database changed
     // between the user's confirmation and this backend request.  The frontend
     // also verifies this synchronously, but this backend check provides
     // defense-in-depth for CLI-provider and API-driven paths.
-    let (allow_write_sql, confirmed_write_sql) = gauss_horizon_core::agent_tools::verify_confirmed_target(
+    let (allow_write_sql, confirmed_write_sql) = chiron_horizon_core::agent_tools::verify_confirmed_target(
         allow_write_sql,
         confirmed_write_sql,
         confirmed_connection_id,
@@ -389,7 +390,7 @@ pub async fn ai_agent_stream(
     // production.  Writes are only allowed when a specific SQL statement was
     // confirmed — an empty confirmed_write_sql is treated as "no confirmation"
     // so the agent cannot execute arbitrary write/DDL statements.
-    let sql_permissions = gauss_horizon_core::agent_tools::confirmed_write_sql_permissions(
+    let sql_permissions = chiron_horizon_core::agent_tools::confirmed_write_sql_permissions(
         production_database,
         allow_write_sql.unwrap_or(false),
         confirmed_write_sql,
@@ -426,7 +427,7 @@ pub async fn ai_agent_stream(
     // (e.g. an error return that produced no terminal AgentEvent).
     emitter.flush();
 
-    gauss_horizon_core::ai::unregister_stream(&session_id).await;
+    chiron_horizon_core::ai::unregister_stream(&session_id).await;
     result
 }
 
@@ -506,7 +507,7 @@ mod tests {
     use tokio::io::{AsyncReadExt, AsyncWriteExt};
 
     use super::super::connection::AppState;
-    use gauss_horizon_core::ai::{AiApiStyle, AiAuthMethod, AiConfig, AiProvider, AiReasoningLevel};
+    use chiron_horizon_core::ai::{AiApiStyle, AiAuthMethod, AiConfig, AiProvider, AiReasoningLevel};
 
     /// Captures the JSON payload of every `event_name` emission on a mock app.
     fn captured_events(
@@ -527,7 +528,7 @@ mod tests {
     #[test]
     fn ai_agent_event_batcher_coalesces_deltas_between_intervals() {
         use super::AiAgentEventBatcher;
-        use gauss_horizon_core::agent_events::AgentEvent;
+        use chiron_horizon_core::agent_events::AgentEvent;
 
         let (handle, received) = captured_events("ai-agent-event");
         let batcher = AiAgentEventBatcher::new(handle, "session-1".to_string());
@@ -581,7 +582,7 @@ mod tests {
     #[test]
     fn ai_agent_event_batcher_merges_held_deltas_after_interval() {
         use super::AiAgentEventBatcher;
-        use gauss_horizon_core::agent_events::AgentEvent;
+        use chiron_horizon_core::agent_events::AgentEvent;
 
         let (handle, received) = captured_events("ai-agent-event");
         let batcher = AiAgentEventBatcher::new(handle, "session-1".to_string());
@@ -707,7 +708,7 @@ mod tests {
 
     #[test]
     fn verify_confirmed_target_allows_matching_connection_and_database() {
-        let (allow, confirmed) = gauss_horizon_core::agent_tools::verify_confirmed_target(
+        let (allow, confirmed) = chiron_horizon_core::agent_tools::verify_confirmed_target(
             Some(true),
             Some("DELETE FROM users WHERE id = 1".to_string()),
             Some("conn-1".to_string()),
@@ -723,7 +724,7 @@ mod tests {
 
     #[test]
     fn verify_confirmed_target_rejects_mismatched_connection() {
-        let (allow, confirmed) = gauss_horizon_core::agent_tools::verify_confirmed_target(
+        let (allow, confirmed) = chiron_horizon_core::agent_tools::verify_confirmed_target(
             Some(true),
             Some("DELETE FROM users WHERE id = 1".to_string()),
             Some("conn-staging".to_string()),
@@ -739,7 +740,7 @@ mod tests {
 
     #[test]
     fn verify_confirmed_target_rejects_mismatched_database() {
-        let (allow, confirmed) = gauss_horizon_core::agent_tools::verify_confirmed_target(
+        let (allow, confirmed) = chiron_horizon_core::agent_tools::verify_confirmed_target(
             Some(true),
             Some("DELETE FROM users WHERE id = 1".to_string()),
             Some("conn-1".to_string()),
@@ -757,7 +758,7 @@ mod tests {
     fn verify_confirmed_target_passes_through_when_no_sql_confirmed() {
         // Without a confirmed SQL, no target verification is needed — the
         // grant has no write permission to protect.
-        let (allow, confirmed) = gauss_horizon_core::agent_tools::verify_confirmed_target(
+        let (allow, confirmed) = chiron_horizon_core::agent_tools::verify_confirmed_target(
             Some(false),
             None,
             Some("conn-staging".to_string()),
@@ -776,7 +777,7 @@ mod tests {
         // When confirmed_connection_id is None (e.g. older frontend that
         // doesn't send snapshots), the target cannot be verified, so the
         // grant must be rejected — fail-closed.
-        let (allow, confirmed) = gauss_horizon_core::agent_tools::verify_confirmed_target(
+        let (allow, confirmed) = chiron_horizon_core::agent_tools::verify_confirmed_target(
             Some(true),
             Some("DELETE FROM users WHERE id = 1".to_string()),
             None,
@@ -792,7 +793,7 @@ mod tests {
 
     #[test]
     fn verify_confirmed_target_rejects_mismatched_schema() {
-        let (allow, confirmed) = gauss_horizon_core::agent_tools::verify_confirmed_target(
+        let (allow, confirmed) = chiron_horizon_core::agent_tools::verify_confirmed_target(
             Some(true),
             Some("DELETE FROM users WHERE id = 1".to_string()),
             Some("conn-1".to_string()),
@@ -808,9 +809,9 @@ mod tests {
 
     #[tokio::test]
     async fn tauri_entry_respects_global_max_retries_zero() {
-        let dir = std::env::temp_dir().join(format!("gauss-horizon-tauri-mr-{}", uuid::Uuid::new_v4()));
+        let dir = std::env::temp_dir().join(format!("chiron-horizon-tauri-mr-{}", uuid::Uuid::new_v4()));
         let _ = std::fs::create_dir_all(&dir);
-        let storage = gauss_horizon_core::storage::Storage::open(&dir.join("storage.db")).await.unwrap();
+        let storage = chiron_horizon_core::storage::Storage::open(&dir.join("storage.db")).await.unwrap();
         storage.save_max_retries(0).await.unwrap();
         assert_eq!(storage.load_max_retries().await.unwrap(), 0);
 

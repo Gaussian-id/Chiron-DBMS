@@ -8,8 +8,8 @@ use tokio::net::TcpListener;
 
 use super::connection::AppState;
 
-use gauss_horizon_core::mcp_policy::McpConnectionGroupPath;
-use gauss_horizon_core::storage::{McpDatabaseScope, McpGlobalPolicy};
+use chiron_horizon_core::mcp_policy::McpConnectionGroupPath;
+use chiron_horizon_core::storage::{McpDatabaseScope, McpGlobalPolicy};
 
 const BIND_ADDR: &str = "127.0.0.1:0";
 const MCP_BRIDGE_PORT_FILE: &str = "mcp-bridge-port";
@@ -194,7 +194,7 @@ pub struct McpExecuteQueryEvent {
     pub connection_id: String,
     pub database: String,
     pub sql: String,
-    pub results: Vec<gauss_horizon_core::db::QueryResult>,
+    pub results: Vec<chiron_horizon_core::db::QueryResult>,
 }
 
 pub fn start(app_handle: AppHandle, state: Arc<AppState>, data_dir: PathBuf) {
@@ -209,7 +209,7 @@ pub fn start(app_handle: AppHandle, state: Arc<AppState>, data_dir: PathBuf) {
         log::info!("MCP bridge listening on {BIND_ADDR}");
         let actual_port = listener.local_addr().map(|a| a.port()).unwrap_or(0);
         log::info!("MCP bridge assigned port {actual_port}");
-        // Publish into Gauss Horizon's resolved data dir so GAUSS_HORIZON_DATA_DIR and portable mode share the same discovery file.
+        // Publish into Chiron Horizon's resolved data dir so CHIRON_HORIZON_DATA_DIR and portable mode share the same discovery file.
         if let Err(err) = write_port_file(&data_dir, actual_port) {
             log::warn!("MCP bridge failed to write port file in {}: {err}", data_dir.display());
         }
@@ -301,8 +301,8 @@ mod tests {
         ensure_mcp_sql_database_switch_allowed, mongo_filter_is_effectively_unbounded, mongo_pipeline_has_write_stage,
         resolve_connection, resolve_mongo_database, resolve_mongo_target_values, write_port_file, AppState,
     };
-    use gauss_horizon_core::models::connection::{ConnectionConfig, DatabaseType};
-    use gauss_horizon_core::storage::{
+    use chiron_horizon_core::models::connection::{ConnectionConfig, DatabaseType};
+    use chiron_horizon_core::storage::{
         McpConnectionPolicy, McpDatabasePolicy, McpDatabaseScope, McpGlobalPolicy, Storage,
     };
     use std::sync::Arc;
@@ -325,7 +325,7 @@ mod tests {
     #[test]
     fn writes_bridge_port_file_to_resolved_data_dir() {
         let root = std::env::temp_dir().join(format!(
-            "gauss-horizon-mcp-bridge-port-test-{}-{}",
+            "chiron-horizon-mcp-bridge-port-test-{}-{}",
             std::process::id(),
             uuid::Uuid::new_v4()
         ));
@@ -392,7 +392,7 @@ mod tests {
     #[tokio::test]
     async fn resolve_connection_refreshes_read_only_from_storage() {
         let root = std::env::temp_dir().join(format!(
-            "gauss-horizon-mcp-bridge-connection-refresh-test-{}-{}",
+            "chiron-horizon-mcp-bridge-connection-refresh-test-{}-{}",
             std::process::id(),
             uuid::Uuid::new_v4()
         ));
@@ -461,7 +461,7 @@ mod tests {
                 read_only: false,
                 allow_dangerous_sql: false,
                 execution_mode_configured: true,
-                execution_mode_policy_version: Some(gauss_horizon_core::mcp_policy::MCP_EXECUTION_POLICY_VERSION),
+                execution_mode_policy_version: Some(chiron_horizon_core::mcp_policy::MCP_EXECUTION_POLICY_VERSION),
                 database_scope: McpDatabaseScope::Selected,
                 allowed_databases: vec!["aa".to_string(), "aaa".to_string()],
                 database_policies: vec![
@@ -480,7 +480,7 @@ mod tests {
     #[tokio::test]
     async fn database_execution_policy_blocks_cross_database_mongo_aggregate_output() {
         let root = std::env::temp_dir().join(format!(
-            "gauss-horizon-mcp-bridge-database-policy-test-{}-{}",
+            "chiron-horizon-mcp-bridge-database-policy-test-{}-{}",
             std::process::id(),
             uuid::Uuid::new_v4()
         ));
@@ -496,7 +496,7 @@ mod tests {
                     read_only: false,
                     allow_dangerous_sql: true,
                     execution_mode_configured: true,
-                    execution_mode_policy_version: Some(gauss_horizon_core::mcp_policy::MCP_EXECUTION_POLICY_VERSION),
+                    execution_mode_policy_version: Some(chiron_horizon_core::mcp_policy::MCP_EXECUTION_POLICY_VERSION),
                     database_scope: McpDatabaseScope::Selected,
                     allowed_databases: vec!["operations".to_string(), "reporting".to_string()],
                     database_policies: vec![McpDatabasePolicy {
@@ -635,13 +635,13 @@ async fn load_mcp_policy_context(
 ) -> Result<(McpGlobalPolicy, HashMap<String, McpConnectionGroupPath>), String> {
     let policy = load_mcp_policy(state).await?;
     let group_paths = match state.storage.load_sidebar_layout().await {
-        Ok(Some(layout)) => gauss_horizon_core::mcp_policy::connection_group_paths(&layout),
+        Ok(Some(layout)) => chiron_horizon_core::mcp_policy::connection_group_paths(&layout),
         Ok(None) => Ok(HashMap::new()),
         Err(error) => Err(error),
     };
     match group_paths {
         Ok(paths) => Ok((policy, paths)),
-        Err(error) if gauss_horizon_core::mcp_policy::policy_uses_connection_groups(&policy) => {
+        Err(error) if chiron_horizon_core::mcp_policy::policy_uses_connection_groups(&policy) => {
             Err(mcp_policy_unavailable(error))
         }
         Err(_) => Ok((policy, HashMap::new())),
@@ -666,9 +666,9 @@ fn ensure_connection_in_mcp_scope_with_groups(
     group_path: Option<&McpConnectionGroupPath>,
     connection_id: &str,
 ) -> Result<(), String> {
-    if !gauss_horizon_core::mcp_policy::policy_allows_connection(policy, group_path, connection_id) {
+    if !chiron_horizon_core::mcp_policy::policy_allows_connection(policy, group_path, connection_id) {
         return Err(format!(
-            "CONNECTION_OUT_OF_SCOPE: connection '{connection_id}' is not allowed by Gauss Horizon MCP settings"
+            "CONNECTION_OUT_OF_SCOPE: connection '{connection_id}' is not allowed by Chiron Horizon MCP settings"
         ));
     }
     Ok(())
@@ -687,7 +687,7 @@ fn ensure_database_in_mcp_scope(policy: &McpGlobalPolicy, connection_id: &str, d
         Ok(())
     } else {
         Err(format!(
-            "DATABASE_OUT_OF_SCOPE: database '{database}' is not allowed by Gauss Horizon MCP settings for connection '{connection_id}'"
+            "DATABASE_OUT_OF_SCOPE: database '{database}' is not allowed by Chiron Horizon MCP settings for connection '{connection_id}'"
         ))
     }
 }
@@ -703,7 +703,7 @@ fn effective_database_execution_policy_with_groups(
     connection_id: &str,
     database: &str,
 ) -> (bool, bool) {
-    gauss_horizon_core::mcp_policy::effective_database_execution_policy_with_groups(
+    chiron_horizon_core::mcp_policy::effective_database_execution_policy_with_groups(
         policy,
         group_ids,
         connection_id,
@@ -740,7 +740,7 @@ async fn ensure_mcp_write_allowed_with_risk(
         ));
     }
     if dangerous && !allow_dangerous_sql {
-        return Err(format!("SQL_BLOCKED: High-risk operation '{action}' is disabled in Gauss Horizon MCP settings."));
+        return Err(format!("SQL_BLOCKED: High-risk operation '{action}' is disabled in Chiron Horizon MCP settings."));
     }
     if config.read_only {
         return Err(format!(
@@ -748,7 +748,7 @@ async fn ensure_mcp_write_allowed_with_risk(
             config.name
         ));
     }
-    if gauss_horizon_core::production_safety::is_production_database(config, database) {
+    if chiron_horizon_core::production_safety::is_production_database(config, database) {
         return Err(format!("PRODUCTION_DATABASE_READ_ONLY: {action} blocked for production database '{database}'."));
     }
     Ok(())
@@ -796,7 +796,7 @@ async fn ensure_mcp_mongo_pipeline_target_allowed_by_id(
 ) -> Result<(), String> {
     let (policy, group_paths) = load_mcp_policy_context(state).await?;
     ensure_connection_in_mcp_scope_with_groups(&policy, group_paths.get(connection_id), connection_id)?;
-    gauss_horizon_core::mcp_policy::ensure_mongo_database_execution_scope(
+    chiron_horizon_core::mcp_policy::ensure_mongo_database_execution_scope(
         &policy,
         connection_id,
         database,
@@ -810,7 +810,7 @@ async fn ensure_mcp_mongo_pipeline_target_allowed_by_id(
         .iter()
         .find(|config| config.id == connection_id)
         .ok_or_else(|| format!("Connection with id '{connection_id}' not found"))?;
-    if gauss_horizon_core::production_safety::mongo_pipeline_targets_production_database(
+    if chiron_horizon_core::production_safety::mongo_pipeline_targets_production_database(
         config,
         database,
         pipeline_json,
@@ -823,7 +823,7 @@ async fn ensure_mcp_mongo_pipeline_target_allowed_by_id(
 }
 
 fn mongo_pipeline_output_databases(pipeline_json: &str, active_database: &str) -> Result<Vec<String>, String> {
-    gauss_horizon_core::mcp_policy::mongo_pipeline_output_databases(pipeline_json, active_database)
+    chiron_horizon_core::mcp_policy::mongo_pipeline_output_databases(pipeline_json, active_database)
 }
 
 async fn ensure_mcp_write_allowed_by_id_with_risk(
@@ -1094,7 +1094,7 @@ async fn ensure_mcp_sql_allowed(
     ensure_database_in_mcp_scope(&policy, &config.id, database)?;
     if let Some(rule) = policy.connection_policies.iter().find(|rule| rule.connection_id == config.id) {
         if rule.database_scope == McpDatabaseScope::Selected
-            && gauss_horizon_core::production_safety::sql_references_disallowed_database(
+            && chiron_horizon_core::production_safety::sql_references_disallowed_database(
                 sql,
                 &config.db_type,
                 database,
@@ -1102,14 +1102,14 @@ async fn ensure_mcp_sql_allowed(
             )
         {
             return Err(
-                "DATABASE_OUT_OF_SCOPE: SQL references a database that is not allowed by Gauss Horizon MCP settings for this connection."
+                "DATABASE_OUT_OF_SCOPE: SQL references a database that is not allowed by Chiron Horizon MCP settings for this connection."
                     .to_string(),
             );
         }
     }
     ensure_mcp_sql_database_switch_allowed(config.db_type, sql)?;
-    let is_write = gauss_horizon_core::query_execution_sql::is_write_sql_for_database(sql, config.db_type);
-    gauss_horizon_core::mcp_policy::ensure_sql_database_execution_scope(&policy, config, database, sql)?;
+    let is_write = chiron_horizon_core::query_execution_sql::is_write_sql_for_database(sql, config.db_type);
+    chiron_horizon_core::mcp_policy::ensure_sql_database_execution_scope(&policy, config, database, sql)?;
     let group_ids = group_path.map(|path| path.ids.as_slice()).unwrap_or_default();
     let (read_only, allow_dangerous_sql) =
         effective_database_execution_policy_with_groups(&policy, group_ids, &config.id, database);
@@ -1118,11 +1118,11 @@ async fn ensure_mcp_sql_allowed(
             "MCP_READ_ONLY: MCP execution permission for database '{database}' is read-only. SQL write blocked."
         ));
     }
-    if !allow_dangerous_sql && gauss_horizon_core::sql_risk::is_dangerous_sql_for_database(sql, config.db_type) {
-        return Err("SQL_BLOCKED: High-risk SQL is disabled in Gauss Horizon MCP settings.".to_string());
+    if !allow_dangerous_sql && chiron_horizon_core::sql_risk::is_dangerous_sql_for_database(sql, config.db_type) {
+        return Err("SQL_BLOCKED: High-risk SQL is disabled in Chiron Horizon MCP settings.".to_string());
     }
     ensure_mcp_connection_sql_write_allowed(config, is_write)?;
-    if is_write && gauss_horizon_core::production_safety::targets_production_database(config, database, sql) {
+    if is_write && chiron_horizon_core::production_safety::targets_production_database(config, database, sql) {
         return Err("PRODUCTION_DATABASE_READ_ONLY: SQL write targeting production scope is blocked.".to_string());
     }
     Ok(())
@@ -1132,7 +1132,7 @@ fn ensure_mcp_sql_database_switch_allowed(
     database_type: crate::models::connection::DatabaseType,
     sql: &str,
 ) -> Result<(), String> {
-    if gauss_horizon_core::sql_risk::mcp_sql_has_forbidden_database_switch(sql, database_type) {
+    if chiron_horizon_core::sql_risk::mcp_sql_has_forbidden_database_switch(sql, database_type) {
         return Err("SQL_BLOCKED: MCP does not allow USE or persistent database switching.".to_string());
     }
     Ok(())
@@ -1247,9 +1247,9 @@ async fn handle_execute_query(app: &AppHandle, state: &Arc<AppState>, body: &str
         return;
     }
     let statements = if config.db_type == crate::models::connection::DatabaseType::SqlServer {
-        gauss_horizon_core::sql::split_sql_batches(&req.sql)
+        chiron_horizon_core::sql::split_sql_batches(&req.sql)
     } else {
-        gauss_horizon_core::sql::split_sql_statements_for_database(&req.sql, config.db_type)
+        chiron_horizon_core::sql::split_sql_statements_for_database(&req.sql, config.db_type)
     };
     let statements = if statements.is_empty() { vec![req.sql.clone()] } else { statements };
     let mut results = Vec::with_capacity(statements.len());
@@ -1265,7 +1265,7 @@ async fn handle_execute_query(app: &AppHandle, state: &Arc<AppState>, body: &str
             respond(stream, "403 Forbidden", &e).await;
             return;
         }
-        match gauss_horizon_core::query::execute_sql_statement(state, &current.id, &database, &statement, None, None)
+        match chiron_horizon_core::query::execute_sql_statement(state, &current.id, &database, &statement, None, None)
             .await
         {
             Ok(result) => results.push(result),
@@ -1283,7 +1283,7 @@ async fn handle_execute_query(app: &AppHandle, state: &Arc<AppState>, body: &str
 fn ensure_mcp_execute_and_show_supported(
     database_type: &crate::models::connection::DatabaseType,
 ) -> Result<(), &'static str> {
-    if gauss_horizon_core::query_execution_sql::supports_sql_query(*database_type) {
+    if chiron_horizon_core::query_execution_sql::supports_sql_query(*database_type) {
         Ok(())
     } else {
         Err(MCP_EXECUTE_AND_SHOW_SQL_ONLY)
@@ -1311,7 +1311,7 @@ async fn handle_list_tables_data(state: &Arc<AppState>, body: &str, stream: &mut
         respond_error(stream, "403 Forbidden", &e).await;
         return;
     }
-    match gauss_horizon_core::schema::list_tables_core(
+    match chiron_horizon_core::schema::list_tables_core(
         state, &config.id, &database, &schema, None, None, None, None, None,
     )
     .await
@@ -1342,7 +1342,7 @@ async fn handle_describe_table_data(state: &Arc<AppState>, body: &str, stream: &
         respond_error(stream, "403 Forbidden", &e).await;
         return;
     }
-    match gauss_horizon_core::schema::get_columns_core(state, &config.id, &database, &schema, &req.table).await {
+    match chiron_horizon_core::schema::get_columns_core(state, &config.id, &database, &schema, &req.table).await {
         Ok(columns) => respond_json(stream, &columns).await,
         Err(e) => respond_error(stream, "500 Internal Server Error", &e).await,
     }
@@ -1361,7 +1361,7 @@ async fn handle_mongo_list_collections_data(state: &Arc<AppState>, body: &str, s
     else {
         return;
     };
-    match gauss_horizon_core::mongo_ops::mongo_list_collections_core(state, &connection_id, &database).await {
+    match chiron_horizon_core::mongo_ops::mongo_list_collections_core(state, &connection_id, &database).await {
         Ok(collections) => respond_json(stream, &collections).await,
         Err(e) => respond_error(stream, "500 Internal Server Error", &e).await,
     }
@@ -1380,7 +1380,7 @@ async fn handle_mongo_find_documents_data(state: &Arc<AppState>, body: &str, str
     else {
         return;
     };
-    match gauss_horizon_core::mongo_ops::mongo_find_documents_core(
+    match chiron_horizon_core::mongo_ops::mongo_find_documents_core(
         state,
         &connection_id,
         &database,
@@ -1412,7 +1412,7 @@ async fn handle_mongo_count_documents_data(state: &Arc<AppState>, body: &str, st
     else {
         return;
     };
-    match gauss_horizon_core::mongo_ops::mongo_count_documents_core(
+    match chiron_horizon_core::mongo_ops::mongo_count_documents_core(
         state,
         &connection_id,
         &database,
@@ -1440,7 +1440,7 @@ async fn handle_mongo_server_version_data(state: &Arc<AppState>, body: &str, str
     else {
         return;
     };
-    match gauss_horizon_core::mongo_ops::mongo_server_version_core(state, &connection_id, &database).await {
+    match chiron_horizon_core::mongo_ops::mongo_server_version_core(state, &connection_id, &database).await {
         Ok(version) => respond_json(stream, &version).await,
         Err(e) => respond_error(stream, "500 Internal Server Error", &e).await,
     }
@@ -1459,7 +1459,7 @@ async fn handle_mongo_collection_stats_data(state: &Arc<AppState>, body: &str, s
     else {
         return;
     };
-    match gauss_horizon_core::mongo_ops::mongo_collection_stats_core(
+    match chiron_horizon_core::mongo_ops::mongo_collection_stats_core(
         state,
         &connection_id,
         &database,
@@ -1491,7 +1491,7 @@ async fn handle_mongo_aggregate_documents_data(state: &Arc<AppState>, body: &str
         respond_error(stream, "403 Forbidden", &e).await;
         return;
     }
-    match gauss_horizon_core::mongo_ops::mongo_aggregate_documents_core(
+    match chiron_horizon_core::mongo_ops::mongo_aggregate_documents_core(
         state,
         &connection_id,
         &database,
@@ -1520,7 +1520,7 @@ async fn handle_mongo_distinct_data(state: &Arc<AppState>, body: &str, stream: &
     else {
         return;
     };
-    match gauss_horizon_core::mongo_ops::mongo_distinct_core(
+    match chiron_horizon_core::mongo_ops::mongo_distinct_core(
         state,
         &connection_id,
         &database,
@@ -1552,7 +1552,7 @@ async fn handle_mongo_create_index_data(state: &Arc<AppState>, body: &str, strea
         respond_error(stream, "403 Forbidden", &e).await;
         return;
     }
-    match gauss_horizon_core::mongo_ops::mongo_create_index_core(
+    match chiron_horizon_core::mongo_ops::mongo_create_index_core(
         state,
         &connection_id,
         &database,
@@ -1584,7 +1584,7 @@ async fn handle_mongo_drop_indexes_data(state: &Arc<AppState>, body: &str, strea
         respond_error(stream, "403 Forbidden", &e).await;
         return;
     }
-    match gauss_horizon_core::mongo_ops::mongo_drop_indexes_core(
+    match chiron_horizon_core::mongo_ops::mongo_drop_indexes_core(
         state,
         &connection_id,
         &database,
@@ -1617,7 +1617,7 @@ async fn handle_mongo_drop_collection_data(state: &Arc<AppState>, body: &str, st
         respond_error(stream, "403 Forbidden", &e).await;
         return;
     }
-    match gauss_horizon_core::mongo_ops::mongo_drop_collection_core(state, &connection_id, &database, &req.collection)
+    match chiron_horizon_core::mongo_ops::mongo_drop_collection_core(state, &connection_id, &database, &req.collection)
         .await
     {
         Ok(()) => respond_json(stream, &serde_json::json!({ "ok": true })).await,
@@ -1642,7 +1642,7 @@ async fn handle_mongo_insert_documents_data(state: &Arc<AppState>, body: &str, s
         respond_error(stream, "403 Forbidden", &e).await;
         return;
     }
-    match gauss_horizon_core::mongo_ops::mongo_insert_documents_core(
+    match chiron_horizon_core::mongo_ops::mongo_insert_documents_core(
         state,
         &connection_id,
         &database,
@@ -1678,7 +1678,7 @@ async fn handle_mongo_update_documents_data(state: &Arc<AppState>, body: &str, s
         respond_error(stream, "403 Forbidden", &e).await;
         return;
     }
-    match gauss_horizon_core::mongo_ops::mongo_update_documents_core(
+    match chiron_horizon_core::mongo_ops::mongo_update_documents_core(
         state,
         &connection_id,
         &database,
@@ -1717,7 +1717,7 @@ async fn handle_mongo_delete_documents_data(state: &Arc<AppState>, body: &str, s
         respond_error(stream, "403 Forbidden", &e).await;
         return;
     }
-    match gauss_horizon_core::mongo_ops::mongo_delete_documents_core(
+    match chiron_horizon_core::mongo_ops::mongo_delete_documents_core(
         state,
         &connection_id,
         &database,
@@ -1752,7 +1752,7 @@ async fn handle_redis_execute_command_data(state: &Arc<AppState>, body: &str, st
         respond_error(stream, "403 Forbidden", &e).await;
         return;
     }
-    let argv = match gauss_horizon_core::db::redis_driver::parse_command_argv(&req.command) {
+    let argv = match chiron_horizon_core::db::redis_driver::parse_command_argv(&req.command) {
         Ok(argv) => argv,
         Err(error) => {
             respond_error(stream, "400 Bad Request", &format!("Invalid Redis command: {error}")).await;
@@ -1760,9 +1760,9 @@ async fn handle_redis_execute_command_data(state: &Arc<AppState>, body: &str, st
         }
     };
     let cmd_name = argv[0].to_ascii_uppercase();
-    let safety = gauss_horizon_core::db::redis_driver::classify_command(&cmd_name);
-    let centrally_approved_high_risk = safety == gauss_horizon_core::db::redis_driver::RedisCommandSafety::Blocked;
-    if safety != gauss_horizon_core::db::redis_driver::RedisCommandSafety::Allowed {
+    let safety = chiron_horizon_core::db::redis_driver::classify_command(&cmd_name);
+    let centrally_approved_high_risk = safety == chiron_horizon_core::db::redis_driver::RedisCommandSafety::Blocked;
+    if safety != chiron_horizon_core::db::redis_driver::RedisCommandSafety::Allowed {
         let policy_check = if centrally_approved_high_risk {
             ensure_mcp_write_allowed_with_risk(state, &config, &database, &format!("Redis command '{cmd_name}'"), true)
                 .await
@@ -1774,7 +1774,7 @@ async fn handle_redis_execute_command_data(state: &Arc<AppState>, body: &str, st
             return;
         }
     }
-    match gauss_horizon_core::redis_ops::redis_execute_command_core(
+    match chiron_horizon_core::redis_ops::redis_execute_command_core(
         state,
         &config.id,
         req.db,
@@ -1813,9 +1813,9 @@ async fn handle_execute_query_data(state: &Arc<AppState>, body: &str, stream: &m
         return;
     }
     let statements = if config.db_type == crate::models::connection::DatabaseType::SqlServer {
-        gauss_horizon_core::sql::split_sql_batches(&req.sql)
+        chiron_horizon_core::sql::split_sql_batches(&req.sql)
     } else {
-        gauss_horizon_core::sql::split_sql_statements_for_database(&req.sql, config.db_type)
+        chiron_horizon_core::sql::split_sql_statements_for_database(&req.sql, config.db_type)
     };
     let statements = if statements.is_empty() { vec![req.sql] } else { statements };
     let mut last_result = None;
@@ -1833,7 +1833,7 @@ async fn handle_execute_query_data(state: &Arc<AppState>, body: &str, stream: &m
             respond_error(stream, "403 Forbidden", &e).await;
             return;
         }
-        match gauss_horizon_core::query::execute_sql_statement(
+        match chiron_horizon_core::query::execute_sql_statement(
             state,
             &current.id,
             &database,

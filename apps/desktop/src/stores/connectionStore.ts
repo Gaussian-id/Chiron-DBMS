@@ -176,9 +176,9 @@ import { connectionHasConfiguredSidebarVisibleFilter, nacosVisibleNamespaceSumma
 import { connectionCanConfigureSidebarVisibleDatabases } from "@/lib/sidebar/sidebarVisibleFilterMenu";
 import { isTdengineStableTableType } from "@/lib/table/tableEditing";
 
-const PINNED_TREE_NODES_STORAGE_KEY = "gauss-horizon-pinned-tree-nodes";
-const ACTIVE_CONNECTION_STORAGE_KEY = "gauss-horizon-active-connection";
-const SIDEBAR_TABLE_NAME_FILTERS_STORAGE_KEY = "gauss-horizon-sidebar-table-name-filters";
+const PINNED_TREE_NODES_STORAGE_KEY = "chiron-horizon-pinned-tree-nodes";
+const ACTIVE_CONNECTION_STORAGE_KEY = "chiron-horizon-active-connection";
+const SIDEBAR_TABLE_NAME_FILTERS_STORAGE_KEY = "chiron-horizon-sidebar-table-name-filters";
 const CONNECTION_HEALTH_CHECK_TTL_MS = 2000;
 const CONNECTION_HEALTH_CHECK_TIMEOUT_MS = 5000;
 const METADATA_LOAD_MIN_TIMEOUT_MS = 15_000;
@@ -278,7 +278,7 @@ function isFlatMqConnection(config: ConnectionConfig | undefined): boolean {
   return kind === "kafka" || kind === "rocketmq" || kind === "rabbitmq";
 }
 
-type ImportSource = "gauss-horizon" | "navicat" | "dbeaver" | "datagrip";
+type ImportSource = "chiron-horizon" | "navicat" | "dbeaver" | "datagrip";
 
 interface LocateTableTarget {
   connectionId: string;
@@ -513,7 +513,7 @@ export const useConnectionStore = defineStore("connection", () => {
   const completionInFlight = new Map<string, Promise<unknown>>();
   const completionCacheRevisions = ref<Record<string, number>>({});
   const completionMetadataLimiter = new MetadataTaskLimiter(COMPLETION_METADATA_CONCURRENCY, (event) => {
-    console.debug("[Gauss Horizon][completion-metadata:limit]", event);
+    console.debug("[Chiron Horizon][completion-metadata:limit]", event);
   });
   const transferSource = ref<{
     connectionId: string;
@@ -603,14 +603,14 @@ export const useConnectionStore = defineStore("connection", () => {
   const activeTreeRefreshGenerations = new Map<string, number>();
   let nextTreeRefreshGeneration = 0;
   const metadataLoadCoordinator = new MetadataLoadCoordinator((event) => {
-    console.debug("[Gauss Horizon][metadata-load:coordinator]", event);
+    console.debug("[Chiron Horizon][metadata-load:coordinator]", event);
   });
   const metadataListPageCache = new MetadataResultCache<MetadataListPageResult>({
     ttlMs: METADATA_LIST_PAGE_CACHE_TTL_MS,
     maxEntries: METADATA_LIST_PAGE_CACHE_MAX_ENTRIES,
   });
   const metadataTraceLogger: MetadataLoadTraceLogger = (event) => {
-    console.debug("[Gauss Horizon][metadata-load:trace]", event);
+    console.debug("[Chiron Horizon][metadata-load:trace]", event);
   };
   const connectInFlight = new Map<string, Promise<void>>();
   const disconnectInFlight = new Map<string, Promise<void>>();
@@ -911,7 +911,7 @@ export const useConnectionStore = defineStore("connection", () => {
     const bounded = withDisconnectRequestTimeout(connectionId, request);
     const tracked = bounded
       .catch((error) => {
-        console.warn("[Gauss Horizon][connection:disconnect-error]", { connectionId, error });
+        console.warn("[Chiron Horizon][connection:disconnect-error]", { connectionId, error });
       })
       .finally(() => {
         if (disconnectInFlight.get(connectionId) === tracked) {
@@ -938,7 +938,7 @@ export const useConnectionStore = defineStore("connection", () => {
   /**
    * One-time connections are never persisted, so the backend's "not in the saved
    * list, so reclaim it" branch in `sync_connection_configs` never fires for them
-   * (see gauss-horizon-core `should_retain_runtime_config`) and `disconnect_db` is the only
+   * (see chiron-horizon-core `should_retain_runtime_config`) and `disconnect_db` is the only
    * reclaim point. Removing one must disconnect it explicitly, or its runtime
    * config, pool, and tunnel live until the process exits.
    *
@@ -977,7 +977,7 @@ export const useConnectionStore = defineStore("connection", () => {
     try {
       await closeOneTimeConnectionTabs(connectionIds);
     } catch (error) {
-      console.warn("[Gauss Horizon][connection:delete:one-time-tab-cleanup-failed]", { connectionIds, error });
+      console.warn("[Chiron Horizon][connection:delete:one-time-tab-cleanup-failed]", { connectionIds, error });
     }
     releaseOneTimeRuntimeConnections(connectionIds);
   }
@@ -998,7 +998,7 @@ export const useConnectionStore = defineStore("connection", () => {
     }
     const tracked = withDisconnectRequestTimeout(connectionId, request)
       .catch((error) => {
-        console.warn("[Gauss Horizon][connection:cancel-disconnect-error]", { connectionId, attempt, error });
+        console.warn("[Chiron Horizon][connection:cancel-disconnect-error]", { connectionId, attempt, error });
         throw error;
       })
       .finally(() => {
@@ -1016,7 +1016,7 @@ export const useConnectionStore = defineStore("connection", () => {
       // attempt, so clean again if that cancelled connect later returns a pool.
       await withDisconnectRequestTimeout(connectionId, api.disconnectDb(connectionId, attempt));
     } catch (error) {
-      console.warn("[Gauss Horizon][connection:cancel-result-cleanup-error]", { connectionId, attempt, error });
+      console.warn("[Chiron Horizon][connection:cancel-result-cleanup-error]", { connectionId, attempt, error });
     }
   }
 
@@ -1192,7 +1192,7 @@ export const useConnectionStore = defineStore("connection", () => {
     let timedOut = false;
     let timer: ReturnType<typeof setTimeout> | undefined;
     void promise.catch((error) => {
-      if (timedOut) console.warn("[Gauss Horizon][connection:disconnect-late-error]", { connectionId, error });
+      if (timedOut) console.warn("[Chiron Horizon][connection:disconnect-late-error]", { connectionId, error });
     });
     try {
       await Promise.race([
@@ -1200,7 +1200,7 @@ export const useConnectionStore = defineStore("connection", () => {
         new Promise<void>((resolve) => {
           timer = setTimeout(() => {
             timedOut = true;
-            console.warn("[Gauss Horizon][connection:disconnect-timeout]", { connectionId, timeoutMs: DISCONNECT_REQUEST_TIMEOUT_MS });
+            console.warn("[Chiron Horizon][connection:disconnect-timeout]", { connectionId, timeoutMs: DISCONNECT_REQUEST_TIMEOUT_MS });
             resolve();
           }, DISCONNECT_REQUEST_TIMEOUT_MS);
         }),
@@ -1278,7 +1278,7 @@ export const useConnectionStore = defineStore("connection", () => {
         const cleanupConnectionId = typeof connectionId === "string" && connectionId ? connectionId : config.id;
         if (connectedIds.value.has(cleanupConnectionId)) return;
         void api.disconnectDb(cleanupConnectionId).catch((error) => {
-          console.warn("[Gauss Horizon][connection:timeout-cleanup-failed]", { connectionId: cleanupConnectionId, error });
+          console.warn("[Chiron Horizon][connection:timeout-cleanup-failed]", { connectionId: cleanupConnectionId, error });
         });
       },
       (error) => {
@@ -2520,7 +2520,7 @@ export const useConnectionStore = defineStore("connection", () => {
       await savePersistedTreeChildren(options.cacheKey, nextChildren);
     } catch (error) {
       // Some drivers only expose table metadata; keep the already-rendered table tree usable.
-      console.debug("[Gauss Horizon][metadata:simple-supplemental:error]", {
+      console.debug("[Chiron Horizon][metadata:simple-supplemental:error]", {
         connectionId: options.connectionId,
         database: options.database,
         schema: options.effectiveSchema,
@@ -2643,7 +2643,7 @@ export const useConnectionStore = defineStore("connection", () => {
     }
   }
 
-  const sidebarTableSearchIndexManifestCacheKey = "gauss-horizon:sidebar-table-search-index-manifest-v1";
+  const sidebarTableSearchIndexManifestCacheKey = "chiron-horizon:sidebar-table-search-index-manifest-v1";
 
   function sidebarTableSearchIndexManifestEntry(parent: TreeNode, cacheKey: string): TableSearchIndexManifestEntry | null {
     if (!parent.connectionId || !parent.database || !parent.type) return null;
@@ -3546,7 +3546,7 @@ export const useConnectionStore = defineStore("connection", () => {
       const connectionNode = findConnectionNode(connectionId);
       if (connectionNode?.isExpanded && connectedIds.value.has(connectionId)) {
         void refreshTreeNode(connectionNode).catch((error) => {
-          console.debug("[Gauss Horizon][connection-info:table-metadata-refresh-failed]", { connectionId, error });
+          console.debug("[Chiron Horizon][connection-info:table-metadata-refresh-failed]", { connectionId, error });
         });
       } else {
         clearLoadedChildrenCache(connectionId);
@@ -4327,7 +4327,7 @@ export const useConnectionStore = defineStore("connection", () => {
         applySidebarDatabaseStorage(currentNode?.children, storage);
       }
     } catch (error) {
-      console.debug("[Gauss Horizon][sidebar-database-storage:unavailable]", { connectionId, error });
+      console.debug("[Chiron Horizon][sidebar-database-storage:unavailable]", { connectionId, error });
     } finally {
       if (sidebarDatabaseStorageInFlight.get(requestKey) === request) {
         sidebarDatabaseStorageInFlight.delete(requestKey);
@@ -4361,7 +4361,7 @@ export const useConnectionStore = defineStore("connection", () => {
       sidebarTableStorageCache.set(cacheScope, statistics);
       applySidebarTableStorage(treeNodes.value, scope, statistics);
     } catch (error) {
-      console.debug("[Gauss Horizon][sidebar-table-storage:unavailable]", { ...scope, error });
+      console.debug("[Chiron Horizon][sidebar-table-storage:unavailable]", { ...scope, error });
     } finally {
       if (sidebarTableStorageInFlight.get(requestKey) === request) {
         sidebarTableStorageInFlight.delete(requestKey);
@@ -4418,7 +4418,7 @@ export const useConnectionStore = defineStore("connection", () => {
           // Storage metadata is an optional, read-only enhancement. A user
           // without SYS_* view access should see an empty group rather than a
           // connection-level RPC error that blocks the rest of the tree.
-          console.debug("[Gauss Horizon][xugu-tablespaces:unavailable]", { connectionId, error });
+          console.debug("[Chiron Horizon][xugu-tablespaces:unavailable]", { connectionId, error });
           const targetNode = treeNodeLoadTarget(load);
           if (targetNode) {
             setChildren(targetNode, []);
@@ -8615,7 +8615,7 @@ export const useConnectionStore = defineStore("connection", () => {
 
     const tunnelProfileStore = useTunnelProfileStore();
     await tunnelProfileStore.init();
-    // Older Gauss Horizon versions ignore inheritance flags, so always include the
+    // Older Chiron Horizon versions ignore inheritance flags, so always include the
     // effective numeric values as a backward-compatible snapshot.
     const exportedConnections = snapshotConnectionsForExport(connections.value, {
       connectTimeoutSecs: () => settingsStore.editorSettings.globalConnectTimeoutSecs,
@@ -8637,7 +8637,7 @@ export const useConnectionStore = defineStore("connection", () => {
       const { writeTextFile } = await import("@tauri-apps/plugin-fs");
       const path = await save({
         filters: [{ name: "JSON", extensions: ["json"] }],
-        defaultPath: "Gauss Horizon-connections.json",
+        defaultPath: "Chiron Horizon-connections.json",
       });
       if (!path) return "cancelled" as const;
       await writeTextFile(path, content);
@@ -8646,7 +8646,7 @@ export const useConnectionStore = defineStore("connection", () => {
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
-      a.download = "Gauss Horizon-connections.json";
+      a.download = "Chiron Horizon-connections.json";
       a.click();
       URL.revokeObjectURL(url);
     }
@@ -8791,7 +8791,7 @@ export const useConnectionStore = defineStore("connection", () => {
     };
   }
 
-  async function readImportFile(source: ImportSource = "gauss-horizon"): Promise<{ content: string; encrypted: boolean } | null> {
+  async function readImportFile(source: ImportSource = "chiron-horizon"): Promise<{ content: string; encrypted: boolean } | null> {
     if (source === "dbeaver") return readDbeaverImportFile();
     if (source === "datagrip") return readDataGripImportFile();
 
@@ -8801,7 +8801,7 @@ export const useConnectionStore = defineStore("connection", () => {
       const { open } = await import("@tauri-apps/plugin-dialog");
       const { readTextFile } = await import("@tauri-apps/plugin-fs");
       const path = await open({
-        filters: source === "navicat" ? [{ name: "Navicat Connection Export", extensions: ["ncx", "xml"] }] : [{ name: "Gauss Horizon JSON", extensions: ["json"] }],
+        filters: source === "navicat" ? [{ name: "Navicat Connection Export", extensions: ["ncx", "xml"] }] : [{ name: "Chiron Horizon JSON", extensions: ["json"] }],
         multiple: false,
       });
       if (!path) return null;

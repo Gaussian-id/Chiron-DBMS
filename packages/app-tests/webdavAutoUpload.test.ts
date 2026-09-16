@@ -78,7 +78,7 @@ function installWindow() {
 
 beforeEach(() => {
   vi.useFakeTimers();
-  webdavSyncUploadMock.mockResolvedValue({ bytes: 42, remotePath: "Gauss Horizon/sync/snapshot.json" });
+  webdavSyncUploadMock.mockResolvedValue({ bytes: 42, remotePath: "Chiron Horizon/sync/snapshot.json" });
   restoreLocalStorage = installLocalStorage();
   restoreWindow = installWindow();
   setActivePinia(createPinia());
@@ -94,10 +94,10 @@ afterEach(() => {
 });
 
 test("reads normalized WebDAV auto-upload config from localStorage", () => {
-  localStorage.setItem("gauss-horizon-webdav-endpoint", " https://dav.example.com/ ");
-  localStorage.setItem("gauss-horizon-webdav-username", " alice ");
-  localStorage.setItem("gauss-horizon-webdav-auto-upload-enabled", "true");
-  localStorage.setItem("gauss-horizon-webdav-auto-upload-interval-minutes", "0");
+  localStorage.setItem("chiron-horizon-webdav-endpoint", " https://dav.example.com/ ");
+  localStorage.setItem("chiron-horizon-webdav-username", " alice ");
+  localStorage.setItem("chiron-horizon-webdav-auto-upload-enabled", "true");
+  localStorage.setItem("chiron-horizon-webdav-auto-upload-interval-minutes", "0");
 
   const config = readWebDavAutoUploadConfig();
 
@@ -106,14 +106,14 @@ test("reads normalized WebDAV auto-upload config from localStorage", () => {
   assert.deepEqual(config.webDavConfig, {
     endpoint: "https://dav.example.com/",
     username: "alice",
-    remotePath: "Gauss Horizon/sync/snapshot.json",
+    remotePath: "Chiron Horizon/sync/snapshot.json",
   });
 });
 
 test("keeps WebDAV auto-upload running outside the settings dialog", async () => {
-  localStorage.setItem("gauss-horizon-webdav-endpoint", "https://dav.example.com/");
-  localStorage.setItem("gauss-horizon-webdav-auto-upload-enabled", "true");
-  localStorage.setItem("gauss-horizon-webdav-auto-upload-interval-minutes", "1");
+  localStorage.setItem("chiron-horizon-webdav-endpoint", "https://dav.example.com/");
+  localStorage.setItem("chiron-horizon-webdav-auto-upload-enabled", "true");
+  localStorage.setItem("chiron-horizon-webdav-auto-upload-interval-minutes", "1");
 
   useWebDavAutoUpload();
 
@@ -123,11 +123,11 @@ test("keeps WebDAV auto-upload running outside the settings dialog", async () =>
   assert.deepEqual(webdavSyncUploadMock.mock.calls[0][0], {
     endpoint: "https://dav.example.com/",
     username: undefined,
-    remotePath: "Gauss Horizon/sync/snapshot.json",
+    remotePath: "Chiron Horizon/sync/snapshot.json",
   });
 
-  localStorage.setItem("gauss-horizon-webdav-auto-upload-enabled", "false");
-  window.dispatchEvent(new Event("gauss-horizon:webdav-auto-upload-config-changed"));
+  localStorage.setItem("chiron-horizon-webdav-auto-upload-enabled", "false");
+  window.dispatchEvent(new Event("chiron-horizon:webdav-auto-upload-config-changed"));
   await vi.advanceTimersByTimeAsync(60_000);
 
   assert.equal(webdavSyncUploadMock.mock.calls.length, 1);

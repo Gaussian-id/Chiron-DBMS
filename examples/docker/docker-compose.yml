@@ -1,16 +1,16 @@
 services:
-  gauss-horizon:
+  chiron-horizon:
     image: Gaussian-id/Gauss-Horizon
     ports:
       - "4224:4224"
     environment:
-      # Change this before exposing Gauss Horizon to a network.
-      - GAUSS_HORIZON_PASSWORD=changeme
-      # Uncomment when serving Gauss Horizon behind a reverse-proxy subpath.
-      # - GAUSS_HORIZON_PUBLIC_BASE_PATH=/gauss-horizon
+      # Change this before exposing Chiron Horizon to a network.
+      - CHIRON_HORIZON_PASSWORD=changeme
+      # Uncomment when serving Chiron Horizon behind a reverse-proxy subpath.
+      # - CHIRON_HORIZON_PUBLIC_BASE_PATH=/chiron-horizon
     volumes:
-      - gauss-horizon-data:/app/data
+      - chiron-horizon-data:/app/data
     restart: unless-stopped
 
 volumes:
-  gauss-horizon-data:
+  chiron-horizon-data:

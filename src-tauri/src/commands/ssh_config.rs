@@ -1,8 +1,8 @@
-use gauss_horizon_core::ssh_config::SshConfigHostEntry;
+use chiron_horizon_core::ssh_config::SshConfigHostEntry;
 
 #[tauri::command]
 pub async fn list_ssh_config_hosts() -> Result<Vec<SshConfigHostEntry>, String> {
-    tauri::async_runtime::spawn_blocking(gauss_horizon_core::ssh_config::list_hosts)
+    tauri::async_runtime::spawn_blocking(chiron_horizon_core::ssh_config::list_hosts)
         .await
         .map_err(|err| err.to_string())?
 }

@@ -1,4 +1,4 @@
-name: Release Gauss Horizon plugin
+name: Release Chiron Horizon plugin
 
 on:
   release:
@@ -12,8 +12,8 @@ jobs:
     uses: Gaussian-id/Gauss-Horizon/.github/workflows/plugin-release-reusable.yml@plugin-sdk-v1
     with:
       release-tag: ${{ github.event.release.tag_name }}
-      package-command: gauss-horizon-plugin package .
-      package-path: dist/*.gauss-horizonp
+      package-command: chiron-horizon-plugin package .
+      package-path: dist/*.chiron-horizonp
       metadata-path: dist/*.artifact.json
       plugin-cli-version: 0.1.2
       # Frontend-only plugins can publish one cross-platform package instead:

@@ -1,5 +1,5 @@
 import type { DatabaseType } from "@/types/database";
-import { GAUSS_HORIZON_ROWID_COLUMN } from "@/lib/table/tableEditing";
+import { CHIRON_HORIZON_ROWID_COLUMN } from "@/lib/table/tableEditing";
 
 // Binary column types that should not be edited inline
 export const BINARY_TYPES = new Set(["blob", "clob", "bytea", "varbinary", "binary", "image", "longblob", "mediumblob", "tinyblob", "blob sub_type 2004", "blob sub_type 2005"]);
@@ -208,8 +208,8 @@ export type QueryEditability = { editable: true; analysis: EditableQueryInfo } |
 
 /**
  * Parse a SELECT statement to determine if it's editable.
- * Parse a SELECT statement to determine whether Gauss Horizon can bind result columns to
- * base-table columns. DBeaver uses result metadata for the same idea; Gauss Horizon has to
+ * Parse a SELECT statement to determine whether Chiron Horizon can bind result columns to
+ * base-table columns. DBeaver uses result metadata for the same idea; Chiron Horizon has to
  * recover enough source mapping from SQL text before table metadata is loaded.
  *
  * Aggregated/set/query-derived results are rejected by this syntax-only pass.
@@ -821,7 +821,7 @@ export function allPrimaryKeysPresent(primaryKeys: string[], resultColumns: stri
       analysis.columns.flatMap((column) => {
         if (!column.sourceName) return [];
         if (sourceKey && column.sourceKey !== sourceKey) return [];
-        if (databaseType === "oracle" && !column.sourceNameQuoted && column.sourceName.toUpperCase() === "ROWID" && column.sourceKey === sourceKey) return [GAUSS_HORIZON_ROWID_COLUMN, column.sourceName];
+        if (databaseType === "oracle" && !column.sourceNameQuoted && column.sourceName.toUpperCase() === "ROWID" && column.sourceKey === sourceKey) return [CHIRON_HORIZON_ROWID_COLUMN, column.sourceName];
         return [column.sourceName];
       }),
     );
@@ -861,7 +861,7 @@ export function sourceColumnsForResult(analysis: EditableQueryInfo, resultColumn
   return matchedColumns.map((column) => {
     if (sourceKey && column.sourceKey !== sourceKey) return undefined;
     if (databaseType === "oracle" && !column.sourceNameQuoted && column.sourceName?.toUpperCase() === "ROWID" && column.sourceKey === sourceKey) {
-      return primaryKeys?.length === 1 && primaryKeys[0] === GAUSS_HORIZON_ROWID_COLUMN ? GAUSS_HORIZON_ROWID_COLUMN : undefined;
+      return primaryKeys?.length === 1 && primaryKeys[0] === CHIRON_HORIZON_ROWID_COLUMN ? CHIRON_HORIZON_ROWID_COLUMN : undefined;
     }
     return column.sourceName;
   });

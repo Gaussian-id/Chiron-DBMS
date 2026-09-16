@@ -10,7 +10,7 @@ export type DataGridLocalFilterOption = {
 };
 
 export function dataGridLocalFilterKey(value: CellValue): string {
-  if (value === null) return "__gauss_horizon_null__";
+  if (value === null) return "__chiron_horizon_null__";
   if (typeof value === "boolean") return `bool:${value}`;
   if (typeof value === "number") return `num:${value}`;
   return `str:${String(value)}`;

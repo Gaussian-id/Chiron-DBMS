@@ -3,11 +3,11 @@ use std::time::{Duration, Instant};
 use tauri::{AppHandle, Emitter, State};
 
 use crate::commands::connection::AppState;
-use gauss_horizon_core::backend_error::BackendError;
-use gauss_horizon_core::db;
-use gauss_horizon_core::models::connection::DatabaseType;
-use gauss_horizon_core::query_cancel::RunningTaskMetadata;
-use gauss_horizon_core::sql::split_sql_statements;
+use chiron_horizon_core::backend_error::BackendError;
+use chiron_horizon_core::db;
+use chiron_horizon_core::models::connection::DatabaseType;
+use chiron_horizon_core::query_cancel::RunningTaskMetadata;
+use chiron_horizon_core::sql::split_sql_statements;
 
 #[derive(Clone, serde::Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -47,7 +47,7 @@ pub async fn execute_query(
     result_session_id: Option<String>,
     client_session_id: Option<String>,
     timeout_secs: Option<u64>,
-    execution_mode: Option<gauss_horizon_core::query::QueryExecutionMode>,
+    execution_mode: Option<chiron_horizon_core::query::QueryExecutionMode>,
 ) -> Result<db::QueryResult, BackendError> {
     let execution_id = execution_id.filter(|id| !id.trim().is_empty());
     let registered_query = execution_id.as_ref().map(|id| {
@@ -58,14 +58,14 @@ pub async fn execute_query(
     });
     let cancel_token = registered_query.as_ref().map(|query| query.token());
 
-    let result = gauss_horizon_core::query::execute_sql_statement_with_options_typed(
+    let result = chiron_horizon_core::query::execute_sql_statement_with_options_typed(
         &state,
         &connection_id,
         &database,
         &sql,
         schema.as_deref(),
         cancel_token,
-        gauss_horizon_core::query::QueryExecutionOptions {
+        chiron_horizon_core::query::QueryExecutionOptions {
             max_rows,
             fetch_size,
             page_size,
@@ -85,7 +85,7 @@ pub async fn execute_query(
         registered_query.finish(&result);
     }
 
-    result.map_err(gauss_horizon_core::query::QueryExecutionError::into_backend_error)
+    result.map_err(chiron_horizon_core::query::QueryExecutionError::into_backend_error)
 }
 
 #[tauri::command]
@@ -105,7 +105,7 @@ pub async fn execute_conditional_update(
     result_session_id: Option<String>,
     client_session_id: Option<String>,
     timeout_secs: Option<u64>,
-    execution_mode: Option<gauss_horizon_core::query::QueryExecutionMode>,
+    execution_mode: Option<chiron_horizon_core::query::QueryExecutionMode>,
 ) -> Result<db::QueryResult, BackendError> {
     let execution_id =
         execution_id.filter(|id| !id.trim().is_empty()).unwrap_or_else(|| uuid::Uuid::new_v4().to_string());
@@ -114,19 +114,19 @@ pub async fn execute_conditional_update(
         RunningTaskMetadata::query(connection_id.clone(), database.clone(), client_session_id.clone()),
     );
     let cancel_token = registered.token();
-    let response_timeout = gauss_horizon_core::query::query_timeout_duration(timeout_secs);
+    let response_timeout = chiron_horizon_core::query::query_timeout_duration(timeout_secs);
     let app_state = state.inner().clone();
     let (result_tx, result_rx) = tokio::sync::oneshot::channel();
 
     tokio::spawn(async move {
-        let result = gauss_horizon_core::query::execute_sql_statement_with_options_typed(
+        let result = chiron_horizon_core::query::execute_sql_statement_with_options_typed(
             &app_state,
             &connection_id,
             &database,
             &sql,
             schema.as_deref(),
             Some(cancel_token),
-            gauss_horizon_core::query::QueryExecutionOptions {
+            chiron_horizon_core::query::QueryExecutionOptions {
                 max_rows,
                 fetch_size,
                 page_size,
@@ -166,7 +166,7 @@ pub async fn execute_conditional_update(
             }
         },
     };
-    result.map_err(gauss_horizon_core::query::QueryExecutionError::into_backend_error)
+    result.map_err(chiron_horizon_core::query::QueryExecutionError::into_backend_error)
 }
 
 #[tauri::command]
@@ -192,8 +192,8 @@ pub async fn execute_multi(
     timeout_secs: Option<u64>,
     use_transaction: Option<bool>,
     continue_on_error: Option<bool>,
-    execution_mode: Option<gauss_horizon_core::query::QueryExecutionMode>,
-) -> Result<Vec<gauss_horizon_core::query::ExecuteMultiResult>, BackendError> {
+    execution_mode: Option<chiron_horizon_core::query::QueryExecutionMode>,
+) -> Result<Vec<chiron_horizon_core::query::ExecuteMultiResult>, BackendError> {
     let execution_id = execution_id.filter(|id| !id.trim().is_empty());
     let registered_query = execution_id.as_ref().map(|id| {
         state.running_queries.register_task(
@@ -205,7 +205,7 @@ pub async fn execute_multi(
     let progress = execution_id.as_ref().map(|execution_id| {
         let app = app.clone();
         let execution_id = execution_id.clone();
-        Arc::new(move |progress: gauss_horizon_core::query::ExecuteMultiProgress| {
+        Arc::new(move |progress: chiron_horizon_core::query::ExecuteMultiProgress| {
             let _ = app.emit(
                 "query-batch-progress",
                 ExecuteMultiProgress {
@@ -219,11 +219,11 @@ pub async fn execute_multi(
                     error: progress.error,
                 },
             );
-        }) as gauss_horizon_core::query::ExecuteMultiProgressCallback
+        }) as chiron_horizon_core::query::ExecuteMultiProgressCallback
     });
     let trace_id = execution_id.as_deref().unwrap_or("no-execution-id").to_string();
     let started_at = Instant::now();
-    gauss_horizon_core::sql_diagnostics::debug_sql("query:execute_multi:start", &sql);
+    chiron_horizon_core::sql_diagnostics::debug_sql("query:execute_multi:start", &sql);
     log::info!(
         "[query][execute_multi:start] trace_id={} connection_id={} database={} schema={:?}",
         trace_id,
@@ -232,14 +232,14 @@ pub async fn execute_multi(
         schema
     );
 
-    let result = gauss_horizon_core::query::execute_multi_core_with_options_for_client_and_progress_typed(
+    let result = chiron_horizon_core::query::execute_multi_core_with_options_for_client_and_progress_typed(
         &state,
         &connection_id,
         &database,
         &sql,
         schema.as_deref(),
         cancel_token,
-        gauss_horizon_core::query::QueryExecutionOptions {
+        chiron_horizon_core::query::QueryExecutionOptions {
             max_rows,
             fetch_size,
             page_size,
@@ -281,7 +281,7 @@ pub async fn execute_multi(
         registered_query.finish(&result);
     }
 
-    result.map_err(gauss_horizon_core::query::QueryExecutionError::into_backend_error)
+    result.map_err(chiron_horizon_core::query::QueryExecutionError::into_backend_error)
 }
 
 #[tauri::command]
@@ -293,7 +293,7 @@ pub async fn cancel_query(state: State<'_, Arc<AppState>>, execution_id: String)
 pub async fn cancel_conditional_update(
     state: State<'_, Arc<AppState>>,
     execution_id: String,
-) -> Result<gauss_horizon_core::query_cancel::CancellationWaitResult, String> {
+) -> Result<chiron_horizon_core::query_cancel::CancellationWaitResult, String> {
     Ok(state.running_queries.cancel_and_wait(&execution_id, Duration::from_secs(10)).await)
 }
 
@@ -306,7 +306,7 @@ pub async fn close_query_session(
     client_session_id: Option<String>,
     catalog: Option<String>,
 ) -> Result<bool, String> {
-    gauss_horizon_core::query::close_query_session(
+    chiron_horizon_core::query::close_query_session(
         &state,
         &connection_id,
         &database,
@@ -346,7 +346,7 @@ pub async fn execute_batch(
     schema: Option<String>,
     timeout_secs: Option<u64>,
 ) -> Result<db::QueryResult, String> {
-    gauss_horizon_core::query::execute_statements(
+    chiron_horizon_core::query::execute_statements(
         &state,
         &connection_id,
         &database,
@@ -370,13 +370,13 @@ pub async fn execute_script(
         configs.get(&connection_id).map(|config| config.db_type)
     };
 
-    gauss_horizon_core::query::execute_statements(
+    chiron_horizon_core::query::execute_statements(
         &state,
         &connection_id,
         &database,
         &db_type.map_or_else(
             || split_sql_statements(&sql),
-            |db_type| gauss_horizon_core::sql::split_sql_statements_for_database(&sql, db_type),
+            |db_type| chiron_horizon_core::sql::split_sql_statements_for_database(&sql, db_type),
         ),
         schema.as_deref(),
         None,
@@ -393,7 +393,7 @@ pub async fn execute_in_transaction(
     schema: Option<String>,
     catalog: Option<String>,
 ) -> Result<db::QueryResult, String> {
-    gauss_horizon_core::query::execute_statements_in_transaction(
+    chiron_horizon_core::query::execute_statements_in_transaction(
         &state,
         &connection_id,
         &database,
@@ -416,8 +416,8 @@ pub async fn execute_script_with_2pc_core(
     statements: Vec<String>,
     schema: Option<String>,
     destructive_confirmed: bool,
-) -> gauss_horizon_core::query::SchemaDiffDeployResult {
-    gauss_horizon_core::query::execute_schema_diff_deploy(
+) -> chiron_horizon_core::query::SchemaDiffDeployResult {
+    chiron_horizon_core::query::execute_schema_diff_deploy(
         &app,
         &connection_id,
         &database,
@@ -436,7 +436,7 @@ pub async fn execute_script_with_2pc(
     statements: Vec<String>,
     schema: Option<String>,
     destructive_confirmed: Option<bool>,
-) -> Result<gauss_horizon_core::query::SchemaDiffDeployResult, String> {
+) -> Result<chiron_horizon_core::query::SchemaDiffDeployResult, String> {
     let app: Arc<AppState> = (*state).clone();
     Ok(execute_script_with_2pc_core(
         app,
@@ -457,7 +457,7 @@ pub async fn begin_manual_transaction(
     schema: Option<String>,
     catalog: Option<String>,
 ) -> Result<String, String> {
-    gauss_horizon_core::query::begin_manual_transaction(
+    chiron_horizon_core::query::begin_manual_transaction(
         &state,
         &connection_id,
         &database,
@@ -479,14 +479,14 @@ pub async fn execute_in_manual_transaction(
     page_size: Option<usize>,
     result_session_id: Option<String>,
     classification_sql: Option<String>,
-) -> Result<Vec<gauss_horizon_core::query::ExecuteMultiResult>, ManualTransactionCommandError> {
-    gauss_horizon_core::query::execute_in_manual_transaction_with_options(
+) -> Result<Vec<chiron_horizon_core::query::ExecuteMultiResult>, ManualTransactionCommandError> {
+    chiron_horizon_core::query::execute_in_manual_transaction_with_options(
         &state,
         &txn_session_id,
         &sql,
         &database,
         schema.as_deref(),
-        gauss_horizon_core::query::ManualTransactionExecutionOptions {
+        chiron_horizon_core::query::ManualTransactionExecutionOptions {
             max_rows,
             table_data_preview: table_data_preview.unwrap_or(false),
             page_size,
@@ -496,9 +496,9 @@ pub async fn execute_in_manual_transaction(
     )
     .await
     .map_err(|error| {
-        if gauss_horizon_core::query::is_manual_transaction_session_expired_error(&error) {
+        if chiron_horizon_core::query::is_manual_transaction_session_expired_error(&error) {
             ManualTransactionCommandError::Structured(Box::new(BackendError::from_manual_transaction_session_expired(
-                gauss_horizon_core::query::MANUAL_TRANSACTION_IDLE_TIMEOUT_SECS,
+                chiron_horizon_core::query::MANUAL_TRANSACTION_IDLE_TIMEOUT_SECS,
             )))
         } else {
             ManualTransactionCommandError::Legacy(error)
@@ -511,7 +511,7 @@ pub async fn commit_manual_transaction(
     state: State<'_, Arc<AppState>>,
     txn_session_id: String,
 ) -> Result<db::QueryResult, String> {
-    gauss_horizon_core::query::commit_manual_transaction(&state, &txn_session_id).await
+    chiron_horizon_core::query::commit_manual_transaction(&state, &txn_session_id).await
 }
 
 #[tauri::command]
@@ -519,15 +519,15 @@ pub async fn rollback_manual_transaction(
     state: State<'_, Arc<AppState>>,
     txn_session_id: String,
 ) -> Result<db::QueryResult, String> {
-    gauss_horizon_core::query::rollback_manual_transaction(&state, &txn_session_id).await
+    chiron_horizon_core::query::rollback_manual_transaction(&state, &txn_session_id).await
 }
 
 #[tauri::command]
 pub async fn analyze_sql_references(
     sql: String,
     dialect: Option<String>,
-) -> Result<gauss_horizon_core::sql_analysis::SqlReferenceAnalysis, String> {
-    gauss_horizon_core::sql_analysis::analyze_sql_references(&sql, dialect.as_deref())
+) -> Result<chiron_horizon_core::sql_analysis::SqlReferenceAnalysis, String> {
+    chiron_horizon_core::sql_analysis::analyze_sql_references(&sql, dialect.as_deref())
 }
 
 #[tauri::command]
@@ -537,44 +537,44 @@ pub fn find_statement_at_cursor(
     database_type: Option<DatabaseType>,
 ) -> Result<String, String> {
     Ok(database_type
-        .map(|db_type| gauss_horizon_core::sql::find_statement_at_cursor_for_database(&sql, cursor_pos, db_type))
-        .unwrap_or_else(|| gauss_horizon_core::sql::find_statement_at_cursor(&sql, cursor_pos)))
+        .map(|db_type| chiron_horizon_core::sql::find_statement_at_cursor_for_database(&sql, cursor_pos, db_type))
+        .unwrap_or_else(|| chiron_horizon_core::sql::find_statement_at_cursor(&sql, cursor_pos)))
 }
 
 #[tauri::command]
 pub fn prepare_query_pagination_execution_plan(
-    options: gauss_horizon_core::query_result_sql::QueryPaginationExecutionPlanOptions,
-) -> Result<gauss_horizon_core::query_result_sql::QueryPaginationExecutionPlan, String> {
-    Ok(gauss_horizon_core::query_result_sql::build_query_pagination_execution_plan(options))
+    options: chiron_horizon_core::query_result_sql::QueryPaginationExecutionPlanOptions,
+) -> Result<chiron_horizon_core::query_result_sql::QueryPaginationExecutionPlan, String> {
+    Ok(chiron_horizon_core::query_result_sql::build_query_pagination_execution_plan(options))
 }
 
 #[tauri::command]
 pub fn build_sorted_query_sql(
-    options: gauss_horizon_core::query_result_sql::SortedQuerySqlOptions,
-) -> Result<gauss_horizon_core::query_result_sql::QuerySqlBuildResult, String> {
-    Ok(gauss_horizon_core::query_result_sql::build_sorted_query_sql(options))
+    options: chiron_horizon_core::query_result_sql::SortedQuerySqlOptions,
+) -> Result<chiron_horizon_core::query_result_sql::QuerySqlBuildResult, String> {
+    Ok(chiron_horizon_core::query_result_sql::build_sorted_query_sql(options))
 }
 
 #[tauri::command]
 pub fn build_explain_sql(
-    options: gauss_horizon_core::query_execution_sql::ExplainSqlOptions,
-) -> Result<gauss_horizon_core::query_execution_sql::ExplainSqlBuildResult, String> {
-    Ok(gauss_horizon_core::query_execution_sql::build_explain_sql(options))
+    options: chiron_horizon_core::query_execution_sql::ExplainSqlOptions,
+) -> Result<chiron_horizon_core::query_execution_sql::ExplainSqlBuildResult, String> {
+    Ok(chiron_horizon_core::query_execution_sql::build_explain_sql(options))
 }
 
 #[tauri::command]
 pub fn build_dropped_file_preview_sql(
-    options: gauss_horizon_core::query_execution_sql::DroppedFilePreviewSqlOptions,
+    options: chiron_horizon_core::query_execution_sql::DroppedFilePreviewSqlOptions,
 ) -> Result<Option<String>, String> {
-    Ok(gauss_horizon_core::query_execution_sql::build_dropped_file_preview_sql(options))
+    Ok(chiron_horizon_core::query_execution_sql::build_dropped_file_preview_sql(options))
 }
 
 #[tauri::command]
 pub fn build_table_select_sql(
-    options: gauss_horizon_core::sql_dialect::TableDataSelectSqlOptions,
+    options: chiron_horizon_core::sql_dialect::TableDataSelectSqlOptions,
     include_database_name: Option<bool>,
 ) -> Result<String, String> {
-    Ok(gauss_horizon_core::sql_dialect::build_table_data_select_sql_with_database(
+    Ok(chiron_horizon_core::sql_dialect::build_table_data_select_sql_with_database(
         options,
         include_database_name.unwrap_or(false),
     ))
@@ -582,33 +582,33 @@ pub fn build_table_select_sql(
 
 #[tauri::command]
 pub fn build_database_search_sql(
-    options: gauss_horizon_core::database_search_sql::DatabaseSearchSqlOptions,
-) -> Result<Option<gauss_horizon_core::database_search_sql::DatabaseSearchSql>, String> {
-    Ok(gauss_horizon_core::database_search_sql::build_database_search_sql(options))
+    options: chiron_horizon_core::database_search_sql::DatabaseSearchSqlOptions,
+) -> Result<Option<chiron_horizon_core::database_search_sql::DatabaseSearchSql>, String> {
+    Ok(chiron_horizon_core::database_search_sql::build_database_search_sql(options))
 }
 
 #[tauri::command]
 pub fn build_search_result_where(
-    options: gauss_horizon_core::database_search_sql::SearchResultWhereOptions,
+    options: chiron_horizon_core::database_search_sql::SearchResultWhereOptions,
 ) -> Result<String, String> {
-    Ok(gauss_horizon_core::database_search_sql::build_search_result_where(options))
+    Ok(chiron_horizon_core::database_search_sql::build_search_result_where(options))
 }
 
 #[tauri::command]
 pub fn build_rename_object_sql(
-    options: gauss_horizon_core::db_admin_sql::RenameObjectSqlOptions,
+    options: chiron_horizon_core::db_admin_sql::RenameObjectSqlOptions,
 ) -> Result<String, String> {
-    gauss_horizon_core::db_admin_sql::build_rename_object_sql(options)
+    chiron_horizon_core::db_admin_sql::build_rename_object_sql(options)
 }
 
 #[tauri::command]
 pub fn build_rename_database_sql(
-    database_type: Option<gauss_horizon_core::models::connection::DatabaseType>,
+    database_type: Option<chiron_horizon_core::models::connection::DatabaseType>,
     old_name: String,
     new_name: String,
     terminate_connections: bool,
 ) -> Result<String, String> {
-    gauss_horizon_core::db_admin_sql::build_rename_database_sql(
+    chiron_horizon_core::db_admin_sql::build_rename_database_sql(
         database_type,
         &old_name,
         &new_name,
@@ -618,168 +618,170 @@ pub fn build_rename_database_sql(
 
 #[tauri::command]
 pub fn build_rename_database_preflight_sql(
-    database_type: Option<gauss_horizon_core::models::connection::DatabaseType>,
+    database_type: Option<chiron_horizon_core::models::connection::DatabaseType>,
     database_name: String,
 ) -> Result<String, String> {
-    gauss_horizon_core::db_admin_sql::build_rename_database_preflight_sql(database_type, &database_name)
+    chiron_horizon_core::db_admin_sql::build_rename_database_preflight_sql(database_type, &database_name)
 }
 
 #[tauri::command]
 pub fn build_create_database_sql(
-    options: gauss_horizon_core::db_admin_sql::CreateDatabaseSqlOptions,
+    options: chiron_horizon_core::db_admin_sql::CreateDatabaseSqlOptions,
 ) -> Result<String, String> {
-    gauss_horizon_core::db_admin_sql::build_create_database_sql(options)
+    chiron_horizon_core::db_admin_sql::build_create_database_sql(options)
 }
 
 #[cfg(feature = "duckdb-sidecar")]
 #[tauri::command]
 pub fn build_duckdb_attach_database_sql(
-    options: gauss_horizon_core::db_admin_sql::DuckDbAttachDatabaseSqlOptions,
+    options: chiron_horizon_core::db_admin_sql::DuckDbAttachDatabaseSqlOptions,
 ) -> Result<String, String> {
-    Ok(gauss_horizon_core::db_admin_sql::build_duckdb_attach_database_sql(options))
+    Ok(chiron_horizon_core::db_admin_sql::build_duckdb_attach_database_sql(options))
 }
 
 #[tauri::command]
 pub fn build_sqlite_attach_database_sql(
-    options: gauss_horizon_core::db_admin_sql::SqliteAttachDatabaseSqlOptions,
+    options: chiron_horizon_core::db_admin_sql::SqliteAttachDatabaseSqlOptions,
 ) -> Result<String, String> {
-    Ok(gauss_horizon_core::db_admin_sql::build_sqlite_attach_database_sql(options))
+    Ok(chiron_horizon_core::db_admin_sql::build_sqlite_attach_database_sql(options))
 }
 
 #[tauri::command]
 pub fn build_drop_object_sql(
-    options: gauss_horizon_core::db_admin_sql::DropObjectSqlOptions,
+    options: chiron_horizon_core::db_admin_sql::DropObjectSqlOptions,
 ) -> Result<String, String> {
-    Ok(gauss_horizon_core::db_admin_sql::build_drop_object_sql(options))
+    Ok(chiron_horizon_core::db_admin_sql::build_drop_object_sql(options))
 }
 
 #[tauri::command]
-pub fn build_drop_table_sql(options: gauss_horizon_core::db_admin_sql::TableAdminSqlOptions) -> Result<String, String> {
-    Ok(gauss_horizon_core::db_admin_sql::build_drop_table_sql(options))
+pub fn build_drop_table_sql(
+    options: chiron_horizon_core::db_admin_sql::TableAdminSqlOptions,
+) -> Result<String, String> {
+    Ok(chiron_horizon_core::db_admin_sql::build_drop_table_sql(options))
 }
 
 #[tauri::command]
 pub fn build_drop_table_child_object_sql(
-    options: gauss_horizon_core::db_admin_sql::DropTableChildObjectSqlOptions,
+    options: chiron_horizon_core::db_admin_sql::DropTableChildObjectSqlOptions,
 ) -> Result<String, String> {
-    gauss_horizon_core::db_admin_sql::build_drop_table_child_object_sql(options)
+    chiron_horizon_core::db_admin_sql::build_drop_table_child_object_sql(options)
 }
 
 #[tauri::command]
 pub fn build_empty_table_sql(
-    options: gauss_horizon_core::db_admin_sql::TableAdminSqlOptions,
+    options: chiron_horizon_core::db_admin_sql::TableAdminSqlOptions,
 ) -> Result<String, String> {
-    Ok(gauss_horizon_core::db_admin_sql::build_empty_table_sql(options))
+    Ok(chiron_horizon_core::db_admin_sql::build_empty_table_sql(options))
 }
 
 #[tauri::command]
 pub fn build_truncate_table_sql(
-    options: gauss_horizon_core::db_admin_sql::TableAdminSqlOptions,
+    options: chiron_horizon_core::db_admin_sql::TableAdminSqlOptions,
 ) -> Result<String, String> {
-    Ok(gauss_horizon_core::db_admin_sql::build_truncate_table_sql(options))
+    Ok(chiron_horizon_core::db_admin_sql::build_truncate_table_sql(options))
 }
 
 #[tauri::command]
 pub fn build_vacuum_table_sql(
-    options: gauss_horizon_core::db_admin_sql::VacuumTableSqlOptions,
+    options: chiron_horizon_core::db_admin_sql::VacuumTableSqlOptions,
 ) -> Result<String, String> {
-    gauss_horizon_core::db_admin_sql::build_vacuum_table_sql(options)
+    chiron_horizon_core::db_admin_sql::build_vacuum_table_sql(options)
 }
 
 #[tauri::command]
 pub fn build_mysql_auto_increment_sql(
-    options: gauss_horizon_core::db_admin_sql::MysqlAutoIncrementSqlOptions,
+    options: chiron_horizon_core::db_admin_sql::MysqlAutoIncrementSqlOptions,
 ) -> Result<String, String> {
-    gauss_horizon_core::db_admin_sql::build_mysql_auto_increment_sql(options)
+    chiron_horizon_core::db_admin_sql::build_mysql_auto_increment_sql(options)
 }
 
 #[tauri::command]
 pub fn build_drop_database_sql(
-    options: gauss_horizon_core::db_admin_sql::DatabaseNameSqlOptions,
+    options: chiron_horizon_core::db_admin_sql::DatabaseNameSqlOptions,
 ) -> Result<String, String> {
-    Ok(gauss_horizon_core::db_admin_sql::build_drop_database_sql(options))
+    Ok(chiron_horizon_core::db_admin_sql::build_drop_database_sql(options))
 }
 
 #[tauri::command]
 pub fn build_create_schema_sql(
-    options: gauss_horizon_core::db_admin_sql::SchemaNameSqlOptions,
+    options: chiron_horizon_core::db_admin_sql::SchemaNameSqlOptions,
 ) -> Result<String, String> {
-    gauss_horizon_core::db_admin_sql::build_create_schema_sql(options)
+    chiron_horizon_core::db_admin_sql::build_create_schema_sql(options)
 }
 
 #[tauri::command]
 pub fn build_update_database_properties_sql(
-    options: gauss_horizon_core::db_admin_sql::DatabasePropertyEditSqlOptions,
+    options: chiron_horizon_core::db_admin_sql::DatabasePropertyEditSqlOptions,
 ) -> Result<String, String> {
-    gauss_horizon_core::db_admin_sql::build_update_database_properties_sql(options)
+    chiron_horizon_core::db_admin_sql::build_update_database_properties_sql(options)
 }
 
 #[tauri::command]
 pub fn build_drop_schema_sql(
-    options: gauss_horizon_core::db_admin_sql::SchemaNameSqlOptions,
+    options: chiron_horizon_core::db_admin_sql::SchemaNameSqlOptions,
 ) -> Result<String, String> {
-    Ok(gauss_horizon_core::db_admin_sql::build_drop_schema_sql(options))
+    Ok(chiron_horizon_core::db_admin_sql::build_drop_schema_sql(options))
 }
 
 #[tauri::command]
 pub fn build_duplicate_table_structure_sql(
-    options: gauss_horizon_core::db_admin_sql::DuplicateTableStructureSqlOptions,
+    options: chiron_horizon_core::db_admin_sql::DuplicateTableStructureSqlOptions,
 ) -> Result<String, String> {
-    Ok(gauss_horizon_core::db_admin_sql::build_duplicate_table_structure_sql(options))
+    Ok(chiron_horizon_core::db_admin_sql::build_duplicate_table_structure_sql(options))
 }
 
 #[tauri::command]
 pub fn build_copy_table_data_sql(
-    options: gauss_horizon_core::db_admin_sql::CopyTableDataSqlOptions,
+    options: chiron_horizon_core::db_admin_sql::CopyTableDataSqlOptions,
 ) -> Result<String, String> {
-    Ok(gauss_horizon_core::db_admin_sql::build_copy_table_data_sql(options))
+    Ok(chiron_horizon_core::db_admin_sql::build_copy_table_data_sql(options))
 }
 
 #[tauri::command]
 pub fn build_executable_object_source_statements(
-    input: gauss_horizon_core::object_source_sql::EditableObjectSourceSqlInput,
+    input: chiron_horizon_core::object_source_sql::EditableObjectSourceSqlInput,
 ) -> Result<Vec<String>, String> {
-    gauss_horizon_core::object_source_sql::build_executable_object_source_statements(input)
+    chiron_horizon_core::object_source_sql::build_executable_object_source_statements(input)
 }
 
 #[tauri::command]
 pub fn build_executable_object_source_sql(
-    input: gauss_horizon_core::object_source_sql::EditableObjectSourceSqlInput,
+    input: chiron_horizon_core::object_source_sql::EditableObjectSourceSqlInput,
 ) -> Result<String, String> {
-    gauss_horizon_core::object_source_sql::build_executable_object_source_sql(input)
+    chiron_horizon_core::object_source_sql::build_executable_object_source_sql(input)
 }
 
 #[tauri::command]
 pub fn build_editable_object_source(
-    input: gauss_horizon_core::object_source_sql::EditableObjectSourceSqlInput,
+    input: chiron_horizon_core::object_source_sql::EditableObjectSourceSqlInput,
 ) -> Result<String, String> {
-    Ok(gauss_horizon_core::object_source_sql::build_editable_object_source(input))
+    Ok(chiron_horizon_core::object_source_sql::build_editable_object_source(input))
 }
 
 #[tauri::command]
 pub fn build_routine_rename_object_source_statements(
-    input: gauss_horizon_core::object_source_sql::RoutineRenameObjectSourceInput,
+    input: chiron_horizon_core::object_source_sql::RoutineRenameObjectSourceInput,
 ) -> Result<Vec<String>, String> {
-    gauss_horizon_core::object_source_sql::build_routine_rename_object_source_statements(input)
+    chiron_horizon_core::object_source_sql::build_routine_rename_object_source_statements(input)
 }
 
 #[tauri::command]
-pub fn build_view_ddl_sql(input: gauss_horizon_core::object_source_sql::BuildViewDdlInput) -> Result<String, String> {
-    Ok(gauss_horizon_core::object_source_sql::build_view_ddl_sql(input))
+pub fn build_view_ddl_sql(input: chiron_horizon_core::object_source_sql::BuildViewDdlInput) -> Result<String, String> {
+    Ok(chiron_horizon_core::object_source_sql::build_view_ddl_sql(input))
 }
 
 #[tauri::command]
 pub fn build_table_structure_change_sql(
-    options: gauss_horizon_core::table_structure_sql::TableStructureSqlOptions,
-) -> Result<gauss_horizon_core::table_structure_sql::TableStructureSqlResult, String> {
-    Ok(gauss_horizon_core::table_structure_sql::build_table_structure_change_sql(options))
+    options: chiron_horizon_core::table_structure_sql::TableStructureSqlOptions,
+) -> Result<chiron_horizon_core::table_structure_sql::TableStructureSqlResult, String> {
+    Ok(chiron_horizon_core::table_structure_sql::build_table_structure_change_sql(options))
 }
 
 #[tauri::command]
 pub fn build_table_owner_change_sql(
-    options: gauss_horizon_core::table_structure_sql::TableOwnerChangeSqlOptions,
-) -> Result<gauss_horizon_core::table_structure_sql::TableStructureSqlResult, String> {
-    Ok(gauss_horizon_core::table_structure_sql::build_table_owner_change_sql(options))
+    options: chiron_horizon_core::table_structure_sql::TableOwnerChangeSqlOptions,
+) -> Result<chiron_horizon_core::table_structure_sql::TableStructureSqlResult, String> {
+    Ok(chiron_horizon_core::table_structure_sql::build_table_owner_change_sql(options))
 }
 
 #[tauri::command]
@@ -787,9 +789,9 @@ pub async fn preview_sqlite_table_structure_change(
     state: State<'_, Arc<AppState>>,
     connection_id: String,
     database: String,
-    options: gauss_horizon_core::table_structure_sql::TableStructureSqlOptions,
-) -> Result<gauss_horizon_core::table_structure_sql::SqliteTableStructurePreview, String> {
-    gauss_horizon_core::table_structure_sql::preview_sqlite_table_structure_change(
+    options: chiron_horizon_core::table_structure_sql::TableStructureSqlOptions,
+) -> Result<chiron_horizon_core::table_structure_sql::SqliteTableStructurePreview, String> {
+    chiron_horizon_core::table_structure_sql::preview_sqlite_table_structure_change(
         &state,
         &connection_id,
         &database,
@@ -803,10 +805,10 @@ pub async fn apply_sqlite_table_structure_change(
     state: State<'_, Arc<AppState>>,
     connection_id: String,
     database: String,
-    options: gauss_horizon_core::table_structure_sql::TableStructureSqlOptions,
+    options: chiron_horizon_core::table_structure_sql::TableStructureSqlOptions,
     schema_revision: String,
 ) -> Result<db::QueryResult, String> {
-    gauss_horizon_core::table_structure_sql::apply_sqlite_table_structure_change(
+    chiron_horizon_core::table_structure_sql::apply_sqlite_table_structure_change(
         &state,
         &connection_id,
         &database,
@@ -818,47 +820,50 @@ pub async fn apply_sqlite_table_structure_change(
 
 #[tauri::command]
 pub fn build_create_table_sql(
-    options: gauss_horizon_core::table_structure_sql::TableStructureSqlOptions,
-) -> Result<gauss_horizon_core::table_structure_sql::TableStructureSqlResult, String> {
-    Ok(gauss_horizon_core::table_structure_sql::build_create_table_sql(options))
+    options: chiron_horizon_core::table_structure_sql::TableStructureSqlOptions,
+) -> Result<chiron_horizon_core::table_structure_sql::TableStructureSqlResult, String> {
+    Ok(chiron_horizon_core::table_structure_sql::build_create_table_sql(options))
 }
 
 #[tauri::command]
 pub fn build_single_column_alter_sql(
-    options: gauss_horizon_core::table_structure_sql::SingleColumnAlterSqlOptions,
-) -> Result<gauss_horizon_core::table_structure_sql::TableStructureSqlResult, String> {
-    Ok(gauss_horizon_core::table_structure_sql::build_single_column_alter_sql(options))
+    options: chiron_horizon_core::table_structure_sql::SingleColumnAlterSqlOptions,
+) -> Result<chiron_horizon_core::table_structure_sql::TableStructureSqlResult, String> {
+    Ok(chiron_horizon_core::table_structure_sql::build_single_column_alter_sql(options))
 }
 
 #[tauri::command]
 pub fn analyze_editable_query_editability(
     sql: String,
-) -> Result<gauss_horizon_core::sql_editability::QueryEditability, String> {
-    Ok(gauss_horizon_core::sql_editability::analyze_editable_query_editability(&sql))
+) -> Result<chiron_horizon_core::sql_editability::QueryEditability, String> {
+    Ok(chiron_horizon_core::sql_editability::analyze_editable_query_editability(&sql))
 }
 
 #[tauri::command]
 pub fn prepare_data_grid_save(
-    options: gauss_horizon_core::data_grid_sql::DataGridSaveStatementOptions,
+    options: chiron_horizon_core::data_grid_sql::DataGridSaveStatementOptions,
     driver_profile: Option<String>,
-) -> Result<gauss_horizon_core::data_grid_sql::DataGridSavePreparation, String> {
-    Ok(gauss_horizon_core::data_grid_sql::prepare_data_grid_save_for_driver_profile(options, driver_profile.as_deref()))
+) -> Result<chiron_horizon_core::data_grid_sql::DataGridSavePreparation, String> {
+    Ok(chiron_horizon_core::data_grid_sql::prepare_data_grid_save_for_driver_profile(
+        options,
+        driver_profile.as_deref(),
+    ))
 }
 
 #[tauri::command]
 pub async fn extract_data_grid_selection(
-    request: gauss_horizon_core::data_grid_extractors::DataGridExtractRequest,
+    request: chiron_horizon_core::data_grid_extractors::DataGridExtractRequest,
 ) -> Result<
-    gauss_horizon_core::data_grid_extractors::DataGridExtractResult,
-    gauss_horizon_core::data_grid_extractors::DataGridExtractError,
+    chiron_horizon_core::data_grid_extractors::DataGridExtractResult,
+    chiron_horizon_core::data_grid_extractors::DataGridExtractError,
 > {
     tauri::async_runtime::spawn_blocking(move || {
-        gauss_horizon_core::data_grid_extractors::extract_data_grid_selection(request)
+        chiron_horizon_core::data_grid_extractors::extract_data_grid_selection(request)
     })
     .await
     .map_err(|error| {
-        gauss_horizon_core::data_grid_extractors::DataGridExtractError::new(
-            gauss_horizon_core::data_grid_extractors::DataGridExtractErrorCode::ExecutionFailed,
+        chiron_horizon_core::data_grid_extractors::DataGridExtractError::new(
+            chiron_horizon_core::data_grid_extractors::DataGridExtractErrorCode::ExecutionFailed,
             format!("Data grid extractor worker failed: {error}"),
         )
     })?
@@ -866,92 +871,92 @@ pub async fn extract_data_grid_selection(
 
 #[tauri::command]
 pub fn build_data_grid_copy_update_statements(
-    options: gauss_horizon_core::data_grid_sql::DataGridCopyUpdateStatementOptions,
+    options: chiron_horizon_core::data_grid_sql::DataGridCopyUpdateStatementOptions,
 ) -> Result<Vec<String>, String> {
-    Ok(gauss_horizon_core::data_grid_sql::build_data_grid_copy_update_statements(options))
+    Ok(chiron_horizon_core::data_grid_sql::build_data_grid_copy_update_statements(options))
 }
 
 #[tauri::command]
 pub fn build_data_grid_copy_insert_statement(
-    options: gauss_horizon_core::data_grid_sql::DataGridCopyInsertStatementOptions,
+    options: chiron_horizon_core::data_grid_sql::DataGridCopyInsertStatementOptions,
 ) -> Result<Option<String>, String> {
-    Ok(gauss_horizon_core::data_grid_sql::build_data_grid_copy_insert_statement(options))
+    Ok(chiron_horizon_core::data_grid_sql::build_data_grid_copy_insert_statement(options))
 }
 
 #[tauri::command]
 pub fn build_dml_change_preview_sql(
-    options: gauss_horizon_core::dml_preview_sql::DmlChangePreviewSqlOptions,
-) -> Result<gauss_horizon_core::dml_preview_sql::DmlChangePreviewSqlResult, String> {
-    gauss_horizon_core::dml_preview_sql::build_dml_change_preview_sql(options)
+    options: chiron_horizon_core::dml_preview_sql::DmlChangePreviewSqlOptions,
+) -> Result<chiron_horizon_core::dml_preview_sql::DmlChangePreviewSqlResult, String> {
+    chiron_horizon_core::dml_preview_sql::build_dml_change_preview_sql(options)
 }
 
 #[tauri::command]
 pub fn build_data_grid_context_filter_condition(
-    options: gauss_horizon_core::data_grid_sql::DataGridContextFilterConditionOptions,
+    options: chiron_horizon_core::data_grid_sql::DataGridContextFilterConditionOptions,
 ) -> Result<Option<String>, String> {
-    Ok(gauss_horizon_core::data_grid_sql::build_data_grid_context_filter_condition(options))
+    Ok(chiron_horizon_core::data_grid_sql::build_data_grid_context_filter_condition(options))
 }
 
 #[tauri::command]
 pub fn build_data_grid_column_value_filter_condition(
-    options: gauss_horizon_core::data_grid_sql::DataGridColumnValueFilterConditionOptions,
+    options: chiron_horizon_core::data_grid_sql::DataGridColumnValueFilterConditionOptions,
 ) -> Result<Option<String>, String> {
-    Ok(gauss_horizon_core::data_grid_sql::build_data_grid_column_value_filter_condition(options))
+    Ok(chiron_horizon_core::data_grid_sql::build_data_grid_column_value_filter_condition(options))
 }
 
 #[tauri::command]
 pub fn build_data_grid_column_values_filter_condition(
-    options: gauss_horizon_core::data_grid_sql::DataGridColumnValuesFilterConditionOptions,
+    options: chiron_horizon_core::data_grid_sql::DataGridColumnValuesFilterConditionOptions,
 ) -> Result<Option<String>, String> {
-    Ok(gauss_horizon_core::data_grid_sql::build_data_grid_column_values_filter_condition(options))
+    Ok(chiron_horizon_core::data_grid_sql::build_data_grid_column_values_filter_condition(options))
 }
 
 #[tauri::command]
 pub fn build_data_grid_column_distinct_values_sql(
-    options: gauss_horizon_core::data_grid_sql::DataGridColumnDistinctValuesSqlOptions,
+    options: chiron_horizon_core::data_grid_sql::DataGridColumnDistinctValuesSqlOptions,
 ) -> Result<String, String> {
-    Ok(gauss_horizon_core::data_grid_sql::build_data_grid_column_distinct_values_sql(options))
+    Ok(chiron_horizon_core::data_grid_sql::build_data_grid_column_distinct_values_sql(options))
 }
 
 #[tauri::command]
 pub fn build_data_grid_count_sql(
-    options: gauss_horizon_core::data_grid_sql::DataGridCountSqlOptions,
+    options: chiron_horizon_core::data_grid_sql::DataGridCountSqlOptions,
 ) -> Result<String, String> {
-    Ok(gauss_horizon_core::data_grid_sql::build_data_grid_count_sql(options))
+    Ok(chiron_horizon_core::data_grid_sql::build_data_grid_count_sql(options))
 }
 
 #[tauri::command]
 pub fn build_data_grid_conditional_update_sql(
-    options: gauss_horizon_core::data_grid_sql::DataGridConditionalUpdateSqlOptions,
+    options: chiron_horizon_core::data_grid_sql::DataGridConditionalUpdateSqlOptions,
 ) -> Result<Option<String>, String> {
-    Ok(gauss_horizon_core::data_grid_sql::build_data_grid_conditional_update_sql(options))
+    Ok(chiron_horizon_core::data_grid_sql::build_data_grid_conditional_update_sql(options))
 }
 
 #[tauri::command]
 pub fn build_hive_table_properties_sql(
-    options: gauss_horizon_core::data_grid_sql::HiveTablePropertiesSqlOptions,
+    options: chiron_horizon_core::data_grid_sql::HiveTablePropertiesSqlOptions,
 ) -> Result<String, String> {
-    Ok(gauss_horizon_core::data_grid_sql::build_hive_table_properties_sql(options))
+    Ok(chiron_horizon_core::data_grid_sql::build_hive_table_properties_sql(options))
 }
 
 #[tauri::command]
 pub fn build_export_insert_statements(
-    options: gauss_horizon_core::database_export::BuildExportInsertStatementsOptions,
+    options: chiron_horizon_core::database_export::BuildExportInsertStatementsOptions,
 ) -> Result<Vec<String>, String> {
-    gauss_horizon_core::database_export::build_export_insert_statements(options)
+    chiron_horizon_core::database_export::build_export_insert_statements(options)
 }
 
 #[tauri::command]
 pub fn build_export_sql_insert(
-    options: gauss_horizon_core::database_export::BuildExportSqlInsertOptions,
+    options: chiron_horizon_core::database_export::BuildExportSqlInsertOptions,
 ) -> Result<String, String> {
-    gauss_horizon_core::database_export::build_export_sql_insert(options)
+    chiron_horizon_core::database_export::build_export_sql_insert(options)
 }
 
 #[tauri::command]
 pub async fn build_database_sql_export(
-    state: tauri::State<'_, std::sync::Arc<gauss_horizon_core::connection::AppState>>,
-    mut options: gauss_horizon_core::database_export::BuildDatabaseSqlExportOptions,
+    state: tauri::State<'_, std::sync::Arc<chiron_horizon_core::connection::AppState>>,
+    mut options: chiron_horizon_core::database_export::BuildDatabaseSqlExportOptions,
 ) -> Result<String, String> {
     // Sort tables by FK dependency when connection info is available.
     if let (Some(ref conn_id), Some(ref database), Some(ref schema)) =
@@ -960,7 +965,7 @@ pub async fn build_database_sql_export(
         if options.tables.len() > 1 {
             let table_names: Vec<String> = options.tables.iter().filter_map(|t| t.table_name.clone()).collect();
             if table_names.len() > 1 {
-                if let Ok(sorted_names) = gauss_horizon_core::transfer::sort_tables_by_fk_dependency(
+                if let Ok(sorted_names) = chiron_horizon_core::transfer::sort_tables_by_fk_dependency(
                     &state,
                     conn_id,
                     database,
@@ -980,19 +985,19 @@ pub async fn build_database_sql_export(
             }
         }
     }
-    gauss_horizon_core::database_export::build_database_sql_export(options)
+    chiron_horizon_core::database_export::build_database_sql_export(options)
 }
 
 #[tauri::command]
 pub async fn get_explain_info(
-    state: tauri::State<'_, std::sync::Arc<gauss_horizon_core::connection::AppState>>,
+    state: tauri::State<'_, std::sync::Arc<chiron_horizon_core::connection::AppState>>,
     connection_id: String,
     database: Option<String>,
     schema: Option<String>,
     sql: String,
     mode: Option<String>,
 ) -> Result<String, String> {
-    gauss_horizon_core::agent_explain::get_agent_explain_info_core(
+    chiron_horizon_core::agent_explain::get_agent_explain_info_core(
         &state,
         &connection_id,
         database.as_deref(),
@@ -1005,17 +1010,17 @@ pub async fn get_explain_info(
 
 #[tauri::command]
 pub fn build_create_user_sql(username: String, password: String, tablespace: String) -> Result<String, String> {
-    Ok(gauss_horizon_core::db_admin_sql::build_create_user_sql(&username, &password, &tablespace))
+    Ok(chiron_horizon_core::db_admin_sql::build_create_user_sql(&username, &password, &tablespace))
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use gauss_horizon_core::storage::Storage;
+    use chiron_horizon_core::storage::Storage;
     use std::sync::Arc;
 
     async fn test_app_state() -> Arc<AppState> {
-        let dir = std::env::temp_dir().join(format!("gauss-horizon-query-test-{}", uuid::Uuid::new_v4()));
+        let dir = std::env::temp_dir().join(format!("chiron-horizon-query-test-{}", uuid::Uuid::new_v4()));
         std::fs::create_dir_all(&dir).unwrap();
         let storage = Storage::open(&dir.join("storage.db")).await.unwrap();
         Arc::new(AppState::new_with_plugin_dir(storage, dir.join("plugins")))

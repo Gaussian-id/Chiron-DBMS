@@ -12,7 +12,7 @@ type InstallTabsProps = {
   version: string;
 };
 
-const downloadLabel = { en: "Download Gauss Horizon", cn: "下载 Gauss Horizon" };
+const downloadLabel = { en: "Download Chiron Horizon", cn: "下载 Chiron Horizon" };
 const selectDownloadLabel = { en: "Choose a version", cn: "选择下载版本" };
 const selectMacLabel = { en: "Choose a macOS version", cn: "选择 macOS 版本" };
 const offlineHint = {
@@ -23,15 +23,15 @@ const offlineHint = {
 const browserStaticText = {
   en: {
     eyebrow: "Linux browser package",
-    intro: "For Kylin, UnionTech UOS, and other Linux distributions. Gauss Horizon runs locally and opens in your browser.",
+    intro: "For Kylin, UnionTech UOS, and other Linux distributions. Chiron Horizon runs locally and opens in your browser.",
     extract: "Extract and enter the package directory",
-    start: "Start Gauss Horizon",
+    start: "Start Chiron Horizon",
     open: "Open in your local browser",
     port: "Need a different port?",
     portHint: "Replace 8080 with any available local port.",
     browserStyle: "Page layout looks incorrect?",
     browserStyleHint: [
-      "Some browsers in intranet or enterprise Linux environments use older browser engines that may not fully support the modern web standards used by Gauss Horizon, resulting in missing or incorrect styles.",
+      "Some browsers in intranet or enterprise Linux environments use older browser engines that may not fully support the modern web standards used by Chiron Horizon, resulting in missing or incorrect styles.",
       "For example, older QiAnXin browser versions based on Chromium 90 can show this behavior.",
       "Update the browser to its latest version, or use a current version of Chrome, Edge, or Firefox.",
     ],
@@ -42,14 +42,14 @@ const browserStaticText = {
   },
   cn: {
     eyebrow: "Linux 浏览器版",
-    intro: "适用于麒麟、统信 UOS 等 Linux 发行版。Gauss Horizon 在本机运行，通过浏览器访问。",
+    intro: "适用于麒麟、统信 UOS 等 Linux 发行版。Chiron Horizon 在本机运行，通过浏览器访问。",
     extract: "解压并进入安装目录",
-    start: "启动 Gauss Horizon",
+    start: "启动 Chiron Horizon",
     open: "在本机浏览器打开",
     port: "需要修改默认端口？",
     portHint: "将 8080 替换为其他可用端口即可。",
     browserStyle: "网页样式显示异常？",
-    browserStyleHint: ["部分信创或内网环境使用的浏览器内核版本较旧，可能无法完整支持 Gauss Horizon 使用的现代 Web 标准，从而出现布局错位、样式缺失等问题。", "例如，基于 Chromium 90 内核的旧版奇安信浏览器可能出现此类情况。", "请优先升级当前浏览器；环境允许时，也可以改用新版 Chrome、Edge 或 Firefox。"],
+    browserStyleHint: ["部分信创或内网环境使用的浏览器内核版本较旧，可能无法完整支持 Chiron Horizon 使用的现代 Web 标准，从而出现布局错位、样式缺失等问题。", "例如，基于 Chromium 90 内核的旧版奇安信浏览器可能出现此类情况。", "请优先升级当前浏览器；环境允许时，也可以改用新版 Chrome、Edge 或 Firefox。"],
     download: "下载",
     close: "关闭安装说明",
     copy: "复制命令",
@@ -103,8 +103,8 @@ function BrowserStaticDialog({ lang, option, version, onClose }: { lang: DocsLan
   const closeButtonRef = useRef<HTMLButtonElement>(null);
   const [copiedCommand, setCopiedCommand] = useState<string | null>(null);
   const text = browserStaticText[lang];
-  const archiveName = `GAUSS_HORIZON_${version}_*-browser-static.tar.gz`;
-  const packageDirectory = "gauss-horizon-linux-*-browser-static";
+  const archiveName = `CHIRON_HORIZON_${version}_*-browser-static.tar.gz`;
+  const packageDirectory = "chiron-horizon-linux-*-browser-static";
   const extractCommand = `tar -xzf ${archiveName}\ncd ${packageDirectory}`;
   const downloads = option.browserStaticDownloads ?? [{ arch: "x64" as const, href: option.href }];
 
@@ -189,7 +189,7 @@ function BrowserStaticDialog({ lang, option, version, onClose }: { lang: DocsLan
           </section>
           <section>
             <h3 className="mb-2 text-sm font-semibold">2. {text.start}</h3>
-            {commandBlock("./gauss-horizon")}
+            {commandBlock("./chiron-horizon")}
           </section>
           <section>
             <h3 className="mb-2 text-sm font-semibold">3. {text.open}</h3>
@@ -200,7 +200,7 @@ function BrowserStaticDialog({ lang, option, version, onClose }: { lang: DocsLan
           <details className="group border-t border-white/10 pt-3">
             <summary className="w-fit cursor-pointer text-xs font-medium text-white/45 hover:text-white/70 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-white/60">{text.port}</summary>
             <div className="mt-3">
-              {commandBlock("GAUSS_HORIZON_PORT=8080 ./gauss-horizon")}
+              {commandBlock("CHIRON_HORIZON_PORT=8080 ./chiron-horizon")}
               <p className="mt-2 text-xs leading-relaxed text-white/45">{text.portHint}</p>
             </div>
           </details>

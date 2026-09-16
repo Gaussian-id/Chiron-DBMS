@@ -14,7 +14,7 @@ describe("rabbitmqExchanges", () => {
 
   it("renders the default exchange with a display name", () => {
     expect(rabbitMqExchangeDisplayName(exchange({ name: "" }))).toBe("(AMQP default)");
-    expect(rabbitMqExchangeDisplayName(exchange({ name: "gauss-horizon-events" }))).toBe("gauss-horizon-events");
+    expect(rabbitMqExchangeDisplayName(exchange({ name: "chiron-horizon-events" }))).toBe("chiron-horizon-events");
     expect(rabbitMqExchangeDisplayName({ name: "amq.topic" })).toBe("amq.topic");
   });
 
@@ -22,8 +22,8 @@ describe("rabbitmqExchanges", () => {
     expect(isBuiltinRabbitMqExchange(exchange({ name: "" }))).toBe(true);
     expect(isBuiltinRabbitMqExchange(exchange({ name: "amq.direct" }))).toBe(true);
     expect(isBuiltinRabbitMqExchange(exchange({ name: "amq.headers", type: "headers" }))).toBe(true);
-    expect(isBuiltinRabbitMqExchange(exchange({ name: "gauss-horizon-internal", internal: true }))).toBe(true);
-    expect(isBuiltinRabbitMqExchange(exchange({ name: "gauss-horizon-events" }))).toBe(false);
+    expect(isBuiltinRabbitMqExchange(exchange({ name: "chiron-horizon-internal", internal: true }))).toBe(true);
+    expect(isBuiltinRabbitMqExchange(exchange({ name: "chiron-horizon-events" }))).toBe(false);
     expect(isBuiltinRabbitMqExchange(exchange({ name: "amqp.custom" }))).toBe(false);
   });
 });

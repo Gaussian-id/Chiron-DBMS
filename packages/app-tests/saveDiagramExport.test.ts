@@ -72,9 +72,9 @@ test("web text export triggers download and returns true", async () => {
     return el;
   });
 
-  const saved = await saveDiagramTextExport("gauss-horizon-diagram.svg", "<svg/>", "svg");
+  const saved = await saveDiagramTextExport("chiron-horizon-diagram.svg", "<svg/>", "svg");
   assert.equal(saved, true);
-  assert.deepEqual(clicks, ["gauss-horizon-diagram.svg"]);
+  assert.deepEqual(clicks, ["chiron-horizon-diagram.svg"]);
   createObjectURL.mockRestore();
   revokeObjectURL.mockRestore();
 });

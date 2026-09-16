@@ -1,4 +1,4 @@
-name: Gauss Horizon release
+name: Chiron Horizon release
 
 on:
   push:
@@ -8,7 +8,7 @@ permissions:
   contents: write
 
 concurrency:
-  group: gauss-horizon-release-${{ github.ref_name }}
+  group: chiron-horizon-release-${{ github.ref_name }}
   cancel-in-progress: false
 
 jobs:
@@ -53,9 +53,9 @@ jobs:
       - run: pnpm test:database-availability
       - run: pnpm build:docs-export
       - run: pnpm --dir docs content:check
-      - run: cargo test -p gauss-horizon-core --no-default-features --features sqlite-bundled --lib
-      - run: cargo test -p gauss-horizon-core --no-default-features --features sqlite-bundled --test ai_credentials --test chirondb_connector
-      - run: cargo check -p gauss-horizon-cli -p gauss-horizon-web -p gauss-horizon-mcp --no-default-features
+      - run: cargo test -p chiron-horizon-core --no-default-features --features sqlite-bundled --lib
+      - run: cargo test -p chiron-horizon-core --no-default-features --features sqlite-bundled --test ai_credentials --test chirondb_connector
+      - run: cargo check -p chiron-horizon-cli -p chiron-horizon-web -p chiron-horizon-mcp --no-default-features
       - run: cargo check --manifest-path plugins/sdk/cli/Cargo.toml
       - run: node --test packages/plugin-cli/tests/launcher.test.mjs packages/plugin-cli/tests/dev-launcher.test.mjs
       - name: Validate and test Java agents on JDK 21
@@ -82,31 +82,31 @@ jobs:
             platform: macos-arm64
             bundles: app,dmg
             extension: .dmg
-            output: Gauss-Horizon_0.1.0_macos-arm64.dmg
+            output: Chiron-Horizon_0.1.0_macos-arm64.dmg
           - os: macos-15-intel
             target: x86_64-apple-darwin
             platform: macos-x64
             bundles: app,dmg
             extension: .dmg
-            output: Gauss-Horizon_0.1.0_macos-x64.dmg
+            output: Chiron-Horizon_0.1.0_macos-x64.dmg
           - os: windows-2022
             target: x86_64-pc-windows-msvc
             platform: windows-x64
             bundles: nsis
             extension: .exe
-            output: Gauss-Horizon_0.1.0_windows-x64-setup.exe
+            output: Chiron-Horizon_0.1.0_windows-x64-setup.exe
           - os: ubuntu-22.04
             target: x86_64-unknown-linux-gnu
             platform: linux-x64
             bundles: deb,appimage
             extension: .deb
-            output: Gauss-Horizon_0.1.0_linux-x64.deb
+            output: Chiron-Horizon_0.1.0_linux-x64.deb
           - os: ubuntu-22.04
             target: x86_64-unknown-linux-gnu
             platform: linux-appimage-x64
             bundles: appimage
             extension: .AppImage
-            output: Gauss-Horizon_0.1.0_linux-x64.AppImage
+            output: Chiron-Horizon_0.1.0_linux-x64.AppImage
     runs-on: ${{ matrix.os }}
     env:
       CARGO_INCREMENTAL: "0"
@@ -138,30 +138,30 @@ jobs:
         if: runner.os == 'macOS'
         shell: bash
         run: |
-          APP_PATH="$CARGO_TARGET_DIR/${{ matrix.target }}/release/bundle/macos/Gauss Horizon.app"
+          APP_PATH="$CARGO_TARGET_DIR/${{ matrix.target }}/release/bundle/macos/Chiron Horizon.app"
           test -d "$APP_PATH"
           codesign --verify --deep --strict --verbose=2 "$APP_PATH"
           open "$APP_PATH"
           sleep 5
-          pgrep -f 'Gauss Horizon' >/dev/null
-          pkill -f 'Gauss Horizon' || true
+          pgrep -f 'Chiron Horizon' >/dev/null
+          pkill -f 'Chiron Horizon' || true
       - name: Smoke Windows NSIS installation, startup, and restart
         if: runner.os == 'Windows'
         shell: pwsh
         run: |
           $installer = Get-ChildItem "$env:CARGO_TARGET_DIR/${{ matrix.target }}/release/bundle/nsis/*.exe" | Select-Object -First 1
           if (-not $installer) { throw 'NSIS installer was not produced' }
-          $installDir = Join-Path $env:RUNNER_TEMP 'Gauss-Horizon-NSIS-smoke'
+          $installDir = Join-Path $env:RUNNER_TEMP 'Chiron-Horizon-NSIS-smoke'
           Start-Process -FilePath $installer.FullName -ArgumentList @('/S', "/D=$installDir") -Wait
           $app = Get-ChildItem $installDir -Filter '*.exe' -Recurse | Select-Object -First 1
-          if (-not $app) { throw 'Installed Gauss Horizon executable was not found' }
+          if (-not $app) { throw 'Installed Chiron Horizon executable was not found' }
           $first = Start-Process -FilePath $app.FullName -PassThru
           Start-Sleep -Seconds 5
-          if ($first.HasExited) { throw 'Gauss Horizon exited during first Windows smoke startup' }
+          if ($first.HasExited) { throw 'Chiron Horizon exited during first Windows smoke startup' }
           Stop-Process -Id $first.Id -Force
           $second = Start-Process -FilePath $app.FullName -PassThru
           Start-Sleep -Seconds 5
-          if ($second.HasExited) { throw 'Gauss Horizon exited during Windows restart smoke' }
+          if ($second.HasExited) { throw 'Chiron Horizon exited during Windows restart smoke' }
           Stop-Process -Id $second.Id -Force
       - name: Smoke Linux AppImage startup and restart under Xvfb
         if: runner.os == 'Linux'
@@ -170,9 +170,9 @@ jobs:
           APPIMAGE=$(find "$CARGO_TARGET_DIR/${{ matrix.target }}/release/bundle/appimage" -name '*.AppImage' -type f | head -1)
           if [ -n "$APPIMAGE" ]; then
             chmod +x "$APPIMAGE"
-            xvfb-run -a timeout 15s "$APPIMAGE" --no-sandbox >/tmp/gauss-horizon-appimage.log 2>&1 & first=$!
+            xvfb-run -a timeout 15s "$APPIMAGE" --no-sandbox >/tmp/chiron-horizon-appimage.log 2>&1 & first=$!
             sleep 5; kill -0 "$first"; kill "$first" || true; wait "$first" || true
-            xvfb-run -a timeout 15s "$APPIMAGE" --no-sandbox >/tmp/gauss-horizon-appimage-restart.log 2>&1 & second=$!
+            xvfb-run -a timeout 15s "$APPIMAGE" --no-sandbox >/tmp/chiron-horizon-appimage-restart.log 2>&1 & second=$!
             sleep 5; kill -0 "$second"; kill "$second" || true; wait "$second" || true
           fi
       - name: Stage immutable desktop release asset
@@ -205,14 +205,14 @@ jobs:
         shell: bash
         run: |
           mkdir -p release-agents
-          find agents/drivers -path '*/build/libs/gauss-horizon-agent-*.jar' -type f -exec cp {} release-agents/ \;
+          find agents/drivers -path '*/build/libs/chiron-horizon-agent-*.jar' -type f -exec cp {} release-agents/ \;
           python3 agents/scripts/version_agent_artifacts.py release-agents "$(cat agents/versions.json)"
       - name: Build immutable JDBC plugin package
         working-directory: plugins/jdbc
         run: |
           ./gradlew test shadowJar --no-daemon
           ./package.sh
-          cp dist/gauss-horizon-jdbc-plugin-0.1.0.zip ../../release-agents/
+          cp dist/chiron-horizon-jdbc-plugin-0.1.0.zip ../../release-agents/
       - uses: actions/upload-artifact@v4
         with:
           name: java-agents
@@ -268,12 +268,12 @@ jobs:
         run: |
           cargo build --manifest-path agents/drivers/duckdb/Cargo.toml --locked --release --target ${{ matrix.target }}
           cargo build --manifest-path agents/drivers/tdengine/Cargo.toml --locked --release --target ${{ matrix.target }}
-          cargo build -p gauss-horizon-sqlite-worker --locked --release --target ${{ matrix.target }}
+          cargo build -p chiron-horizon-sqlite-worker --locked --release --target ${{ matrix.target }}
           mkdir -p release-agents
           extension=''; [ "${{ runner.os }}" = 'Windows' ] && extension='.exe'
-          cp "$CARGO_TARGET_DIR/${{ matrix.target }}/release/gauss-horizon-duckdb-driver$extension" "release-agents/gauss-horizon-agent-duckdb-0.1.0-${{ matrix.platform }}$extension"
-          cp "$CARGO_TARGET_DIR/${{ matrix.target }}/release/gauss-horizon-tdengine-driver$extension" "release-agents/gauss-horizon-agent-tdengine-0.1.0-${{ matrix.platform }}$extension"
-          cp "$CARGO_TARGET_DIR/${{ matrix.target }}/release/gauss-horizon-sqlite-worker$extension" "release-agents/gauss-horizon-agent-sqlite-worker-0.1.0-${{ matrix.platform }}$extension"
+          cp "$CARGO_TARGET_DIR/${{ matrix.target }}/release/chiron-horizon-duckdb-driver$extension" "release-agents/chiron-horizon-agent-duckdb-0.1.0-${{ matrix.platform }}$extension"
+          cp "$CARGO_TARGET_DIR/${{ matrix.target }}/release/chiron-horizon-tdengine-driver$extension" "release-agents/chiron-horizon-agent-tdengine-0.1.0-${{ matrix.platform }}$extension"
+          cp "$CARGO_TARGET_DIR/${{ matrix.target }}/release/chiron-horizon-sqlite-worker$extension" "release-agents/chiron-horizon-agent-sqlite-worker-0.1.0-${{ matrix.platform }}$extension"
       - uses: actions/upload-artifact@v4
         with:
           name: rust-agents-${{ matrix.platform }}
@@ -341,11 +341,11 @@ jobs:
           find release-input -maxdepth 1 -type f -exec cp {} release/ \;
           python3 agents/scripts/create_release_registry.py release --tag "$GITHUB_REF_NAME" --jre-version "$(java -version 2>&1 | head -1 | sed -E 's/.*\"([^\"]+)\".*/\1/')"
           python3 agents/scripts/build_driver_zips.py release
-          JDBC_ARCHIVE="$(find release -maxdepth 1 -name 'gauss-horizon-jdbc-plugin-0.1.0.zip' -type f | head -1)"
+          JDBC_ARCHIVE="$(find release -maxdepth 1 -name 'chiron-horizon-jdbc-plugin-0.1.0.zip' -type f | head -1)"
           test -n "$JDBC_ARCHIVE"
           JDBC_WORK="$(mktemp -d)"
           unzip -q "$JDBC_ARCHIVE" -d "$JDBC_WORK"
-          JDBC_RESOLVER="$(find "$JDBC_WORK" -path '*/bin/gauss-horizon-maven-resolver' -type f | head -1)"
+          JDBC_RESOLVER="$(find "$JDBC_WORK" -path '*/bin/chiron-horizon-maven-resolver' -type f | head -1)"
           test -n "$JDBC_RESOLVER"
           chmod +x "$JDBC_RESOLVER"
           node agents/scripts/build_offline_jdbc_payload.mjs release "$JDBC_ARCHIVE" "$JDBC_RESOLVER"
@@ -355,12 +355,12 @@ jobs:
           node scripts/create-release-manifest.mjs release
       - name: Validate staged public assets
         run: |
-          test "$(find release -maxdepth 1 -name 'Gauss-Horizon_0.1.0_*' -type f | wc -l)" -eq 5
+          test "$(find release -maxdepth 1 -name 'Chiron-Horizon_0.1.0_*' -type f | wc -l)" -eq 5
           sha256sum -c release/SHA256SUMS
       - name: Create public GitHub Release
         env:
           GH_TOKEN: ${{ github.token }}
-        run: gh release create "$GITHUB_REF_NAME" release/* --repo "$GITHUB_REPOSITORY" --title "Gauss Horizon 0.1.0" --notes-file docs/release-notes-v0.1.0.md --latest
+        run: gh release create "$GITHUB_REF_NAME" release/* --repo "$GITHUB_REPOSITORY" --title "Chiron Horizon 0.1.0" --notes-file docs/release-notes-v0.1.0.md --latest
       - name: Download published assets and reverify checksums
         env:
           GH_TOKEN: ${{ github.token }}

@@ -210,7 +210,7 @@ func (server *server) connectionInfo() (map[string]any, error) {
 	// panel reflects the actual server family.
 	productName := "ArgoDB (Transwarp)"
 	compatibilityMode := "argo"
-	driverName := "Gauss Horizon ArgoDB Go Agent"
+	driverName := "Chiron Horizon ArgoDB Go Agent"
 	return map[string]any{
 		"database":          server.config.Database,
 		"schema":            server.config.Database,

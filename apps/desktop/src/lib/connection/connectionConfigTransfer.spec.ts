@@ -83,9 +83,9 @@ describe("connectionConfigTransfer", () => {
     });
   });
 
-  it("parses legacy arrays and gauss-horizon-config payloads without inventing a layout", () => {
+  it("parses legacy arrays and chiron-horizon-config payloads without inventing a layout", () => {
     expect(parseConnectionConfigObject([conn("a", "A")])).toEqual({ connections: [conn("a", "A")] });
-    expect(parseConnectionConfigObject({ format: "gauss-horizon-config", connections: [conn("a", "A")] })).toEqual({ connections: [conn("a", "A")] });
+    expect(parseConnectionConfigObject({ format: "chiron-horizon-config", connections: [conn("a", "A")] })).toEqual({ connections: [conn("a", "A")] });
   });
 
   it("selects a preview subset without mutating the original preview", () => {

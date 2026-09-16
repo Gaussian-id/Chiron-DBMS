@@ -299,7 +299,7 @@ describe("Redis JSON unicode display mode", () => {
   it("defaults to decoded and persists the choice under its own storage key", () => {
     expect(findFunction("readRedisJsonUnicodeMode").getText()).toContain('=== "raw" ? "raw" : "decoded"');
     expect(findVariableInitializer("redisJsonUnicodeMode").getText()).toBe("ref(readRedisJsonUnicodeMode())");
-    expect(viewerSource).toContain('const REDIS_JSON_UNICODE_MODE_STORAGE_KEY = "gauss-horizon-redis-json-unicode-mode"');
+    expect(viewerSource).toContain('const REDIS_JSON_UNICODE_MODE_STORAGE_KEY = "chiron-horizon-redis-json-unicode-mode"');
   });
 
   it("derives JSON editor baselines through the display-only unicode decode", () => {

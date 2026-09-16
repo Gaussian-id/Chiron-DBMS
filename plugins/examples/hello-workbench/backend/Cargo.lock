@@ -3,15 +3,15 @@
 version = 4
 
 [[package]]
-name = "gauss-horizon-example-hello"
+name = "chiron-horizon-example-hello"
 version = "0.1.0"
 dependencies = [
- "gauss-horizon-plugin-sdk",
+ "chiron-horizon-plugin-sdk",
  "serde_json",
 ]
 
 [[package]]
-name = "gauss-horizon-plugin-sdk"
+name = "chiron-horizon-plugin-sdk"
 version = "0.1.0"
 dependencies = [
  "serde",

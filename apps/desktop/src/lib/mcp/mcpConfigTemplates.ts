@@ -5,23 +5,23 @@ export interface McpLaunchConfig {
 }
 
 const DEFAULT_MCP_LAUNCH_CONFIG: McpLaunchConfig = {
-  command: "gauss-horizon-mcp-server",
+  command: "chiron-horizon-mcp-server",
 };
 
 function launchConfig(config?: McpLaunchConfig): McpLaunchConfig {
   return config ?? DEFAULT_MCP_LAUNCH_CONFIG;
 }
 
-function withLaunchConfig(gaussHorizon: Record<string, unknown>, config?: McpLaunchConfig): Record<string, unknown> {
+function withLaunchConfig(chironHorizon: Record<string, unknown>, config?: McpLaunchConfig): Record<string, unknown> {
   const launch = launchConfig(config);
-  gaussHorizon.command = launch.command;
+  chironHorizon.command = launch.command;
   if (launch.args && launch.args.length > 0) {
-    gaussHorizon.args = [...launch.args];
+    chironHorizon.args = [...launch.args];
   }
   if (launch.env && Object.keys(launch.env).length > 0) {
-    gaussHorizon.env = { ...launch.env };
+    chironHorizon.env = { ...launch.env };
   }
-  return gaussHorizon;
+  return chironHorizon;
 }
 
 function quotedStringArray(values: readonly string[]): string {
@@ -33,11 +33,11 @@ export function mcpWebBackendUrl(origin: string, apiPath: string): string {
 }
 
 export function buildMcpJsonConfig(config?: McpLaunchConfig): string {
-  const gaussHorizon: Record<string, unknown> = {
+  const chironHorizon: Record<string, unknown> = {
     ...withLaunchConfig({}, config),
   };
 
-  return JSON.stringify({ mcpServers: { "gauss-horizon": gaussHorizon } }, null, 2);
+  return JSON.stringify({ mcpServers: { "chiron-horizon": chironHorizon } }, null, 2);
 }
 
 export function buildMcpTraeConfig(config?: McpLaunchConfig, nativeBinPath?: string): string {
@@ -49,18 +49,18 @@ export function buildMcpQoderConfig(config?: McpLaunchConfig, nativeBinPath?: st
 }
 
 export function buildMcpVsCodeConfig(config?: McpLaunchConfig): string {
-  const gaussHorizon: Record<string, unknown> = {
+  const chironHorizon: Record<string, unknown> = {
     type: "stdio",
     ...withLaunchConfig({}, config),
   };
 
-  return JSON.stringify({ servers: { "gauss-horizon": gaussHorizon } }, null, 2);
+  return JSON.stringify({ servers: { "chiron-horizon": chironHorizon } }, null, 2);
 }
 
 export function buildMcpCherryStudioConfig(config?: McpLaunchConfig): string {
   const launch = launchConfig(config);
-  const gaussHorizon: Record<string, unknown> = {
-    name: "gauss-horizon",
+  const chironHorizon: Record<string, unknown> = {
+    name: "chiron-horizon",
     description: "",
     baseUrl: "",
     command: launch.command,
@@ -70,18 +70,18 @@ export function buildMcpCherryStudioConfig(config?: McpLaunchConfig): string {
     type: "stdio",
   };
 
-  return JSON.stringify({ mcpServers: { "gauss-horizon": gaussHorizon } }, null, 2);
+  return JSON.stringify({ mcpServers: { "chiron-horizon": chironHorizon } }, null, 2);
 }
 
 export function buildMcpCodexConfig(config?: McpLaunchConfig): string {
   const launch = launchConfig(config);
-  const lines = ['[mcp_servers."gauss-horizon"]', `command = ${JSON.stringify(launch.command)}`];
+  const lines = ['[mcp_servers."chiron-horizon"]', `command = ${JSON.stringify(launch.command)}`];
 
   if (launch.args && launch.args.length > 0) {
     lines.push(`args = ${quotedStringArray(launch.args)}`);
   }
   if (launch.env && Object.keys(launch.env).length > 0) {
-    lines.push("", '[mcp_servers."gauss-horizon".env]');
+    lines.push("", '[mcp_servers."chiron-horizon".env]');
     for (const [key, value] of Object.entries(launch.env)) {
       lines.push(`${key} = ${JSON.stringify(value)}`);
     }
@@ -92,7 +92,7 @@ export function buildMcpCodexConfig(config?: McpLaunchConfig): string {
 
 export function buildMcpDeepSeekHarnessConfig(config?: McpLaunchConfig): string {
   const launch = launchConfig(config);
-  const lines = ["- insert:", "    - id: mcp-gauss-horizon", "      name: '@deepseek-ai/dsh-mcp-client'", "      config:", "        serverName: gauss-horizon", "        transport: stdio", `        command: ${JSON.stringify(launch.command)}`];
+  const lines = ["- insert:", "    - id: mcp-chiron-horizon", "      name: '@deepseek-ai/dsh-mcp-client'", "      config:", "        serverName: chiron-horizon", "        transport: stdio", `        command: ${JSON.stringify(launch.command)}`];
 
   if (launch.args && launch.args.length > 0) {
     lines.push(`        args: ${quotedStringArray(launch.args)}`);
@@ -109,15 +109,15 @@ export function buildMcpDeepSeekHarnessConfig(config?: McpLaunchConfig): string 
 
 export function buildMcpOpenCodeConfig(config?: McpLaunchConfig): string {
   const launch = launchConfig(config);
-  const gaussHorizon: Record<string, unknown> = {
+  const chironHorizon: Record<string, unknown> = {
     type: "local",
     command: [launch.command, ...(launch.args ?? [])],
   };
   if (launch.env && Object.keys(launch.env).length > 0) {
-    gaussHorizon.environment = { ...launch.env };
+    chironHorizon.environment = { ...launch.env };
   }
 
-  return JSON.stringify({ mcp: { "gauss-horizon": gaussHorizon } }, null, 2);
+  return JSON.stringify({ mcp: { "chiron-horizon": chironHorizon } }, null, 2);
 }
 
 export function buildMcpPiConfig(config?: McpLaunchConfig): string {

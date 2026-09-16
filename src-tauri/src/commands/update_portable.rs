@@ -8,7 +8,7 @@ use std::io::{Cursor, Read};
 const MAX_PORTABLE_EXECUTABLE_BYTES: usize = 256 * 1024 * 1024;
 const MAX_PORTABLE_MANIFEST_BYTES: usize = 16 * 1024;
 const EMBEDDED_TAURI_CONFIG: &str = include_str!("../../tauri.conf.json");
-const PORTABLE_EXECUTABLE_NAME: &str = "Gauss Horizon.exe";
+const PORTABLE_EXECUTABLE_NAME: &str = "Chiron Horizon.exe";
 const PORTABLE_UPDATE_MANIFEST_NAME: &str = "portable-update.json";
 const PORTABLE_UPDATE_MANIFEST_SCHEMA_VERSION: u32 = 1;
 
@@ -60,7 +60,7 @@ fn portable_arch_label(arch: &str) -> Result<&'static str, String> {
 pub(super) fn portable_asset_name(version: &str, arch: &str) -> Result<String, String> {
     let version = parse_portable_version(version, "requested")?;
     let arch = portable_arch_label(arch)?;
-    Ok(format!("GAUSS_HORIZON_{version}_{arch}-portable.zip"))
+    Ok(format!("CHIRON_HORIZON_{version}_{arch}-portable.zip"))
 }
 
 pub(super) fn verify_portable_archive(
@@ -84,7 +84,7 @@ pub(super) fn verify_portable_archive(
     public_key
         .verify(archive, &signature, true)
         .map_err(|error| format!("Portable update signature verification failed: {error}"))?;
-    // The manifest lives inside the signed ZIP and hashes Gauss Horizon.exe, binding the
+    // The manifest lives inside the signed ZIP and hashes Chiron Horizon.exe, binding the
     // requested version and architecture to the exact executable we install.
     validated_portable_executable(archive, expected_version, expected_arch).map(|_| ())
 }
@@ -152,7 +152,7 @@ fn validated_portable_executable(
     file.by_ref()
         .take((MAX_PORTABLE_EXECUTABLE_BYTES + 1) as u64)
         .read_to_end(&mut executable)
-        .map_err(|error| format!("Failed to extract Gauss Horizon.exe from update ZIP: {error}"))?;
+        .map_err(|error| format!("Failed to extract Chiron Horizon.exe from update ZIP: {error}"))?;
     if executable.len() > MAX_PORTABLE_EXECUTABLE_BYTES {
         return Err("Portable update executable is unexpectedly large.".to_string());
     }
@@ -184,8 +184,8 @@ pub(super) fn launch_portable_update_helper(archive: &[u8], version: &Version) -
     let current_exe =
         std::env::current_exe().map_err(|error| format!("Failed to locate the portable executable: {error}"))?;
     let exe_dir = current_exe.parent().ok_or_else(|| "Portable executable directory is unavailable.".to_string())?;
-    if !exe_dir.join("portable.gauss-horizon").is_file() {
-        return Err("Portable update marker is missing beside Gauss Horizon.exe.".to_string());
+    if !exe_dir.join("portable.chiron-horizon").is_file() {
+        return Err("Portable update marker is missing beside Chiron Horizon.exe.".to_string());
     }
 
     let timestamp = SystemTime::now()
@@ -193,21 +193,21 @@ pub(super) fn launch_portable_update_helper(archive: &[u8], version: &Version) -
         .map_err(|error| format!("System clock is unavailable: {error}"))?
         .as_nanos();
     let update_id = format!("{}-{timestamp}", std::process::id());
-    let write_probe = exe_dir.join(format!(".gauss-horizon-update-{update_id}.probe"));
+    let write_probe = exe_dir.join(format!(".chiron-horizon-update-{update_id}.probe"));
     OpenOptions::new()
         .create_new(true)
         .write(true)
         .open(&write_probe)
-        .map_err(|error| format!("The portable Gauss Horizon directory is not writable: {error}"))?;
+        .map_err(|error| format!("The portable Chiron Horizon directory is not writable: {error}"))?;
     fs::remove_file(&write_probe)
         .map_err(|error| format!("Failed to finish portable directory write check: {error}"))?;
 
-    let staging_dir = std::env::temp_dir().join(format!("gauss-horizon-portable-update-{update_id}"));
+    let staging_dir = std::env::temp_dir().join(format!("chiron-horizon-portable-update-{update_id}"));
     fs::create_dir(&staging_dir)
         .map_err(|error| format!("Failed to create portable update staging directory: {error}"))?;
-    let staged_exe = staging_dir.join("Gauss Horizon.exe.new");
+    let staged_exe = staging_dir.join("Chiron Horizon.exe.new");
     let script_path = staging_dir.join("apply-update.ps1");
-    let backup_exe = exe_dir.join(format!(".Gauss Horizon-{update_id}.old.exe"));
+    let backup_exe = exe_dir.join(format!(".Chiron Horizon-{update_id}.old.exe"));
 
     let prepare_result = (|| -> Result<(), String> {
         let executable = validated_portable_executable(archive, version, std::env::consts::ARCH)?;
@@ -215,11 +215,11 @@ pub(super) fn launch_portable_update_helper(archive: &[u8], version: &Version) -
             .create_new(true)
             .write(true)
             .open(&staged_exe)
-            .map_err(|error| format!("Failed to stage portable Gauss Horizon executable: {error}"))?;
+            .map_err(|error| format!("Failed to stage portable Chiron Horizon executable: {error}"))?;
         staged_file
             .write_all(&executable)
             .and_then(|_| staged_file.sync_all())
-            .map_err(|error| format!("Failed to write portable Gauss Horizon executable: {error}"))?;
+            .map_err(|error| format!("Failed to write portable Chiron Horizon executable: {error}"))?;
         fs::write(&script_path, PORTABLE_UPDATE_SCRIPT)
             .map_err(|error| format!("Failed to create portable update helper: {error}"))?;
 
@@ -277,7 +277,7 @@ for ($attempt = 0; $attempt -lt 120; $attempt++) {
         }
 
         if (-not (Test-Path -LiteralPath $BackupExe)) {
-            throw 'The existing Gauss Horizon executable could not be backed up.'
+            throw 'The existing Chiron Horizon executable could not be backed up.'
         }
 
         Move-Item -LiteralPath $SourceExe -Destination $TargetExe -Force
@@ -345,10 +345,10 @@ mod tests {
 
     #[test]
     fn builds_portable_asset_names_for_windows_architectures() {
-        assert_eq!(portable_asset_name("0.5.64", "x86_64").unwrap(), "GAUSS_HORIZON_0.5.64_x64-portable.zip");
+        assert_eq!(portable_asset_name("0.5.64", "x86_64").unwrap(), "CHIRON_HORIZON_0.5.64_x64-portable.zip");
         assert_eq!(
             portable_asset_name("v0.5.64-beta.1", "aarch64").unwrap(),
-            "GAUSS_HORIZON_0.5.64-beta.1_arm64-portable.zip"
+            "CHIRON_HORIZON_0.5.64-beta.1_arm64-portable.zip"
         );
         assert!(portable_asset_name("0.5.64", "x86").is_err());
         assert!(portable_asset_name("../../0.5.64", "x86_64").is_err());

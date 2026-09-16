@@ -2,7 +2,7 @@ use std::sync::Arc;
 use tauri::State;
 
 use super::connection::AppState;
-pub use gauss_horizon_core::history::{
+pub use chiron_horizon_core::history::{
     HistoryConnectionOption, HistoryEntry, HistorySearchRequest, HistorySearchResult,
 };
 

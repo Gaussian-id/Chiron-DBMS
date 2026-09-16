@@ -288,7 +288,7 @@ export function useDataGridConditionEditor(options: UseDataGridConditionEditorOp
       if (!controller.signal.aborted && requestId === suggestionRequestId) {
         suggestions.value = [];
         highlightedIndex.value = -1;
-        console.warn("[Gauss Horizon][condition-editor] Failed to load suggestions", error);
+        console.warn("[Chiron Horizon][condition-editor] Failed to load suggestions", error);
       }
     } finally {
       if (requestId === suggestionRequestId) suggestionsLoading.value = false;

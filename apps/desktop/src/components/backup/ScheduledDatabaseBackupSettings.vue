@@ -791,7 +791,7 @@ function restoreBackup(run: DatabaseBackupRun, file: DatabaseBackupFile) {
   </div>
 
   <Dialog v-model:open="scheduleDialogOpen">
-    <DialogContent class="gauss-horizon-backup-dialog gauss-horizon-form-dialog gauss-horizon-form-dialog--lg max-h-[min(760px,calc(var(--gauss-horizon-viewport-height)-32px))] max-w-[min(720px,calc(100vw-32px))] overflow-x-hidden overflow-y-auto pr-8 [scrollbar-gutter:stable]">
+    <DialogContent class="chiron-horizon-backup-dialog chiron-horizon-form-dialog chiron-horizon-form-dialog--lg max-h-[min(760px,calc(var(--chiron-horizon-viewport-height)-32px))] max-w-[min(720px,calc(100vw-32px))] overflow-x-hidden overflow-y-auto pr-8 [scrollbar-gutter:stable]">
       <DialogHeader>
         <DialogTitle>{{ editingScheduleId ? t("databaseBackup.editSchedule") : t("databaseBackup.addSchedule") }}</DialogTitle>
       </DialogHeader>
@@ -878,7 +878,7 @@ function restoreBackup(run: DatabaseBackupRun, file: DatabaseBackupFile) {
   </Dialog>
 
   <Dialog v-model:open="oneShotDialogOpen">
-    <DialogContent class="gauss-horizon-backup-dialog gauss-horizon-form-dialog gauss-horizon-form-dialog--lg max-h-[min(760px,calc(var(--gauss-horizon-viewport-height)-32px))] max-w-[min(720px,calc(100vw-32px))] overflow-x-hidden overflow-y-auto pr-8 [scrollbar-gutter:stable]">
+    <DialogContent class="chiron-horizon-backup-dialog chiron-horizon-form-dialog chiron-horizon-form-dialog--lg max-h-[min(760px,calc(var(--chiron-horizon-viewport-height)-32px))] max-w-[min(720px,calc(100vw-32px))] overflow-x-hidden overflow-y-auto pr-8 [scrollbar-gutter:stable]">
       <DialogHeader>
         <DialogTitle>{{ t("databaseBackup.oneShotBackup") }}</DialogTitle>
         <p class="text-sm text-muted-foreground">{{ t("databaseBackup.oneShotDescription") }}</p>

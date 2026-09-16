@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Local chatbot demo: an OpenAI-compatible model calls a scoped Gauss Horizon MCP.
+"""Local chatbot demo: an OpenAI-compatible model calls a scoped Chiron Horizon MCP.
 No MongoDB driver is used here. Database operations travel exclusively through MCP.
 """
 import argparse
@@ -16,9 +16,9 @@ import urllib.request
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
 ROOT = Path(__file__).resolve().parents[3]
-ALLOWED = {'gauss_horizon_list_databases', 'gauss_horizon_list_tables', 'gauss_horizon_describe_table',
-           'gauss_horizon_get_schema_context', 'gauss_horizon_execute_query'}
-SYSTEM = '''You are a small MongoDB assistant connected through Gauss Horizon MCP.
+ALLOWED = {'chiron_horizon_list_databases', 'chiron_horizon_list_tables', 'chiron_horizon_describe_table',
+           'chiron_horizon_get_schema_context', 'chiron_horizon_execute_query'}
+SYSTEM = '''You are a small MongoDB assistant connected through Chiron Horizon MCP.
 Use the provided tools to answer database questions. Only read operations are allowed.
 For execute_query, use MongoDB shell syntax, e.g. db.orders.find({}).limit(10),
 db.orders.countDocuments({}), or db.orders.aggregate([...]). Never use SQL for MongoDB.
@@ -32,8 +32,8 @@ class Mcp:
     def __init__(self, binary, profile, connection_id):
         keys = ('PATH','HOME','USER','LOGNAME','TMPDIR','TMP','TEMP','SYSTEMROOT','WINDIR','COMSPEC','PATHEXT','APPDATA','LOCALAPPDATA','LANG','LC_ALL')
         env = {key: os.environ[key] for key in keys if key in os.environ}
-        env.update(GAUSS_HORIZON_DATA_DIR=str(profile), GAUSS_HORIZON_MCP_SCOPE_CONNECTION_ID=connection_id,
-                   GAUSS_HORIZON_MCP_ALLOW_WRITES='0')
+        env.update(CHIRON_HORIZON_DATA_DIR=str(profile), CHIRON_HORIZON_MCP_SCOPE_CONNECTION_ID=connection_id,
+                   CHIRON_HORIZON_MCP_ALLOW_WRITES='0')
         self.connection_id = connection_id
         self.lock = threading.Lock()
         self.next_id = 0
@@ -42,13 +42,13 @@ class Mcp:
                                      stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, text=True, bufsize=1)
         threading.Thread(target=self.read, daemon=True).start()
         initialized = self.rpc('initialize', {'protocolVersion':'2025-11-25','capabilities':{},
-                    'clientInfo':{'name':'gauss-horizon-mongo-chatbot','version':'0.1.0'}})
+                    'clientInfo':{'name':'chiron-horizon-mongo-chatbot','version':'0.1.0'}})
         self.server_info = initialized['serverInfo']
         self.proc.stdin.write(json.dumps({'jsonrpc':'2.0','method':'notifications/initialized'})+'\n')
         self.proc.stdin.flush()
         self.tools = [tool for tool in self.rpc('tools/list')['tools'] if tool['name'] in ALLOWED]
         # The database selector is loaded over MCP; no direct profile/database query.
-        connections = self.tool('gauss_horizon_list_connections', {})
+        connections = self.tool('chiron_horizon_list_connections', {})
         if connections.get('isError'):
             raise RuntimeError('The selected connection is unavailable through MCP settings.')
         self.connection_label = result_text(connections)
@@ -76,7 +76,7 @@ class Mcp:
                 return response['result']
 
     def tool(self, name, arguments):
-        if name not in ALLOWED and name != 'gauss_horizon_list_connections':
+        if name not in ALLOWED and name != 'chiron_horizon_list_connections':
             raise ValueError('Tool is not allowed in this read-only chatbot.')
         arguments = {k:v for k,v in arguments.items() if k not in ('connection_name','connection_id')}
         arguments['connection_id'] = self.connection_id
@@ -90,7 +90,7 @@ class Mcp:
                 schema.get('properties',{}).pop(name,None)
             schema['required']=[name for name in schema.get('required',[]) if name not in ('connection_id','connection_name')]
             description=tool.get('description','')
-            if tool['name']=='gauss_horizon_execute_query':
+            if tool['name']=='chiron_horizon_execute_query':
                 description='Run a read-only MongoDB shell query, count or aggregate. Use limit(10) when retrieving documents. Writes are blocked by MCP.'
             output.append({'type':'function','function':{'name':tool['name'],'description':description,'parameters':schema}})
         return output
@@ -160,7 +160,7 @@ def chat(mcp, config, question, history, database, share_results):
                 arguments=json.loads(call['function'].get('arguments') or '{}')
                 if not isinstance(arguments,dict):
                     raise ValueError('Invalid tool arguments from model.')
-                if database and not arguments.get('database') and name!='gauss_horizon_list_databases':
+                if database and not arguments.get('database') and name!='chiron_horizon_list_databases':
                     arguments['database']=database
                 result=mcp.tool(name,arguments)
             text=result_text(result)
@@ -204,7 +204,7 @@ def make_handler(mcp, token, html, origin):
                     return self.send(413,{'error':'Request too large'})
                 data=json.loads(self.rfile.read(length))
                 if self.path=='/metadata':
-                    result=mcp.tool('gauss_horizon_list_databases',{}) if not data.get('database') else mcp.tool('gauss_horizon_list_tables',{'database':data['database']})
+                    result=mcp.tool('chiron_horizon_list_databases',{}) if not data.get('database') else mcp.tool('chiron_horizon_list_tables',{'database':data['database']})
                     return self.send(200,{'server':mcp.server_info,'text':result_text(result),'error':bool(result.get('isError'))})
                 if self.path=='/chat':
                     result=chat(mcp,data.get('provider',{}),data.get('message',''),data.get('history',[]),data.get('database',''),data.get('shareResults') is True)
@@ -217,7 +217,7 @@ def make_handler(mcp, token, html, origin):
 
 def main():
     parser=argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('--binary',type=Path,default=ROOT/'target/debug/gauss-horizon-mcp')
+    parser.add_argument('--binary',type=Path,default=ROOT/'target/debug/chiron-horizon-mcp')
     parser.add_argument('--profile',type=Path,required=True)
     parser.add_argument('--connection-id',required=True)
     parser.add_argument('--port',type=int,default=0)

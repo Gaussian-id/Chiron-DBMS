@@ -36,7 +36,7 @@ function watchConnectionTypes(server: ViteDevServer) {
 
 export function connectionTypesPlugin(): Plugin {
   return {
-    name: "gauss-horizon-connection-types",
+    name: "chiron-horizon-connection-types",
     configResolved: syncConnectionTypes,
     configureServer: watchConnectionTypes,
   };

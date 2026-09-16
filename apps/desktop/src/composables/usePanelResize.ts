@@ -16,13 +16,13 @@ function availableAiPanelMaxWidth(handle: HTMLElement | null) {
 }
 
 export function usePanelResize() {
-  const sidebarWidth = ref(Number(safeLocalStorageGet("gauss-horizon-sidebar-width")) || 260);
-  const aiPanelWidth = ref(Number(safeLocalStorageGet("gauss-horizon-ai-panel-width")) || 360);
-  const historyWidth = ref(Number(safeLocalStorageGet("gauss-horizon-history-width")) || 288);
-  const sqlLibraryWidth = ref(Number(safeLocalStorageGet("gauss-horizon-sql-library-width")) || 288);
-  const sqlFilePanelWidth = ref(Number(safeLocalStorageGet("gauss-horizon-sql-file-panel-width")) || 288);
-  const tabBarWidth = ref(Number(safeLocalStorageGet("gauss-horizon-tab-bar-width")) || 240);
-  const tabBarCollapsed = ref(safeLocalStorageGet("gauss-horizon-tab-bar-collapsed") === "true");
+  const sidebarWidth = ref(Number(safeLocalStorageGet("chiron-horizon-sidebar-width")) || 260);
+  const aiPanelWidth = ref(Number(safeLocalStorageGet("chiron-horizon-ai-panel-width")) || 360);
+  const historyWidth = ref(Number(safeLocalStorageGet("chiron-horizon-history-width")) || 288);
+  const sqlLibraryWidth = ref(Number(safeLocalStorageGet("chiron-horizon-sql-library-width")) || 288);
+  const sqlFilePanelWidth = ref(Number(safeLocalStorageGet("chiron-horizon-sql-file-panel-width")) || 288);
+  const tabBarWidth = ref(Number(safeLocalStorageGet("chiron-horizon-tab-bar-width")) || 240);
+  const tabBarCollapsed = ref(safeLocalStorageGet("chiron-horizon-tab-bar-collapsed") === "true");
 
   function startPanelResize(widthRef: Ref<number>, storageKey: string, direction: "left" | "right", maxWidth: PanelMaxWidth = DEFAULT_PANEL_MAX_WIDTH) {
     return (e: MouseEvent) => {
@@ -52,17 +52,17 @@ export function usePanelResize() {
     };
   }
 
-  const startSidebarResize = startPanelResize(sidebarWidth, "gauss-horizon-sidebar-width", "right");
-  const startAiPanelResize = startPanelResize(aiPanelWidth, "gauss-horizon-ai-panel-width", "left", availableAiPanelMaxWidth);
-  const startHistoryResize = startPanelResize(historyWidth, "gauss-horizon-history-width", "left");
-  const startSqlLibraryResize = startPanelResize(sqlLibraryWidth, "gauss-horizon-sql-library-width", "left");
-  const startSqlFilePanelResize = startPanelResize(sqlFilePanelWidth, "gauss-horizon-sql-file-panel-width", "left");
-  const startLeftTabBarResize = startPanelResize(tabBarWidth, "gauss-horizon-tab-bar-width", "right");
-  const startRightTabBarResize = startPanelResize(tabBarWidth, "gauss-horizon-tab-bar-width", "left");
+  const startSidebarResize = startPanelResize(sidebarWidth, "chiron-horizon-sidebar-width", "right");
+  const startAiPanelResize = startPanelResize(aiPanelWidth, "chiron-horizon-ai-panel-width", "left", availableAiPanelMaxWidth);
+  const startHistoryResize = startPanelResize(historyWidth, "chiron-horizon-history-width", "left");
+  const startSqlLibraryResize = startPanelResize(sqlLibraryWidth, "chiron-horizon-sql-library-width", "left");
+  const startSqlFilePanelResize = startPanelResize(sqlFilePanelWidth, "chiron-horizon-sql-file-panel-width", "left");
+  const startLeftTabBarResize = startPanelResize(tabBarWidth, "chiron-horizon-tab-bar-width", "right");
+  const startRightTabBarResize = startPanelResize(tabBarWidth, "chiron-horizon-tab-bar-width", "left");
 
   function setTabBarCollapsed(collapsed: boolean) {
     tabBarCollapsed.value = collapsed;
-    safeLocalStorageSet("gauss-horizon-tab-bar-collapsed", String(collapsed));
+    safeLocalStorageSet("chiron-horizon-tab-bar-collapsed", String(collapsed));
   }
 
   return {

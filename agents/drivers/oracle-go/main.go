@@ -329,7 +329,7 @@ type queryOptions struct {
 	DeferLOBs   bool   `json:"deferLobs"`
 }
 
-const largeValueBytesColumnPrefix = "__GAUSS_HORIZON_LARGE_VALUE_BYTES_"
+const largeValueBytesColumnPrefix = "__CHIRON_HORIZON_LARGE_VALUE_BYTES_"
 
 type queryResult struct {
 	Columns         []string `json:"columns"`
@@ -1788,7 +1788,7 @@ func oracleConstrainedMetadataListQuery(baseSQL, selectList, typeColumn, orderSQ
 		args = append(args, constraints.Offset)
 		offsetParam := len(args)
 		sqlText = fmt.Sprintf(
-			"SELECT %s\nFROM (\n  SELECT GAUSS_HORIZON_Q.*, ROWNUM AS GAUSS_HORIZON_RN\n  FROM (\n%s\n  ) GAUSS_HORIZON_Q\n  WHERE ROWNUM <= :%d\n)\nWHERE GAUSS_HORIZON_RN > :%d",
+			"SELECT %s\nFROM (\n  SELECT CHIRON_HORIZON_Q.*, ROWNUM AS CHIRON_HORIZON_RN\n  FROM (\n%s\n  ) CHIRON_HORIZON_Q\n  WHERE ROWNUM <= :%d\n)\nWHERE CHIRON_HORIZON_RN > :%d",
 			selectList,
 			sqlText,
 			maxRowParam,
@@ -1798,7 +1798,7 @@ func oracleConstrainedMetadataListQuery(baseSQL, selectList, typeColumn, orderSQ
 		args = append(args, constraints.Offset)
 		offsetParam := len(args)
 		sqlText = fmt.Sprintf(
-			"SELECT %s\nFROM (\n  SELECT GAUSS_HORIZON_Q.*, ROWNUM AS GAUSS_HORIZON_RN\n  FROM (\n%s\n  ) GAUSS_HORIZON_Q\n)\nWHERE GAUSS_HORIZON_RN > :%d",
+			"SELECT %s\nFROM (\n  SELECT CHIRON_HORIZON_Q.*, ROWNUM AS CHIRON_HORIZON_RN\n  FROM (\n%s\n  ) CHIRON_HORIZON_Q\n)\nWHERE CHIRON_HORIZON_RN > :%d",
 			selectList,
 			sqlText,
 			offsetParam,
@@ -3571,7 +3571,7 @@ func (s *server) getExplainInfo(sqlText, database, schema string, timeoutSecs in
 		}
 	}
 
-	statementID := "GAUSS_HORIZON_" + strings.ToUpper(strconv.FormatInt(time.Now().UnixNano(), 36))
+	statementID := "CHIRON_HORIZON_" + strings.ToUpper(strconv.FormatInt(time.Now().UnixNano(), 36))
 	defer cleanupOracleExplainPlan(conn, statementID)
 	statementSQL := trimStatementSQL(sqlText)
 	explainArgs := oracleExplainPlanBindArgs(statementSQL)

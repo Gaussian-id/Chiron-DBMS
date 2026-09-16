@@ -16,13 +16,13 @@ const cliManifest = readFileSync(join(repositoryRoot, "plugins/sdk/cli/Cargo.tom
 const cliVersion = cliManifest.match(/^version\s*=\s*"([^"]+)"/m)?.[1];
 if (cliVersion !== packageManifest.version) {
   throw new Error(
-    `@gauss-horizon/plugin-cli version ${packageManifest.version} does not match gauss-horizon-plugin-cli ${cliVersion ?? "unknown"}.`,
+    `@chiron-horizon/plugin-cli version ${packageManifest.version} does not match chiron-horizon-plugin-cli ${cliVersion ?? "unknown"}.`,
   );
 }
 
 const sources = [
-  ["plugins/sdk/rust/gauss-horizon-plugin-sdk", "plugins/sdk/rust/gauss-horizon-plugin-sdk"],
-  ["plugins/sdk/go/gauss-horizon-plugin-sdk", "plugins/sdk/go/gauss-horizon-plugin-sdk"],
+  ["plugins/sdk/rust/chiron-horizon-plugin-sdk", "plugins/sdk/rust/chiron-horizon-plugin-sdk"],
+  ["plugins/sdk/go/chiron-horizon-plugin-sdk", "plugins/sdk/go/chiron-horizon-plugin-sdk"],
 ];
 const excludedNames = new Set([".DS_Store", ".gitignore", "Cargo.lock", "target"]);
 
@@ -45,5 +45,5 @@ for (const [sourceRelative, destinationRelative] of sources) {
 
 writeFileSync(
   join(destinationRoot, "README.md"),
-  "# Bundled Gauss Horizon Plugin SDK\n\nThis directory is bundled for `gauss-horizon-plugin package` and is managed by `@gauss-horizon/plugin-cli`.\n",
+  "# Bundled Chiron Horizon Plugin SDK\n\nThis directory is bundled for `chiron-horizon-plugin package` and is managed by `@chiron-horizon/plugin-cli`.\n",
 );

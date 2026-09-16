@@ -1,21 +1,21 @@
 ---
 title: Getting Started
-description: Install Gauss Horizon Desktop, create your first connection, and build from source.
+description: Install Chiron Horizon Desktop, create your first connection, and build from source.
 ---
 
 # Get Started
 
-Gauss Horizon 0.1.0 is distributed from [GitHub Releases](https://github.com/Gaussian-id/Gauss-Horizon/releases). Download the asset for your platform, compare its SHA-256 with `SHA256SUMS`, then install it locally. Application auto-update and npm distribution are not enabled in this release.
+Chiron Horizon 0.1.0 is distributed from [GitHub Releases](https://github.com/Gaussian-id/Gauss-Horizon/releases). Download the asset for your platform, compare its SHA-256 with `SHA256SUMS`, then install it locally. Application auto-update and npm distribution are not enabled in this release.
 
 ## Install the desktop application
 
 | Platform | Asset | Install |
 | --- | --- | --- |
-| macOS Apple Silicon | `Gauss-Horizon_0.1.0_macos-arm64.dmg` | Open the DMG and drag **Gauss Horizon** into Applications. |
-| macOS Intel | `Gauss-Horizon_0.1.0_macos-x64.dmg` | Open the DMG and drag **Gauss Horizon** into Applications. |
-| Windows 10/11 x64 | `Gauss-Horizon_0.1.0_windows-x64-setup.exe` | Run the NSIS installer. SmartScreen may require **More info → Run anyway**. |
-| Ubuntu 22.04+ x64 | `Gauss-Horizon_0.1.0_linux-x64.deb` | Run `sudo apt install ./Gauss-Horizon_0.1.0_linux-x64.deb`. |
-| Ubuntu 22.04+ x64 | `Gauss-Horizon_0.1.0_linux-x64.AppImage` | Run `chmod +x Gauss-Horizon_0.1.0_linux-x64.AppImage`, then open it. |
+| macOS Apple Silicon | `Chiron-Horizon_0.1.0_macos-arm64.dmg` | Open the DMG and drag **Chiron Horizon** into Applications. |
+| macOS Intel | `Chiron-Horizon_0.1.0_macos-x64.dmg` | Open the DMG and drag **Chiron Horizon** into Applications. |
+| Windows 10/11 x64 | `Chiron-Horizon_0.1.0_windows-x64-setup.exe` | Run the NSIS installer. SmartScreen may require **More info → Run anyway**. |
+| Ubuntu 22.04+ x64 | `Chiron-Horizon_0.1.0_linux-x64.deb` | Run `sudo apt install ./Chiron-Horizon_0.1.0_linux-x64.deb`. |
+| Ubuntu 22.04+ x64 | `Chiron-Horizon_0.1.0_linux-x64.AppImage` | Run `chmod +x Chiron-Horizon_0.1.0_linux-x64.AppImage`, then open it. |
 
 The macOS bundles are ad-hoc signed for bundle integrity rather than notarized. Gatekeeper may require an explicit confirmation. The Windows installer is unsigned in 0.1.0, so SmartScreen confirmation is expected.
 
@@ -30,10 +30,10 @@ sha256sum -c SHA256SUMS
 
 ```powershell
 # Windows PowerShell
-Get-FileHash .\Gauss-Horizon_0.1.0_windows-x64-setup.exe -Algorithm SHA256
+Get-FileHash .\Chiron-Horizon_0.1.0_windows-x64-setup.exe -Algorithm SHA256
 ```
 
-The release also includes `agent-registry.json`, managed JRE 21 archives, individual Agent packages, and offline Agent bundles for databases that need an Agent. The application downloads Agent material only from the Gauss Horizon GitHub Release; it has no application updater or mirror fallback.
+The release also includes `agent-registry.json`, managed JRE 21 archives, individual Agent packages, and offline Agent bundles for databases that need an Agent. The application downloads Agent material only from the Chiron Horizon GitHub Release; it has no application updater or mirror fallback.
 
 ## Create Your First Connection
 
@@ -59,7 +59,7 @@ The release also includes `agent-registry.json`, managed JRE 21 archives, indivi
   <Step>
     ### Paste A URL When Available
 
-    Gauss Horizon can parse common connection URLs for engines such as MySQL, PostgreSQL, Redis, MongoDB, ClickHouse, SQL Server, Oracle, Elasticsearch, Easysearch, Meilisearch, DM, GaussDB, openGauss, TDengine, and Access. Review the parsed fields before saving.
+    Chiron Horizon can parse common connection URLs for engines such as MySQL, PostgreSQL, Redis, MongoDB, ClickHouse, SQL Server, Oracle, Elasticsearch, Easysearch, Meilisearch, DM, GaussDB, openGauss, TDengine, and Access. Review the parsed fields before saving.
 
   </Step>
   <Step>
@@ -76,13 +76,13 @@ The release also includes `agent-registry.json`, managed JRE 21 archives, indivi
   </Step>
 </Steps>
 
-<Callout type="info">Connection passwords, SSH passwords, SSH key passphrases, and connection strings are stored separately from the regular connection JSON in Gauss Horizon's local storage. Use [Config Export/Import](/en/docs/config-export) when you need to migrate encrypted connection settings.</Callout>
+<Callout type="info">Connection passwords, SSH passwords, SSH key passphrases, and connection strings are stored separately from the regular connection JSON in Chiron Horizon's local storage. Use [Config Export/Import](/en/docs/config-export) when you need to migrate encrypted connection settings.</Callout>
 
 ## Reduce Production Mistakes
 
 - Give production connections a distinct name such as `prod-orders`, and use colors, groups, and notes to describe their purpose.
-- For query-only access, combine a database read-only account with Gauss Horizon **Read-only connection**.
-- Enable **Production protection** for the whole connection or selected databases; Gauss Horizon requires a fresh explicit confirmation for writes.
+- For query-only access, combine a database read-only account with Chiron Horizon **Read-only connection**.
+- Enable **Production protection** for the whole connection or selected databases; Chiron Horizon requires a fresh explicit confirmation for writes.
 - When one server contains many databases or schemas, show only the objects you currently need.
 - Review generated SQL before applying edits, imports, transfers, SQL files, or schema sync operations.
 - Put MCP connections behind an allowlist and prefer Read only or Data read/write instead of enabling Full access by default.
@@ -115,7 +115,7 @@ See [Production and Write Safety](/en/docs/production-safety) for complete behav
 
 ## Run From Source
 
-Use source mode when contributing or debugging Gauss Horizon locally.
+Use source mode when contributing or debugging Chiron Horizon locally.
 
 <Callout type="info">
   First-time contributors should follow [Build From Source and Contribute](/en/docs/contributing) for complete platform setup, forking, issue claiming, testing, and pull request steps.
@@ -140,7 +140,7 @@ Use source mode when contributing or debugging Gauss Horizon locally.
     winget install StrawberryPerl.StrawberryPerl
     ```
 
-    Gauss Horizon enables the `sqlite-sqlcipher` feature by default, which compiles SQLCipher and OpenSSL from source. Windows needs Perl to run the OpenSSL `Configure` script. Reopen your terminal after installing so `perl` is available on `PATH`.
+    Chiron Horizon enables the `sqlite-sqlcipher` feature by default, which compiles SQLCipher and OpenSSL from source. Windows needs Perl to run the OpenSSL `Configure` script. Reopen your terminal after installing so `perl` is available on `PATH`.
 
   </Tab>
 </Tabs>
@@ -149,7 +149,7 @@ Use source mode when contributing or debugging Gauss Horizon locally.
 
 ```bash
 git clone https://github.com/Gaussian-id/Gauss-Horizon.git
-cd gauss-horizon
+cd chiron-horizon
 make
 ```
 

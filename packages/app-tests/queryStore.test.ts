@@ -306,7 +306,7 @@ test("legacy Oracle query tabs restore with the auto-commit default", async () =
     const tabId = store.createTab("oracle-1", "ORCL", "Query");
     await store.flushPendingPersist();
 
-    const storageKey = "gauss-horizon-app-state:open_tabs";
+    const storageKey = "chiron-horizon-app-state:open_tabs";
     const saved = JSON.parse(localStorage.getItem(storageKey) ?? "null");
     delete saved.tabs[0].autoCommit;
     localStorage.setItem(storageKey, JSON.stringify(saved));
@@ -364,7 +364,7 @@ test("clean saved SQL tabs persist without duplicating SQL text", async () => {
     });
     await store.flushPendingPersist();
 
-    const rawTabs = localStorage.getItem("gauss-horizon-app-state:open_tabs") ?? "";
+    const rawTabs = localStorage.getItem("chiron-horizon-app-state:open_tabs") ?? "";
     assert.equal(rawTabs.includes("large_table"), false);
 
     setActivePinia(createPinia());
@@ -585,7 +585,7 @@ test("dirty saved SQL tabs keep unsaved edits in open tab persistence", async ()
     store.updateSql(tabId, "SELECT 2;");
     await store.flushPendingPersist();
 
-    const rawTabs = localStorage.getItem("gauss-horizon-app-state:open_tabs") ?? "";
+    const rawTabs = localStorage.getItem("chiron-horizon-app-state:open_tabs") ?? "";
     assert.equal(rawTabs.includes("SELECT 2;"), true);
 
     setActivePinia(createPinia());
@@ -1170,7 +1170,7 @@ test("close other tabs pauses on restored unsaved query tabs", async () => {
   const restoreStorage = installMemoryStorage();
   try {
     localStorage.setItem(
-      "gauss-horizon-open-tabs",
+      "chiron-horizon-open-tabs",
       JSON.stringify([
         {
           id: "a",
@@ -1190,7 +1190,7 @@ test("close other tabs pauses on restored unsaved query tabs", async () => {
         },
       ]),
     );
-    localStorage.setItem("gauss-horizon-active-tab", "b");
+    localStorage.setItem("chiron-horizon-active-tab", "b");
     setActivePinia(createPinia());
     const store = useQueryStore();
     await store.initOpenTabs();
@@ -1673,12 +1673,12 @@ test("result run pin and close state persist across a restart", async () => {
 
     assert.equal(store.toggleResultRunPinned(tabId, "run-1"), true);
     await waitFor(() => {
-      const saved = JSON.parse(localStorage.getItem("gauss-horizon-app-state:open_tabs") ?? "null");
+      const saved = JSON.parse(localStorage.getItem("chiron-horizon-app-state:open_tabs") ?? "null");
       return saved?.tabs?.[0]?.resultRuns?.[0]?.pinned === true;
     });
     assert.equal(await store.closeOtherResultRuns(tabId, "run-1"), true);
     await waitFor(() => {
-      const saved = JSON.parse(localStorage.getItem("gauss-horizon-app-state:open_tabs") ?? "null");
+      const saved = JSON.parse(localStorage.getItem("chiron-horizon-app-state:open_tabs") ?? "null");
       return saved?.tabs?.[0]?.resultRuns?.length === 1;
     });
 
@@ -3135,7 +3135,7 @@ test("keeps PostgreSQL quoted primary keys distinct from case-only result column
       return new Response(
         JSON.stringify([
           {
-            columns: ["id", "name", "__GAUSS_HORIZON_PK_0"],
+            columns: ["id", "name", "__CHIRON_HORIZON_PK_0"],
             rows: [[1, "lower id row", 101]],
             affected_rows: 0,
             execution_time_ms: 1,
@@ -3146,7 +3146,7 @@ test("keeps PostgreSQL quoted primary keys distinct from case-only result column
     }
     if (url === "/api/query/analyze-editability") {
       const body = JSON.parse(String(init?.body ?? "{}"));
-      assert.match(body.sql, /"ID" AS "__GAUSS_HORIZON_PK_0"/);
+      assert.match(body.sql, /"ID" AS "__CHIRON_HORIZON_PK_0"/);
       return new Response(
         JSON.stringify({
           editable: true,
@@ -3159,7 +3159,7 @@ test("keeps PostgreSQL quoted primary keys distinct from case-only result column
             columns: [
               { sourceName: "id", sourceNameQuoted: false, resultName: "id", expression: "id" },
               { sourceName: "name", sourceNameQuoted: false, resultName: "name", expression: "name" },
-              { sourceName: "ID", sourceNameQuoted: true, resultName: "__GAUSS_HORIZON_PK_0", expression: '"ID"' },
+              { sourceName: "ID", sourceNameQuoted: true, resultName: "__CHIRON_HORIZON_PK_0", expression: '"ID"' },
             ],
           },
         }),
@@ -3175,7 +3175,7 @@ test("keeps PostgreSQL quoted primary keys distinct from case-only result column
 
     const tab = store.tabs.find((item) => item.id === tabId);
     await waitFor(() => tab?.tableMeta?.tableName === "case_keys");
-    assert.match(executedSql, /"ID" AS "__GAUSS_HORIZON_PK_0"/);
+    assert.match(executedSql, /"ID" AS "__CHIRON_HORIZON_PK_0"/);
     assert.deepEqual(tab?.querySourceColumns, ["id", "name", "ID"]);
     assert.equal(tab?.queryAnalysis?.allowInsert, false);
     assert.equal(tab?.queryEditabilityReason, undefined);
@@ -4511,7 +4511,7 @@ test("disconnecting a connection flushes released tabs before an immediate resto
       [queryId, outsideId],
     );
     assert.equal(queryStore.activeTabId, outsideId);
-    const persisted = JSON.parse(localStorage.getItem("gauss-horizon-app-state:open_tabs") ?? "null");
+    const persisted = JSON.parse(localStorage.getItem("chiron-horizon-app-state:open_tabs") ?? "null");
     assert.deepEqual(
       persisted.tabs.map((tab: { id: string }) => tab.id),
       [queryId, outsideId],
@@ -4568,7 +4568,7 @@ test("closing a database flushes only that database's released tabs before resto
       [queryId, otherDatabaseId, outsideId],
     );
     assert.equal(queryStore.activeTabId, otherDatabaseId);
-    const persisted = JSON.parse(localStorage.getItem("gauss-horizon-app-state:open_tabs") ?? "null");
+    const persisted = JSON.parse(localStorage.getItem("chiron-horizon-app-state:open_tabs") ?? "null");
     assert.deepEqual(
       persisted.tabs.map((tab: { id: string }) => tab.id),
       [queryId, otherDatabaseId, outsideId],
@@ -5235,7 +5235,7 @@ test("MongoDB query result export pages find commands through the document API",
 
   settingsStore.updateEditorSettings({ exportBatchSize: 100, exportRowLimitEnabled: false });
   connectionStore.addEphemeralConnection({ ...conn("mongo-export-find-1"), db_type: "mongodb", port: 27017 });
-  const tabId = store.createTab("mongo-export-find-1", "gauss_horizon_test");
+  const tabId = store.createTab("mongo-export-find-1", "chiron_horizon_test");
   const tab = store.tabs.find((item) => item.id === tabId);
   assert.ok(tab);
   tab.lastExecutedSql = command;
@@ -5315,7 +5315,7 @@ test("MongoDB query result export keeps limit(0) unbounded and stops on a short 
 
   settingsStore.updateEditorSettings({ exportBatchSize: 100, exportRowLimitEnabled: false });
   connectionStore.addEphemeralConnection({ ...conn("mongo-export-unbounded-1"), db_type: "mongodb", port: 27017 });
-  const tabId = store.createTab("mongo-export-unbounded-1", "gauss_horizon_test");
+  const tabId = store.createTab("mongo-export-unbounded-1", "chiron_horizon_test");
   const tab = store.tabs.find((item) => item.id === tabId);
   assert.ok(tab);
   tab.lastExecutedSql = command;
@@ -5366,7 +5366,7 @@ test("MongoDB query result export combines negative limits with the export row l
 
   settingsStore.updateEditorSettings({ exportBatchSize: 100, exportRowLimit: 120, exportRowLimitEnabled: true });
   connectionStore.addEphemeralConnection({ ...conn("mongo-export-negative-1"), db_type: "mongodb", port: 27017 });
-  const tabId = store.createTab("mongo-export-negative-1", "gauss_horizon_test");
+  const tabId = store.createTab("mongo-export-negative-1", "chiron_horizon_test");
   const tab = store.tabs.find((item) => item.id === tabId);
   assert.ok(tab);
   tab.lastExecutedSql = command;
@@ -5421,7 +5421,7 @@ test("MongoDB query result export preserves columns when a find command returns 
   settingsStore.updateEditorSettings({ exportBatchSize: 100, exportRowLimitEnabled: false });
   connectionStore.addEphemeralConnection({ ...conn("mongo-export-safe-1"), db_type: "mongodb", port: 27017 });
   const findCommand = "db.permissions.find({})";
-  const tabId = store.createTab("mongo-export-safe-1", "gauss_horizon_test");
+  const tabId = store.createTab("mongo-export-safe-1", "chiron_horizon_test");
   const tab = store.tabs.find((item) => item.id === tabId);
   assert.ok(tab);
   tab.lastExecutedSql = findCommand;
@@ -5458,7 +5458,7 @@ test("MongoDB query result export rejects non-find and parse failures without re
   const unsupportedError = "Streaming export is unsupported for this query. Simplify it or use a supported driver.";
 
   connectionStore.addEphemeralConnection({ ...conn("mongo-export-unsupported-1"), db_type: "mongodb", port: 27017 });
-  const tabId = store.createTab("mongo-export-unsupported-1", "gauss_horizon_test");
+  const tabId = store.createTab("mongo-export-unsupported-1", "chiron_horizon_test");
   const tab = store.tabs.find((item) => item.id === tabId);
   assert.ok(tab);
 
@@ -5499,7 +5499,7 @@ test("MongoDB query result export rejects pagination-plan failures without repla
   const command = "db.permissions.find({}) trailing";
 
   connectionStore.addEphemeralConnection({ ...conn("mongo-export-plan-failure-1"), db_type: "mongodb", port: 27017 });
-  const tabId = store.createTab("mongo-export-plan-failure-1", "gauss_horizon_test");
+  const tabId = store.createTab("mongo-export-plan-failure-1", "chiron_horizon_test");
   const tab = store.tabs.find((item) => item.id === tabId);
   assert.ok(tab);
   tab.lastExecutedSql = command;
@@ -5753,7 +5753,7 @@ test("mongo find execution uses editor page size and supports server pagination"
   });
 
   try {
-    const tabId = store.createTab("mongo-page-1", "gauss_horizon_test", "Query", "query", "");
+    const tabId = store.createTab("mongo-page-1", "chiron_horizon_test", "Query", "query", "");
     const sql = 'db.issue_4566.find({name:"xxx"}).collation({locale:"en",strength:1})';
     await store.executeTabSql(tabId, sql);
     const tab = store.tabs.find((item) => item.id === tabId);
@@ -5818,7 +5818,7 @@ test("mongo find pagination does not use an estimated total as a hard limit", as
 
   try {
     const sql = "db.issue_4566.find({})";
-    const tabId = store.createTab("mongo-estimated-total-1", "gauss_horizon_test", "Query", "query", "");
+    const tabId = store.createTab("mongo-estimated-total-1", "chiron_horizon_test", "Query", "query", "");
     await store.executeTabSql(tabId, sql);
     const tab = store.tabs.find((item) => item.id === tabId);
     assert.ok(tab);
@@ -5878,7 +5878,7 @@ test("mongo find execution appends server pages for infinite scroll", async () =
 
   try {
     const sql = "db.issue_4566.find({})";
-    const tabId = store.createTab("mongo-append-1", "gauss_horizon_test", "Query", "query", "");
+    const tabId = store.createTab("mongo-append-1", "chiron_horizon_test", "Query", "query", "");
     await store.executeTabSql(tabId, sql);
     const tab = store.tabs.find((item) => item.id === tabId);
     assert.ok(tab);
@@ -5938,7 +5938,7 @@ test("mongo find pagination preserves explicit skip and limit semantics", async 
 
   try {
     const sql = "db.issue_4566.find({}).skip(20).limit(150)";
-    const tabId = store.createTab("mongo-bounded-1", "gauss_horizon_test", "Query", "query", "");
+    const tabId = store.createTab("mongo-bounded-1", "chiron_horizon_test", "Query", "query", "");
     await store.executeTabSql(tabId, sql);
     const tab = store.tabs.find((item) => item.id === tabId);
     assert.ok(tab);
@@ -6181,13 +6181,13 @@ test("mongo count execution uses the dedicated count endpoint", async () => {
   });
 
   try {
-    const tabId = store.createTab("mongo-1", "gauss_horizon_issue_2959", "Query", "query", "");
+    const tabId = store.createTab("mongo-1", "chiron_horizon_issue_2959", "Query", "query", "");
     await store.executeTabSql(tabId, "db.large_count.count()");
     const tab = store.tabs.find((item) => item.id === tabId);
 
     assert.deepEqual(countBody, {
       connectionId: "mongo-1",
-      database: "gauss_horizon_issue_2959",
+      database: "chiron_horizon_issue_2959",
       collection: "large_count",
       filter: "{}",
       mode: "legacy",
@@ -6338,13 +6338,13 @@ test("mongo runCommand execution follows use and preserves document results", as
 
   try {
     const tabId = store.createTab("mongo-1", "accounting", "Query", "query", "");
-    await store.executeTabSql(tabId, 'use admin\n\ndb.runCommand({ hello: 1, comment: "Gauss Horizon #3050" })');
+    await store.executeTabSql(tabId, 'use admin\n\ndb.runCommand({ hello: 1, comment: "Chiron Horizon #3050" })');
     const tab = store.tabs.find((item) => item.id === tabId);
 
     assert.deepEqual(runCommandBody, {
       connectionId: "mongo-1",
       database: "admin",
-      commandJson: '{"hello":1,"comment":"Gauss Horizon #3050"}',
+      commandJson: '{"hello":1,"comment":"Chiron Horizon #3050"}',
       executionId: runCommandBody.executionId,
     });
     assert.equal(typeof runCommandBody.executionId, "string");
@@ -8170,7 +8170,7 @@ test("SQL Server temporary-table counts reuse the query tab session", async () =
         sqlToExecute: "SELECT * FROM #orders",
         pageLimit: 100,
         pageOffset: 0,
-        countSql: "SELECT COUNT(*) FROM (SELECT * FROM #orders) AS gauss_horizon_count",
+        countSql: "SELECT COUNT(*) FROM (SELECT * FROM #orders) AS chiron_horizon_count",
         useAgentResultSession: false,
       });
     }
@@ -8205,7 +8205,7 @@ test("SQL Server temporary-table counts reuse the query tab session", async () =
     assert.equal(countBody.clientSessionId, tabId);
     assert.equal(closedClientSessions.includes(tabId), false, "the query tab session must remain open");
 
-    tab.resultCountSql = "SELECT COUNT(*) FROM (SELECT * FROM #orders) AS gauss_horizon_count";
+    tab.resultCountSql = "SELECT COUNT(*) FROM (SELECT * FROM #orders) AS chiron_horizon_count";
     assert.equal(await store.countTabResultRows(tabId), 250);
     assert.equal(countBody.clientSessionId, tabId);
     assert.equal(closedClientSessions.includes(tabId), false, "manual count must also preserve the query tab session");
@@ -8378,7 +8378,7 @@ for (const scenario of [
           pageSql: `SELECT TOP ${scenario.bound} 1 AS [id]`,
           pageLimit: scenario.pageLimit,
           pageOffset: scenario.pageOffset,
-          countSql: "SELECT COUNT(*) FROM (SELECT 1 AS [id]) [gauss_horizon_count]",
+          countSql: "SELECT COUNT(*) FROM (SELECT 1 AS [id]) [chiron_horizon_count]",
           exactQueryRowBound: scenario.bound,
           useAgentResultSession: false,
         });
@@ -9055,15 +9055,15 @@ test("Elasticsearch execute all runs each REST request separately", async () => 
 GET /_nodes/stats/jvm?pretty
 
 # 判断索引是否存在
-HEAD /gauss-horizon-orders
+HEAD /chiron-horizon-orders
 
 // 查询文档
-POST /gauss-horizon-orders/_search
+POST /chiron-horizon-orders/_search
 {"size":1}`;
 
   try {
     await store.executeTabSql(tabId, sql);
-    assert.deepEqual(executedRequests, ["GET /_nodes/stats/jvm?pretty", "HEAD /gauss-horizon-orders", 'POST /gauss-horizon-orders/_search\n{"size":1}']);
+    assert.deepEqual(executedRequests, ["GET /_nodes/stats/jvm?pretty", "HEAD /chiron-horizon-orders", 'POST /chiron-horizon-orders/_search\n{"size":1}']);
 
     const tab = store.tabs.find((item) => item.id === tabId);
     assert.deepEqual(

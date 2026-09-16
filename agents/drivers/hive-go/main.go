@@ -142,7 +142,7 @@ func main() {
 }
 
 func configureRuntimeParallelism() {
-	if raw := strings.TrimSpace(os.Getenv("GAUSS_HORIZON_AGENT_HIVE_GOMAXPROCS")); raw != "" {
+	if raw := strings.TrimSpace(os.Getenv("CHIRON_HORIZON_AGENT_HIVE_GOMAXPROCS")); raw != "" {
 		if configured, err := strconv.Atoi(raw); err == nil && configured > 0 {
 			runtime.GOMAXPROCS(configured)
 			return

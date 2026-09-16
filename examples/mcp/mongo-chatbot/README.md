@@ -1,15 +1,15 @@
-# Mongo Chat through Gauss Horizon MCP
+# Mongo Chat through Chiron Horizon MCP
 
-A local Python/browser demo connecting an OpenAI-compatible tool-calling model to a saved MongoDB connection through the standalone Gauss Horizon MCP server. It does not use a direct MongoDB driver. This example is separate from the desktop's built-in AI UI.
+A local Python/browser demo connecting an OpenAI-compatible tool-calling model to a saved MongoDB connection through the standalone Chiron Horizon MCP server. It does not use a direct MongoDB driver. This example is separate from the desktop's built-in AI UI.
 
 ## Run
 
 Requires Python 3 and a built MCP binary:
 
 ```sh
-cargo build -p gauss-horizon-mcp --no-default-features --features sqlite-bundled
+cargo build -p chiron-horizon-mcp --no-default-features --features sqlite-bundled
 python3 examples/mcp/mongo-chatbot/server.py \
-  --profile '/absolute/path/to/your/Gauss Horizon/profile' \
+  --profile '/absolute/path/to/your/Chiron Horizon/profile' \
   --connection-id 'saved-mongodb-connection-id'
 ```
 

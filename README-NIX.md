@@ -1,6 +1,6 @@
 ##  Add to NixOS system configuration
 
-Add Gauss Horizon as a flake input and include the package in `environment.systemPackages`.
+Add Chiron Horizon as a flake input and include the package in `environment.systemPackages`.
 
 ### `flake.nix`
 
@@ -9,20 +9,20 @@ Add Gauss Horizon as a flake input and include the package in `environment.syste
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
 
-    gauss-horizon = {
+    chiron-horizon = {
       url = "github:Gaussian-id/Gauss-Horizon";
       inputs.nixpkgs.follows = "nixpkgs"; # optional
     };
   };
 
-  outputs = { self, nixpkgs, gauss-horizon, ... }: {
+  outputs = { self, nixpkgs, chiron-horizon, ... }: {
     nixosConfigurations.my-machine = nixpkgs.lib.nixosSystem {
       system = "x86_64-linux";
       modules = [
         ./configuration.nix
         {
           environment.systemPackages = [
-            gauss.horizon.packages.x86_64-linux.gauss-horizon-desktop
+            chiron.horizon.packages.x86_64-linux.chiron-horizon-desktop
           ];
         }
       ];
@@ -41,12 +41,12 @@ sudo nixos-rebuild switch --flake .#my-machine
 
 ## Add via Home Manager
 
-This method installs Gauss Horizon for a specific user through [Home Manager](https://github.com/nix-community/home-manager).
+This method installs Chiron Horizon for a specific user through [Home Manager](https://github.com/nix-community/home-manager).
 
 > [!NOTE]
 > The `inputs.nixpkgs.follows = "nixpkgs"` line is **optional**.
 > It prevents Nix from downloading a second copy of nixpkgs, but it also makes
-> Gauss Horizon ineligible for the upstream binary cache (it will be built locally).
+> Chiron Horizon ineligible for the upstream binary cache (it will be built locally).
 > Remove that line if you prefer to download a pre-built binary.
 
 ### `flake.nix` (standalone Home Manager)
@@ -61,20 +61,20 @@ This method installs Gauss Horizon for a specific user through [Home Manager](ht
       inputs.nixpkgs.follows = "nixpkgs"; 
     };
 
-    gauss-horizon = {
+    chiron-horizon = {
       url = "github:Gaussian-id/Gauss-Horizon";
       inputs.nixpkgs.follows = "nixpkgs"; # optional
     };
   };
 
-  outputs = { self, nixpkgs, home-manager, gauss-horizon, ... }: {
+  outputs = { self, nixpkgs, home-manager, chiron-horizon, ... }: {
     homeConfigurations."youruser" = home-manager.lib.homeManagerConfiguration {
       pkgs = nixpkgs.legacyPackages.x86_64-linux;
       system = "x86_64-linux";
       modules = [
         {
           home.packages = [
-            gauss.horizon.packages.x86_64-linux.gauss-horizon-desktop
+            chiron.horizon.packages.x86_64-linux.chiron-horizon-desktop
           ];
         }
       ];
@@ -95,13 +95,13 @@ This method installs Gauss Horizon for a specific user through [Home Manager](ht
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
-    gauss-horizon = {
+    chiron-horizon = {
       url = "github:Gaussian-id/Gauss-Horizon";
       inputs.nixpkgs.follows = "nixpkgs"; # optional
     };
   };
 
-  outputs = { self, nixpkgs, home-manager, gauss-horizon, ... }: {
+  outputs = { self, nixpkgs, home-manager, chiron-horizon, ... }: {
     nixosConfigurations.my-machine = nixpkgs.lib.nixosSystem {
       system = "x86_64-linux";
       modules = [
@@ -110,7 +110,7 @@ This method installs Gauss Horizon for a specific user through [Home Manager](ht
         {
           home-manager.users.youruser = {
             home.packages = [
-              gauss.horizon.packages.x86_64-linux.gauss-horizon-desktop
+              chiron.horizon.packages.x86_64-linux.chiron-horizon-desktop
             ];
           };
         }
@@ -138,11 +138,11 @@ sudo nixos-rebuild switch --flake .#my-machine
 
 ## Development Shell
 
-If you are contributing to Gauss Horizon or building it from a local clone, the flake provides a fully configured development shell with Rust, Node.js, pnpm, and all GTK/WebKit system libraries:
+If you are contributing to Chiron Horizon or building it from a local clone, the flake provides a fully configured development shell with Rust, Node.js, pnpm, and all GTK/WebKit system libraries:
 
 ```bash
 git clone https://github.com/Gaussian-id/Gauss-Horizon
-cd gauss-horizon
+cd chiron-horizon
 nix develop
 ```
 
@@ -159,14 +159,14 @@ Inside the shell:
 
 ## Building from Source
 
-Build the `gauss-horizon-desktop` package directly from the flake:
+Build the `chiron-horizon-desktop` package directly from the flake:
 
 ```bash
-nix build github:Gaussian-id/Gauss-Horizon#gauss-horizon-desktop
+nix build github:Gaussian-id/Gauss-Horizon#chiron-horizon-desktop
 # or, from a local clone:
-nix build .#gauss-horizon-desktop
+nix build .#chiron-horizon-desktop
 ```
 
-The resulting binary is available at `./result/bin/gauss-horizon`.
+The resulting binary is available at `./result/bin/chiron-horizon`.
 
 ---

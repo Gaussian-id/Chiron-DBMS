@@ -170,7 +170,7 @@ import { parseExplainResult, parseOracleExplainText, type ParsedExplainPlan } fr
 import { copyToClipboard } from "@/lib/common/clipboard";
 import { AI_TABLE_MENTION_CANDIDATE_LIMIT, AI_TABLE_MENTION_SCHEMA_LIMIT, filterAiTableMentionCandidates, formatAiTableMention, parseAiTableMentions, type AiTableMention } from "@/lib/ai/aiTableMentions";
 import { handleAiTableReferenceDropEvent } from "@/lib/ai/aiTableReferenceDrop";
-import { GAUSS_HORIZON_TABLE_REFERENCE_DROP_EVENT, clearActiveTableReferencePayload } from "@/lib/editor/queryEditorTableDrop";
+import { CHIRON_HORIZON_TABLE_REFERENCE_DROP_EVENT, clearActiveTableReferencePayload } from "@/lib/editor/queryEditorTableDrop";
 import { canSubmitAiPrompt, isAiPromptImeCompositionEvent, shouldSubmitAiPromptOnKeydown } from "@/lib/ai/aiPromptKeyboard";
 import { isActionableWriteProposalMessage, isActionableWriteSqlProposal, looksLikeActionProposal, looksLikeWriteSqlProposal, shouldGrantWriteSqlOnShortAffirmative } from "@/lib/ai/aiProposalDetect";
 import { visibleToActualIndex } from "@/lib/ai/aiMessageEdit";
@@ -1044,7 +1044,7 @@ const pendingCompaction = ref<{ summary: string; compactedMessages: number } | n
 
 const AI_TEXTAREA_MIN_HEIGHT_PX = 64;
 const AI_TEXTAREA_MAX_PANEL_RATIO = 0.5;
-const AI_TEXTAREA_HEIGHT_STORAGE_KEY = "gauss-horizon-ai-textarea-height";
+const AI_TEXTAREA_HEIGHT_STORAGE_KEY = "chiron-horizon-ai-textarea-height";
 
 const textareaHeight = ref<number>(AI_TEXTAREA_MIN_HEIGHT_PX);
 const assistantRootRef = ref<HTMLElement | null>(null);
@@ -1794,7 +1794,7 @@ function agentEventToStep(event: AgentEvent, index: number, now: number): AiAgen
   }
 
   // tool_call_end: produce a final step; toolArgs will be merged from the start step by upsert if missing.
-  const isExecuteQuery = event.tool_name === "execute_query" || event.tool_name === "gauss_horizon_execute_query";
+  const isExecuteQuery = event.tool_name === "execute_query" || event.tool_name === "chiron_horizon_execute_query";
   const labelKey = isExecuteQuery ? (event.is_error ? "ai.agentSteps.executeBlocked" : "ai.agentSteps.executeSafe") : event.is_error ? "ai.agentSteps.toolError" : "ai.agentSteps.toolDone";
   const tone: AiAgentStepTone = event.is_error ? "danger" : "success";
 
@@ -2661,7 +2661,7 @@ function enqueueAttachmentTask(task: (expectedEpoch: number) => Promise<void>, e
     })
     .catch((error) => {
       if (expectedEpoch !== attachmentDraftEpoch) return;
-      console.error("[Gauss Horizon][ai-attachment] Attachment task failed", error);
+      console.error("[Chiron Horizon][ai-attachment] Attachment task failed", error);
       toast(t("ai.attachmentReadFailed"), 4000);
     })
     .finally(() => {
@@ -2777,7 +2777,7 @@ function addDroppedAttachmentPaths(paths: string[]) {
         await addTextAttachmentBytes(name, data, metadata.size, expectedEpoch);
       } catch (error) {
         if (expectedEpoch !== attachmentDraftEpoch) return;
-        console.error("[Gauss Horizon][ai-attachment] Failed to add dropped attachment", { name, error });
+        console.error("[Chiron Horizon][ai-attachment] Failed to add dropped attachment", { name, error });
         toast(t("ai.attachmentReadFailed"), 4000);
       }
     }
@@ -3562,7 +3562,7 @@ async function send() {
         if (!runIsVisible() && !detachedRun.cancelRequested) {
           toast(t(writeConfirmationRequired ? "ai.backgroundRunNeedsConfirmation" : "ai.backgroundRunCompleted"), 5000, {
             label: t("ai.openPanel"),
-            onClick: () => window.dispatchEvent(new CustomEvent("gauss-horizon:ai-run-notify", { detail: { conversationId: runConversationId, status: runSettledStatus } })),
+            onClick: () => window.dispatchEvent(new CustomEvent("chiron-horizon:ai-run-notify", { detail: { conversationId: runConversationId, status: runSettledStatus } })),
           });
         }
         // Auto-send the conversation's queued input once this run reaches a
@@ -4597,8 +4597,8 @@ onMounted(async () => {
   }).catch(() => undefined);
 
   window.addEventListener("resize", handlePanelResize);
-  document.addEventListener("gauss-horizon:tauri-file-drop", onTauriFileDrop as EventListener);
-  window.addEventListener(GAUSS_HORIZON_TABLE_REFERENCE_DROP_EVENT, onTableReferenceDropEvent);
+  document.addEventListener("chiron-horizon:tauri-file-drop", onTauriFileDrop as EventListener);
+  window.addEventListener(CHIRON_HORIZON_TABLE_REFERENCE_DROP_EVENT, onTableReferenceDropEvent);
   if (typeof ResizeObserver !== "undefined" && assistantRootRef.value) {
     promptPanelResizeObserver = new ResizeObserver(handlePanelResize);
     promptPanelResizeObserver.observe(assistantRootRef.value);
@@ -4678,8 +4678,8 @@ onUnmounted(() => {
   document.body.style.userSelect = "";
   document.body.style.cursor = "";
   window.removeEventListener("resize", handlePanelResize);
-  document.removeEventListener("gauss-horizon:tauri-file-drop", onTauriFileDrop as EventListener);
-  window.removeEventListener(GAUSS_HORIZON_TABLE_REFERENCE_DROP_EVENT, onTableReferenceDropEvent);
+  document.removeEventListener("chiron-horizon:tauri-file-drop", onTauriFileDrop as EventListener);
+  window.removeEventListener(CHIRON_HORIZON_TABLE_REFERENCE_DROP_EVENT, onTableReferenceDropEvent);
   promptPanelResizeObserver?.disconnect();
 });
 
@@ -5974,10 +5974,10 @@ async function openExternalUrl(url: string) {
   background: rgba(82, 82, 82, 0.45);
   background: color-mix(in oklch, var(--foreground) 45%, transparent);
 }
-html.gauss-horizon-legacy-webview.dark .ai-markdown :deep(.ai-markdown-table-wrap::-webkit-scrollbar-thumb) {
+html.chiron-horizon-legacy-webview.dark .ai-markdown :deep(.ai-markdown-table-wrap::-webkit-scrollbar-thumb) {
   background: rgba(212, 212, 216, 0.28);
 }
-html.gauss-horizon-legacy-webview.dark .ai-markdown :deep(.ai-markdown-table-wrap:hover::-webkit-scrollbar-thumb) {
+html.chiron-horizon-legacy-webview.dark .ai-markdown :deep(.ai-markdown-table-wrap:hover::-webkit-scrollbar-thumb) {
   background: rgba(212, 212, 216, 0.45);
 }
 .ai-markdown :deep(.ai-markdown-table-wrap::-webkit-scrollbar-corner) {

@@ -2,25 +2,25 @@ use std::collections::HashSet;
 use std::sync::Arc;
 use tauri::State;
 
-pub use gauss_horizon_core::agent_connection::{
+pub use chiron_horizon_core::agent_connection::{
     agent_connect_params, mongo_legacy_error_with_auth_hint, mongo_uses_legacy_driver, oracle_alternate_connect_config,
     oracle_error_with_driver_hint, should_retry_mongo_with_legacy_driver,
 };
-pub use gauss_horizon_core::connection::{
+pub use chiron_horizon_core::connection::{
     agent_connect_timeout, connect_bare_metadata_pool, connect_mysql_metadata_pool, connection_configs_pool_equivalent,
     connection_configs_session_credentials_compatible, connection_url_for_endpoint, gaussdb_m_jdbc_config_for_endpoint,
     gaussdb_uses_m_jdbc_driver, metadata_connection_config, prestosql_jdbc_config_for_endpoint,
     probe_connection_endpoint, redacted_connection_url_for_endpoint, AppState, MysqlMode, PoolKind,
 };
-use gauss_horizon_core::database_capabilities;
-use gauss_horizon_core::db;
-use gauss_horizon_core::db::agent_driver::{AgentDriverClient, AgentMethod};
-use gauss_horizon_core::models::connection::{
+use chiron_horizon_core::database_capabilities;
+use chiron_horizon_core::db;
+use chiron_horizon_core::db::agent_driver::{AgentDriverClient, AgentMethod};
+use chiron_horizon_core::models::connection::{
     database_info_from_protocol_value, rewrite_jdbc_url_host, ConnectionConfig, ConnectionTestResult,
     DatabaseConnectionInfo, DatabaseType,
 };
-pub use gauss_horizon_core::path_utils::expand_tilde;
-use gauss_horizon_core::runtime_config::{release_runtime_config_on_disconnect, should_retain_runtime_config};
+pub use chiron_horizon_core::path_utils::expand_tilde;
+use chiron_horizon_core::runtime_config::{release_runtime_config_on_disconnect, should_retain_runtime_config};
 
 const MONGO_LEGACY_DRIVER_PROFILE: &str = "mongodb-legacy";
 const MONGO_LEGACY_DRIVER_LABEL: &str = "MongoDB (Legacy)";
@@ -58,7 +58,7 @@ async fn spawn_mongo_legacy_fallback_agent(
     db_type: &DatabaseType,
     native_error: &str,
 ) -> Result<AgentDriverClient, String> {
-    let agent_key = gauss_horizon_core::agent_manager::AgentManager::db_type_to_agent_key(
+    let agent_key = chiron_horizon_core::agent_manager::AgentManager::db_type_to_agent_key(
         db_type,
         Some(MONGO_LEGACY_DRIVER_PROFILE),
     )
@@ -69,7 +69,7 @@ async fn spawn_mongo_legacy_fallback_agent(
             "Agent mapping is unavailable",
         )
     })?;
-    gauss_horizon_core::agent_service::ensure_agent_driver_ready(&state.agent_manager, agent_key).await.map_err(
+    chiron_horizon_core::agent_service::ensure_agent_driver_ready(&state.agent_manager, agent_key).await.map_err(
         |error| mongo_legacy_fallback_error(native_error, "Failed to prepare MongoDB (Legacy) fallback driver", &error),
     )?;
     state.agent_manager.spawn(db_type, Some(MONGO_LEGACY_DRIVER_PROFILE)).await.map_err(|error| {
@@ -220,9 +220,9 @@ mod tests {
         persist_mongo_legacy_driver_profile, save_connection_configs, sync_connection_configs,
         MONGO_LEGACY_DRIVER_LABEL, MONGO_LEGACY_DRIVER_PROFILE,
     };
-    use gauss_horizon_core::connection::{AppState, PoolKind};
-    use gauss_horizon_core::models::connection::{AttachedDatabaseConfig, ConnectionConfig, DatabaseType};
-    use gauss_horizon_core::storage::Storage;
+    use chiron_horizon_core::connection::{AppState, PoolKind};
+    use chiron_horizon_core::models::connection::{AttachedDatabaseConfig, ConnectionConfig, DatabaseType};
+    use chiron_horizon_core::storage::Storage;
 
     fn mongodb_config() -> ConnectionConfig {
         ConnectionConfig {
@@ -249,10 +249,10 @@ mod tests {
             init_script: None,
             color: None,
             transport_layers: Vec::new(),
-            connect_timeout_secs: gauss_horizon_core::models::connection::default_connect_timeout_secs(),
-            query_timeout_secs: gauss_horizon_core::models::connection::default_query_timeout_secs(),
-            idle_timeout_secs: gauss_horizon_core::models::connection::default_idle_timeout_secs(),
-            keepalive_interval_secs: gauss_horizon_core::models::connection::default_keepalive_interval_secs(),
+            connect_timeout_secs: chiron_horizon_core::models::connection::default_connect_timeout_secs(),
+            query_timeout_secs: chiron_horizon_core::models::connection::default_query_timeout_secs(),
+            idle_timeout_secs: chiron_horizon_core::models::connection::default_idle_timeout_secs(),
+            keepalive_interval_secs: chiron_horizon_core::models::connection::default_keepalive_interval_secs(),
             ssl: false,
             ca_cert_path: String::new(),
             client_cert_path: String::new(),
@@ -269,7 +269,7 @@ mod tests {
             redis_sentinel_password: String::new(),
             redis_sentinel_tls: false,
             redis_cluster_nodes: String::new(),
-            redis_key_separator: gauss_horizon_core::models::connection::default_redis_key_separator(),
+            redis_key_separator: chiron_horizon_core::models::connection::default_redis_key_separator(),
             redis_scan_page_size: None,
             redis_database_aliases: Default::default(),
             redis_key_templates: Vec::new(),
@@ -343,17 +343,17 @@ mod tests {
 
     #[tokio::test]
     async fn sqlite_connect_from_config_restores_attached_databases() {
-        let dir = std::env::temp_dir().join(format!("gauss-horizon-tauri-sqlite-attach-{}", uuid::Uuid::new_v4()));
+        let dir = std::env::temp_dir().join(format!("chiron-horizon-tauri-sqlite-attach-{}", uuid::Uuid::new_v4()));
         std::fs::create_dir_all(&dir).unwrap();
         let main_path = dir.join("main.sqlite");
         let attached_path = dir.join("analytics.sqlite");
         drop(
-            gauss_horizon_core::db::sqlite::connect_path_create_if_missing(main_path.to_str().unwrap()).await.unwrap(),
+            chiron_horizon_core::db::sqlite::connect_path_create_if_missing(main_path.to_str().unwrap()).await.unwrap(),
         );
-        let attached = gauss_horizon_core::db::sqlite::connect_path_create_if_missing(attached_path.to_str().unwrap())
+        let attached = chiron_horizon_core::db::sqlite::connect_path_create_if_missing(attached_path.to_str().unwrap())
             .await
             .unwrap();
-        gauss_horizon_core::db::sqlite::execute_query(&attached, "CREATE TABLE events(id INTEGER PRIMARY KEY);")
+        chiron_horizon_core::db::sqlite::execute_query(&attached, "CREATE TABLE events(id INTEGER PRIMARY KEY);")
             .await
             .unwrap();
         drop(attached);
@@ -419,13 +419,13 @@ mod tests {
 
     #[tokio::test]
     async fn saving_memory_sqlite_attachments_keeps_the_live_pool_intact() {
-        let dir = std::env::temp_dir().join(format!("gauss-horizon-tauri-sqlite-memory-{}", uuid::Uuid::new_v4()));
+        let dir = std::env::temp_dir().join(format!("chiron-horizon-tauri-sqlite-memory-{}", uuid::Uuid::new_v4()));
         std::fs::create_dir_all(&dir).unwrap();
         let storage = Storage::open(&dir.join("storage.db")).await.unwrap();
         let state = AppState::new_with_plugin_dir(storage, dir.join("plugins"));
         let initial = sqlite_config(std::path::Path::new(":memory:"), "");
-        let pool = gauss_horizon_core::db::sqlite::connect_path(":memory:").await.unwrap();
-        gauss_horizon_core::db::sqlite::execute_query(
+        let pool = chiron_horizon_core::db::sqlite::connect_path(":memory:").await.unwrap();
+        chiron_horizon_core::db::sqlite::execute_query(
             &pool,
             "CREATE TABLE retained(value TEXT); INSERT INTO retained VALUES ('yes');",
         )
@@ -449,7 +449,7 @@ mod tests {
         assert!(state.pool_handle(&initial.id).await.is_some());
         assert_eq!(state.configs.read().await.get(&initial.id), Some(&initial));
         let retained =
-            gauss_horizon_core::db::sqlite::execute_query(&pool, "SELECT value FROM retained;").await.unwrap();
+            chiron_horizon_core::db::sqlite::execute_query(&pool, "SELECT value FROM retained;").await.unwrap();
         assert_eq!(retained.rows[0][0], serde_json::json!("yes"));
 
         drop(pool);
@@ -584,7 +584,7 @@ mod tests {
 
     #[tokio::test]
     async fn persist_mongo_legacy_driver_profile_updates_only_the_target_connection() {
-        let dir = std::env::temp_dir().join(format!("gauss-horizon-tauri-mongo-profile-{}", uuid::Uuid::new_v4()));
+        let dir = std::env::temp_dir().join(format!("chiron-horizon-tauri-mongo-profile-{}", uuid::Uuid::new_v4()));
         std::fs::create_dir_all(&dir).unwrap();
         let storage = Storage::open(&dir.join("storage.db")).await.unwrap();
         let state = AppState::new_with_plugin_dir(storage, dir.join("plugins"));
@@ -608,11 +608,11 @@ mod tests {
     #[cfg(any(feature = "sqlite-sqlcipher", feature = "sqlite-multiple-ciphers"))]
     #[tokio::test]
     async fn sqlite_connect_from_config_uses_sqlcipher_key() {
-        let path = std::env::temp_dir().join(format!("gauss-horizon-tauri-sqlcipher-{}.db", uuid::Uuid::new_v4()));
-        let key = "gauss-horizon-pass";
+        let path = std::env::temp_dir().join(format!("chiron-horizon-tauri-sqlcipher-{}.db", uuid::Uuid::new_v4()));
+        let key = "chiron-horizon-pass";
 
         {
-            let pool = gauss_horizon_core::db::sqlite::connect_path_create_if_missing_with_cipher_key(
+            let pool = chiron_horizon_core::db::sqlite::connect_path_create_if_missing_with_cipher_key(
                 path.to_str().unwrap(),
                 key,
             )
@@ -655,7 +655,7 @@ mod tests {
     #[cfg(feature = "mq-admin")]
     #[tokio::test]
     async fn save_connection_configs_updates_runtime_cache_and_drops_mq_adapter() {
-        let dir = std::env::temp_dir().join(format!("gauss-horizon-tauri-conn-test-{}", uuid::Uuid::new_v4()));
+        let dir = std::env::temp_dir().join(format!("chiron-horizon-tauri-conn-test-{}", uuid::Uuid::new_v4()));
         std::fs::create_dir_all(&dir).unwrap();
         let storage = Storage::open(&dir.join("storage.db")).await.unwrap();
         let state = AppState::new_with_plugin_dir(storage, dir.join("plugins"));
@@ -692,7 +692,7 @@ mod tests {
     #[cfg(feature = "mq-admin")]
     #[tokio::test]
     async fn load_connection_configs_syncs_runtime_cache_and_drops_stale_pool() {
-        let dir = std::env::temp_dir().join(format!("gauss-horizon-tauri-conn-test-{}", uuid::Uuid::new_v4()));
+        let dir = std::env::temp_dir().join(format!("chiron-horizon-tauri-conn-test-{}", uuid::Uuid::new_v4()));
         std::fs::create_dir_all(&dir).unwrap();
         let storage = Storage::open(&dir.join("storage.db")).await.unwrap();
         let state = AppState::new_with_plugin_dir(storage, dir.join("plugins"));
@@ -727,7 +727,7 @@ mod tests {
     #[cfg(feature = "mq-admin")]
     #[tokio::test]
     async fn save_connection_configs_removes_deleted_runtime_config_and_mq_adapter() {
-        let dir = std::env::temp_dir().join(format!("gauss-horizon-tauri-conn-test-{}", uuid::Uuid::new_v4()));
+        let dir = std::env::temp_dir().join(format!("chiron-horizon-tauri-conn-test-{}", uuid::Uuid::new_v4()));
         std::fs::create_dir_all(&dir).unwrap();
         let storage = Storage::open(&dir.join("storage.db")).await.unwrap();
         let state = AppState::new_with_plugin_dir(storage, dir.join("plugins"));
@@ -774,7 +774,7 @@ mod tests {
 
     #[tokio::test]
     async fn save_connection_configs_retains_one_time_runtime_config_and_its_pool() {
-        let dir = std::env::temp_dir().join(format!("gauss-horizon-tauri-conn-test-{}", uuid::Uuid::new_v4()));
+        let dir = std::env::temp_dir().join(format!("chiron-horizon-tauri-conn-test-{}", uuid::Uuid::new_v4()));
         std::fs::create_dir_all(&dir).unwrap();
         let storage = Storage::open(&dir.join("storage.db")).await.unwrap();
         let state = AppState::new_with_plugin_dir(storage, dir.join("plugins"));
@@ -799,7 +799,7 @@ mod tests {
 
     #[tokio::test]
     async fn save_connection_configs_keeps_session_credential_of_one_time_config() {
-        let dir = std::env::temp_dir().join(format!("gauss-horizon-tauri-conn-test-{}", uuid::Uuid::new_v4()));
+        let dir = std::env::temp_dir().join(format!("chiron-horizon-tauri-conn-test-{}", uuid::Uuid::new_v4()));
         std::fs::create_dir_all(&dir).unwrap();
         let storage = Storage::open(&dir.join("storage.db")).await.unwrap();
         let state = AppState::new_with_plugin_dir(storage, dir.join("plugins"));
@@ -820,7 +820,7 @@ mod tests {
     #[cfg(feature = "mq-admin")]
     #[tokio::test]
     async fn save_connection_configs_removes_deleted_connection_pools() {
-        let dir = std::env::temp_dir().join(format!("gauss-horizon-tauri-conn-test-{}", uuid::Uuid::new_v4()));
+        let dir = std::env::temp_dir().join(format!("chiron-horizon-tauri-conn-test-{}", uuid::Uuid::new_v4()));
         std::fs::create_dir_all(&dir).unwrap();
         let storage = Storage::open(&dir.join("storage.db")).await.unwrap();
         let state = AppState::new_with_plugin_dir(storage, dir.join("plugins"));
@@ -846,7 +846,7 @@ mod tests {
 
     #[tokio::test]
     async fn sync_connection_configs_ignores_password_only_changes() {
-        let dir = std::env::temp_dir().join(format!("gauss-horizon-tauri-conn-test-{}", uuid::Uuid::new_v4()));
+        let dir = std::env::temp_dir().join(format!("chiron-horizon-tauri-conn-test-{}", uuid::Uuid::new_v4()));
         std::fs::create_dir_all(&dir).unwrap();
         let storage = Storage::open(&dir.join("storage.db")).await.unwrap();
         let state = AppState::new_with_plugin_dir(storage, dir.join("plugins"));
@@ -881,7 +881,7 @@ mod tests {
 
     #[tokio::test]
     async fn sync_connection_configs_preserves_nacos_session_password_for_scope_updates() {
-        let dir = std::env::temp_dir().join(format!("gauss-horizon-tauri-nacos-scope-{}", uuid::Uuid::new_v4()));
+        let dir = std::env::temp_dir().join(format!("chiron-horizon-tauri-nacos-scope-{}", uuid::Uuid::new_v4()));
         std::fs::create_dir_all(&dir).unwrap();
         let storage = Storage::open(&dir.join("storage.db")).await.unwrap();
         let state = AppState::new_with_plugin_dir(storage, dir.join("plugins"));
@@ -1073,7 +1073,7 @@ async fn connect_sqlite_from_config_with_state(
 ) -> Result<db::sqlite::SqliteHandle, String> {
     if db::sqlite_worker::sqlite_ssh_worker_requested(config) {
         let state = state
-            .ok_or_else(|| "Remote SQLite over SSH is only available in the Gauss Horizon Desktop app".to_string())?;
+            .ok_or_else(|| "Remote SQLite over SSH is only available in the Chiron Horizon Desktop app".to_string())?;
         let transport_layers = state.resolved_transport_layers(config).await?;
         let worker = db::sqlite_worker::connect_sqlite_worker(
             &state.tunnels,
@@ -1558,18 +1558,18 @@ async fn test_connection_with_info_inner(
                 let admin_config = state.nacos_admin_config_for_connection(connection_id, &config).await?;
                 let adapter = state.nacos_registry.build_transient_config(admin_config).await?;
                 let info = adapter.test_connection_with_scope_validation().await?;
-                database_info = gauss_horizon_core::nacos::service::database_info_from_connection(&info);
+                database_info = chiron_horizon_core::nacos::service::database_info_from_connection(&info);
                 Ok("Connection successful".to_string())
             }
             DatabaseType::Consul => {
-                let mut consul_config = gauss_horizon_core::consul::ConsulConfig::from_connection(&config)?;
+                let mut consul_config = chiron_horizon_core::consul::ConsulConfig::from_connection(&config)?;
                 let validate_agent_target = consul_config.agent_target.is_some();
                 let original_host = consul_config.base_url.host_str().unwrap_or_default();
                 let original_port = consul_config.base_url.port_or_known_default().unwrap_or(config.port);
                 if host != original_host || port != original_port {
                     consul_config = consul_config.with_connect_override(&host, port);
                 }
-                let client = gauss_horizon_core::consul::ConsulClient::new(consul_config).await?;
+                let client = chiron_horizon_core::consul::ConsulClient::new(consul_config).await?;
                 client.probe().await?;
                 let identity = if validate_agent_target {
                     Some(client.validate_configured_agent_target().await?)
@@ -1594,16 +1594,16 @@ async fn test_connection_with_info_inner(
                 // Probe with a transient adapter so Test Connection never retains/replaces
                 // a live cached MQ agent for this connection id (same pattern as Nacos).
                 let mqc = state.mq_admin_config_for_connection(connection_id, &config).await?;
-                let agent_launch = gauss_horizon_core::mq::service::resolve_mq_agent_launch_spec(&mqc, state);
+                let agent_launch = chiron_horizon_core::mq::service::resolve_mq_agent_launch_spec(&mqc, state);
                 let adapter = state.mq_registry.build_transient_config(mqc, agent_launch).await?;
                 let info = adapter.test_connection().await?;
                 database_info = Some(DatabaseConnectionInfo {
                     product_name: Some(
                         match info.system_kind {
-                            gauss_horizon_core::mq::types::MqSystemKind::Pulsar => "Pulsar",
-                            gauss_horizon_core::mq::types::MqSystemKind::Kafka => "Kafka",
-                            gauss_horizon_core::mq::types::MqSystemKind::RocketMq => "RocketMQ",
-                            gauss_horizon_core::mq::types::MqSystemKind::RabbitMq => "RabbitMQ",
+                            chiron_horizon_core::mq::types::MqSystemKind::Pulsar => "Pulsar",
+                            chiron_horizon_core::mq::types::MqSystemKind::Kafka => "Kafka",
+                            chiron_horizon_core::mq::types::MqSystemKind::RocketMq => "RocketMQ",
+                            chiron_horizon_core::mq::types::MqSystemKind::RabbitMq => "RabbitMQ",
                         }
                         .to_string(),
                     ),
@@ -1620,8 +1620,8 @@ async fn test_connection_with_info_inner(
             }
             #[cfg(feature = "mq-admin")]
             DatabaseType::Mqtt => {
-                let mqtt_config = gauss_horizon_core::mqtt::types::MqttConnectionConfig::from_connection(&config)?;
-                let client = gauss_horizon_core::mqtt::client::MqttClient::connect(mqtt_config).await?;
+                let mqtt_config = chiron_horizon_core::mqtt::types::MqttConnectionConfig::from_connection(&config)?;
+                let client = chiron_horizon_core::mqtt::client::MqttClient::connect(mqtt_config).await?;
                 client.disconnect().await;
                 Ok("Connection successful".to_string())
             }
@@ -2002,20 +2002,20 @@ pub async fn connect_db(
             PoolKind::Nacos
         }
         DatabaseType::Consul => {
-            let mut consul_config = gauss_horizon_core::consul::ConsulConfig::from_connection(&db_config)?;
+            let mut consul_config = chiron_horizon_core::consul::ConsulConfig::from_connection(&db_config)?;
             let original_host = consul_config.base_url.host_str().unwrap_or_default();
             let original_port = consul_config.base_url.port_or_known_default().unwrap_or(db_config.port);
             if host != original_host || port != original_port {
                 consul_config = consul_config.with_connect_override(&host, port);
             }
-            let client = gauss_horizon_core::consul::ConsulClient::new(consul_config).await?;
+            let client = chiron_horizon_core::consul::ConsulClient::new(consul_config).await?;
             client.probe().await?;
             PoolKind::Consul(client)
         }
         #[cfg(feature = "mq-admin")]
         DatabaseType::MessageQueue => {
             let mqc = state.mq_admin_config_for_connection(&id, &config).await?;
-            let agent_launch = gauss_horizon_core::mq::service::resolve_mq_agent_launch_spec(&mqc, &state);
+            let agent_launch = chiron_horizon_core::mq::service::resolve_mq_agent_launch_spec(&mqc, &state);
             let build = match state.mq_registry.get_or_build_config(&id, mqc, agent_launch).await {
                 Ok(build) => build,
                 Err(err) => {
@@ -2027,7 +2027,7 @@ pub async fn connect_db(
                 state.mq_registry.drop_connection(&id).await;
                 return Err(err);
             }
-            if let Err(err) = gauss_horizon_core::mq::validate_mq_adapter_after_build(&build).await {
+            if let Err(err) = chiron_horizon_core::mq::validate_mq_adapter_after_build(&build).await {
                 state.mq_registry.drop_connection(&id).await;
                 return Err(err);
             }
@@ -2057,8 +2057,8 @@ pub async fn connect_db(
         }
         #[cfg(feature = "mq-admin")]
         DatabaseType::Mqtt => {
-            let mqtt_config = gauss_horizon_core::mqtt::types::MqttConnectionConfig::from_connection(&db_config)?;
-            let client = gauss_horizon_core::mqtt::client::MqttClient::connect(mqtt_config).await?;
+            let mqtt_config = chiron_horizon_core::mqtt::types::MqttConnectionConfig::from_connection(&db_config)?;
+            let client = chiron_horizon_core::mqtt::client::MqttClient::connect(mqtt_config).await?;
             PoolKind::Mqtt(client)
         }
         #[cfg(not(feature = "mq-admin"))]
@@ -2185,7 +2185,7 @@ pub async fn replace_nacos_session_credential(
 ) -> Result<(), String> {
     state
         .replace_nacos_session_credential(
-            gauss_horizon_core::session_credentials::DESKTOP_OWNER,
+            chiron_horizon_core::session_credentials::DESKTOP_OWNER,
             &connection_id,
             &username,
             &password,
@@ -2279,7 +2279,7 @@ pub async fn ensure_connection_writable(
     connection_id: &str,
     action: &str,
 ) -> Result<(), String> {
-    if let Some(name) = gauss_horizon_core::query::connection_readonly_name(state, connection_id).await {
+    if let Some(name) = chiron_horizon_core::query::connection_readonly_name(state, connection_id).await {
         return Err(format!(
             "Read-only mode: connection '{}' has read-only protection enabled. {} blocked.",
             name, action

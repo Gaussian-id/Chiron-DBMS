@@ -1,16 +1,16 @@
-# Gauss Horizon Hello Workbench plugin
+# Chiron Horizon Hello Workbench plugin
 
 This example exercises the complete manifest v1 path instead of mocking a contribution preview:
 
-- native Rust sidecar built with `gauss-horizon-plugin-sdk`;
+- native Rust sidecar built with `chiron-horizon-plugin-sdk`;
 - protocol handshake and concurrent JSON-RPC requests;
 - saved `connection-provider` with common/config/secret field bindings;
 - test, connect, and disconnect lifecycle;
 - per-connection backend registry;
 - asynchronous connection/progress events;
-- sandboxed workbench UI using `window.gaussHorizonPlugin`;
-- workbench-to-sidecar RPC plus a read-only filesystem contribution rendered by Gauss Horizon's host-owned file manager;
-- unsigned `.gauss-horizonp` candidate packaging plus separate repository signing;
+- sandboxed workbench UI using `window.chironHorizonPlugin`;
+- workbench-to-sidecar RPC plus a read-only filesystem contribution rendered by Chiron Horizon's host-owned file manager;
+- unsigned `.chiron-horizonp` candidate packaging plus separate repository signing;
 - automated install-to-uninstall smoke runner.
 
 ## Files
@@ -27,11 +27,11 @@ hello-workbench/
 └── smoke.mjs              # package + lifecycle smoke test
 ```
 
-The reusable smoke executable lives at `crates/gauss-horizon-core/examples/plugin_package_smoke.rs` so it shares Gauss Horizon's workspace lockfile and dependency patches.
+The reusable smoke executable lives at `crates/chiron-horizon-core/examples/plugin_package_smoke.rs` so it shares Chiron Horizon's workspace lockfile and dependency patches.
 
 ## Build an unsigned development package
 
-From the Gauss Horizon repository root:
+From the Chiron Horizon repository root:
 
 ```bash
 node plugins/examples/hello-workbench/package.mjs
@@ -41,17 +41,17 @@ The package is written to:
 
 ```text
 plugins/examples/hello-workbench/dist/
-  gauss.horizon.example.hello-1.0.0-<target>.gauss-horizonp
-  gauss.horizon.example.hello-1.0.0-<target>.artifact.json
+  chiron.horizon.example.hello-1.0.0-<target>.chiron-horizonp
+  chiron.horizon.example.hello-1.0.0-<target>.artifact.json
 ```
 
 The `.artifact.json` file contains the target, candidate URL, package SHA-256, and size used by review and multi-platform release aggregation. It intentionally contains no `signingKeyId`.
 
-In Gauss Horizon, open **Plugin Center**, enable **Allow unsigned development package**, and install the `.gauss-horizonp`.
+In Chiron Horizon, open **Plugin Center**, enable **Allow unsigned development package**, and install the `.chiron-horizonp`.
 
 ## Use the example
 
-1. Select **Gauss Horizon Hello Workbench** in the plugin center.
+1. Select **Chiron Horizon Hello Workbench** in the plugin center.
 2. Create a **Hello connection**.
 3. Fill the host, port, greeting, and optional example token.
 4. Click **Test**.
@@ -89,30 +89,30 @@ To reuse an already-built package:
 
 ```bash
 node plugins/examples/hello-workbench/smoke.mjs \
-  plugins/examples/hello-workbench/dist/gauss.horizon.example.hello-1.0.0-darwin-arm64.gauss-horizonp
+  plugins/examples/hello-workbench/dist/chiron.horizon.example.hello-1.0.0-darwin-arm64.chiron-horizonp
 ```
 
 To verify a repository-signed package with marketplace policy, provide the trusted repository public keys:
 
 ```bash
-GAUSS_HORIZON_PLUGIN_SMOKE_TRUSTED_KEYS_JSON='{"example-repository":"BASE64_32_BYTE_ED25519_PUBLIC_KEY"}' \
+CHIRON_HORIZON_PLUGIN_SMOKE_TRUSTED_KEYS_JSON='{"example-repository":"BASE64_32_BYTE_ED25519_PUBLIC_KEY"}' \
 node plugins/examples/hello-workbench/smoke.mjs \
-  plugins/examples/hello-workbench/dist/gauss.horizon.example.hello-1.0.0-darwin-arm64.signed.gauss-horizonp
+  plugins/examples/hello-workbench/dist/chiron.horizon.example.hello-1.0.0-darwin-arm64.signed.chiron-horizonp
 ```
 
 ## Sign as a custom repository operator
 
-Official plugin authors skip this section because Gauss Horizon Store signs approved candidates. To exercise the custom-repository flow, generate or load a repository key and sign the already-built candidate:
+Official plugin authors skip this section because Chiron Horizon Store signs approved candidates. To exercise the custom-repository flow, generate or load a repository key and sign the already-built candidate:
 
 ```bash
-gauss-horizon-plugin keygen example-repository
-source .gauss-horizon-repository-signing-key.env
+chiron-horizon-plugin keygen example-repository
+source .chiron-horizon-repository-signing-key.env
 node plugins/examples/hello-workbench/repository-sign.mjs
 ```
 
-The script writes a `.signed.gauss-horizonp`, creates final artifact metadata containing `signingKeyId`, and refreshes the example catalog entry. Add the corresponding Base64 public key under **Plugin Center → Custom repository trust** before installing from that catalog.
+The script writes a `.signed.chiron-horizonp`, creates final artifact metadata containing `signingKeyId`, and refreshes the example catalog entry. Add the corresponding Base64 public key under **Plugin Center → Custom repository trust** before installing from that catalog.
 
-Do not put the private seed in the repository or package. Distribute the repository public key through a channel independent from the `.gauss-horizonp` download.
+Do not put the private seed in the repository or package. Distribute the repository public key through a channel independent from the `.chiron-horizonp` download.
 
 Run the complete temporary-key flow without modifying the example catalog:
 
@@ -122,23 +122,23 @@ node plugins/examples/hello-workbench/repository-smoke.mjs
 
 This builds an unsigned candidate, generates an ephemeral repository key outside the workspace, signs the reviewed candidate, installs it with strict signature policy, exercises assets/actions/connections/filesystem/events, uninstalls it, and removes temporary keys and Cargo targets.
 
-Set `GAUSS_HORIZON_PLUGIN_OUTPUT_DIR` when automation should place candidate outputs outside the example `dist/` directory.
+Set `CHIRON_HORIZON_PLUGIN_OUTPUT_DIR` when automation should place candidate outputs outside the example `dist/` directory.
 
 ## Connection request shape
 
-The backend lifecycle receives the hydrated connection and the final Gauss Horizon transport endpoint:
+The backend lifecycle receives the hydrated connection and the final Chiron Horizon transport endpoint:
 
 ```json
 {
   "provider": {
-    "id": "gauss.horizon.example.hello.connection",
+    "id": "chiron.horizon.example.hello.connection",
     "databaseType": "hello"
   },
   "connection": {
     "id": "saved-connection-id",
     "db_type": "plugin",
-    "plugin_id": "gauss.horizon.example.hello",
-    "plugin_connection_provider": "gauss.horizon.example.hello.connection",
+    "plugin_id": "chiron.horizon.example.hello",
+    "plugin_connection_provider": "chiron.horizon.example.hello.connection",
     "plugin_connection_type": "hello",
     "external_config": {
       "greeting": "Hello"
@@ -159,7 +159,7 @@ The workbench context is intentionally smaller:
 ```json
 {
   "connectionId": "saved-connection-id",
-  "providerId": "gauss.horizon.example.hello.connection",
+  "providerId": "chiron.horizon.example.hello.connection",
   "connectionType": "hello"
 }
 ```
@@ -167,5 +167,5 @@ The workbench context is intentionally smaller:
 ## Adapt it for a real plugin
 
 - SSH/SFTP: switch to `stdio-framed`, keep PTY/SFTP sessions in a backend registry, and use binary channels for terminal/transfer data.
-- OpenDAL: keep credentials in the connection provider, implement filesystem methods in the backend, and let Gauss Horizon own generic file-manager UI.
-- Other tools: add contributions rather than adding a new Gauss Horizon database enum variant or importing plugin Vue code into the main window.
+- OpenDAL: keep credentials in the connection provider, implement filesystem methods in the backend, and let Chiron Horizon own generic file-manager UI.
+- Other tools: add contributions rather than adding a new Chiron Horizon database enum variant or importing plugin Vue code into the main window.

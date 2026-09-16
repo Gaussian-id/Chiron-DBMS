@@ -3,9 +3,9 @@
  * them through this reserved protocol scope so the schema tree can keep a
  * real schema named GUEST independent from database-global aliases.
  */
-export const XUGU_PUBLIC_SYNONYM_SCOPE = "\u0000GAUSS_HORIZON_XUGU_PUBLIC_SYNONYMS";
+export const XUGU_PUBLIC_SYNONYM_SCOPE = "\u0000CHIRON_HORIZON_XUGU_PUBLIC_SYNONYMS";
 export const XUGU_PUBLIC_SYNONYM_SCOPE_LABEL = "Public synonyms";
-export const XUGU_SCHEDULER_JOB_SCOPE = "\u0000GAUSS_HORIZON_XUGU_SCHEDULER_JOBS";
+export const XUGU_SCHEDULER_JOB_SCOPE = "\u0000CHIRON_HORIZON_XUGU_SCHEDULER_JOBS";
 export const XUGU_SCHEDULER_JOB_SCOPE_LABEL = "Scheduled jobs";
 
 /**

@@ -1,23 +1,23 @@
 services:
-  gauss-horizon:
+  chiron-horizon:
     build:
       context: ..
       dockerfile: deploy/Dockerfile
     ports:
       - "4224:4224"
     environment:
-      - GAUSS_HORIZON_PASSWORD=changeme
+      - CHIRON_HORIZON_PASSWORD=changeme
       # Native Streamable HTTP MCP is served by this same Web listener at /mcp.
       # Set the host authority clients use (including its externally mapped port).
-      # - GAUSS_HORIZON_WEB_MCP_TOKEN=replace-with-a-long-random-secret
-      # - GAUSS_HORIZON_WEB_MCP_ALLOWED_HOSTS=localhost:4224
+      # - CHIRON_HORIZON_WEB_MCP_TOKEN=replace-with-a-long-random-secret
+      # - CHIRON_HORIZON_WEB_MCP_ALLOWED_HOSTS=localhost:4224
       # Browser-based MCP clients additionally need their exact Origin, for example:
-      # - GAUSS_HORIZON_WEB_MCP_ALLOWED_ORIGINS=https://mcp-client.example.com
-      # Uncomment when publishing Gauss Horizon under a reverse-proxy subpath, e.g. https://example.com/gauss-horizon/
-      # - GAUSS_HORIZON_PUBLIC_BASE_PATH=/gauss-horizon
+      # - CHIRON_HORIZON_WEB_MCP_ALLOWED_ORIGINS=https://mcp-client.example.com
+      # Uncomment when publishing Chiron Horizon under a reverse-proxy subpath, e.g. https://example.com/chiron-horizon/
+      # - CHIRON_HORIZON_PUBLIC_BASE_PATH=/chiron-horizon
     volumes:
-      - gauss-horizon-data:/app/data
+      - chiron-horizon-data:/app/data
     restart: unless-stopped
 
 volumes:
-  gauss-horizon-data:
+  chiron-horizon-data:

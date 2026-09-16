@@ -29,7 +29,7 @@ class MemoryStorage implements Storage {
   }
 }
 
-const DEBUG_LOG_ENABLED_KEY = "gauss-horizon-debug-logging-enabled";
+const DEBUG_LOG_ENABLED_KEY = "chiron-horizon-debug-logging-enabled";
 
 let originalLocalStorage: PropertyDescriptor | undefined;
 

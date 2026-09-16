@@ -5,6 +5,6 @@ dependencies {
 
 tasks.named('shadowJar') {
     manifest {
-        attributes('Agent-Label': 'Databricks SQL', 'Main-Class': 'com.gauss.horizon.agent.databricks.DatabricksAgent')
+        attributes('Agent-Label': 'Databricks SQL', 'Main-Class': 'com.chiron.horizon.agent.databricks.DatabricksAgent')
     }
 }

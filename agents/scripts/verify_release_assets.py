@@ -19,7 +19,7 @@ def sha256(path: Path) -> str:
 def check_artifact(root: Path, value: dict, errors: list[str], location: str) -> None:
     url = value.get("url", "")
     if not url.startswith(PREFIX):
-        errors.append(f"{location}: non-Gauss-Horizon immutable release URL: {url}")
+        errors.append(f"{location}: non-Chiron-Horizon immutable release URL: {url}")
         return
     path = root / Path(urlparse(url).path).name
     if not path.is_file():

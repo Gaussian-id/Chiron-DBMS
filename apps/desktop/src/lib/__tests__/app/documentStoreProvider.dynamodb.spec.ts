@@ -16,17 +16,17 @@ describe("DynamoDB document store provider", () => {
         skip: 100,
         limit: 50,
       }),
-    ).toContain('Gauss Horizon DYNAMODB QUERY / SCAN\ntable: "orders"\nlimit: 50');
+    ).toContain('Chiron Horizon DYNAMODB QUERY / SCAN\ntable: "orders"\nlimit: 50');
   });
 
   it("keeps composite key identity and large-number wrappers intact", () => {
     const id = {
       tenant_id: "tenant-a",
-      sequence: { $gaussHorizonDynamoDb: { version: 1, type: "number", value: "9007199254740993" } },
+      sequence: { $chironHorizonDynamoDb: { version: 1, type: "number", value: "9007199254740993" } },
     };
 
-    expect(serializeDocumentStoreId(id, "dynamodb")).toBe('{"tenant_id":"tenant-a","sequence":{"$gaussHorizonDynamoDb":{"version":1,"type":"number","value":"9007199254740993"}}}');
-    expect(formatDocumentStoreIdLabel(id, "dynamodb")).toBe('{"tenant_id":"tenant-a","sequence":{"$gaussHorizonDynamoDb":{"version":1,"type":"number","value":"9007199254740993"}}}');
+    expect(serializeDocumentStoreId(id, "dynamodb")).toBe('{"tenant_id":"tenant-a","sequence":{"$chironHorizonDynamoDb":{"version":1,"type":"number","value":"9007199254740993"}}}');
+    expect(formatDocumentStoreIdLabel(id, "dynamodb")).toBe('{"tenant_id":"tenant-a","sequence":{"$chironHorizonDynamoDb":{"version":1,"type":"number","value":"9007199254740993"}}}');
   });
 
   it("builds DynamoDB-compatible structured filters", () => {

@@ -1181,7 +1181,7 @@ describe("sqlCompletion scoped metadata ranking", () => {
     const sql = "SELECT * FROM ";
     const items = buildSqlCompletionItems(sql, sql.length, {
       databaseType: "oracle",
-      tables: [{ name: "ORDERS_10K", schema: "GAUSS_HORIZON_TEST", type: "table" }],
+      tables: [{ name: "ORDERS_10K", schema: "CHIRON_HORIZON_TEST", type: "table" }],
       columnsByTable: new Map(),
     });
 

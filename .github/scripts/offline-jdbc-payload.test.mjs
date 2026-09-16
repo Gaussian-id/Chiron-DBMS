@@ -25,7 +25,7 @@ function run(command, args, options = {}) {
 }
 
 test("builds and verifies all platform ZIPs from the managed JDBC asset manifest", () => {
-  const root = mkdtempSync(join(tmpdir(), "gauss-horizon-offline-jdbc-builder-test-"));
+  const root = mkdtempSync(join(tmpdir(), "chiron-horizon-offline-jdbc-builder-test-"));
   try {
     const releaseDir = join(root, "release");
     const pluginZip = join(root, "plugin.zip");
@@ -81,7 +81,7 @@ process.stdout.write(JSON.stringify(bundles[coordinate]));
     chmodSync(resolver, 0o755);
 
     run(process.execPath, [BUILDER, releaseDir, pluginZip, resolver, testManifestPath], {
-      env: { ...process.env, GAUSS_HORIZON_OFFLINE_JDBC_MAVEN_CACHE: join(root, "cache") },
+      env: { ...process.env, CHIRON_HORIZON_OFFLINE_JDBC_MAVEN_CACHE: join(root, "cache") },
     });
 
     const payloadDir = join(releaseDir, "offline-jdbc/jdbc");
@@ -101,10 +101,10 @@ process.stdout.write(JSON.stringify(bundles[coordinate]));
     }
 
     writeFileSync(join(releaseDir, "agent-registry.json"), "{}\n");
-    for (const platform of PLATFORMS) writeFileSync(join(releaseDir, `gauss-horizon-jre-21-${platform}.tar.zst`), platform);
+    for (const platform of PLATFORMS) writeFileSync(join(releaseDir, `chiron-horizon-jre-21-${platform}.tar.zst`), platform);
     run("bash", [ZIP_BUILDER, releaseDir]);
     run(process.execPath, [RELEASE_VERIFIER, releaseDir, testManifestPath]);
-    for (const platform of PLATFORMS) assert.equal(existsSync(join(releaseDir, `gauss-horizon-agents-offline-${platform}.zip`)), true);
+    for (const platform of PLATFORMS) assert.equal(existsSync(join(releaseDir, `chiron-horizon-agents-offline-${platform}.zip`)), true);
   } finally {
     rmSync(root, { recursive: true, force: true });
   }

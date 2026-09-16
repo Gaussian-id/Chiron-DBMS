@@ -232,7 +232,7 @@ func (rows *scriptedRows) isClosed() bool {
 
 func newScriptedServer(t *testing.T, behavior *scriptedBehavior) *server {
 	t.Helper()
-	driverName := fmt.Sprintf("gauss-horizon-hive-scripted-%d", scriptedDriverSequence.Add(1))
+	driverName := fmt.Sprintf("chiron-horizon-hive-scripted-%d", scriptedDriverSequence.Add(1))
 	sql.Register(driverName, &scriptedDriver{behavior: behavior})
 	database, err := sql.Open(driverName, "")
 	if err != nil {

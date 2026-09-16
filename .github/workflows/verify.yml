@@ -1,4 +1,4 @@
-name: Gauss Horizon verification
+name: Chiron Horizon verification
 on:
   pull_request:
   push:
@@ -54,9 +54,9 @@ jobs:
       - run: pnpm exec vue-tsc --noEmit -p apps/desktop/tsconfig.json
       - run: pnpm exec vitest run apps/desktop/src/lib/chiron apps/desktop/src/components/vector/__tests__ apps/desktop/src/lib/compat
       - run: pnpm test:database-availability
-      - run: cargo test -p gauss-horizon-core --no-default-features --features sqlite-bundled --lib legacy::tests
-      - run: cargo test -p gauss-horizon-core --no-default-features --features sqlite-bundled --test ai_credentials --test chirondb_connector
-      - run: cargo check -p gauss-horizon-cli -p gauss-horizon-web --no-default-features
+      - run: cargo test -p chiron-horizon-core --no-default-features --features sqlite-bundled --lib legacy::tests
+      - run: cargo test -p chiron-horizon-core --no-default-features --features sqlite-bundled --test ai_credentials --test chirondb_connector
+      - run: cargo check -p chiron-horizon-cli -p chiron-horizon-web --no-default-features
       - run: cargo check --manifest-path plugins/sdk/cli/Cargo.toml
       - run: node --test packages/plugin-cli/tests/launcher.test.mjs packages/plugin-cli/tests/dev-launcher.test.mjs
       - name: Build standalone desktop
@@ -65,9 +65,9 @@ jobs:
         run: pnpm exec tauri build --features custom-protocol --target ${{ matrix.target }} --bundles ${{ matrix.bundles }} --ci
       - name: Verify macOS local signature
         if: runner.os == 'macOS'
-        run: codesign --verify --deep --strict --verbose=2 "target/${{ matrix.target }}/release/bundle/macos/Gauss Horizon.app"
+        run: codesign --verify --deep --strict --verbose=2 "target/${{ matrix.target }}/release/bundle/macos/Chiron Horizon.app"
       - uses: actions/upload-artifact@v4
         with:
-          name: Gauss Horizon-0.1.0-${{ matrix.target }}
+          name: Chiron Horizon-0.1.0-${{ matrix.target }}
           path: target/${{ matrix.target }}/release/bundle/
           if-no-files-found: error

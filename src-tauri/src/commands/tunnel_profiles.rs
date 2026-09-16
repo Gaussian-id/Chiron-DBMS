@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use gauss_horizon_core::models::connection::TransportLayerConfig;
+use chiron_horizon_core::models::connection::TransportLayerConfig;
 use tauri::State;
 
 use super::connection::AppState;

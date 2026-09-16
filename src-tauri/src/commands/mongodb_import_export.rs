@@ -6,7 +6,7 @@ use tokio::sync::RwLock;
 
 use crate::commands::connection::{ensure_connection_writable, AppState};
 
-pub use gauss_horizon_core::mongodb_import_export::{
+pub use chiron_horizon_core::mongodb_import_export::{
     MongoExportProgress, MongoExportRequest, MongoExportSummary, MongoImportPreview, MongoImportPreviewRequest,
     MongoImportProgress, MongoImportRequest, MongoImportSummary,
 };
@@ -35,7 +35,7 @@ async fn clear_cancelled(import_id: &str) {
 
 #[tauri::command]
 pub async fn preview_mongodb_import_file(request: MongoImportPreviewRequest) -> Result<MongoImportPreview, String> {
-    gauss_horizon_core::mongodb_import_export::preview_mongodb_import_file_core(request).await
+    chiron_horizon_core::mongodb_import_export::preview_mongodb_import_file_core(request).await
 }
 
 #[tauri::command]
@@ -46,7 +46,7 @@ pub async fn import_mongodb_file(
 ) -> Result<MongoImportSummary, String> {
     clear_cancelled(&request.import_id).await;
     ensure_connection_writable(&state, &request.connection_id, "Import").await?;
-    let result = gauss_horizon_core::mongodb_import_export::import_mongodb_file_core(
+    let result = chiron_horizon_core::mongodb_import_export::import_mongodb_file_core(
         &state,
         &request,
         |import_id| {
@@ -73,12 +73,12 @@ pub async fn export_mongodb_query(
     state: State<'_, Arc<AppState>>,
     request: MongoExportRequest,
 ) -> Result<MongoExportSummary, String> {
-    gauss_horizon_core::mongodb_import_export::export_mongodb_query_core(
+    chiron_horizon_core::mongodb_import_export::export_mongodb_query_core(
         &state,
         &request,
         |export_id| {
             let export_id = export_id.to_string();
-            Box::pin(async move { gauss_horizon_core::transfer::is_cancelled(&export_id).await })
+            Box::pin(async move { chiron_horizon_core::transfer::is_cancelled(&export_id).await })
         },
         |progress| emit_export_progress(&app, progress),
     )
@@ -87,6 +87,6 @@ pub async fn export_mongodb_query(
 
 #[tauri::command]
 pub async fn cancel_mongodb_export(export_id: String) -> Result<bool, String> {
-    gauss_horizon_core::transfer::set_cancelled(&export_id).await;
+    chiron_horizon_core::transfer::set_cancelled(&export_id).await;
     Ok(true)
 }

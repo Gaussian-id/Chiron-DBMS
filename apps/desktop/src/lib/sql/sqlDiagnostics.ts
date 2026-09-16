@@ -12,7 +12,7 @@ function normalizeSqlForComparison(sql: string): string {
   return sql.trim().replace(/;\s*$/u, "").replace(/\s+/gu, " ").trim().toLowerCase();
 }
 
-function removeGaussHorizonPagination(sql: string): string {
+function removeChironHorizonPagination(sql: string): string {
   return sql.replace(/\s+(?:limit\s+\d+(?:\s+offset\s+\d+)?|offset\s+\d+\s+rows?(?:\s+fetch\s+(?:next|first)\s+\d+\s+rows?(?:\s+only)?)?|fetch\s+(?:first|next)\s+\d+\s+rows?\s+only)\s*;?\s*$/iu, "").trim();
 }
 
@@ -20,13 +20,13 @@ function removeGaussHorizonPagination(sql: string): string {
  * Pagination is appended to the SQL sent to the database, so an execution
  * error can refer to a SQL string that differs from the editor by only that
  * generated suffix. Keep error highlighting disabled for unrelated stale
- * errors while allowing this known Gauss Horizon rewrite.
+ * errors while allowing this known Chiron Horizon rewrite.
  */
 export function sqlErrorSqlMatchesEditor(editorSql: string, executedSql: string): boolean {
   if (editorSql === executedSql) return true;
   const norm = (sql: string) => normalizeSqlForComparison(sql);
   if (norm(executedSql) === norm(editorSql)) return true;
-  return norm(removeGaussHorizonPagination(executedSql)) === norm(removeGaussHorizonPagination(editorSql));
+  return norm(removeChironHorizonPagination(executedSql)) === norm(removeChironHorizonPagination(editorSql));
 }
 
 function toZeroBased(value: string | undefined): number | null {

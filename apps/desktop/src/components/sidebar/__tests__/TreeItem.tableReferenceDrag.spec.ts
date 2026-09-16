@@ -4,7 +4,7 @@ import { createApp, defineComponent, h, nextTick, type App } from "vue";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import i18n from "@/i18n";
 import TreeItem from "@/components/sidebar/TreeItem.vue";
-import { GAUSS_HORIZON_TABLE_REFERENCE_DROP_EVENT, type QueryEditorTableReferenceDropDetail } from "@/lib/editor/queryEditorTableDrop";
+import { CHIRON_HORIZON_TABLE_REFERENCE_DROP_EVENT, type QueryEditorTableReferenceDropDetail } from "@/lib/editor/queryEditorTableDrop";
 import { createSidebarTreeRuntime, sidebarTreeRuntimeKey } from "@/lib/sidebar/sidebarTreeRuntime";
 import type { TreeNode } from "@/types/database";
 
@@ -93,7 +93,7 @@ async function mountTreeItem(props: { reorderDisabled?: boolean; referenceDragDi
 function listenForTableReferenceDrop() {
   const listener = vi.fn<(event: Event) => void>();
   dropListeners.push(listener);
-  window.addEventListener(GAUSS_HORIZON_TABLE_REFERENCE_DROP_EVENT, listener);
+  window.addEventListener(CHIRON_HORIZON_TABLE_REFERENCE_DROP_EVENT, listener);
   return listener;
 }
 
@@ -111,7 +111,7 @@ function dragToEditor(row: HTMLElement) {
 }
 
 afterEach(() => {
-  for (const listener of dropListeners.splice(0)) window.removeEventListener(GAUSS_HORIZON_TABLE_REFERENCE_DROP_EVENT, listener);
+  for (const listener of dropListeners.splice(0)) window.removeEventListener(CHIRON_HORIZON_TABLE_REFERENCE_DROP_EVENT, listener);
   for (const app of mountedApps.splice(0)) app.unmount();
   document.body.innerHTML = "";
   vi.restoreAllMocks();
@@ -129,7 +129,7 @@ describe("TreeItem table reference dragging", () => {
     const detail = (onDrop.mock.calls[0][0] as CustomEvent<QueryEditorTableReferenceDropDetail>).detail;
     expect(detail).toEqual({
       payload: {
-        kind: "gauss-horizon-table-reference",
+        kind: "chiron-horizon-table-reference",
         connectionId: "connection-1",
         database: "main",
         tableName: "orders",

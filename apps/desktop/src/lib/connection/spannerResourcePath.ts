@@ -3,7 +3,7 @@ import type { ConnectionConfig } from "@/types/database";
 /**
  * Cloud Spanner has no host/port identity: a database is addressed by the
  * resource path `projects/{project}/instances/{instance}/databases/{database}`.
- * Gauss Horizon stores that whole path in `ConnectionConfig.database` and lets the
+ * Chiron Horizon stores that whole path in `ConnectionConfig.database` and lets the
  * connection dialog edit it either as three IDs or as the raw path.
  *
  * Partial paths (`projects/p/instances//databases/`) are intentionally
@@ -123,7 +123,7 @@ export function spannerSchemaDisplayName(schema: string): string {
 /**
  * Percent-encode a Spanner resource path for display, keeping the `/` separators
  * intact — they are structure, not data. Mirrors `encode_spanner_resource_path`
- * in crates/gauss-horizon-core/src/models/connection.rs.
+ * in crates/chiron-horizon-core/src/models/connection.rs.
  *
  * Every other database type keeps whole-value encoding, where a slash inside a
  * database name really is data and should be escaped.

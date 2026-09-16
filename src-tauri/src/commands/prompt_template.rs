@@ -1,7 +1,7 @@
 use std::sync::Arc;
 use tauri::State;
 
-use gauss_horizon_core::prompt_template::PromptTemplate;
+use chiron_horizon_core::prompt_template::PromptTemplate;
 
 use super::connection::AppState;
 

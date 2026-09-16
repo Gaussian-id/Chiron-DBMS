@@ -649,7 +649,7 @@ func connectionParams() map[string]any {
 }
 
 func jdbcAgentCommand(jar string) []string {
-	java := os.Getenv("GAUSS_HORIZON_AGENT_JAVA")
+	java := os.Getenv("CHIRON_HORIZON_AGENT_JAVA")
 	if java == "" {
 		java = "java"
 	}

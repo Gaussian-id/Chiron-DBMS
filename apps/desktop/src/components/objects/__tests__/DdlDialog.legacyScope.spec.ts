@@ -53,7 +53,7 @@ describe("DdlViewDialog legacy fallback selectors", () => {
     const content = document.body.querySelector<HTMLElement>('[data-slot="dialog-content"]');
     const footer = document.body.querySelector<HTMLElement>('[data-slot="dialog-footer"]');
     expect(content).not.toBeNull();
-    expect(content!.className).toContain("gauss-horizon-ddl-view-dialog");
+    expect(content!.className).toContain("chiron-horizon-ddl-view-dialog");
     expect(content!.className).toContain("max-w-sm");
     // The dialog content element is rendered by the child DialogContent component
     // through reka-ui's portal Teleport, so the parent scoped-style attribute
@@ -67,8 +67,8 @@ describe("DdlViewDialog legacy fallback selectors", () => {
     // never carries this component's scoped data-v attribute, so per-dialog rules
     // are avoided entirely: width comes from the global sm:max-w-190 legacy entry
     // and the footer layout from the global dialog-footer rule.
-    expect(ddlViewDialogSource).not.toContain("gauss-horizon-legacy-webview");
+    expect(ddlViewDialogSource).not.toContain("chiron-horizon-legacy-webview");
     expect(ddlViewDialogSource).not.toContain("@media");
-    expect(ddlViewDialogSource).toContain('class="gauss-horizon-ddl-view-dialog sm:max-w-190"');
+    expect(ddlViewDialogSource).toContain('class="chiron-horizon-ddl-view-dialog sm:max-w-190"');
   });
 });

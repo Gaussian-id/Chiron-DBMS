@@ -321,14 +321,14 @@ describe("SshHostKeyPromptDialog web bridge", () => {
         host: "203.0.113.10",
         port: 22,
         fingerprint: "08ca4746e8fbf97038a93105d3ef023112e3f66bc097869401628c00acea7709",
-        prompt: "/home/testuser/.cache/gauss-horizon/sqlite-worker/session-ebd207de-8f26cd6e-08ca4746e8fbf97038a93105d3ef023112e3f66bc097869401628c00acea7709",
+        prompt: "/home/testuser/.cache/chiron-horizon/sqlite-worker/session-ebd207de-8f26cd6e-08ca4746e8fbf97038a93105d3ef023112e3f66bc097869401628c00acea7709",
       },
     });
     await nextTick();
 
     expect(document.body.textContent).toContain("203.0.113.10:22");
     expect(document.body.textContent).toContain("08ca4746e8fbf97038a93105d3ef023112e3f66bc097869401628c00acea7709");
-    expect(document.body.textContent).toContain("/home/testuser/.cache/gauss-horizon/sqlite-worker/");
+    expect(document.body.textContent).toContain("/home/testuser/.cache/chiron-horizon/sqlite-worker/");
     expect(dialogSource).toContain("break-all");
     expect(dialogSource).toContain("shrink-0");
 

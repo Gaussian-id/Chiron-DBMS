@@ -38,7 +38,7 @@ describe("sqlFormatter", () => {
     expect(preservedQueries).toBe("SELECT\n  1;\n\nSELECT\n  2;");
     expect(preservedQueriesWideSpacing).toBe("SELECT\n  1;\n\n\nSELECT\n  2;");
     expect(preservedQueriesWithTwoEmptyLines).toBe("SELECT\n  1;\n\n\nSELECT\n  2;");
-    expect(preserved).not.toContain("__GAUSS_HORIZON_PRESERVE_EMPTY_LINE_");
+    expect(preserved).not.toContain("__CHIRON_HORIZON_PRESERVE_EMPTY_LINE_");
   });
 
   it("maps PostgreSQL-compatible database types to the postgres formatter dialect", () => {
@@ -164,7 +164,7 @@ CONNECT BY PRIOR ctt.U_DM = HY.SU_DM;`);
 
       expect(formatted).not.toBe(sql);
       expect(extractSqlParameters(formatted, { databaseType: "duckdb" })).toEqual(expectedParameters);
-      expect(formatted).not.toContain("__GAUSS_HORIZON_DUCKDB_PREFIX_ALIAS_COLON_");
+      expect(formatted).not.toContain("__CHIRON_HORIZON_DUCKDB_PREFIX_ALIAS_COLON_");
     }
   });
 
@@ -185,14 +185,14 @@ CONNECT BY PRIOR ctt.U_DM = HY.SU_DM;`);
     const sql = `select total:price, 'literal:date', $$dollar:date
 AND inside
 OR inside$$ as note
-      from sales /* alias:date */ /*__GAUSS_HORIZON_DUCKDB_PREFIX_ALIAS_COLON_0__*/ -- trailing:date`;
+      from sales /* alias:date */ /*__CHIRON_HORIZON_DUCKDB_PREFIX_ALIAS_COLON_0__*/ -- trailing:date`;
     const formatted = await formatSqlText(sql, sqlFormatDialectForDbType("duckdb"), { logicalOperatorNewline: "none" });
 
     expect(extractSqlParameters(formatted, { databaseType: "duckdb" })).toEqual([]);
     expect(formatted).toContain("'literal:date'");
     expect(formatted).toContain("$$dollar:date\nAND inside\nOR inside$$");
     expect(formatted).toContain("/* alias:date */");
-    expect(formatted).toContain("/*__GAUSS_HORIZON_DUCKDB_PREFIX_ALIAS_COLON_0__*/");
+    expect(formatted).toContain("/*__CHIRON_HORIZON_DUCKDB_PREFIX_ALIAS_COLON_0__*/");
     expect(formatted).toContain("-- trailing:date");
   });
 
@@ -210,7 +210,7 @@ OR inside$$ as note
 
     expect(formatted).toBe(sql);
     expect(extractSqlParameters(formatted, { databaseType: "duckdb" })).toEqual([]);
-    expect(formatted).not.toContain("__GAUSS_HORIZON_DUCKDB_PREFIX_ALIAS_COLON_");
+    expect(formatted).not.toContain("__CHIRON_HORIZON_DUCKDB_PREFIX_ALIAS_COLON_");
   });
 
   it("returns malformed DuckDB SQL unchanged without leaking formatter markers", async () => {
@@ -219,7 +219,7 @@ OR inside$$ as note
     const formatted = await formatSqlForEditing(sql, sqlFormatDialectForDbType("duckdb"));
 
     expect(formatted).toBe(sql);
-    expect(formatted).not.toContain("__GAUSS_HORIZON_DUCKDB_PREFIX_ALIAS_COLON_");
+    expect(formatted).not.toContain("__CHIRON_HORIZON_DUCKDB_PREFIX_ALIAS_COLON_");
   });
 
   it("preserves ClickHouse lambda arrows when formatting issue #3573 SQL", async () => {
@@ -275,7 +275,7 @@ OR inside$$ as note
     expect(formatted).toContain("FROM\n  source_table m");
   });
 
-  it("preserves Gauss Horizon brace placeholders in generic and MySQL SQL", async () => {
+  it("preserves Chiron Horizon brace placeholders in generic and MySQL SQL", async () => {
     const sql = "SELECT ${x} AS shell_value, #{x} AS mybatis_value, '${date}' AS quoted_value";
 
     for (const dialect of ["generic", "mysql"] as const) {
@@ -310,7 +310,7 @@ OR inside$$ as note
     expect(formatted).toContain("filters.like");
   });
 
-  it.each(["mysql", "sqlite"] as const)("does not rewrite LIKE inside Gauss Horizon placeholders in the %s dialect", async (dialect) => {
+  it.each(["mysql", "sqlite"] as const)("does not rewrite LIKE inside Chiron Horizon placeholders in the %s dialect", async (dialect) => {
     for (const [lowerPlaceholder, upperPlaceholder] of [
       ["${like}", "${LIKE}"],
       ["#{like}", "#{LIKE}"],

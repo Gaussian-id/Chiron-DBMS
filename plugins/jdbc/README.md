@@ -1,12 +1,12 @@
-# Gauss Horizon JDBC Plugin Prototype
+# Chiron Horizon JDBC Plugin Prototype
 
-This is an optional sidecar plugin for Gauss Horizon. It is not bundled with the main Gauss Horizon app.
+This is an optional sidecar plugin for Chiron Horizon. It is not bundled with the main Chiron Horizon app.
 
 ## Build
 
 ```sh
 ./gradlew shadowJar
-cp build/libs/gauss-horizon-jdbc-plugin-all.jar lib/gauss-horizon-jdbc-plugin.jar
+cp build/libs/chiron-horizon-jdbc-plugin-all.jar lib/chiron-horizon-jdbc-plugin.jar
 ```
 
 ## Package for release
@@ -16,29 +16,29 @@ cp build/libs/gauss-horizon-jdbc-plugin-all.jar lib/gauss-horizon-jdbc-plugin.ja
 ```
 
 The package version follows the JDBC plugin version in `build.gradle` and `manifest.json`.
-The package script writes one immutable `gauss-horizon-jdbc-plugin-<version>.zip` asset.
+The package script writes one immutable `chiron-horizon-jdbc-plugin-<version>.zip` asset.
 
-## Install for local Gauss Horizon
+## Install for local Chiron Horizon
 
-Copy this folder to the Gauss Horizon app data plugin directory:
+Copy this folder to the Chiron Horizon app data plugin directory:
 
 ```text
-<Gauss Horizon app data>/plugins/jdbc
+<Chiron Horizon app data>/plugins/jdbc
 ```
 
 The folder must contain:
 
 ```text
 manifest.json
-bin/gauss-horizon-jdbc-plugin
-lib/gauss-horizon-jdbc-plugin.jar
+bin/chiron-horizon-jdbc-plugin
+lib/chiron-horizon-jdbc-plugin.jar
 ```
 
-Gauss Horizon does not bundle Java or JDBC drivers. Install Java locally and add database-specific driver JAR paths in the Gauss Horizon JDBC connection form.
+Chiron Horizon does not bundle Java or JDBC drivers. Install Java locally and add database-specific driver JAR paths in the Chiron Horizon JDBC connection form.
 
 ## MySQL-compatible cursor fetching
 
-Gauss Horizon uses standard JDBC result-set paging, but does not automatically set Connector/J's `useCursorFetch` property.
+Chiron Horizon uses standard JDBC result-set paging, but does not automatically set Connector/J's `useCursorFetch` property.
 That property enables a MySQL-specific server cursor protocol; it is not part of JDBC and may be unsupported by
 MySQL-compatible servers. If a server and driver are known to support it, opt in explicitly in the connection URL:
 
@@ -50,12 +50,12 @@ Leave the property unset for generic JDBC or compatibility drivers that need to 
 
 The first-class JDBCX profile uses `io.github.jdbcx.WrappedDriver` and
 `jdbcx:[extension:][vendor://host:port/database]` URLs. Install a JDBCX Maven bundle such as
-`io.github.jdbcx:jdbcx-driver:0.8.0` in the Gauss Horizon JDBC driver store, together with the database vendor's JDBC driver.
-JDBCX discovers delegate drivers through JDBC `ServiceLoader`/`Driver.acceptsURL`, without vendor-specific Gauss Horizon code.
-Each connection selects exactly one installed JDBCX runtime bundle; Gauss Horizon excludes artifacts from every other installed
+`io.github.jdbcx:jdbcx-driver:0.8.0` in the Chiron Horizon JDBC driver store, together with the database vendor's JDBC driver.
+JDBCX discovers delegate drivers through JDBC `ServiceLoader`/`Driver.acceptsURL`, without vendor-specific Chiron Horizon code.
+Each connection selects exactly one installed JDBCX runtime bundle; Chiron Horizon excludes artifacts from every other installed
 JDBCX version from that connection's classpath.
 
-Gauss Horizon restricts JDBCX to the `help`, `var`, and `version` extensions by default. Shell, Script, Web, MCP, and other
+Chiron Horizon restricts JDBCX to the `help`, `var`, and `version` extensions by default. Shell, Script, Web, MCP, and other
 high-privilege extensions can execute local commands or access external resources, so they require an explicit
 per-connection opt-in in the connection dialog.
 

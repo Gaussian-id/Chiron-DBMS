@@ -396,7 +396,7 @@ export interface PluginResultViewContribution {
 export type PluginContribution = PluginConnectionProviderContribution | PluginWorkbenchContribution | PluginFilesystemProviderContribution | PluginContextMenuContribution | PluginResultViewContribution;
 
 export interface PluginEngines {
-  "gauss-horizon": string;
+  "chiron-horizon": string;
   host_api: string;
 }
 
@@ -1005,7 +1005,7 @@ export interface QueryResult {
   /** Set only for SQL Server informational messages emitted by the backend. */
   server_message?: true;
   /** Oracle-only manual-transaction UX marker: set on a manual-transaction result
-   *  whose statement Gauss Horizon proved to be an ordinary top-level read. Absent for
+   *  whose statement Chiron Horizon proved to be an ordinary top-level read. Absent for
    *  every non-Oracle execution and every unproven Oracle statement. */
   manual_transaction_proven_read_only?: true;
   /** Oracle-only manual-transaction UX marker: set on the synthetic successful
@@ -1770,7 +1770,7 @@ export interface QueryTab {
   /** Set to true when a manual transaction was auto-rolled back due to inactivity */
   txnAutoRolledBack?: boolean;
   /** Oracle-only, non-persisted: whether the current manual Oracle session has
-   *  executed at least one statement Gauss Horizon cannot prove read-only. Commit/Rollback
+   *  executed at least one statement Chiron Horizon cannot prove read-only. Commit/Rollback
    *  actions are hidden while a session is clean. Never cleared by a later read. */
   oracleTxnPossiblyDirty?: boolean;
 }

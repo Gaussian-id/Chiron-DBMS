@@ -151,7 +151,7 @@ describe("SqlEditorWorkspace mount contract", () => {
 
   beforeEach(() => {
     document.body.innerHTML = "";
-    localStorage.removeItem("gauss-horizon-shared-results-pane-size");
+    localStorage.removeItem("chiron-horizon-shared-results-pane-size");
     editorPreviewCalls.length = 0;
     editorFocusCalls.length = 0;
     groupHandleModRCalls.length = 0;
@@ -276,7 +276,7 @@ describe("SqlEditorWorkspace mount contract", () => {
   });
 
   it("preserves the saved result height across result and idle query tabs", async () => {
-    localStorage.setItem("gauss-horizon-shared-results-pane-size", "45");
+    localStorage.setItem("chiron-horizon-shared-results-pane-size", "45");
     const { store, host, cleanup } = mountOutputWorkspace([tab("result"), { ...tab("idle"), result: undefined }]);
     await nextTick();
     expect(host.querySelector(".pane-stub")?.getAttribute("size")).toBe("55");

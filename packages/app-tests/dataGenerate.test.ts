@@ -284,7 +284,7 @@ test("treats repeated null, default, and SQL expression values as unique-domain 
 test("generates Oracle-compatible single-row inserts with explicit temporal literals", () => {
   const result = generateTableData(
     {
-      tableName: "GAUSS_HORIZON_GENERATE_TEST",
+      tableName: "CHIRON_HORIZON_GENERATE_TEST",
       schema: "APP",
       database: "XE",
       rowCount: 2,
@@ -326,7 +326,7 @@ test("generates Oracle-compatible single-row inserts with explicit temporal lite
 test("batches large Oracle data generation statements", () => {
   const result = generateTableData(
     {
-      tableName: "GAUSS_HORIZON_GENERATE_TEST",
+      tableName: "CHIRON_HORIZON_GENERATE_TEST",
       schema: "APP",
       database: "XE",
       rowCount: 101,
@@ -353,8 +353,8 @@ test("generates TDengine stable rows with one child table identity and stable ta
     {
       tableName: "sensor_data",
       tableType: "STABLE",
-      schema: "gauss_horizon_issue4512",
-      database: "gauss_horizon_issue4512",
+      schema: "chiron_horizon_issue4512",
+      database: "chiron_horizon_issue4512",
       rowCount: 2,
       columns: [
         {
@@ -385,7 +385,7 @@ test("generates TDengine stable rows with one child table identity and stable ta
   );
 
   assert.deepEqual(result.columns, ["tbname", "ts", "temperature", "device_id"]);
-  assert.match(String(result.rows[0][0]), /^gauss_horizon_gen_[a-z0-9]+_[a-z0-9]+$/);
+  assert.match(String(result.rows[0][0]), /^chiron_horizon_gen_[a-z0-9]+_[a-z0-9]+$/);
   assert.equal(result.rows[1][0], result.rows[0][0]);
   assert.deepEqual(
     result.rows.map((row) => row.slice(1)),
@@ -395,7 +395,7 @@ test("generates TDengine stable rows with one child table identity and stable ta
     ],
   );
   assert.match(result.sql, /^INSERT INTO `sensor_data` \(`tbname`, `ts`, `temperature`, `device_id`\) VALUES\n/);
-  assert.equal(result.sql.match(/'gauss_horizon_gen_[a-z0-9]+_[a-z0-9]+'/g)?.length, 2);
+  assert.equal(result.sql.match(/'chiron_horizon_gen_[a-z0-9]+_[a-z0-9]+'/g)?.length, 2);
 });
 
 test("keeps ordinary TDengine table generation unchanged", () => {
@@ -403,8 +403,8 @@ test("keeps ordinary TDengine table generation unchanged", () => {
     {
       tableName: "sensor_data_001",
       tableType: "TABLE",
-      schema: "gauss_horizon_issue4512",
-      database: "gauss_horizon_issue4512",
+      schema: "chiron_horizon_issue4512",
+      database: "chiron_horizon_issue4512",
       rowCount: 1,
       columns: [
         {

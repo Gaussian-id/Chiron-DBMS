@@ -1,11 +1,11 @@
 {
-  "name": "@gauss-horizon/plugin-cli",
+  "name": "@chiron-horizon/plugin-cli",
   "version": "0.1.0",
-  "description": "Create and package Gauss Horizon plugins without compiling the Gauss Horizon plugin CLI",
+  "description": "Create and package Chiron Horizon plugins without compiling the Chiron Horizon plugin CLI",
   "keywords": [
     "cli",
     "database",
-    "gauss-horizon",
+    "chiron-horizon",
     "plugin",
     "plugin-development"
   ],
@@ -17,7 +17,7 @@
     "directory": "packages/plugin-cli"
   },
   "bin": {
-    "gauss-horizon-plugin": "bin/gauss-horizon-plugin.js"
+    "chiron-horizon-plugin": "bin/chiron-horizon-plugin.js"
   },
   "files": [
     "bin",
@@ -27,19 +27,19 @@
   ],
   "type": "module",
   "scripts": {
-    "build": "node --check bin/gauss-horizon-plugin.js && node --check scripts/stage-sdk.mjs",
+    "build": "node --check bin/chiron-horizon-plugin.js && node --check scripts/stage-sdk.mjs",
     "test": "node --test tests/*.test.mjs",
     "prepack": "node scripts/stage-sdk.mjs && node scripts/stage-dev.mjs",
     "postpack": "node scripts/stage-sdk.mjs --clean && node scripts/stage-dev.mjs --clean",
     "prepublishOnly": "npm run build && npm test"
   },
   "optionalDependencies": {
-    "@gauss-horizon/plugin-cli-darwin-arm64": "workspace:*",
-    "@gauss-horizon/plugin-cli-darwin-x64": "workspace:*",
-    "@gauss-horizon/plugin-cli-linux-arm64-gnu": "workspace:*",
-    "@gauss-horizon/plugin-cli-linux-x64-gnu": "workspace:*",
-    "@gauss-horizon/plugin-cli-win32-arm64": "workspace:*",
-    "@gauss-horizon/plugin-cli-win32-x64": "workspace:*"
+    "@chiron-horizon/plugin-cli-darwin-arm64": "workspace:*",
+    "@chiron-horizon/plugin-cli-darwin-x64": "workspace:*",
+    "@chiron-horizon/plugin-cli-linux-arm64-gnu": "workspace:*",
+    "@chiron-horizon/plugin-cli-linux-x64-gnu": "workspace:*",
+    "@chiron-horizon/plugin-cli-win32-arm64": "workspace:*",
+    "@chiron-horizon/plugin-cli-win32-x64": "workspace:*"
   },
   "engines": {
     "node": ">=18.18.0"

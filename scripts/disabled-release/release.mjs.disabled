@@ -40,9 +40,9 @@ const PACKAGE_RELEASE_PATHS = [
   "packages/mcp-linux-x64-gnu/",
   "packages/mcp-win32-arm64/",
   "packages/mcp-win32-x64/",
-  "crates/gauss-horizon-mcp/",
-  "crates/gauss-horizon-cli/",
-  "crates/gauss-horizon-core/src/mongo_shell.rs",
+  "crates/chiron-horizon-mcp/",
+  "crates/chiron-horizon-cli/",
+  "crates/chiron-horizon-core/src/mongo_shell.rs",
   "Cargo.toml",
   "Cargo.lock",
   ".github/workflows/mcp-release.yml",
@@ -366,10 +366,10 @@ function validateRollbackRelease(rollbackRelease, latestRelease) {
   // asset name satisfies the Apple Silicon requirement.
   const requiredAssets = [
     ["latest.json"],
-    [`GAUSS_HORIZON_${version}_arm64.dmg`, `GAUSS_HORIZON_${version}_aarch64.dmg`],
-    [`GAUSS_HORIZON_${version}_x64.dmg`],
-    [`GAUSS_HORIZON_${version}_x64-setup.exe`],
-    [`GAUSS_HORIZON_${version}_arm64-setup.exe`],
+    [`CHIRON_HORIZON_${version}_arm64.dmg`, `CHIRON_HORIZON_${version}_aarch64.dmg`],
+    [`CHIRON_HORIZON_${version}_x64.dmg`],
+    [`CHIRON_HORIZON_${version}_x64-setup.exe`],
+    [`CHIRON_HORIZON_${version}_arm64-setup.exe`],
   ];
   const assetNames = new Set(rollbackRelease.assets.map((asset) => asset.name));
   const missingAssets = requiredAssets
@@ -443,7 +443,7 @@ function getLatestAgentTag() {
   const tag = getLatestSemverTag(AGENT_TAG_PREFIX);
   if (tag) return { tag: tag.tag, source: "current repo" };
 
-  const legacyRepo = "../gauss-horizon-agents";
+  const legacyRepo = "../chiron-horizon-agents";
   const legacyRepoCheck = spawnSync("git", ["-C", legacyRepo, "rev-parse", "--is-inside-work-tree"], {
     cwd: process.cwd(),
     encoding: "utf8",
@@ -719,7 +719,7 @@ function fail(message) {
 function printHelp() {
   console.log(`Usage: node scripts/release.mjs [packages|agents|app|rollback] [patch|minor|major|version] [options]
 
-Unified release and emergency rollback trigger for Gauss Horizon packages, agents, and app distribution.
+Unified release and emergency rollback trigger for Chiron Horizon packages, agents, and app distribution.
 
 Targets:
   packages              Trigger Node Packages Release via gh workflow run

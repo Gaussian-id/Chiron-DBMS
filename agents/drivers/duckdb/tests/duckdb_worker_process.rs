@@ -4,11 +4,11 @@ use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::OnceLock;
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
-use gauss_horizon_core::db::duckdb_worker_process::DuckDbWorkerClient;
-use gauss_horizon_core::db::duckdb_worker_protocol::{
+use chiron_horizon_core::db::duckdb_worker_process::DuckDbWorkerClient;
+use chiron_horizon_core::db::duckdb_worker_protocol::{
     DuckDbWorkerConnectParams, DuckDbWorkerExecuteParams, DuckDbWorkerMethod, DuckDbWorkerRequest, DuckDbWorkerResponse,
 };
-use gauss_horizon_core::query_cancel::{RunningQueries, RunningTaskMetadata};
+use chiron_horizon_core::query_cancel::{RunningQueries, RunningTaskMetadata};
 use sysinfo::{Pid, ProcessRefreshKind, ProcessesToUpdate, RefreshKind, System};
 use tokio::io::{AsyncBufReadExt, AsyncWriteExt, BufReader};
 use tokio::process::Command;
@@ -19,7 +19,7 @@ static TEMP_DB_COUNTER: AtomicU64 = AtomicU64::new(0);
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn worker_process_reads_view_source() {
     let _guard = duckdb_worker_process_test_guard().await;
-    let executable = PathBuf::from(env!("CARGO_BIN_EXE_gauss-horizon-duckdb-driver"));
+    let executable = PathBuf::from(env!("CARGO_BIN_EXE_chiron-horizon-duckdb-driver"));
     let db_path = temp_duckdb_path();
     let _ = std::fs::remove_file(&db_path);
 
@@ -43,7 +43,7 @@ async fn worker_process_reads_view_source() {
             "main".to_string(),
             "main".to_string(),
             "active_orders".to_string(),
-            gauss_horizon_core::db::ObjectSourceKind::View,
+            chiron_horizon_core::db::ObjectSourceKind::View,
         )
         .await
         .expect("get view source");
@@ -58,7 +58,7 @@ async fn worker_process_reads_view_source() {
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn worker_process_reads_table_ddl() {
     let _guard = duckdb_worker_process_test_guard().await;
-    let executable = PathBuf::from(env!("CARGO_BIN_EXE_gauss-horizon-duckdb-driver"));
+    let executable = PathBuf::from(env!("CARGO_BIN_EXE_chiron-horizon-duckdb-driver"));
     let db_path = temp_duckdb_path();
     let _ = std::fs::remove_file(&db_path);
 
@@ -93,7 +93,7 @@ async fn worker_process_reads_table_ddl() {
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn worker_process_recovers_immediately_after_cancelled_long_query() {
     let _guard = duckdb_worker_process_test_guard().await;
-    let executable = PathBuf::from(env!("CARGO_BIN_EXE_gauss-horizon-duckdb-driver"));
+    let executable = PathBuf::from(env!("CARGO_BIN_EXE_chiron-horizon-duckdb-driver"));
     let db_path = temp_duckdb_path();
     let _ = std::fs::remove_file(&db_path);
 
@@ -118,7 +118,7 @@ async fn worker_process_recovers_immediately_after_cancelled_long_query() {
     let cancelled = tokio::time::timeout(Duration::from_secs(5), &mut long_query)
         .await
         .expect("cancelled query should return promptly");
-    assert_eq!(cancelled.expect_err("long query should be cancelled"), gauss_horizon_core::query::canceled_error());
+    assert_eq!(cancelled.expect_err("long query should be cancelled"), chiron_horizon_core::query::canceled_error());
 
     let probe = tokio::time::timeout(
         Duration::from_secs(5),
@@ -144,7 +144,7 @@ async fn worker_process_recovers_immediately_after_cancelled_long_query() {
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn worker_process_recovers_after_registered_cancel_interrupt() {
     let _guard = duckdb_worker_process_test_guard().await;
-    let executable = PathBuf::from(env!("CARGO_BIN_EXE_gauss-horizon-duckdb-driver"));
+    let executable = PathBuf::from(env!("CARGO_BIN_EXE_chiron-horizon-duckdb-driver"));
     let db_path = temp_duckdb_path();
     let _ = std::fs::remove_file(&db_path);
 
@@ -180,7 +180,7 @@ async fn worker_process_recovers_after_registered_cancel_interrupt() {
     let cancelled = tokio::time::timeout(Duration::from_secs(5), &mut long_query)
         .await
         .expect("cancelled query should return promptly");
-    assert_eq!(cancelled.expect_err("long query should be cancelled"), gauss_horizon_core::query::canceled_error());
+    assert_eq!(cancelled.expect_err("long query should be cancelled"), chiron_horizon_core::query::canceled_error());
     drop(registered);
 
     let probe = tokio::time::timeout(
@@ -207,7 +207,7 @@ async fn worker_process_recovers_after_registered_cancel_interrupt() {
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn worker_process_recovers_after_parser_error() {
     let _guard = duckdb_worker_process_test_guard().await;
-    let executable = PathBuf::from(env!("CARGO_BIN_EXE_gauss-horizon-duckdb-driver"));
+    let executable = PathBuf::from(env!("CARGO_BIN_EXE_chiron-horizon-duckdb-driver"));
     let db_path = temp_duckdb_path();
     let _ = std::fs::remove_file(&db_path);
 
@@ -264,7 +264,7 @@ async fn worker_process_recovers_after_parser_error() {
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn worker_process_keeps_session_state_after_benign_error() {
     let _guard = duckdb_worker_process_test_guard().await;
-    let executable = PathBuf::from(env!("CARGO_BIN_EXE_gauss-horizon-duckdb-driver"));
+    let executable = PathBuf::from(env!("CARGO_BIN_EXE_chiron-horizon-duckdb-driver"));
     let db_path = temp_duckdb_path();
     let _ = std::fs::remove_file(&db_path);
 
@@ -312,7 +312,7 @@ async fn worker_process_keeps_session_state_after_benign_error() {
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn worker_process_exits_when_stdin_closes_during_active_query() {
     let _guard = duckdb_worker_process_test_guard().await;
-    let executable = PathBuf::from(env!("CARGO_BIN_EXE_gauss-horizon-duckdb-driver"));
+    let executable = PathBuf::from(env!("CARGO_BIN_EXE_chiron-horizon-duckdb-driver"));
     let db_path = temp_duckdb_path();
     let _ = std::fs::remove_file(&db_path);
     let mut child = Command::new(executable)
@@ -376,7 +376,7 @@ async fn worker_process_is_killed_after_connect_timeout() {
     let _ = std::fs::remove_file(&pid_file);
     let _ = std::fs::remove_file(&db_path);
 
-    std::env::set_var("GAUSS_HORIZON_DUCKDB_HANGING_CONNECT_PID_FILE", &pid_file);
+    std::env::set_var("CHIRON_HORIZON_DUCKDB_HANGING_CONNECT_PID_FILE", &pid_file);
     let client = DuckDbWorkerClient::new_unconnected_with_timeouts(
         executable,
         Vec::new(),
@@ -392,7 +392,7 @@ async fn worker_process_is_killed_after_connect_timeout() {
         .execute(None, "SELECT 1".to_string(), Some(10), None, Some(Duration::from_secs(5)))
         .await
         .expect_err("connect should time out");
-    std::env::remove_var("GAUSS_HORIZON_DUCKDB_HANGING_CONNECT_PID_FILE");
+    std::env::remove_var("CHIRON_HORIZON_DUCKDB_HANGING_CONNECT_PID_FILE");
     assert!(err.contains("timed out"), "unexpected error: {err}");
 
     let pid = read_pid_file(&pid_file).expect("hanging worker pid");
@@ -412,7 +412,7 @@ async fn worker_process_is_killed_after_connect_error() {
     let _ = std::fs::remove_file(&pid_file);
     let _ = std::fs::remove_dir_all(&missing_dir);
 
-    std::env::set_var("GAUSS_HORIZON_DUCKDB_PID_TEST_HOST_PID_FILE", &pid_file);
+    std::env::set_var("CHIRON_HORIZON_DUCKDB_PID_TEST_HOST_PID_FILE", &pid_file);
     let client = DuckDbWorkerClient::new_unconnected_with_timeouts(
         executable,
         Vec::new(),
@@ -428,7 +428,7 @@ async fn worker_process_is_killed_after_connect_error() {
         .execute(None, "SELECT 1".to_string(), Some(10), None, Some(Duration::from_secs(5)))
         .await
         .expect_err("connect should fail with an invalid DuckDB path");
-    std::env::remove_var("GAUSS_HORIZON_DUCKDB_PID_TEST_HOST_PID_FILE");
+    std::env::remove_var("CHIRON_HORIZON_DUCKDB_PID_TEST_HOST_PID_FILE");
     assert!(
         err.contains("Cannot open file")
             || err.contains("No such file")
@@ -447,7 +447,7 @@ async fn worker_process_is_killed_after_connect_error() {
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn worker_process_retries_connect_after_transient_file_lock() {
     let _guard = duckdb_worker_process_test_guard().await;
-    let executable = PathBuf::from(env!("CARGO_BIN_EXE_gauss-horizon-duckdb-driver"));
+    let executable = PathBuf::from(env!("CARGO_BIN_EXE_chiron-horizon-duckdb-driver"));
     let lock_owner_executable = PathBuf::from(env!("CARGO_BIN_EXE_duckdb-worker-file-lock-owner"));
     let db_path = temp_duckdb_path();
     let _ = std::fs::remove_file(&db_path);
@@ -502,7 +502,7 @@ async fn worker_process_retries_connect_after_transient_file_lock() {
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn worker_shutdown_checkpoints_and_removes_wal() {
     let _guard = duckdb_worker_process_test_guard().await;
-    let executable = PathBuf::from(env!("CARGO_BIN_EXE_gauss-horizon-duckdb-driver"));
+    let executable = PathBuf::from(env!("CARGO_BIN_EXE_chiron-horizon-duckdb-driver"));
     let db_path = temp_duckdb_path();
     let wal_path = wal_path_for(&db_path);
     let _ = std::fs::remove_file(&db_path);
@@ -573,7 +573,7 @@ fn temp_duckdb_path() -> PathBuf {
     // These tests run concurrently; the counter prevents same-tick temp DB paths
     // from sharing a DuckDB file lock.
     let counter = TEMP_DB_COUNTER.fetch_add(1, Ordering::Relaxed);
-    std::env::temp_dir().join(format!("gauss-horizon-duckdb-worker-process-{pid}-{suffix}-{counter}.duckdb"))
+    std::env::temp_dir().join(format!("chiron-horizon-duckdb-worker-process-{pid}-{suffix}-{counter}.duckdb"))
 }
 
 async fn duckdb_worker_process_test_guard() -> tokio::sync::MutexGuard<'static, ()> {
@@ -585,7 +585,7 @@ fn temp_pid_path() -> PathBuf {
     let suffix = SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_nanos();
     let pid = std::process::id();
     let counter = TEMP_DB_COUNTER.fetch_add(1, Ordering::Relaxed);
-    std::env::temp_dir().join(format!("gauss-horizon-duckdb-worker-process-{pid}-{suffix}-{counter}.pid"))
+    std::env::temp_dir().join(format!("chiron-horizon-duckdb-worker-process-{pid}-{suffix}-{counter}.pid"))
 }
 
 fn read_pid_file(path: &PathBuf) -> Option<u32> {

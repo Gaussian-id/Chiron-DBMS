@@ -56,11 +56,11 @@ const props = defineProps<{
 
 const transferDialogStyle = {
   width: "min(1120px, calc(100vw - 2rem))",
-  height: "min(80vh, calc(var(--gauss-horizon-viewport-height) - 2rem))",
+  height: "min(80vh, calc(var(--chiron-horizon-viewport-height) - 2rem))",
   minWidth: "min(780px, calc(100vw - 2rem))",
-  minHeight: "min(480px, calc(var(--gauss-horizon-viewport-height) - 2rem))",
+  minHeight: "min(480px, calc(var(--chiron-horizon-viewport-height) - 2rem))",
   maxWidth: "calc(100vw - 2rem)",
-  maxHeight: "calc(var(--gauss-horizon-viewport-height) - 2rem)",
+  maxHeight: "calc(var(--chiron-horizon-viewport-height) - 2rem)",
 } as const;
 
 const store = useConnectionStore();
@@ -1151,7 +1151,7 @@ async function saveConfigTask() {
 
 <template>
   <Dialog v-model:open="open">
-    <DialogContent class="gauss-horizon-transfer-dialog sm:max-w-[1120px] max-h-[80vh] flex flex-col overflow-hidden resize" :style="transferDialogStyle" @interact-outside.prevent>
+    <DialogContent class="chiron-horizon-transfer-dialog sm:max-w-[1120px] max-h-[80vh] flex flex-col overflow-hidden resize" :style="transferDialogStyle" @interact-outside.prevent>
       <DialogHeader class="shrink-0">
         <DialogTitle class="flex items-center gap-2">
           <ArrowRightLeft class="w-4 h-4" />
@@ -1486,7 +1486,7 @@ async function saveConfigTask() {
 </template>
 
 <style>
-html.gauss-horizon-legacy-webview [data-slot="dialog-content"].gauss-horizon-transfer-dialog[class~="max-w-sm"] {
+html.chiron-horizon-legacy-webview [data-slot="dialog-content"].chiron-horizon-transfer-dialog[class~="max-w-sm"] {
   /* Override the legacy default cap without pinning width, so native resize remains effective. */
   max-width: calc(100vw - 2rem) !important;
 }

@@ -9,7 +9,7 @@ import { i18n, resolveLang } from "@/lib/i18n";
 const LOCALE_MAP: Record<string, { locale: string; title: string; description: string }> = {
   en: {
     locale: "en_US",
-    title: "Gauss Horizon desktop database workbench",
+    title: "Chiron Horizon desktop database workbench",
     description: DEFAULT_DESCRIPTION,
   },
 };

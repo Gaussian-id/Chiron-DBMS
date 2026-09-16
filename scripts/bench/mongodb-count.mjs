@@ -6,11 +6,11 @@ import { performance } from "node:perf_hooks";
 
 const DEFAULTS = {
   apiBase: "http://127.0.0.1:4224/api",
-  container: "gauss-horizon-issue-2959-mongo",
+  container: "chiron-horizon-issue-2959-mongo",
   image: "mongo:3.4",
   host: "127.0.0.1",
   port: 12959,
-  database: "gauss_horizon_issue_2959",
+  database: "chiron_horizon_issue_2959",
   collection: "large_count",
   expectedCount: 21_606_536,
   iterations: 5,
@@ -18,7 +18,7 @@ const DEFAULTS = {
   seed: false,
   forceSeed: false,
   seedBatchSize: 10_000,
-  gaussHorizonDataDir: "",
+  chironHorizonDataDir: "",
   json: false,
 };
 
@@ -69,8 +69,8 @@ function parseArgs(argv) {
       case "seed-batch-size":
         options.seedBatchSize = Number.parseInt(value, 10);
         break;
-      case "gauss-horizon-data-dir":
-        options.gaussHorizonDataDir = value;
+      case "chiron-horizon-data-dir":
+        options.chironHorizonDataDir = value;
         break;
       case "json":
         options.json = value !== "false";
@@ -92,26 +92,26 @@ Usage:
   pnpm bench:mongodb-count [options]
 
 Options:
-  --api-base=http://127.0.0.1:4224/api  Gauss Horizon Web API base URL
-  --container=gauss-horizon-issue-2959-mongo       MongoDB Docker container name
+  --api-base=http://127.0.0.1:4224/api  Chiron Horizon Web API base URL
+  --container=chiron-horizon-issue-2959-mongo       MongoDB Docker container name
   --image=mongo:3.4                      MongoDB image used when creating the container
   --port=12959                           Host port for MongoDB
-  --database=gauss_horizon_issue_2959              Database name
+  --database=chiron_horizon_issue_2959              Database name
   --collection=large_count               Collection name
   --expected-count=21606536              Expected collection count
   --iterations=5                         Timed iterations per case
   --warmups=1                            Warmup iterations per case
-  --gauss-horizon-data-dir=/tmp/gauss-horizon-bench          Copy local Mongo agent jar into this Gauss Horizon data dir
+  --chiron-horizon-data-dir=/tmp/chiron-horizon-bench          Copy local Mongo agent jar into this Chiron Horizon data dir
   --seed                                 Seed the collection if its count does not match
   --force-seed                           Drop and reseed even if the collection exists
   --seed-batch-size=10000                Number of docs per insertMany batch
   --json                                 Print JSON only
 
-Before running this benchmark, start Gauss Horizon Web with the same data dir, for example:
-  GAUSS_HORIZON_DATA_DIR=/tmp/gauss-horizon-bench GAUSS_HORIZON_DISABLE_PASSWORD=1 cargo run -p gauss-horizon-web
+Before running this benchmark, start Chiron Horizon Web with the same data dir, for example:
+  CHIRON_HORIZON_DATA_DIR=/tmp/chiron-horizon-bench CHIRON_HORIZON_DISABLE_PASSWORD=1 cargo run -p chiron-horizon-web
 
-The benchmark saves one temporary connection into that Gauss Horizon data dir, so use an
-isolated GAUSS_HORIZON_DATA_DIR instead of your normal desktop profile.
+The benchmark saves one temporary connection into that Chiron Horizon data dir, so use an
+isolated CHIRON_HORIZON_DATA_DIR instead of your normal desktop profile.
 `);
 }
 
@@ -230,24 +230,24 @@ async function seedMongo(options) {
 }
 
 function localMongoAgentJar() {
-  return resolve("agents", "drivers", "mongodb", "build", "libs", "gauss-horizon-agent-mongodb.jar");
+  return resolve("agents", "drivers", "mongodb", "build", "libs", "chiron-horizon-agent-mongodb.jar");
 }
 
 function syncMongoAgentJar(options) {
-  if (!options.gaussHorizonDataDir) return null;
+  if (!options.chironHorizonDataDir) return null;
   const source = localMongoAgentJar();
   if (!existsSync(source)) {
     throw new Error(`MongoDB agent jar not found: ${source}. Run ./agents/gradlew -p agents :mongodb:shadowJar first.`);
   }
-  const dest = resolve(options.gaussHorizonDataDir, "agents", "drivers", "mongodb", "agent.jar");
+  const dest = resolve(options.chironHorizonDataDir, "agents", "drivers", "mongodb", "agent.jar");
   mkdirSync(dirname(dest), { recursive: true });
   copyFileSync(source, dest);
-  ensureAgentState(options.gaussHorizonDataDir);
+  ensureAgentState(options.chironHorizonDataDir);
   return dest;
 }
 
-function ensureAgentState(gaussHorizonDataDir) {
-  const statePath = resolve(gaussHorizonDataDir, "agents", "state.json");
+function ensureAgentState(chironHorizonDataDir) {
+  const statePath = resolve(chironHorizonDataDir, "agents", "state.json");
   const now = new Date().toISOString();
   let state = {};
   if (existsSync(statePath)) {
@@ -286,7 +286,7 @@ function parseJsonMaybe(text) {
   }
 }
 
-async function ensureGaussHorizonConnection(options) {
+async function ensureChironHorizonConnection(options) {
   const connectionId = `bench-mongodb-count-${options.port}`;
   const config = {
     id: connectionId,
@@ -351,7 +351,7 @@ async function measureNativeMongoCount(options) {
   return { value: Number.parseInt(out.stdout.trim().split(/\r?\n/).at(-1) ?? "", 10) };
 }
 
-async function measureGaussHorizonFindTotal(options, connectionId) {
+async function measureChironHorizonFindTotal(options, connectionId) {
   const response = await postJsonText(`${options.apiBase}/document-store/find-documents`, {
     connectionId,
     database: options.database,
@@ -364,7 +364,7 @@ async function measureGaussHorizonFindTotal(options, connectionId) {
   return { value: response.json?.total, payloadBytes: Buffer.byteLength(response.text) };
 }
 
-async function measureGaussHorizonDedicatedCount(options, connectionId) {
+async function measureChironHorizonDedicatedCount(options, connectionId) {
   const response = await postJsonText(`${options.apiBase}/mongo/count-documents`, {
     connectionId,
     database: options.database,
@@ -427,13 +427,13 @@ async function main() {
   const seed = await seedMongo(options);
   const agentJar = syncMongoAgentJar(options);
 
-  if (!options.json) console.log("Connecting Gauss Horizon Web API...");
-  const connectionId = await ensureGaussHorizonConnection(options);
+  if (!options.json) console.log("Connecting Chiron Horizon Web API...");
+  const connectionId = await ensureChironHorizonConnection(options);
 
   const measurements = [
     await measureCase("mongo runCommand count", options.iterations, options.warmups, () => measureNativeMongoCount(options)),
-    await measureCase("Gauss Horizon find-documents total", options.iterations, options.warmups, () => measureGaussHorizonFindTotal(options, connectionId)),
-    await measureCase("Gauss Horizon count-documents", options.iterations, options.warmups, () => measureGaussHorizonDedicatedCount(options, connectionId)),
+    await measureCase("Chiron Horizon find-documents total", options.iterations, options.warmups, () => measureChironHorizonFindTotal(options, connectionId)),
+    await measureCase("Chiron Horizon count-documents", options.iterations, options.warmups, () => measureChironHorizonDedicatedCount(options, connectionId)),
   ];
 
   const result = {

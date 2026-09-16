@@ -16,25 +16,25 @@ class DriverReleasePackagesTest(unittest.TestCase):
     def test_builds_java_and_platform_specific_native_driver_tar_zstd_packages(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
             release_dir = Path(temp_dir)
-            native_source = release_dir / "gauss-horizon-agent-kingbase-windows-x64.exe"
+            native_source = release_dir / "chiron-horizon-agent-kingbase-windows-x64.exe"
             native_source.write_bytes(b"MZtest-agent")
-            vastbase_source = release_dir / "gauss-horizon-agent-vastbase-linux-x64"
+            vastbase_source = release_dir / "chiron-horizon-agent-vastbase-linux-x64"
             vastbase_source.write_bytes(b"\x7fELFtest-vastbase-agent")
-            duckdb_source = release_dir / "gauss-horizon-agent-duckdb-macos-aarch64"
+            duckdb_source = release_dir / "chiron-horizon-agent-duckdb-macos-aarch64"
             duckdb_source.write_bytes(b"\xcf\xfa\xed\xfetest-duckdb-agent")
-            rabbitmq_source = release_dir / "gauss-horizon-agent-rabbitmq-linux-x64"
+            rabbitmq_source = release_dir / "chiron-horizon-agent-rabbitmq-linux-x64"
             rabbitmq_source.write_bytes(b"\x7fELFtest-rabbitmq-agent")
-            rocketmq_source = release_dir / "gauss-horizon-agent-rocketmq-windows-x64.exe"
+            rocketmq_source = release_dir / "chiron-horizon-agent-rocketmq-windows-x64.exe"
             rocketmq_source.write_bytes(b"MZtest-rocketmq-agent")
-            cassandra_source = release_dir / "gauss-horizon-agent-cassandra-linux-x64"
+            cassandra_source = release_dir / "chiron-horizon-agent-cassandra-linux-x64"
             cassandra_source.write_bytes(b"\x7fELFtest-cassandra-agent")
-            tdengine_source = release_dir / "gauss-horizon-agent-tdengine-windows-aarch64.exe"
+            tdengine_source = release_dir / "chiron-horizon-agent-tdengine-windows-aarch64.exe"
             tdengine_source.write_bytes(b"MZtest-tdengine-agent")
-            etcd_source = release_dir / "gauss-horizon-agent-etcd-linux-x64"
+            etcd_source = release_dir / "chiron-horizon-agent-etcd-linux-x64"
             etcd_source.write_bytes(b"\x7fELFtest-etcd-agent")
-            etcd2_source = release_dir / "gauss-horizon-agent-etcd2-macos-aarch64"
+            etcd2_source = release_dir / "chiron-horizon-agent-etcd2-macos-aarch64"
             etcd2_source.write_bytes(b"test-etcd2-agent")
-            java_source = release_dir / "gauss-horizon-agent-h2.jar"
+            java_source = release_dir / "chiron-horizon-agent-h2.jar"
             java_source.write_bytes(b"test-jar")
             versions = {
                 "h2": "0.2.5",
@@ -59,16 +59,16 @@ class DriverReleasePackagesTest(unittest.TestCase):
             }
 
             renamed = version_agent_artifacts(release_dir, versions)
-            versioned_java = release_dir / "gauss-horizon-agent-h2-0.2.5.jar"
-            versioned_native = release_dir / "gauss-horizon-agent-kingbase-0.1.34-windows-x64.exe"
-            versioned_vastbase = release_dir / "gauss-horizon-agent-vastbase-0.1.37-linux-x64"
-            versioned_duckdb = release_dir / "gauss-horizon-agent-duckdb-0.1.0-macos-aarch64"
-            versioned_rabbitmq = release_dir / "gauss-horizon-agent-rabbitmq-0.1.0-linux-x64"
-            versioned_rocketmq = release_dir / "gauss-horizon-agent-rocketmq-0.1.0-windows-x64.exe"
-            versioned_cassandra = release_dir / "gauss-horizon-agent-cassandra-0.1.37-linux-x64"
-            versioned_tdengine = release_dir / "gauss-horizon-agent-tdengine-0.1.0-windows-aarch64.exe"
-            versioned_etcd = release_dir / "gauss-horizon-agent-etcd-0.1.40-linux-x64"
-            versioned_etcd2 = release_dir / "gauss-horizon-agent-etcd2-0.1.0-macos-aarch64"
+            versioned_java = release_dir / "chiron-horizon-agent-h2-0.2.5.jar"
+            versioned_native = release_dir / "chiron-horizon-agent-kingbase-0.1.34-windows-x64.exe"
+            versioned_vastbase = release_dir / "chiron-horizon-agent-vastbase-0.1.37-linux-x64"
+            versioned_duckdb = release_dir / "chiron-horizon-agent-duckdb-0.1.0-macos-aarch64"
+            versioned_rabbitmq = release_dir / "chiron-horizon-agent-rabbitmq-0.1.0-linux-x64"
+            versioned_rocketmq = release_dir / "chiron-horizon-agent-rocketmq-0.1.0-windows-x64.exe"
+            versioned_cassandra = release_dir / "chiron-horizon-agent-cassandra-0.1.37-linux-x64"
+            versioned_tdengine = release_dir / "chiron-horizon-agent-tdengine-0.1.0-windows-aarch64.exe"
+            versioned_etcd = release_dir / "chiron-horizon-agent-etcd-0.1.40-linux-x64"
+            versioned_etcd2 = release_dir / "chiron-horizon-agent-etcd2-0.1.0-macos-aarch64"
             self.assertEqual(
                 renamed,
                 [
@@ -195,14 +195,14 @@ class DriverReleasePackagesTest(unittest.TestCase):
             self.assertEqual(
                 outputs,
                 [
-                    release_dir / "gauss-horizon-agent-h2-0.2.5.tar.zst",
-                    release_dir / "gauss-horizon-agent-cassandra-0.1.37-linux-x64.tar.zst",
-                    release_dir / "gauss-horizon-agent-kingbase-0.1.34-windows-x64.tar.zst",
-                    release_dir / "gauss-horizon-agent-vastbase-0.1.37-linux-x64.tar.zst",
-                    release_dir / "gauss-horizon-agent-duckdb-0.1.0-macos-aarch64.tar.zst",
-                    release_dir / "gauss-horizon-agent-rabbitmq-0.1.0-linux-x64.tar.zst",
-                    release_dir / "gauss-horizon-agent-rocketmq-0.1.0-windows-x64.tar.zst",
-                    release_dir / "gauss-horizon-agent-tdengine-0.1.0-windows-aarch64.tar.zst",
+                    release_dir / "chiron-horizon-agent-h2-0.2.5.tar.zst",
+                    release_dir / "chiron-horizon-agent-cassandra-0.1.37-linux-x64.tar.zst",
+                    release_dir / "chiron-horizon-agent-kingbase-0.1.34-windows-x64.tar.zst",
+                    release_dir / "chiron-horizon-agent-vastbase-0.1.37-linux-x64.tar.zst",
+                    release_dir / "chiron-horizon-agent-duckdb-0.1.0-macos-aarch64.tar.zst",
+                    release_dir / "chiron-horizon-agent-rabbitmq-0.1.0-linux-x64.tar.zst",
+                    release_dir / "chiron-horizon-agent-rocketmq-0.1.0-windows-x64.tar.zst",
+                    release_dir / "chiron-horizon-agent-tdengine-0.1.0-windows-aarch64.tar.zst",
                 ],
             )
             package_cases = [
@@ -273,13 +273,13 @@ class DriverReleasePackagesTest(unittest.TestCase):
     def test_versions_neo4j_native_artifacts(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
             release_dir = Path(temp_dir)
-            source = release_dir / "gauss-horizon-agent-neo4j-macos-aarch64"
+            source = release_dir / "chiron-horizon-agent-neo4j-macos-aarch64"
             source.write_bytes(b"\xcf\xfa\xed\xfetest-neo4j-agent")
             versions = {driver: "0.1.0" for driver in NATIVE_DRIVERS}
             versions["neo4j"] = "0.1.40"
 
             renamed = version_agent_artifacts(release_dir, versions)
-            versioned = release_dir / "gauss-horizon-agent-neo4j-0.1.40-macos-aarch64"
+            versioned = release_dir / "chiron-horizon-agent-neo4j-0.1.40-macos-aarch64"
 
             self.assertEqual(renamed, [versioned])
             self.assertFalse(source.exists())
@@ -288,13 +288,13 @@ class DriverReleasePackagesTest(unittest.TestCase):
     def test_versions_iotdb_native_artifacts(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
             release_dir = Path(temp_dir)
-            source = release_dir / "gauss-horizon-agent-iotdb-linux-x64"
+            source = release_dir / "chiron-horizon-agent-iotdb-linux-x64"
             source.write_bytes(b"\x7fELFtest-iotdb-agent")
             versions = {driver: "0.1.0" for driver in NATIVE_DRIVERS}
             versions["iotdb"] = "0.1.30"
 
             renamed = version_agent_artifacts(release_dir, versions)
-            versioned = release_dir / "gauss-horizon-agent-iotdb-0.1.30-linux-x64"
+            versioned = release_dir / "chiron-horizon-agent-iotdb-0.1.30-linux-x64"
 
             self.assertEqual(renamed, [versioned])
             self.assertFalse(source.exists())
@@ -303,13 +303,13 @@ class DriverReleasePackagesTest(unittest.TestCase):
     def test_versions_hive_native_artifacts(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
             release_dir = Path(temp_dir)
-            source = release_dir / "gauss-horizon-agent-hive-windows-x64.exe"
+            source = release_dir / "chiron-horizon-agent-hive-windows-x64.exe"
             source.write_bytes(b"MZtest-hive-agent")
             versions = {driver: "0.1.0" for driver in NATIVE_DRIVERS}
             versions["hive"] = "0.1.44"
 
             renamed = version_agent_artifacts(release_dir, versions)
-            versioned = release_dir / "gauss-horizon-agent-hive-0.1.44-windows-x64.exe"
+            versioned = release_dir / "chiron-horizon-agent-hive-0.1.44-windows-x64.exe"
 
             self.assertEqual(renamed, [versioned])
             self.assertFalse(source.exists())
@@ -318,13 +318,13 @@ class DriverReleasePackagesTest(unittest.TestCase):
     def test_versions_zookeeper_native_artifacts(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
             release_dir = Path(temp_dir)
-            source = release_dir / "gauss-horizon-agent-zookeeper-linux-aarch64"
+            source = release_dir / "chiron-horizon-agent-zookeeper-linux-aarch64"
             source.write_bytes(b"\x7fELFtest-zookeeper-agent")
             versions = {driver: "0.1.0" for driver in NATIVE_DRIVERS}
             versions["zookeeper"] = "0.1.8"
 
             renamed = version_agent_artifacts(release_dir, versions)
-            versioned = release_dir / "gauss-horizon-agent-zookeeper-0.1.8-linux-aarch64"
+            versioned = release_dir / "chiron-horizon-agent-zookeeper-0.1.8-linux-aarch64"
 
             self.assertEqual(renamed, [versioned])
             self.assertFalse(source.exists())
@@ -333,15 +333,15 @@ class DriverReleasePackagesTest(unittest.TestCase):
     def test_versions_sqlite_worker_native_artifacts(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
             release_dir = Path(temp_dir)
-            x64 = release_dir / "gauss-horizon-agent-sqlite-worker-linux-x64"
-            arm = release_dir / "gauss-horizon-agent-sqlite-worker-linux-aarch64"
+            x64 = release_dir / "chiron-horizon-agent-sqlite-worker-linux-x64"
+            arm = release_dir / "chiron-horizon-agent-sqlite-worker-linux-aarch64"
             x64.write_bytes(b"\x7fELFtest-sqlite-worker-x64")
             arm.write_bytes(b"\x7fELFtest-sqlite-worker-arm")
             versions = {driver: "0.1.0" for driver in NATIVE_DRIVERS}
 
             renamed = version_agent_artifacts(release_dir, versions)
-            versioned_x64 = release_dir / "gauss-horizon-agent-sqlite-worker-0.1.0-linux-x64"
-            versioned_arm = release_dir / "gauss-horizon-agent-sqlite-worker-0.1.0-linux-aarch64"
+            versioned_x64 = release_dir / "chiron-horizon-agent-sqlite-worker-0.1.0-linux-x64"
+            versioned_arm = release_dir / "chiron-horizon-agent-sqlite-worker-0.1.0-linux-aarch64"
 
             self.assertEqual(renamed, [versioned_arm, versioned_x64])
             self.assertFalse(x64.exists())
@@ -352,12 +352,12 @@ class DriverReleasePackagesTest(unittest.TestCase):
     def test_full_offline_bundle_includes_supported_windows_artifacts(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
             release_dir = Path(temp_dir)
-            filename = "gauss-horizon-agent-kingbase-0.1.34-windows-x64.exe"
-            kafka_filename = "gauss-horizon-agent-kafka-0.1.0.jar"
+            filename = "chiron-horizon-agent-kingbase-0.1.34-windows-x64.exe"
+            kafka_filename = "chiron-horizon-agent-kafka-0.1.0.jar"
             (release_dir / filename).write_bytes(b"MZtest-agent")
             (release_dir / kafka_filename).write_bytes(b"test-kafka-agent")
-            (release_dir / "gauss-horizon-jre-21-windows-x64.tar.zst").write_bytes(b"test-jre")
-            (release_dir / "gauss-horizon-jre-21-windows-aarch64.tar.zst").write_bytes(b"test-jre")
+            (release_dir / "chiron-horizon-jre-21-windows-x64.tar.zst").write_bytes(b"test-jre")
+            (release_dir / "chiron-horizon-jre-21-windows-aarch64.tar.zst").write_bytes(b"test-jre")
             (release_dir / "agent-registry.json").write_text('{"jres":{},"drivers":{}}', encoding="utf-8")
 
             result = subprocess.run(
@@ -368,15 +368,15 @@ class DriverReleasePackagesTest(unittest.TestCase):
             )
 
             self.assertNotIn("SKIP windows-aarch64", result.stdout)
-            x64_bundle = release_dir / "gauss-horizon-agents-offline-windows-x64.zip"
-            arm64_bundle = release_dir / "gauss-horizon-agents-offline-windows-aarch64.zip"
+            x64_bundle = release_dir / "chiron-horizon-agents-offline-windows-x64.zip"
+            arm64_bundle = release_dir / "chiron-horizon-agents-offline-windows-aarch64.zip"
             self.assertTrue(x64_bundle.is_file())
             self.assertTrue(arm64_bundle.is_file())
             with zipfile.ZipFile(x64_bundle) as archive:
                 self.assertIn(f"drivers/{filename}", archive.namelist())
                 self.assertIn(f"drivers/{kafka_filename}", archive.namelist())
             with zipfile.ZipFile(arm64_bundle) as archive:
-                self.assertIn("jre/gauss-horizon-jre-21-windows-aarch64.tar.zst", archive.namelist())
+                self.assertIn("jre/chiron-horizon-jre-21-windows-aarch64.tar.zst", archive.namelist())
                 self.assertIn(f"drivers/{kafka_filename}", archive.namelist())
 
 

@@ -311,8 +311,8 @@ test("serializes typed Mongo document ids while keeping their grid display compa
   assert.equal(mongoDocumentIdForGrid(objectId), "6743e4bfa3f6f84bc3fff6c8");
   assert.equal(serializeMongoDocumentId(42), "42");
   assert.equal(serializeMongoDocumentId(42.5), "42.5");
-  assert.equal(serializeMongoDocumentId("2048938405781032962"), '__gauss_horizon_mongo_string_id__"2048938405781032962"');
-  assert.equal(serializeMongoDocumentId('{"$numberLong":"2048938405781032962"}'), '__gauss_horizon_mongo_string_id__"{\\"$numberLong\\":\\"2048938405781032962\\"}"');
+  assert.equal(serializeMongoDocumentId("2048938405781032962"), '__chiron_horizon_mongo_string_id__"2048938405781032962"');
+  assert.equal(serializeMongoDocumentId('{"$numberLong":"2048938405781032962"}'), '__chiron_horizon_mongo_string_id__"{\\"$numberLong\\":\\"2048938405781032962\\"}"');
 });
 
 test("formats extended JSON int64 values as Mongo shell NumberLong literals", () => {
@@ -325,10 +325,10 @@ test("formats other extended JSON values through EJSON.deserialize", () => {
       decimal: { $numberDecimal: "12.34" },
       payload: { $binary: { base64: "AQI=", subType: "00" } },
       timestamp: { $timestamp: { t: 42, i: 7 } },
-      pattern: { $regularExpression: { pattern: "^gauss-horizon", options: "i" } },
+      pattern: { $regularExpression: { pattern: "^chiron-horizon", options: "i" } },
       canonicalDate: { $date: { $numberLong: "1721779200000" } },
     }),
-    '{"decimal":EJSON.deserialize({"$numberDecimal":"12.34"}),"payload":EJSON.deserialize({"$binary":{"base64":"AQI=","subType":"00"}}),"timestamp":EJSON.deserialize({"$timestamp":{"t":42,"i":7}}),"pattern":EJSON.deserialize({"$regularExpression":{"pattern":"^gauss-horizon","options":"i"}}),"canonicalDate":EJSON.deserialize({"$date":{"$numberLong":"1721779200000"}})}',
+    '{"decimal":EJSON.deserialize({"$numberDecimal":"12.34"}),"payload":EJSON.deserialize({"$binary":{"base64":"AQI=","subType":"00"}}),"timestamp":EJSON.deserialize({"$timestamp":{"t":42,"i":7}}),"pattern":EJSON.deserialize({"$regularExpression":{"pattern":"^chiron-horizon","options":"i"}}),"canonicalDate":EJSON.deserialize({"$date":{"$numberLong":"1721779200000"}})}',
   );
 });
 

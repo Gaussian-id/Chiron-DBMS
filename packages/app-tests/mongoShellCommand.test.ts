@@ -881,14 +881,14 @@ test("parseMongoWriteCommand rejects invalid dropIndex/dropIndexes variants", ()
 test("evaluateMongoWriteSafety blocks collection drop unless dangerous writes are enabled", () => {
   const dropCollection = parseMongoWriteCommand("db.users.drop()");
   assert.ok(dropCollection);
-  assert.match(evaluateMongoWriteSafety(dropCollection, { allowWrites: true }).reason || "", /high-risk operations.*Gauss Horizon MCP settings/i);
+  assert.match(evaluateMongoWriteSafety(dropCollection, { allowWrites: true }).reason || "", /high-risk operations.*Chiron Horizon MCP settings/i);
   assert.equal(evaluateMongoWriteSafety(dropCollection, { allowWrites: true, allowDangerous: true }).allowed, true);
 });
 
 test("evaluateMongoWriteSafety requires high-risk permission for schema changes", () => {
   const dropAll = parseMongoWriteCommand("db.users.dropIndexes()");
   assert.ok(dropAll);
-  assert.match(evaluateMongoWriteSafety(dropAll, { allowWrites: true }).reason || "", /high-risk operations.*Gauss Horizon MCP settings/i);
+  assert.match(evaluateMongoWriteSafety(dropAll, { allowWrites: true }).reason || "", /high-risk operations.*Chiron Horizon MCP settings/i);
 
   const dropOne = parseMongoWriteCommand('db.users.dropIndexes("users_email_unique")');
   assert.ok(dropOne);
@@ -1348,16 +1348,16 @@ test("splitMongoCommandRanges preserve document offsets for newline-separated co
   );
 });
 
-test("evaluateMongoAggregateSafety follows the Gauss Horizon-managed MCP permission level", () => {
+test("evaluateMongoAggregateSafety follows the Chiron Horizon-managed MCP permission level", () => {
   const out = parseMongoAggregateCommand('db.products.aggregate([{"$out":"products_copy"}])');
   assert.ok(out);
   assert.equal(mongoAggregateWriteStage(out.pipeline), "$out");
-  assert.match(evaluateMongoAggregateSafety(out, {}).reason || "", /Gauss Horizon MCP read-only policy/i);
+  assert.match(evaluateMongoAggregateSafety(out, {}).reason || "", /Chiron Horizon MCP read-only policy/i);
 
   const merge = parseMongoAggregateCommand('db.products.aggregate([{"$merge":{"into":"products_copy"}}])');
   assert.ok(merge);
   assert.equal(mongoAggregateWriteStage(merge.pipeline), "$merge");
-  assert.match(evaluateMongoAggregateSafety(merge, { allowWrites: true }).reason || "", /high-risk operations.*Gauss Horizon MCP settings/i);
+  assert.match(evaluateMongoAggregateSafety(merge, { allowWrites: true }).reason || "", /high-risk operations.*Chiron Horizon MCP settings/i);
   assert.equal(evaluateMongoAggregateSafety(merge, { allowWrites: true, allowDangerous: true }).allowed, true);
 });
 

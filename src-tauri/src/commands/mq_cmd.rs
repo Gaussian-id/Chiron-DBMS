@@ -1,6 +1,6 @@
 //! Desktop (Tauri) commands for message queue admin operations.
 //!
-//! These are thin wrappers around `gauss_horizon_core::mq::service::*_core` functions,
+//! These are thin wrappers around `chiron_horizon_core::mq::service::*_core` functions,
 //! with read-only protection (`ensure_connection_writable`) for mutating calls.
 
 use std::sync::Arc;
@@ -15,8 +15,8 @@ use crate::commands::connection::{ensure_connection_writable, AppState};
 pub async fn mq_test_connection(
     state: State<'_, Arc<AppState>>,
     connection_id: String,
-) -> Result<gauss_horizon_core::mq::MqClusterInfo, String> {
-    gauss_horizon_core::mq::service::mq_test_connection_core(&state, &connection_id).await
+) -> Result<chiron_horizon_core::mq::MqClusterInfo, String> {
+    chiron_horizon_core::mq::service::mq_test_connection_core(&state, &connection_id).await
 }
 
 // ---- Tenants ----
@@ -25,8 +25,8 @@ pub async fn mq_test_connection(
 pub async fn mq_list_tenants(
     state: State<'_, Arc<AppState>>,
     connection_id: String,
-) -> Result<Vec<gauss_horizon_core::mq::TenantInfo>, String> {
-    gauss_horizon_core::mq::service::mq_list_tenants_core(&state, &connection_id).await
+) -> Result<Vec<chiron_horizon_core::mq::TenantInfo>, String> {
+    chiron_horizon_core::mq::service::mq_list_tenants_core(&state, &connection_id).await
 }
 
 #[tauri::command]
@@ -34,8 +34,8 @@ pub async fn mq_get_tenant(
     state: State<'_, Arc<AppState>>,
     connection_id: String,
     name: String,
-) -> Result<gauss_horizon_core::mq::TenantInfo, String> {
-    gauss_horizon_core::mq::service::mq_get_tenant_core(&state, &connection_id, &name).await
+) -> Result<chiron_horizon_core::mq::TenantInfo, String> {
+    chiron_horizon_core::mq::service::mq_get_tenant_core(&state, &connection_id, &name).await
 }
 
 #[tauri::command]
@@ -43,10 +43,10 @@ pub async fn mq_create_tenant(
     state: State<'_, Arc<AppState>>,
     connection_id: String,
     name: String,
-    config: gauss_horizon_core::mq::TenantConfig,
+    config: chiron_horizon_core::mq::TenantConfig,
 ) -> Result<(), String> {
     ensure_connection_writable(&state, &connection_id, "Create tenant").await?;
-    gauss_horizon_core::mq::service::mq_create_tenant_core(&state, &connection_id, &name, config).await
+    chiron_horizon_core::mq::service::mq_create_tenant_core(&state, &connection_id, &name, config).await
 }
 
 #[tauri::command]
@@ -54,10 +54,10 @@ pub async fn mq_update_tenant(
     state: State<'_, Arc<AppState>>,
     connection_id: String,
     name: String,
-    config: gauss_horizon_core::mq::TenantConfig,
+    config: chiron_horizon_core::mq::TenantConfig,
 ) -> Result<(), String> {
     ensure_connection_writable(&state, &connection_id, "Update tenant").await?;
-    gauss_horizon_core::mq::service::mq_update_tenant_core(&state, &connection_id, &name, config).await
+    chiron_horizon_core::mq::service::mq_update_tenant_core(&state, &connection_id, &name, config).await
 }
 
 #[tauri::command]
@@ -68,7 +68,7 @@ pub async fn mq_delete_tenant(
     force: bool,
 ) -> Result<(), String> {
     ensure_connection_writable(&state, &connection_id, "Delete tenant").await?;
-    gauss_horizon_core::mq::service::mq_delete_tenant_core(&state, &connection_id, &name, force).await
+    chiron_horizon_core::mq::service::mq_delete_tenant_core(&state, &connection_id, &name, force).await
 }
 
 // ---- Namespaces ----
@@ -78,39 +78,39 @@ pub async fn mq_list_namespaces(
     state: State<'_, Arc<AppState>>,
     connection_id: String,
     tenant: String,
-) -> Result<Vec<gauss_horizon_core::mq::NamespaceInfo>, String> {
-    gauss_horizon_core::mq::service::mq_list_namespaces_core(&state, &connection_id, &tenant).await
+) -> Result<Vec<chiron_horizon_core::mq::NamespaceInfo>, String> {
+    chiron_horizon_core::mq::service::mq_list_namespaces_core(&state, &connection_id, &tenant).await
 }
 
 #[tauri::command]
 pub async fn mq_create_namespace(
     state: State<'_, Arc<AppState>>,
     connection_id: String,
-    ns: gauss_horizon_core::mq::NamespaceRef,
-    config: gauss_horizon_core::mq::NamespaceConfig,
+    ns: chiron_horizon_core::mq::NamespaceRef,
+    config: chiron_horizon_core::mq::NamespaceConfig,
 ) -> Result<(), String> {
     ensure_connection_writable(&state, &connection_id, "Create namespace").await?;
-    gauss_horizon_core::mq::service::mq_create_namespace_core(&state, &connection_id, ns, config).await
+    chiron_horizon_core::mq::service::mq_create_namespace_core(&state, &connection_id, ns, config).await
 }
 
 #[tauri::command]
 pub async fn mq_delete_namespace(
     state: State<'_, Arc<AppState>>,
     connection_id: String,
-    ns: gauss_horizon_core::mq::NamespaceRef,
+    ns: chiron_horizon_core::mq::NamespaceRef,
     force: bool,
 ) -> Result<(), String> {
     ensure_connection_writable(&state, &connection_id, "Delete namespace").await?;
-    gauss_horizon_core::mq::service::mq_delete_namespace_core(&state, &connection_id, ns, force).await
+    chiron_horizon_core::mq::service::mq_delete_namespace_core(&state, &connection_id, ns, force).await
 }
 
 #[tauri::command]
 pub async fn mq_get_namespace_policies(
     state: State<'_, Arc<AppState>>,
     connection_id: String,
-    ns: gauss_horizon_core::mq::NamespaceRef,
+    ns: chiron_horizon_core::mq::NamespaceRef,
 ) -> Result<serde_json::Value, String> {
-    gauss_horizon_core::mq::service::mq_get_namespace_policies_core(&state, &connection_id, ns).await
+    chiron_horizon_core::mq::service::mq_get_namespace_policies_core(&state, &connection_id, ns).await
 }
 
 // ---- Topics ----
@@ -119,61 +119,61 @@ pub async fn mq_get_namespace_policies(
 pub async fn mq_list_topics(
     state: State<'_, Arc<AppState>>,
     connection_id: String,
-    ns: gauss_horizon_core::mq::NamespaceRef,
-    opts: gauss_horizon_core::mq::ListTopicsOpts,
-) -> Result<Vec<gauss_horizon_core::mq::TopicInfo>, String> {
-    gauss_horizon_core::mq::service::mq_list_topics_core(&state, &connection_id, ns, opts).await
+    ns: chiron_horizon_core::mq::NamespaceRef,
+    opts: chiron_horizon_core::mq::ListTopicsOpts,
+) -> Result<Vec<chiron_horizon_core::mq::TopicInfo>, String> {
+    chiron_horizon_core::mq::service::mq_list_topics_core(&state, &connection_id, ns, opts).await
 }
 
 #[tauri::command]
 pub async fn mq_create_topic(
     state: State<'_, Arc<AppState>>,
     connection_id: String,
-    topic: gauss_horizon_core::mq::TopicRef,
+    topic: chiron_horizon_core::mq::TopicRef,
     partitions: Option<u32>,
 ) -> Result<(), String> {
     ensure_connection_writable(&state, &connection_id, "Create topic").await?;
-    gauss_horizon_core::mq::service::mq_create_topic_core(&state, &connection_id, topic, partitions).await
+    chiron_horizon_core::mq::service::mq_create_topic_core(&state, &connection_id, topic, partitions).await
 }
 
 #[tauri::command]
 pub async fn mq_delete_topic(
     state: State<'_, Arc<AppState>>,
     connection_id: String,
-    topic: gauss_horizon_core::mq::TopicRef,
+    topic: chiron_horizon_core::mq::TopicRef,
     force: bool,
 ) -> Result<(), String> {
     ensure_connection_writable(&state, &connection_id, "Delete topic").await?;
-    gauss_horizon_core::mq::service::mq_delete_topic_core(&state, &connection_id, topic, force).await
+    chiron_horizon_core::mq::service::mq_delete_topic_core(&state, &connection_id, topic, force).await
 }
 
 #[tauri::command]
 pub async fn mq_update_partitions(
     state: State<'_, Arc<AppState>>,
     connection_id: String,
-    topic: gauss_horizon_core::mq::TopicRef,
+    topic: chiron_horizon_core::mq::TopicRef,
     partitions: u32,
 ) -> Result<(), String> {
     ensure_connection_writable(&state, &connection_id, "Update partitions").await?;
-    gauss_horizon_core::mq::service::mq_update_partitions_core(&state, &connection_id, topic, partitions).await
+    chiron_horizon_core::mq::service::mq_update_partitions_core(&state, &connection_id, topic, partitions).await
 }
 
 #[tauri::command]
 pub async fn mq_get_topic_stats(
     state: State<'_, Arc<AppState>>,
     connection_id: String,
-    topic: gauss_horizon_core::mq::TopicRef,
-) -> Result<gauss_horizon_core::mq::TopicStats, String> {
-    gauss_horizon_core::mq::service::mq_get_topic_stats_core(&state, &connection_id, topic).await
+    topic: chiron_horizon_core::mq::TopicRef,
+) -> Result<chiron_horizon_core::mq::TopicStats, String> {
+    chiron_horizon_core::mq::service::mq_get_topic_stats_core(&state, &connection_id, topic).await
 }
 
 #[tauri::command]
 pub async fn mq_get_topic_internal_stats(
     state: State<'_, Arc<AppState>>,
     connection_id: String,
-    topic: gauss_horizon_core::mq::TopicRef,
+    topic: chiron_horizon_core::mq::TopicRef,
 ) -> Result<serde_json::Value, String> {
-    gauss_horizon_core::mq::service::mq_get_topic_internal_stats_core(&state, &connection_id, topic).await
+    chiron_horizon_core::mq::service::mq_get_topic_internal_stats_core(&state, &connection_id, topic).await
 }
 
 // ---- Exchanges ----
@@ -182,23 +182,23 @@ pub async fn mq_get_topic_internal_stats(
 pub async fn mq_list_exchanges(
     state: State<'_, Arc<AppState>>,
     connection_id: String,
-    ns: gauss_horizon_core::mq::NamespaceRef,
-) -> Result<Vec<gauss_horizon_core::mq::MqExchangeInfo>, String> {
-    gauss_horizon_core::mq::service::mq_list_exchanges_core(&state, &connection_id, ns).await
+    ns: chiron_horizon_core::mq::NamespaceRef,
+) -> Result<Vec<chiron_horizon_core::mq::MqExchangeInfo>, String> {
+    chiron_horizon_core::mq::service::mq_list_exchanges_core(&state, &connection_id, ns).await
 }
 
 #[tauri::command]
 pub async fn mq_create_exchange(
     state: State<'_, Arc<AppState>>,
     connection_id: String,
-    ns: gauss_horizon_core::mq::NamespaceRef,
+    ns: chiron_horizon_core::mq::NamespaceRef,
     name: String,
     exchange_type: String,
     durable: bool,
     auto_delete: bool,
 ) -> Result<(), String> {
     ensure_connection_writable(&state, &connection_id, "Create exchange").await?;
-    gauss_horizon_core::mq::service::mq_create_exchange_core(
+    chiron_horizon_core::mq::service::mq_create_exchange_core(
         &state,
         &connection_id,
         ns,
@@ -214,11 +214,11 @@ pub async fn mq_create_exchange(
 pub async fn mq_delete_exchange(
     state: State<'_, Arc<AppState>>,
     connection_id: String,
-    ns: gauss_horizon_core::mq::NamespaceRef,
+    ns: chiron_horizon_core::mq::NamespaceRef,
     name: String,
 ) -> Result<(), String> {
     ensure_connection_writable(&state, &connection_id, "Delete exchange").await?;
-    gauss_horizon_core::mq::service::mq_delete_exchange_core(&state, &connection_id, ns, &name).await
+    chiron_horizon_core::mq::service::mq_delete_exchange_core(&state, &connection_id, ns, &name).await
 }
 
 // ---- Bindings ----
@@ -227,33 +227,33 @@ pub async fn mq_delete_exchange(
 pub async fn mq_list_bindings(
     state: State<'_, Arc<AppState>>,
     connection_id: String,
-    ns: gauss_horizon_core::mq::NamespaceRef,
+    ns: chiron_horizon_core::mq::NamespaceRef,
     exchange: Option<String>,
     queue: Option<String>,
-) -> Result<Vec<gauss_horizon_core::mq::MqBindingInfo>, String> {
-    gauss_horizon_core::mq::service::mq_list_bindings_core(&state, &connection_id, ns, exchange, queue).await
+) -> Result<Vec<chiron_horizon_core::mq::MqBindingInfo>, String> {
+    chiron_horizon_core::mq::service::mq_list_bindings_core(&state, &connection_id, ns, exchange, queue).await
 }
 
 #[tauri::command]
 pub async fn mq_bind(
     state: State<'_, Arc<AppState>>,
     connection_id: String,
-    ns: gauss_horizon_core::mq::NamespaceRef,
-    binding: gauss_horizon_core::mq::MqBindingInfo,
+    ns: chiron_horizon_core::mq::NamespaceRef,
+    binding: chiron_horizon_core::mq::MqBindingInfo,
 ) -> Result<(), String> {
     ensure_connection_writable(&state, &connection_id, "Create binding").await?;
-    gauss_horizon_core::mq::service::mq_bind_core(&state, &connection_id, ns, binding).await
+    chiron_horizon_core::mq::service::mq_bind_core(&state, &connection_id, ns, binding).await
 }
 
 #[tauri::command]
 pub async fn mq_unbind(
     state: State<'_, Arc<AppState>>,
     connection_id: String,
-    ns: gauss_horizon_core::mq::NamespaceRef,
-    binding: gauss_horizon_core::mq::MqBindingInfo,
+    ns: chiron_horizon_core::mq::NamespaceRef,
+    binding: chiron_horizon_core::mq::MqBindingInfo,
 ) -> Result<(), String> {
     ensure_connection_writable(&state, &connection_id, "Delete binding").await?;
-    gauss_horizon_core::mq::service::mq_unbind_core(&state, &connection_id, ns, binding).await
+    chiron_horizon_core::mq::service::mq_unbind_core(&state, &connection_id, ns, binding).await
 }
 
 // ---- Subscriptions ----
@@ -262,85 +262,85 @@ pub async fn mq_unbind(
 pub async fn mq_list_subscriptions(
     state: State<'_, Arc<AppState>>,
     connection_id: String,
-    topic: gauss_horizon_core::mq::TopicRef,
-) -> Result<Vec<gauss_horizon_core::mq::SubscriptionInfo>, String> {
-    gauss_horizon_core::mq::service::mq_list_subscriptions_core(&state, &connection_id, topic).await
+    topic: chiron_horizon_core::mq::TopicRef,
+) -> Result<Vec<chiron_horizon_core::mq::SubscriptionInfo>, String> {
+    chiron_horizon_core::mq::service::mq_list_subscriptions_core(&state, &connection_id, topic).await
 }
 
 #[tauri::command]
 pub async fn mq_enrich_subscriptions(
     state: State<'_, Arc<AppState>>,
     connection_id: String,
-    topic: gauss_horizon_core::mq::TopicRef,
-) -> Result<Vec<gauss_horizon_core::mq::SubscriptionInfo>, String> {
-    gauss_horizon_core::mq::service::mq_enrich_subscriptions_core(&state, &connection_id, topic).await
+    topic: chiron_horizon_core::mq::TopicRef,
+) -> Result<Vec<chiron_horizon_core::mq::SubscriptionInfo>, String> {
+    chiron_horizon_core::mq::service::mq_enrich_subscriptions_core(&state, &connection_id, topic).await
 }
 
 #[tauri::command]
 pub async fn mq_get_kafka_consumer_group_snapshot(
     state: State<'_, Arc<AppState>>,
     connection_id: String,
-) -> Result<gauss_horizon_core::mq::KafkaConsumerGroupSnapshot, String> {
-    gauss_horizon_core::mq::service::mq_get_kafka_consumer_group_snapshot_core(&state, &connection_id).await
+) -> Result<chiron_horizon_core::mq::KafkaConsumerGroupSnapshot, String> {
+    chiron_horizon_core::mq::service::mq_get_kafka_consumer_group_snapshot_core(&state, &connection_id).await
 }
 
 #[tauri::command]
 pub async fn mq_create_subscription(
     state: State<'_, Arc<AppState>>,
     connection_id: String,
-    topic: gauss_horizon_core::mq::TopicRef,
+    topic: chiron_horizon_core::mq::TopicRef,
     sub: String,
-    pos: gauss_horizon_core::mq::ResetPosition,
+    pos: chiron_horizon_core::mq::ResetPosition,
 ) -> Result<(), String> {
     ensure_connection_writable(&state, &connection_id, "Create subscription").await?;
-    gauss_horizon_core::mq::service::mq_create_subscription_core(&state, &connection_id, topic, sub, pos).await
+    chiron_horizon_core::mq::service::mq_create_subscription_core(&state, &connection_id, topic, sub, pos).await
 }
 
 #[tauri::command]
 pub async fn mq_delete_subscription(
     state: State<'_, Arc<AppState>>,
     connection_id: String,
-    topic: gauss_horizon_core::mq::TopicRef,
+    topic: chiron_horizon_core::mq::TopicRef,
     sub: String,
     force: bool,
 ) -> Result<(), String> {
     ensure_connection_writable(&state, &connection_id, "Delete subscription").await?;
-    gauss_horizon_core::mq::service::mq_delete_subscription_core(&state, &connection_id, topic, sub, force).await
+    chiron_horizon_core::mq::service::mq_delete_subscription_core(&state, &connection_id, topic, sub, force).await
 }
 
 #[tauri::command]
 pub async fn mq_skip_messages(
     state: State<'_, Arc<AppState>>,
     connection_id: String,
-    topic: gauss_horizon_core::mq::TopicRef,
+    topic: chiron_horizon_core::mq::TopicRef,
     sub: String,
-    count: gauss_horizon_core::mq::SkipCount,
+    count: chiron_horizon_core::mq::SkipCount,
 ) -> Result<(), String> {
     ensure_connection_writable(&state, &connection_id, "Skip messages").await?;
-    gauss_horizon_core::mq::service::mq_skip_messages_core(&state, &connection_id, topic, sub, count).await
+    chiron_horizon_core::mq::service::mq_skip_messages_core(&state, &connection_id, topic, sub, count).await
 }
 
 #[tauri::command]
 pub async fn mq_reset_cursor(
     state: State<'_, Arc<AppState>>,
     connection_id: String,
-    topic: gauss_horizon_core::mq::TopicRef,
+    topic: chiron_horizon_core::mq::TopicRef,
     sub: String,
-    pos: gauss_horizon_core::mq::ResetPosition,
+    pos: chiron_horizon_core::mq::ResetPosition,
 ) -> Result<(), String> {
     ensure_connection_writable(&state, &connection_id, "Reset cursor").await?;
-    gauss_horizon_core::mq::service::mq_reset_cursor_core(&state, &connection_id, topic, sub, pos).await
+    chiron_horizon_core::mq::service::mq_reset_cursor_core(&state, &connection_id, topic, sub, pos).await
 }
 
 #[tauri::command]
 pub async fn mq_clear_backlog(
     state: State<'_, Arc<AppState>>,
     connection_id: String,
-    topic: gauss_horizon_core::mq::TopicRef,
+    topic: chiron_horizon_core::mq::TopicRef,
     sub: String,
 ) -> Result<(), String> {
     ensure_connection_writable(&state, &connection_id, "Clear backlog").await?;
-    gauss_horizon_core::mq::service::mq_clear_backlog_core(&state, &connection_id, topic, sub).await
+    chiron_horizon_core::mq::service::mq_clear_backlog_core(&state, &connection_id, topic, sub).await
 }
 
 #[tauri::command]
@@ -349,7 +349,7 @@ pub async fn mq_get_consumer_group_config(
     connection_id: String,
     group_id: String,
 ) -> Result<serde_json::Value, String> {
-    gauss_horizon_core::mq::service::mq_get_consumer_group_config_core(&state, &connection_id, group_id).await
+    chiron_horizon_core::mq::service::mq_get_consumer_group_config_core(&state, &connection_id, group_id).await
 }
 
 #[tauri::command]
@@ -360,31 +360,32 @@ pub async fn mq_alter_consumer_group_config(
     config: serde_json::Value,
 ) -> Result<(), String> {
     ensure_connection_writable(&state, &connection_id, "Alter consumer group config").await?;
-    gauss_horizon_core::mq::service::mq_alter_consumer_group_config_core(&state, &connection_id, group_id, config).await
+    chiron_horizon_core::mq::service::mq_alter_consumer_group_config_core(&state, &connection_id, group_id, config)
+        .await
 }
 
 #[tauri::command]
 pub async fn mq_peek_messages(
     state: State<'_, Arc<AppState>>,
     connection_id: String,
-    topic: gauss_horizon_core::mq::TopicRef,
+    topic: chiron_horizon_core::mq::TopicRef,
     sub: String,
     count: u32,
-    options: Option<gauss_horizon_core::mq::PeekMessagesOptions>,
-) -> Result<gauss_horizon_core::mq::PeekMessagesResult, String> {
-    gauss_horizon_core::mq::service::mq_peek_messages_core(&state, &connection_id, topic, sub, count, options).await
+    options: Option<chiron_horizon_core::mq::PeekMessagesOptions>,
+) -> Result<chiron_horizon_core::mq::PeekMessagesResult, String> {
+    chiron_horizon_core::mq::service::mq_peek_messages_core(&state, &connection_id, topic, sub, count, options).await
 }
 
 #[tauri::command]
 pub async fn mq_expire_messages(
     state: State<'_, Arc<AppState>>,
     connection_id: String,
-    topic: gauss_horizon_core::mq::TopicRef,
+    topic: chiron_horizon_core::mq::TopicRef,
     sub: String,
     expire_seconds: i64,
 ) -> Result<(), String> {
     ensure_connection_writable(&state, &connection_id, "Expire messages").await?;
-    gauss_horizon_core::mq::service::mq_expire_messages_core(&state, &connection_id, topic, sub, expire_seconds).await
+    chiron_horizon_core::mq::service::mq_expire_messages_core(&state, &connection_id, topic, sub, expire_seconds).await
 }
 
 // ---- Producers / consumers ----
@@ -393,29 +394,29 @@ pub async fn mq_expire_messages(
 pub async fn mq_list_producers(
     state: State<'_, Arc<AppState>>,
     connection_id: String,
-    topic: gauss_horizon_core::mq::TopicRef,
-) -> Result<Vec<gauss_horizon_core::mq::ProducerInfo>, String> {
-    gauss_horizon_core::mq::service::mq_list_producers_core(&state, &connection_id, topic).await
+    topic: chiron_horizon_core::mq::TopicRef,
+) -> Result<Vec<chiron_horizon_core::mq::ProducerInfo>, String> {
+    chiron_horizon_core::mq::service::mq_list_producers_core(&state, &connection_id, topic).await
 }
 
 #[tauri::command]
 pub async fn mq_list_consumers(
     state: State<'_, Arc<AppState>>,
     connection_id: String,
-    topic: gauss_horizon_core::mq::TopicRef,
+    topic: chiron_horizon_core::mq::TopicRef,
     sub: String,
-) -> Result<Vec<gauss_horizon_core::mq::ConsumerInfo>, String> {
-    gauss_horizon_core::mq::service::mq_list_consumers_core(&state, &connection_id, topic, sub).await
+) -> Result<Vec<chiron_horizon_core::mq::ConsumerInfo>, String> {
+    chiron_horizon_core::mq::service::mq_list_consumers_core(&state, &connection_id, topic, sub).await
 }
 
 #[tauri::command]
 pub async fn mq_unload_topic(
     state: State<'_, Arc<AppState>>,
     connection_id: String,
-    topic: gauss_horizon_core::mq::TopicRef,
+    topic: chiron_horizon_core::mq::TopicRef,
 ) -> Result<(), String> {
     ensure_connection_writable(&state, &connection_id, "Unload topic").await?;
-    gauss_horizon_core::mq::service::mq_unload_topic_core(&state, &connection_id, topic).await
+    chiron_horizon_core::mq::service::mq_unload_topic_core(&state, &connection_id, topic).await
 }
 
 // ---- Client connections / channels (RabbitMQ) ----
@@ -424,30 +425,30 @@ pub async fn mq_unload_topic(
 pub async fn mq_list_client_connections(
     state: State<'_, Arc<AppState>>,
     connection_id: String,
-    ns: gauss_horizon_core::mq::NamespaceRef,
-) -> Result<Vec<gauss_horizon_core::mq::MqClientConnectionInfo>, String> {
-    gauss_horizon_core::mq::service::mq_list_client_connections_core(&state, &connection_id, ns).await
+    ns: chiron_horizon_core::mq::NamespaceRef,
+) -> Result<Vec<chiron_horizon_core::mq::MqClientConnectionInfo>, String> {
+    chiron_horizon_core::mq::service::mq_list_client_connections_core(&state, &connection_id, ns).await
 }
 
 #[tauri::command]
 pub async fn mq_list_client_channels(
     state: State<'_, Arc<AppState>>,
     connection_id: String,
-    ns: gauss_horizon_core::mq::NamespaceRef,
+    ns: chiron_horizon_core::mq::NamespaceRef,
     connection: Option<String>,
-) -> Result<Vec<gauss_horizon_core::mq::MqChannelInfo>, String> {
-    gauss_horizon_core::mq::service::mq_list_client_channels_core(&state, &connection_id, ns, connection).await
+) -> Result<Vec<chiron_horizon_core::mq::MqChannelInfo>, String> {
+    chiron_horizon_core::mq::service::mq_list_client_channels_core(&state, &connection_id, ns, connection).await
 }
 
 #[tauri::command]
 pub async fn mq_close_client_connection(
     state: State<'_, Arc<AppState>>,
     connection_id: String,
-    ns: gauss_horizon_core::mq::NamespaceRef,
+    ns: chiron_horizon_core::mq::NamespaceRef,
     name: String,
 ) -> Result<(), String> {
     ensure_connection_writable(&state, &connection_id, "Close client connection").await?;
-    gauss_horizon_core::mq::service::mq_close_client_connection_core(&state, &connection_id, ns, &name).await
+    chiron_horizon_core::mq::service::mq_close_client_connection_core(&state, &connection_id, ns, &name).await
 }
 
 // ---- Rate limits / quotas / retention ----
@@ -456,64 +457,64 @@ pub async fn mq_close_client_connection(
 pub async fn mq_set_publish_rate(
     state: State<'_, Arc<AppState>>,
     connection_id: String,
-    scope: gauss_horizon_core::mq::PolicyScope,
-    rate: gauss_horizon_core::mq::PublishRate,
+    scope: chiron_horizon_core::mq::PolicyScope,
+    rate: chiron_horizon_core::mq::PublishRate,
 ) -> Result<(), String> {
     ensure_connection_writable(&state, &connection_id, "Set publish rate").await?;
-    gauss_horizon_core::mq::service::mq_set_publish_rate_core(&state, &connection_id, scope, rate).await
+    chiron_horizon_core::mq::service::mq_set_publish_rate_core(&state, &connection_id, scope, rate).await
 }
 
 #[tauri::command]
 pub async fn mq_set_dispatch_rate(
     state: State<'_, Arc<AppState>>,
     connection_id: String,
-    scope: gauss_horizon_core::mq::PolicyScope,
-    rate: gauss_horizon_core::mq::DispatchRate,
+    scope: chiron_horizon_core::mq::PolicyScope,
+    rate: chiron_horizon_core::mq::DispatchRate,
 ) -> Result<(), String> {
     ensure_connection_writable(&state, &connection_id, "Set dispatch rate").await?;
-    gauss_horizon_core::mq::service::mq_set_dispatch_rate_core(&state, &connection_id, scope, rate).await
+    chiron_horizon_core::mq::service::mq_set_dispatch_rate_core(&state, &connection_id, scope, rate).await
 }
 
 #[tauri::command]
 pub async fn mq_set_subscribe_rate(
     state: State<'_, Arc<AppState>>,
     connection_id: String,
-    scope: gauss_horizon_core::mq::PolicyScope,
-    rate: gauss_horizon_core::mq::SubscribeRate,
+    scope: chiron_horizon_core::mq::PolicyScope,
+    rate: chiron_horizon_core::mq::SubscribeRate,
 ) -> Result<(), String> {
     ensure_connection_writable(&state, &connection_id, "Set subscribe rate").await?;
-    gauss_horizon_core::mq::service::mq_set_subscribe_rate_core(&state, &connection_id, scope, rate).await
+    chiron_horizon_core::mq::service::mq_set_subscribe_rate_core(&state, &connection_id, scope, rate).await
 }
 
 #[tauri::command]
 pub async fn mq_set_backlog_quota(
     state: State<'_, Arc<AppState>>,
     connection_id: String,
-    scope: gauss_horizon_core::mq::PolicyScope,
-    quota: gauss_horizon_core::mq::BacklogQuota,
+    scope: chiron_horizon_core::mq::PolicyScope,
+    quota: chiron_horizon_core::mq::BacklogQuota,
 ) -> Result<(), String> {
     ensure_connection_writable(&state, &connection_id, "Set backlog quota").await?;
-    gauss_horizon_core::mq::service::mq_set_backlog_quota_core(&state, &connection_id, scope, quota).await
+    chiron_horizon_core::mq::service::mq_set_backlog_quota_core(&state, &connection_id, scope, quota).await
 }
 
 #[tauri::command]
 pub async fn mq_set_retention(
     state: State<'_, Arc<AppState>>,
     connection_id: String,
-    scope: gauss_horizon_core::mq::PolicyScope,
-    retention: gauss_horizon_core::mq::RetentionPolicy,
+    scope: chiron_horizon_core::mq::PolicyScope,
+    retention: chiron_horizon_core::mq::RetentionPolicy,
 ) -> Result<(), String> {
     ensure_connection_writable(&state, &connection_id, "Set retention").await?;
-    gauss_horizon_core::mq::service::mq_set_retention_core(&state, &connection_id, scope, retention).await
+    chiron_horizon_core::mq::service::mq_set_retention_core(&state, &connection_id, scope, retention).await
 }
 
 #[tauri::command]
 pub async fn mq_get_effective_policies(
     state: State<'_, Arc<AppState>>,
     connection_id: String,
-    scope: gauss_horizon_core::mq::PolicyScope,
+    scope: chiron_horizon_core::mq::PolicyScope,
 ) -> Result<serde_json::Value, String> {
-    gauss_horizon_core::mq::service::mq_get_effective_policies_core(&state, &connection_id, scope).await
+    chiron_horizon_core::mq::service::mq_get_effective_policies_core(&state, &connection_id, scope).await
 }
 
 // ---- Permissions ----
@@ -522,32 +523,32 @@ pub async fn mq_get_effective_policies(
 pub async fn mq_grant_permission(
     state: State<'_, Arc<AppState>>,
     connection_id: String,
-    scope: gauss_horizon_core::mq::PolicyScope,
+    scope: chiron_horizon_core::mq::PolicyScope,
     role: String,
-    actions: Vec<gauss_horizon_core::mq::AuthAction>,
+    actions: Vec<chiron_horizon_core::mq::AuthAction>,
 ) -> Result<(), String> {
     ensure_connection_writable(&state, &connection_id, "Grant permission").await?;
-    gauss_horizon_core::mq::service::mq_grant_permission_core(&state, &connection_id, scope, role, actions).await
+    chiron_horizon_core::mq::service::mq_grant_permission_core(&state, &connection_id, scope, role, actions).await
 }
 
 #[tauri::command]
 pub async fn mq_revoke_permission(
     state: State<'_, Arc<AppState>>,
     connection_id: String,
-    scope: gauss_horizon_core::mq::PolicyScope,
+    scope: chiron_horizon_core::mq::PolicyScope,
     role: String,
 ) -> Result<(), String> {
     ensure_connection_writable(&state, &connection_id, "Revoke permission").await?;
-    gauss_horizon_core::mq::service::mq_revoke_permission_core(&state, &connection_id, scope, role).await
+    chiron_horizon_core::mq::service::mq_revoke_permission_core(&state, &connection_id, scope, role).await
 }
 
 #[tauri::command]
 pub async fn mq_list_permissions(
     state: State<'_, Arc<AppState>>,
     connection_id: String,
-    scope: gauss_horizon_core::mq::PolicyScope,
-) -> Result<gauss_horizon_core::mq::PermissionMap, String> {
-    gauss_horizon_core::mq::service::mq_list_permissions_core(&state, &connection_id, scope).await
+    scope: chiron_horizon_core::mq::PolicyScope,
+) -> Result<chiron_horizon_core::mq::PermissionMap, String> {
+    chiron_horizon_core::mq::service::mq_list_permissions_core(&state, &connection_id, scope).await
 }
 
 // ---- Users / user permissions (RabbitMQ) ----
@@ -556,8 +557,8 @@ pub async fn mq_list_permissions(
 pub async fn mq_list_users(
     state: State<'_, Arc<AppState>>,
     connection_id: String,
-) -> Result<Vec<gauss_horizon_core::mq::MqUserInfo>, String> {
-    gauss_horizon_core::mq::service::mq_list_users_core(&state, &connection_id).await
+) -> Result<Vec<chiron_horizon_core::mq::MqUserInfo>, String> {
+    chiron_horizon_core::mq::service::mq_list_users_core(&state, &connection_id).await
 }
 
 #[tauri::command]
@@ -569,7 +570,7 @@ pub async fn mq_create_user(
     tags: Option<Vec<String>>,
 ) -> Result<(), String> {
     ensure_connection_writable(&state, &connection_id, "Create user").await?;
-    gauss_horizon_core::mq::service::mq_create_user_core(
+    chiron_horizon_core::mq::service::mq_create_user_core(
         &state,
         &connection_id,
         &name,
@@ -586,18 +587,18 @@ pub async fn mq_delete_user(
     name: String,
 ) -> Result<(), String> {
     ensure_connection_writable(&state, &connection_id, "Delete user").await?;
-    gauss_horizon_core::mq::service::mq_delete_user_core(&state, &connection_id, &name).await
+    chiron_horizon_core::mq::service::mq_delete_user_core(&state, &connection_id, &name).await
 }
 
 /// RabbitMQ user permissions live under the synthetic `_rabbitmq` tenant;
 /// `*` is the all-vhosts marker and is only meaningful for listings.
-fn user_permission_ns(virtual_host: Option<String>, all_vhosts: Option<bool>) -> gauss_horizon_core::mq::NamespaceRef {
+fn user_permission_ns(virtual_host: Option<String>, all_vhosts: Option<bool>) -> chiron_horizon_core::mq::NamespaceRef {
     let namespace = match (all_vhosts.unwrap_or(false), virtual_host) {
         (true, _) => "*".to_string(),
         (false, Some(vhost)) if !vhost.trim().is_empty() => vhost,
         _ => "*".to_string(),
     };
-    gauss_horizon_core::mq::NamespaceRef { tenant: "_rabbitmq".to_string(), namespace }
+    chiron_horizon_core::mq::NamespaceRef { tenant: "_rabbitmq".to_string(), namespace }
 }
 
 #[tauri::command]
@@ -607,10 +608,10 @@ pub async fn mq_list_user_permissions(
     virtual_host: Option<String>,
     user: Option<String>,
     all_vhosts: Option<bool>,
-) -> Result<Vec<gauss_horizon_core::mq::MqVhostPermission>, String> {
+) -> Result<Vec<chiron_horizon_core::mq::MqVhostPermission>, String> {
     let ns = user_permission_ns(virtual_host, all_vhosts);
     let mut permissions =
-        gauss_horizon_core::mq::service::mq_list_user_permissions_core(&state, &connection_id, ns).await?;
+        chiron_horizon_core::mq::service::mq_list_user_permissions_core(&state, &connection_id, ns).await?;
     if let Some(user) = user {
         permissions.retain(|p| p.user == user);
     }
@@ -630,7 +631,7 @@ pub async fn mq_grant_user_permission(
     ensure_connection_writable(&state, &connection_id, "Grant user permission").await?;
     let ns = user_permission_ns(Some(virtual_host), None);
     let all = || ".*".to_string();
-    gauss_horizon_core::mq::service::mq_grant_user_permission_core(
+    chiron_horizon_core::mq::service::mq_grant_user_permission_core(
         &state,
         &connection_id,
         ns,
@@ -651,7 +652,7 @@ pub async fn mq_revoke_user_permission(
 ) -> Result<(), String> {
     ensure_connection_writable(&state, &connection_id, "Revoke user permission").await?;
     let ns = user_permission_ns(Some(virtual_host), None);
-    gauss_horizon_core::mq::service::mq_revoke_user_permission_core(&state, &connection_id, ns, &user).await
+    chiron_horizon_core::mq::service::mq_revoke_user_permission_core(&state, &connection_id, ns, &user).await
 }
 
 // ---- Policies & cluster monitoring (RabbitMQ) ----
@@ -662,9 +663,9 @@ pub async fn mq_list_policies(
     connection_id: String,
     virtual_host: Option<String>,
     all_vhosts: Option<bool>,
-) -> Result<Vec<gauss_horizon_core::mq::MqPolicyInfo>, String> {
+) -> Result<Vec<chiron_horizon_core::mq::MqPolicyInfo>, String> {
     let ns = user_permission_ns(virtual_host, all_vhosts);
-    gauss_horizon_core::mq::service::mq_list_policies_core(&state, &connection_id, ns).await
+    chiron_horizon_core::mq::service::mq_list_policies_core(&state, &connection_id, ns).await
 }
 
 #[tauri::command]
@@ -680,7 +681,7 @@ pub async fn mq_set_policy(
 ) -> Result<(), String> {
     ensure_connection_writable(&state, &connection_id, "Set policy").await?;
     let ns = user_permission_ns(Some(virtual_host.clone()), None);
-    let policy = gauss_horizon_core::mq::MqPolicyInfo {
+    let policy = chiron_horizon_core::mq::MqPolicyInfo {
         name,
         vhost: virtual_host,
         pattern,
@@ -688,7 +689,7 @@ pub async fn mq_set_policy(
         priority: priority.unwrap_or(0),
         definition,
     };
-    gauss_horizon_core::mq::service::mq_set_policy_core(&state, &connection_id, ns, policy).await
+    chiron_horizon_core::mq::service::mq_set_policy_core(&state, &connection_id, ns, policy).await
 }
 
 #[tauri::command]
@@ -700,23 +701,23 @@ pub async fn mq_delete_policy(
 ) -> Result<(), String> {
     ensure_connection_writable(&state, &connection_id, "Delete policy").await?;
     let ns = user_permission_ns(Some(virtual_host), None);
-    gauss_horizon_core::mq::service::mq_delete_policy_core(&state, &connection_id, ns, &name).await
+    chiron_horizon_core::mq::service::mq_delete_policy_core(&state, &connection_id, ns, &name).await
 }
 
 #[tauri::command]
 pub async fn mq_get_overview(
     state: State<'_, Arc<AppState>>,
     connection_id: String,
-) -> Result<gauss_horizon_core::mq::MqOverviewInfo, String> {
-    gauss_horizon_core::mq::service::mq_get_overview_core(&state, &connection_id).await
+) -> Result<chiron_horizon_core::mq::MqOverviewInfo, String> {
+    chiron_horizon_core::mq::service::mq_get_overview_core(&state, &connection_id).await
 }
 
 #[tauri::command]
 pub async fn mq_list_nodes(
     state: State<'_, Arc<AppState>>,
     connection_id: String,
-) -> Result<Vec<gauss_horizon_core::mq::MqNodeInfo>, String> {
-    gauss_horizon_core::mq::service::mq_list_nodes_core(&state, &connection_id).await
+) -> Result<Vec<chiron_horizon_core::mq::MqNodeInfo>, String> {
+    chiron_horizon_core::mq::service::mq_list_nodes_core(&state, &connection_id).await
 }
 
 // ---- Client tokens ----
@@ -725,10 +726,10 @@ pub async fn mq_list_nodes(
 pub async fn mq_issue_token(
     state: State<'_, Arc<AppState>>,
     connection_id: String,
-    req: gauss_horizon_core::mq::MqTokenIssueRequest,
-) -> Result<gauss_horizon_core::mq::MqIssuedToken, String> {
+    req: chiron_horizon_core::mq::MqTokenIssueRequest,
+) -> Result<chiron_horizon_core::mq::MqIssuedToken, String> {
     ensure_connection_writable(&state, &connection_id, "Issue MQ token").await?;
-    gauss_horizon_core::mq::service::mq_issue_token_core(&state, &connection_id, req).await
+    chiron_horizon_core::mq::service::mq_issue_token_core(&state, &connection_id, req).await
 }
 
 #[tauri::command]
@@ -736,8 +737,8 @@ pub async fn mq_list_token_records(
     state: State<'_, Arc<AppState>>,
     connection_id: String,
     subject: Option<String>,
-) -> Result<Vec<gauss_horizon_core::mq::MqTokenRecord>, String> {
-    gauss_horizon_core::mq::service::mq_list_token_records_core(&state, &connection_id, subject).await
+) -> Result<Vec<chiron_horizon_core::mq::MqTokenRecord>, String> {
+    chiron_horizon_core::mq::service::mq_list_token_records_core(&state, &connection_id, subject).await
 }
 
 // ---- Monitoring ----
@@ -746,71 +747,71 @@ pub async fn mq_list_token_records(
 pub async fn mq_get_backlog(
     state: State<'_, Arc<AppState>>,
     connection_id: String,
-    topic: gauss_horizon_core::mq::TopicRef,
+    topic: chiron_horizon_core::mq::TopicRef,
     sub: Option<String>,
-) -> Result<gauss_horizon_core::mq::BacklogStats, String> {
-    gauss_horizon_core::mq::service::mq_get_backlog_core(&state, &connection_id, topic, sub).await
+) -> Result<chiron_horizon_core::mq::BacklogStats, String> {
+    chiron_horizon_core::mq::service::mq_get_backlog_core(&state, &connection_id, topic, sub).await
 }
 
 #[tauri::command]
 pub async fn mq_get_cluster_info(
     state: State<'_, Arc<AppState>>,
     connection_id: String,
-) -> Result<gauss_horizon_core::mq::ClusterInfo, String> {
-    gauss_horizon_core::mq::service::mq_get_cluster_info_core(&state, &connection_id).await
+) -> Result<chiron_horizon_core::mq::ClusterInfo, String> {
+    chiron_horizon_core::mq::service::mq_get_cluster_info_core(&state, &connection_id).await
 }
 
 #[tauri::command]
 pub async fn mq_get_topic_route(
     state: State<'_, Arc<AppState>>,
     connection_id: String,
-    topic: gauss_horizon_core::mq::TopicRef,
+    topic: chiron_horizon_core::mq::TopicRef,
 ) -> Result<serde_json::Value, String> {
-    gauss_horizon_core::mq::service::mq_get_topic_route_core(&state, &connection_id, topic).await
+    chiron_horizon_core::mq::service::mq_get_topic_route_core(&state, &connection_id, topic).await
 }
 
 #[tauri::command]
 pub async fn mq_alter_topic_config(
     state: State<'_, Arc<AppState>>,
     connection_id: String,
-    topic: gauss_horizon_core::mq::TopicRef,
+    topic: chiron_horizon_core::mq::TopicRef,
     configs: serde_json::Value,
 ) -> Result<(), String> {
     ensure_connection_writable(&state, &connection_id, "Alter topic config").await?;
-    gauss_horizon_core::mq::service::mq_alter_topic_config_core(&state, &connection_id, topic, configs).await
+    chiron_horizon_core::mq::service::mq_alter_topic_config_core(&state, &connection_id, topic, configs).await
 }
 
 #[tauri::command]
 pub async fn mq_skip_topic_accumulation(
     state: State<'_, Arc<AppState>>,
     connection_id: String,
-    topic: gauss_horizon_core::mq::TopicRef,
+    topic: chiron_horizon_core::mq::TopicRef,
 ) -> Result<serde_json::Value, String> {
     ensure_connection_writable(&state, &connection_id, "Skip topic accumulation").await?;
-    gauss_horizon_core::mq::service::mq_skip_topic_accumulation_core(&state, &connection_id, topic).await
+    chiron_horizon_core::mq::service::mq_skip_topic_accumulation_core(&state, &connection_id, topic).await
 }
 
 #[tauri::command]
 pub async fn mq_view_message(
     state: State<'_, Arc<AppState>>,
     connection_id: String,
-    topic: gauss_horizon_core::mq::TopicRef,
+    topic: chiron_horizon_core::mq::TopicRef,
     msg_id: String,
 ) -> Result<serde_json::Value, String> {
-    gauss_horizon_core::mq::service::mq_view_message_core(&state, &connection_id, topic, msg_id).await
+    chiron_horizon_core::mq::service::mq_view_message_core(&state, &connection_id, topic, msg_id).await
 }
 
 #[tauri::command]
 pub async fn mq_query_messages_by_key(
     state: State<'_, Arc<AppState>>,
     connection_id: String,
-    topic: gauss_horizon_core::mq::TopicRef,
+    topic: chiron_horizon_core::mq::TopicRef,
     key: String,
     begin: i64,
     end: i64,
     max_num: u32,
 ) -> Result<serde_json::Value, String> {
-    gauss_horizon_core::mq::service::mq_query_messages_by_key_core(
+    chiron_horizon_core::mq::service::mq_query_messages_by_key_core(
         &state,
         &connection_id,
         topic,
@@ -826,13 +827,20 @@ pub async fn mq_query_messages_by_key(
 pub async fn mq_query_messages_by_topic(
     state: State<'_, Arc<AppState>>,
     connection_id: String,
-    topic: gauss_horizon_core::mq::TopicRef,
+    topic: chiron_horizon_core::mq::TopicRef,
     begin: i64,
     end: i64,
     max_num: u32,
 ) -> Result<serde_json::Value, String> {
-    gauss_horizon_core::mq::service::mq_query_messages_by_topic_core(&state, &connection_id, topic, begin, end, max_num)
-        .await
+    chiron_horizon_core::mq::service::mq_query_messages_by_topic_core(
+        &state,
+        &connection_id,
+        topic,
+        begin,
+        end,
+        max_num,
+    )
+    .await
 }
 
 #[tauri::command]
@@ -842,7 +850,7 @@ pub async fn mq_query_message_trace(
     msg_id: String,
     trace_topic: Option<String>,
 ) -> Result<serde_json::Value, String> {
-    gauss_horizon_core::mq::service::mq_query_message_trace_core(&state, &connection_id, msg_id, trace_topic).await
+    chiron_horizon_core::mq::service::mq_query_message_trace_core(&state, &connection_id, msg_id, trace_topic).await
 }
 
 // ---- Raw request (escape hatch) ----
@@ -851,12 +859,12 @@ pub async fn mq_query_message_trace(
 pub async fn mq_raw_request(
     state: State<'_, Arc<AppState>>,
     connection_id: String,
-    req: gauss_horizon_core::mq::MqRawRequest,
-) -> Result<gauss_horizon_core::mq::MqRawResponse, String> {
+    req: chiron_horizon_core::mq::MqRawRequest,
+) -> Result<chiron_horizon_core::mq::MqRawResponse, String> {
     if req.is_mutating() {
         ensure_connection_writable(&state, &connection_id, "MQ admin write").await?;
     }
-    gauss_horizon_core::mq::service::mq_raw_request_core(&state, &connection_id, req).await
+    chiron_horizon_core::mq::service::mq_raw_request_core(&state, &connection_id, req).await
 }
 
 // ---- Message production ----
@@ -865,8 +873,8 @@ pub async fn mq_raw_request(
 pub async fn mq_send_message(
     state: State<'_, Arc<AppState>>,
     connection_id: String,
-    req: gauss_horizon_core::mq::SendMessageRequest,
-) -> Result<gauss_horizon_core::mq::SendMessageResponse, String> {
+    req: chiron_horizon_core::mq::SendMessageRequest,
+) -> Result<chiron_horizon_core::mq::SendMessageResponse, String> {
     ensure_connection_writable(&state, &connection_id, "Send message").await?;
-    gauss_horizon_core::mq::service::mq_send_message_core(&state, &connection_id, req).await
+    chiron_horizon_core::mq::service::mq_send_message_core(&state, &connection_id, req).await
 }

@@ -7,7 +7,7 @@ tasks.named('shadowJar') {
         attributes(
             'Agent-Label': 'Google BigQuery',
             'Agent-External-Driver': 'true',
-            'Main-Class': 'com.gauss.horizon.agent.bigquery.BigQueryAgent'
+            'Main-Class': 'com.chiron.horizon.agent.bigquery.BigQueryAgent'
         )
     }
 }

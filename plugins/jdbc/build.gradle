@@ -3,7 +3,7 @@ plugins {
     id 'com.gradleup.shadow' version '9.0.0-beta12'
 }
 
-group = 'app.gauss-horizon'
+group = 'app.chiron-horizon'
 version = '0.1.0'
 
 java {
@@ -51,12 +51,12 @@ tasks.named('test') {
 }
 
 tasks.named('shadowJar') {
-    archiveBaseName = 'gauss-horizon-jdbc-plugin'
+    archiveBaseName = 'chiron-horizon-jdbc-plugin'
     archiveVersion = ''
     archiveClassifier = 'all'
     mergeServiceFiles()
     manifest {
-        attributes 'Main-Class': 'app.gauss.horizon.jdbc.GaussHorizonJdbcPlugin'
+        attributes 'Main-Class': 'app.chiron.horizon.jdbc.ChironHorizonJdbcPlugin'
     }
 }
 

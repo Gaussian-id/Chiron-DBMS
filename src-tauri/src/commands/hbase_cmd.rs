@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use gauss_horizon_core::db::hbase_driver::{HBasePutRowInput, HBaseRow, HBaseScanResult, HBaseTableSchema};
+use chiron_horizon_core::db::hbase_driver::{HBasePutRowInput, HBaseRow, HBaseScanResult, HBaseTableSchema};
 use tauri::State;
 
 use crate::commands::connection::{ensure_connection_writable, AppState};
@@ -12,7 +12,7 @@ pub async fn hbase_get_table_schema(
     namespace: String,
     table: String,
 ) -> Result<HBaseTableSchema, String> {
-    gauss_horizon_core::hbase_ops::get_table_schema_core(&state, &connection_id, &namespace, &table).await
+    chiron_horizon_core::hbase_ops::get_table_schema_core(&state, &connection_id, &namespace, &table).await
 }
 
 #[tauri::command]
@@ -24,7 +24,7 @@ pub async fn hbase_scan_rows(
     row_key_prefix: Option<String>,
     limit: usize,
 ) -> Result<HBaseScanResult, String> {
-    gauss_horizon_core::hbase_ops::scan_rows_core(
+    chiron_horizon_core::hbase_ops::scan_rows_core(
         &state,
         &connection_id,
         &namespace,
@@ -44,7 +44,7 @@ pub async fn hbase_get_row(
     row_key: String,
     row_key_encoding: Option<String>,
 ) -> Result<Option<HBaseRow>, String> {
-    gauss_horizon_core::hbase_ops::get_row_core(
+    chiron_horizon_core::hbase_ops::get_row_core(
         &state,
         &connection_id,
         &namespace,
@@ -64,7 +64,7 @@ pub async fn hbase_put_row(
     input: HBasePutRowInput,
 ) -> Result<(), String> {
     ensure_connection_writable(&state, &connection_id, "Write HBase row").await?;
-    gauss_horizon_core::hbase_ops::put_row_core(&state, &connection_id, &namespace, &table, &input).await
+    chiron_horizon_core::hbase_ops::put_row_core(&state, &connection_id, &namespace, &table, &input).await
 }
 
 #[tauri::command]
@@ -77,7 +77,7 @@ pub async fn hbase_delete_row(
     row_key_encoding: Option<String>,
 ) -> Result<(), String> {
     ensure_connection_writable(&state, &connection_id, "Delete HBase row").await?;
-    gauss_horizon_core::hbase_ops::delete_row_core(
+    chiron_horizon_core::hbase_ops::delete_row_core(
         &state,
         &connection_id,
         &namespace,
@@ -97,7 +97,8 @@ pub async fn hbase_create_table(
     column_families: Vec<String>,
 ) -> Result<(), String> {
     ensure_connection_writable(&state, &connection_id, "Create HBase table").await?;
-    gauss_horizon_core::hbase_ops::create_table_core(&state, &connection_id, &namespace, &table, &column_families).await
+    chiron_horizon_core::hbase_ops::create_table_core(&state, &connection_id, &namespace, &table, &column_families)
+        .await
 }
 
 #[tauri::command]
@@ -108,5 +109,5 @@ pub async fn hbase_delete_table(
     table: String,
 ) -> Result<(), String> {
     ensure_connection_writable(&state, &connection_id, "Delete HBase table").await?;
-    gauss_horizon_core::hbase_ops::delete_table_core(&state, &connection_id, &namespace, &table).await
+    chiron_horizon_core::hbase_ops::delete_table_core(&state, &connection_id, &namespace, &table).await
 }

@@ -8,9 +8,9 @@ describe("buildTableSelectTemplate", () => {
       buildTableSelectTemplate({
         databaseType: "postgres",
         schema: "public",
-        tableName: "gauss_horizon_smoke",
+        tableName: "chiron_horizon_smoke",
         quoteIdentifiers: false,
       }),
-    ).toBe("SELECT *\nFROM public.gauss_horizon_smoke;");
+    ).toBe("SELECT *\nFROM public.chiron_horizon_smoke;");
   });
 });

@@ -1,7 +1,7 @@
 {
-  "name": "@gauss-horizon/mcp-darwin-arm64",
+  "name": "@chiron-horizon/mcp-darwin-arm64",
   "version": "0.1.0",
-  "description": "Precompiled Gauss Horizon MCP Rust binary for darwin arm64",
+  "description": "Precompiled Chiron Horizon MCP Rust binary for darwin arm64",
   "license": "Apache-2.0",
   "repository": {
     "type": "git",
@@ -15,7 +15,7 @@
     "arm64"
   ],
   "bin": {
-    "gauss-horizon-mcp-native": "bin/gauss-horizon-mcp"
+    "chiron-horizon-mcp-native": "bin/chiron-horizon-mcp"
   },
   "files": [
     "bin"

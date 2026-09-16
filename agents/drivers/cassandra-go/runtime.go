@@ -195,7 +195,7 @@ func connectionRuntimeKey(cp connectParams) string {
 
 func runtimePoolSize() int {
 	value := defaultRuntimePoolSize
-	if raw := os.Getenv("GAUSS_HORIZON_AGENT_CASSANDRA_MAX_CONCURRENT_OPERATIONS"); raw != "" {
+	if raw := os.Getenv("CHIRON_HORIZON_AGENT_CASSANDRA_MAX_CONCURRENT_OPERATIONS"); raw != "" {
 		if parsed, err := strconv.Atoi(raw); err == nil && parsed >= 1 && parsed <= 128 {
 			value = parsed
 		}
@@ -205,7 +205,7 @@ func runtimePoolSize() int {
 
 func runtimeMetadataLimit(poolSize int) int {
 	value := min(defaultRuntimeMetadataLimit, poolSize)
-	if raw := os.Getenv("GAUSS_HORIZON_AGENT_CASSANDRA_MAX_CONCURRENT_METADATA"); raw != "" {
+	if raw := os.Getenv("CHIRON_HORIZON_AGENT_CASSANDRA_MAX_CONCURRENT_METADATA"); raw != "" {
 		if parsed, err := strconv.Atoi(raw); err == nil && parsed >= 1 && parsed <= poolSize {
 			value = parsed
 		}

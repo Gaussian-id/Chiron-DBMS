@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Create the immutable Gauss Horizon 0.1.0 agent registry from staged assets."""
+"""Create the immutable Chiron Horizon 0.1.0 agent registry from staged assets."""
 import argparse
 import hashlib
 import json
@@ -56,7 +56,7 @@ def main() -> int:
 
     jre_platforms = {}
     for platform in PLATFORMS:
-        path = release_dir / f"gauss-horizon-jre-21-{platform}.tar.zst"
+        path = release_dir / f"chiron-horizon-jre-21-{platform}.tar.zst"
         if not path.is_file():
             raise SystemExit(f"Missing managed JRE asset: {path.name}")
         jre_platforms[platform] = artifact(path, args.tag, fmt="tar_zstd")
@@ -64,11 +64,11 @@ def main() -> int:
     drivers = {}
     missing = []
     for key, version in sorted(versions.items()):
-        jar = release_dir / f"gauss-horizon-agent-{key}-{version}.jar"
+        jar = release_dir / f"chiron-horizon-agent-{key}-{version}.jar"
         native = {}
         for platform in PLATFORMS:
             suffix = ".exe" if platform.startswith("windows-") else ""
-            candidate = release_dir / f"gauss-horizon-agent-{key}-{version}-{platform}{suffix}"
+            candidate = release_dir / f"chiron-horizon-agent-{key}-{version}-{platform}{suffix}"
             if candidate.is_file():
                 native[platform] = artifact(candidate, args.tag)
         if not jar.is_file() and not native:

@@ -11,6 +11,6 @@ dependencies {
 
 tasks.named('shadowJar') {
     manifest {
-        attributes('Agent-Label': '瀚高 HighGo', 'Main-Class': 'com.gauss.horizon.agent.highgo.HighgoAgent')
+        attributes('Agent-Label': '瀚高 HighGo', 'Main-Class': 'com.chiron.horizon.agent.highgo.HighgoAgent')
     }
 }

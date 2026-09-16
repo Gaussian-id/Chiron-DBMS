@@ -3,7 +3,7 @@ use std::sync::Mutex;
 use std::thread;
 use std::time::Duration;
 
-use gauss_horizon_plugin_sdk::{PluginEmitter, PluginError, PluginHandler, PluginMetadata, PluginServer, RequestContext};
+use chiron_horizon_plugin_sdk::{PluginEmitter, PluginError, PluginHandler, PluginMetadata, PluginServer, RequestContext};
 use serde_json::{json, Value};
 
 #[derive(Default)]
@@ -85,7 +85,7 @@ impl PluginHandler for HelloPlugin {
                     .get(connection_id)
                     .cloned()
                     .ok_or_else(|| PluginError::new(-32010, "Open a saved Hello connection first"))?;
-                let name = params.get("name").and_then(Value::as_str).unwrap_or("Gauss Horizon");
+                let name = params.get("name").and_then(Value::as_str).unwrap_or("Chiron Horizon");
                 emitter.event(
                     "hello/progress",
                     json!({ "stage": "started", "name": name, "connectionId": connection_id }),
@@ -98,8 +98,8 @@ impl PluginHandler for HelloPlugin {
                 Ok(json!({
                     "message": format!("Hello, {name}, from {connection_name}!"),
                     "connectionId": connection_id,
-                    "pluginId": std::env::var("GAUSS_HORIZON_PLUGIN_ID").unwrap_or_default(),
-                    "gaussHorizonVersion": std::env::var("GAUSS_HORIZON_APP_VERSION").unwrap_or_default()
+                    "pluginId": std::env::var("CHIRON_HORIZON_PLUGIN_ID").unwrap_or_default(),
+                    "chironHorizonVersion": std::env::var("CHIRON_HORIZON_APP_VERSION").unwrap_or_default()
                 }))
             }
             "filesystem/list" => {
@@ -140,8 +140,8 @@ impl PluginHandler for HelloPlugin {
                 require_filesystem_provider(&params)?;
                 let uri = params.get("uri").and_then(Value::as_str).unwrap_or_default();
                 let content = match uri {
-                    "hello:/README.txt" => "This virtual file is rendered by Gauss Horizon's host-owned plugin file manager.\n",
-                    "hello:/examples/hello.json" => "{\n  \"hello\": \"Gauss Horizon\",\n  \"provider\": \"filesystem\"\n}\n",
+                    "hello:/README.txt" => "This virtual file is rendered by Chiron Horizon's host-owned plugin file manager.\n",
+                    "hello:/examples/hello.json" => "{\n  \"hello\": \"Chiron Horizon\",\n  \"provider\": \"filesystem\"\n}\n",
                     _ => return Err(PluginError::new(-32044, format!("File not found: {uri}"))),
                 };
                 let max_bytes = params.get("maxBytes").and_then(Value::as_u64).unwrap_or(content.len() as u64);
@@ -160,7 +160,7 @@ impl PluginHandler for HelloPlugin {
 }
 
 fn require_filesystem_provider(params: &Value) -> Result<(), PluginError> {
-    if params.get("providerId").and_then(Value::as_str) == Some("gauss.horizon.example.hello.files") {
+    if params.get("providerId").and_then(Value::as_str) == Some("chiron.horizon.example.hello.files") {
         Ok(())
     } else {
         Err(PluginError::new(-32602, "Unknown filesystem provider"))
@@ -187,7 +187,7 @@ fn encode_base64(bytes: &[u8]) -> String {
 }
 
 fn main() -> std::io::Result<()> {
-    let metadata = PluginMetadata::new("gauss.horizon.example.hello", env!("CARGO_PKG_VERSION"))
+    let metadata = PluginMetadata::new("chiron.horizon.example.hello", env!("CARGO_PKG_VERSION"))
         .with_capability("connections")
         .with_capability("events")
         .with_capability("filesystem");

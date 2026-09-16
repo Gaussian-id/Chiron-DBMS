@@ -6,6 +6,6 @@ dependencies {
 
 tasks.named('shadowJar') {
     manifest {
-        attributes('Agent-Label': 'Apache Spark', 'Main-Class': 'com.gauss.horizon.agent.spark.SparkAgent')
+        attributes('Agent-Label': 'Apache Spark', 'Main-Class': 'com.chiron.horizon.agent.spark.SparkAgent')
     }
 }

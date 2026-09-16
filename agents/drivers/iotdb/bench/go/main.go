@@ -13,7 +13,7 @@ import (
 
 const (
 	clientVersion = "2.0.8"
-	database      = "root.gauss_horizon_bench"
+	database      = "root.chiron_horizon_bench"
 	device        = database + ".d1"
 )
 

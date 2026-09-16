@@ -26,7 +26,7 @@ function result(options: { executionError?: boolean; error?: { detail?: string; 
     affected_rows: options.affected ?? 0,
     execution_time_ms: 1,
     ...(options.executionError ? { execution_error: true as const } : {}),
-    ...(options.error ? { error: { version: 1, code: "Gauss Horizon-TEST-0001", messageKey: options.error.messageKey ?? "backendErrors.test", messageParams: {}, source: "test", operationOutcome: "unknown", ...(options.error.detail ? { detail: options.error.detail } : {}) } } : {}),
+    ...(options.error ? { error: { version: 1, code: "Chiron Horizon-TEST-0001", messageKey: options.error.messageKey ?? "backendErrors.test", messageParams: {}, source: "test", operationOutcome: "unknown", ...(options.error.detail ? { detail: options.error.detail } : {}) } } : {}),
   } as QueryResult;
 }
 

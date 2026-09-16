@@ -467,7 +467,7 @@ func TestParseHiveJDBCClientCompatibilityOptions(t *testing.T) {
 		t.Fatal(err)
 	}
 	config, err := parseConnectionConfig(connectParams{
-		ConnectionString: "jdbc:hive2://hs2.example.com:10001/default;transportMode=http;auth=jwt;jwt=signed-token;fetchSize=77;socketTimeout=9;thrift.client.max.message.size=1048576;retries=3;retryInterval=250;requestTrack=true;cookieAuth=false;cookieName=CustomAuth;http.header.X-Trace-ID=trace-value;http.cookie.SessionID=cookie-value;applicationName=gauss-horizon-hive;initFile=" + url.QueryEscape(initPath),
+		ConnectionString: "jdbc:hive2://hs2.example.com:10001/default;transportMode=http;auth=jwt;jwt=signed-token;fetchSize=77;socketTimeout=9;thrift.client.max.message.size=1048576;retries=3;retryInterval=250;requestTrack=true;cookieAuth=false;cookieName=CustomAuth;http.header.X-Trace-ID=trace-value;http.cookie.SessionID=cookie-value;applicationName=chiron-horizon-hive;initFile=" + url.QueryEscape(initPath),
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -490,7 +490,7 @@ func TestParseHiveJDBCClientCompatibilityOptions(t *testing.T) {
 	if !config.RequestTracking {
 		t.Fatal("requestTrack was not enabled")
 	}
-	if config.HiveConfiguration["set:hivevar:wmapp"] != "gauss-horizon-hive" {
+	if config.HiveConfiguration["set:hivevar:wmapp"] != "chiron-horizon-hive" {
 		t.Fatalf("applicationName was not mapped: %#v", config.HiveConfiguration)
 	}
 	if !reflect.DeepEqual(config.InitStatements, []string{"SET hive.exec.dynamic.partition=true", "USE analytics"}) {

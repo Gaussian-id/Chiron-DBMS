@@ -4,7 +4,7 @@ use std::{
     sync::{Arc, Mutex, OnceLock},
 };
 
-use gauss_horizon_core::storage::{DesktopSettings, McpGlobalPolicy, McpGlobalPolicyState};
+use chiron_horizon_core::storage::{DesktopSettings, McpGlobalPolicy, McpGlobalPolicyState};
 use tauri::{AppHandle, Manager, State, Window};
 
 use super::connection::AppState;
@@ -397,7 +397,7 @@ fn default_agent_store_dir(app: &AppHandle) -> Result<PathBuf, String> {
     Ok(if data_dir_resolution.uses_custom_data_dir() {
         data_dir_resolution.data_dir.join("agents")
     } else {
-        gauss_horizon_core::connection::default_agent_dir()
+        chiron_horizon_core::connection::default_agent_dir()
     })
 }
 
@@ -613,67 +613,67 @@ mod tests {
     #[test]
     fn plugin_store_result_uses_selected_directory_without_agent_prefix() {
         let settings = DesktopSettings {
-            plugin_store_dir: Some(path("D:/develop/Gauss Horizon")),
-            agent_store_dir: Some(path("D:/develop/Gauss Horizon/agents")),
+            plugin_store_dir: Some(path("D:/develop/Chiron Horizon")),
+            agent_store_dir: Some(path("D:/develop/Chiron Horizon/agents")),
             ..Default::default()
         };
-        let plugins_dir = PathBuf::from(path("D:/develop/Gauss Horizon"));
-        let agents_dir = PathBuf::from(path("D:/develop/Gauss Horizon/agents"));
+        let plugins_dir = PathBuf::from(path("D:/develop/Chiron Horizon"));
+        let agents_dir = PathBuf::from(path("D:/develop/Chiron Horizon/agents"));
 
         let result = driver_store_migration_result(settings, &plugins_dir, &agents_dir, true, false);
 
-        assert_eq!(result.plugin_store_dir.as_deref(), Some(path("D:/develop/Gauss Horizon").as_str()));
-        assert_eq!(result.plugins_dir, path("D:/develop/Gauss Horizon"));
-        assert_eq!(result.agents_dir, path("D:/develop/Gauss Horizon/agents"));
-        assert!(!result.plugins_dir.contains(&path("agents/id.gaussian.gauss-horizon/plugins")));
+        assert_eq!(result.plugin_store_dir.as_deref(), Some(path("D:/develop/Chiron Horizon").as_str()));
+        assert_eq!(result.plugins_dir, path("D:/develop/Chiron Horizon"));
+        assert_eq!(result.agents_dir, path("D:/develop/Chiron Horizon/agents"));
+        assert!(!result.plugins_dir.contains(&path("agents/id.chiron.horizon/plugins")));
     }
 
     #[test]
     fn legacy_driver_store_result_keeps_plugins_and_agents_as_siblings() {
         let settings =
-            DesktopSettings { driver_store_dir: Some(path("D:/develop/Gauss Horizon")), ..Default::default() };
-        let plugins_dir = PathBuf::from(path("D:/develop/Gauss Horizon/plugins"));
-        let agents_dir = PathBuf::from(path("D:/develop/Gauss Horizon/agents"));
+            DesktopSettings { driver_store_dir: Some(path("D:/develop/Chiron Horizon")), ..Default::default() };
+        let plugins_dir = PathBuf::from(path("D:/develop/Chiron Horizon/plugins"));
+        let agents_dir = PathBuf::from(path("D:/develop/Chiron Horizon/agents"));
 
         let result = driver_store_migration_result(settings, &plugins_dir, &agents_dir, true, true);
 
-        assert_eq!(result.driver_store_dir.as_deref(), Some(path("D:/develop/Gauss Horizon").as_str()));
-        assert_eq!(result.plugins_dir, path("D:/develop/Gauss Horizon/plugins"));
-        assert_eq!(result.agents_dir, path("D:/develop/Gauss Horizon/agents"));
+        assert_eq!(result.driver_store_dir.as_deref(), Some(path("D:/develop/Chiron Horizon").as_str()));
+        assert_eq!(result.plugins_dir, path("D:/develop/Chiron Horizon/plugins"));
+        assert_eq!(result.agents_dir, path("D:/develop/Chiron Horizon/agents"));
     }
 
     #[test]
     fn resolves_separate_plugin_store_dir_as_exact_selected_dir() {
         let settings = DesktopSettings {
             driver_store_dir: Some(path("D:/legacy-base")),
-            plugin_store_dir: Some(path("D:/develop/Gauss Horizon")),
-            agent_store_dir: Some(path("D:/develop/Gauss Horizon/agents")),
+            plugin_store_dir: Some(path("D:/develop/Chiron Horizon")),
+            agent_store_dir: Some(path("D:/develop/Chiron Horizon/agents")),
             ..Default::default()
         };
 
         let (plugins_dir, agents_dir) = resolve_driver_store_dirs_from_settings(
             &settings,
-            &PathBuf::from(path("C:/Users/lenovo/AppData/Roaming/id.gaussian.gauss-horizon")),
-            Some(PathBuf::from(path("C:/Users/lenovo/.gauss-horizon/agents"))),
+            &PathBuf::from(path("C:/Users/lenovo/AppData/Roaming/id.chiron.horizon")),
+            Some(PathBuf::from(path("C:/Users/lenovo/.chiron-horizon/agents"))),
         );
 
-        assert_eq!(plugins_dir, PathBuf::from(path("D:/develop/Gauss Horizon")));
-        assert_eq!(agents_dir, Some(PathBuf::from(path("D:/develop/Gauss Horizon/agents"))));
+        assert_eq!(plugins_dir, PathBuf::from(path("D:/develop/Chiron Horizon")));
+        assert_eq!(agents_dir, Some(PathBuf::from(path("D:/develop/Chiron Horizon/agents"))));
     }
 
     #[test]
     fn resolves_legacy_driver_store_dir_to_sibling_plugins_and_agents() {
         let settings =
-            DesktopSettings { driver_store_dir: Some(path("D:/develop/Gauss Horizon")), ..Default::default() };
+            DesktopSettings { driver_store_dir: Some(path("D:/develop/Chiron Horizon")), ..Default::default() };
 
         let (plugins_dir, agents_dir) = resolve_driver_store_dirs_from_settings(
             &settings,
-            &PathBuf::from(path("C:/Users/lenovo/AppData/Roaming/id.gaussian.gauss-horizon")),
-            Some(PathBuf::from(path("C:/Users/lenovo/.gauss-horizon/agents"))),
+            &PathBuf::from(path("C:/Users/lenovo/AppData/Roaming/id.chiron.horizon")),
+            Some(PathBuf::from(path("C:/Users/lenovo/.chiron-horizon/agents"))),
         );
 
-        assert_eq!(plugins_dir, PathBuf::from(path("D:/develop/Gauss Horizon/plugins")));
-        assert_eq!(agents_dir, Some(PathBuf::from(path("D:/develop/Gauss Horizon/agents"))));
+        assert_eq!(plugins_dir, PathBuf::from(path("D:/develop/Chiron Horizon/plugins")));
+        assert_eq!(agents_dir, Some(PathBuf::from(path("D:/develop/Chiron Horizon/agents"))));
     }
 
     #[test]

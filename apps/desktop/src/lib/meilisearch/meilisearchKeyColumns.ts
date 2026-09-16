@@ -1,6 +1,6 @@
 import { safeLocalStorageGet, safeLocalStorageSet } from "@/lib/backend/safeStorage";
 
-export const MEILISEARCH_KEY_COLUMN_STORAGE_KEY = "gauss-horizon:meilisearch:key-columns:v1";
+export const MEILISEARCH_KEY_COLUMN_STORAGE_KEY = "chiron-horizon:meilisearch:key-columns:v1";
 export const MEILISEARCH_KEY_COLUMN_KEYS = ["name", "key", "uid", "actions", "indexes", "expiresAt"] as const;
 export type MeilisearchKeyColumnKey = (typeof MEILISEARCH_KEY_COLUMN_KEYS)[number];
 

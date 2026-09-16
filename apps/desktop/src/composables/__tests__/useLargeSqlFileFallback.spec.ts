@@ -53,7 +53,7 @@ function withComposable<T>(run: (fallback: ReturnType<typeof useLargeSqlFileStre
 describe("useLargeSqlFileStreamingFallback", () => {
   it("routes oversized sql files to the streaming executor dialog", () => {
     const outcome = withComposable((fallback) => {
-      const handled = fallback.openInStreamingExecutorOnTooLarge("/tmp/gauss_horizon_export.sql", new ExternalSqlFileTooLargeError(100 * 1024 * 1024, 64 * 1024 * 1024));
+      const handled = fallback.openInStreamingExecutorOnTooLarge("/tmp/chiron_horizon_export.sql", new ExternalSqlFileTooLargeError(100 * 1024 * 1024, 64 * 1024 * 1024));
       return { handled, error: null as unknown };
     });
 
@@ -61,14 +61,14 @@ describe("useLargeSqlFileStreamingFallback", () => {
     expect(mocks.store.sqlFileSource).toEqual({
       connectionId: "",
       database: "",
-      filePath: "/tmp/gauss_horizon_export.sql",
+      filePath: "/tmp/chiron_horizon_export.sql",
     });
     expect(mocks.toast).toHaveBeenCalledTimes(1);
     expect(String(mocks.toast.mock.calls[0][0])).toContain("100.0 MB");
   });
 
   it("keeps unrelated open failures as errors", () => {
-    const outcome = withComposable((fallback) => fallback.openInStreamingExecutorOnTooLarge("/tmp/gauss_horizon_export.sql", new Error("disk failure")));
+    const outcome = withComposable((fallback) => fallback.openInStreamingExecutorOnTooLarge("/tmp/chiron_horizon_export.sql", new Error("disk failure")));
 
     expect(outcome).toBe(false);
     expect(mocks.store.sqlFileSource).toBeNull();

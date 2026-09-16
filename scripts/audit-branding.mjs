@@ -18,7 +18,7 @@ const compatibility = new Set([
   "agents/go-common/gosasl/legacy_env.go",
   "packages/mcp-server/bin/legacy-environment.js",
   "packages/plugin-cli/bin/legacy-environment.js",
-  "crates/gauss-horizon-core/src/legacy.rs",
+  "crates/chiron-horizon-core/src/legacy.rs",
   "src-tauri/src/data_dir.rs",
   "README.md",
   "docs/development/white-label.md",
@@ -35,14 +35,22 @@ for (const file of files) {
   const text = bytes.toString("utf8");
   checked++;
   for (const [index, line] of text.split("\n").entries()) {
-    const normalized = line.replace(/data:[^\s"<>;]+;base64,[A-Za-z0-9+/=]+/g, "").replace(/integrity:.*\r?$/, "");
+    const normalized = line
+      .replace(/data:[^\s"<>;]+;base64,[A-Za-z0-9+/=]+/g, "")
+      .replace(/integrity:.*\r?$/, "")
+      // The existing remote has not been renamed. Preserve its address until
+      // the repository itself moves, while still rejecting old local identity.
+      .replace(/Gaussian-id\/Gauss-Horizon/g, "");
     if (/dbx|dbxio/i.test(normalized)) failures.push(`${file}:${index + 1}: legacy product reference`);
-    if (/https?:\/\/[^\s"'<>]*(?:gauss-horizonio\.com|t8y2\/(?:dbx|scoop-bucket|tap))/i.test(line)) failures.push(`${file}:${index + 1}: obsolete distribution URL`);
+    if (/\bgauss(?:[ _-]?horizon|_horizon)\b|\bgausshorizon\b/i.test(normalized)) {
+      failures.push(`${file}:${index + 1}: former product identity`);
+    }
+    if (/https?:\/\/[^\s"'<>]*(?:chiron-horizonio\.com|t8y2\/(?:dbx|scoop-bucket|tap))/i.test(line)) failures.push(`${file}:${index + 1}: obsolete distribution URL`);
   }
 }
 
 const config = JSON.parse(readFileSync("src-tauri/tauri.conf.json", "utf8"));
-if (config.productName !== "Gauss Horizon" || config.version !== "0.1.0" || config.identifier !== "id.gaussian.gauss-horizon") {
+if (config.productName !== "Chiron Horizon" || config.version !== "0.1.0" || config.identifier !== "id.chiron.horizon") {
   failures.push("Unexpected application identity");
 }
 if (config.plugins.updater || config.bundle.createUpdaterArtifacts) failures.push("Updater configuration must be absent/disabled");

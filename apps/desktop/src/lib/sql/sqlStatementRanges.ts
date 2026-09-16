@@ -271,7 +271,7 @@ const ALTER_BODY_KEYWORDS = new Set(["ADD", "ALTER", "COMMENT", "DROP", "MODIFY"
 const CLICKHOUSE_ALTER_TABLE_HEADER = /^ALTER\s+TABLE\s+(?:(?:[A-Za-z_][\w$]*|`(?:``|[^`])+`|"(?:""|[^"])+")\s*\.\s*)?(?:[A-Za-z_][\w$]*|`(?:``|[^`])+`|"(?:""|[^"])+")(?:\s+ON\s+CLUSTER\s+(?:[A-Za-z_][\w$]*|`(?:``|[^`])+`|"(?:""|[^"])+"|'(?:''|[^'])+'))?\s*$/i;
 const SET_OPERATION_KEYWORDS = new Set(["UNION", "INTERSECT", "EXCEPT", "MINUS"]);
 const SET_OPERATION_MODIFIER_KEYWORDS = new Set(["ALL", "DISTINCT"]);
-// Mirrors the backend list in gauss-horizon-core/src/sql.rs is_oracle_like_database — keep both
+// Mirrors the backend list in chiron-horizon-core/src/sql.rs is_oracle_like_database — keep both
 // in sync. ArgoDB (Transwarp Hive/Inceptor fork) ships a PL/SQL-compatible procedure
 // language (`CREATE [OR REPLACE] PROCEDURE ... IS BEGIN ... END;`), so its statement
 // ranges must stay whole instead of splitting at every body semicolon.
@@ -303,7 +303,7 @@ const SAP_HANA_SCRIPT_BLOCK_TERMINATORS = new Set(["IF", "FOR", "WHILE"]);
  * Delimiters inside string literals, double/backtick/bracket quoted
  * identifiers, dollar-quoted bodies (Postgres), line comments (`--`, `#`) and
  * block comments (`/* *​/`) are ignored, mirroring the backend splitter in
- * `gauss-horizon-core/src/sql.rs`. Ranges are returned as `[from, to)` offsets covering
+ * `chiron-horizon-core/src/sql.rs`. Ranges are returned as `[from, to)` offsets covering
  * only the statement text (the trailing semicolon and inter-statement
  * whitespace are excluded so editor highlights stay tight).
  */

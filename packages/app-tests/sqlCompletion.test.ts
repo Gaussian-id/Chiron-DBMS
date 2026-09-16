@@ -1805,10 +1805,10 @@ test("keeps schema-qualified FROM object input in table suggestion mode", () => 
 });
 
 test("keeps an accepted schema with trailing dot in table suggestion mode", () => {
-  const sql = "SELECT *\nFROM GAUSS_HORIZON_TEST.";
+  const sql = "SELECT *\nFROM CHIRON_HORIZON_TEST.";
   const context = getSqlCompletionContext(sql, sql.length);
 
-  assert.equal(context.qualifier, "GAUSS_HORIZON_TEST");
+  assert.equal(context.qualifier, "CHIRON_HORIZON_TEST");
   assert.equal(context.prefix, "");
   assert.equal(context.suggestTables, true);
   assert.equal(context.exclusiveTableSuggestions, true);

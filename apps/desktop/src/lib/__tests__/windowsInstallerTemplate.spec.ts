@@ -27,14 +27,14 @@ describe("Windows offline installer template", () => {
     expect(template).not.toContain('!if "${INSTALLWEBVIEW2MODE}" != "fixedRuntime"');
     expect(template).toContain("${If} ${IsWin7}");
     expect(template).toContain("${OrIf} ${IsWin2012R2}");
-    expect(template).toContain('MessageBox MB_ICONSTOP|MB_YESNO|MB_DEFBUTTON1 "$(gaussHorizonWin7InstallerRequired)" IDYES gauss_horizon_open_win7_installer');
-    expect(template).toContain("https://distribution-disabled.invalid/releases/v${VERSION}/GAUSS_HORIZON_${VERSION}_x64-win7-server2012r2-offline-setup.exe?v=${VERSION}");
+    expect(template).toContain('MessageBox MB_ICONSTOP|MB_YESNO|MB_DEFBUTTON1 "$(chironHorizonWin7InstallerRequired)" IDYES chiron_horizon_open_win7_installer');
+    expect(template).toContain("https://distribution-disabled.invalid/releases/v${VERSION}/CHIRON_HORIZON_${VERSION}_x64-win7-server2012r2-offline-setup.exe?v=${VERSION}");
     expect(template).toContain("SetErrorLevel 1633");
     expect(template).toContain("${OrIf} $PassiveMode = 1");
   });
 
   it("localizes the Windows 7 package guidance in every installer language", () => {
-    expect(template.match(/LangString gaussHorizonWin7InstallerRequired/g)).toHaveLength(3);
+    expect(template.match(/LangString chironHorizonWin7InstallerRequired/g)).toHaveLength(3);
     expect(template).toContain("This installer does not support Windows 7 or Windows Server 2012 R2.");
     expect(template).toContain("此安装包不支持 Windows 7 或 Windows Server 2012 R2。");
     expect(template).toContain("此安裝套件不支援 Windows 7 或 Windows Server 2012 R2。");
@@ -174,7 +174,7 @@ describe("Windows 7 fixed WebView2 runtime bundle", () => {
 
   it("audits the files produced by the silent Win7 installer", () => {
     expect(win7InstallerAuditScript).toContain('"webview2-fixed-runtime\\msedgewebview2.exe"');
-    expect(win7InstallerAuditScript).toContain('"gauss-horizon.exe"');
+    expect(win7InstallerAuditScript).toContain('"chiron-horizon.exe"');
     expect(ciWorkflow).toContain("./.github/scripts/assert-win7-installer-content.ps1");
     expect(releaseWorkflow).toContain("./.github/scripts/assert-win7-installer-content.ps1");
   });

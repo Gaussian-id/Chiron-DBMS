@@ -1,6 +1,6 @@
 # Consistent AI composer across connections
 
-Date: 2026-09-14–15 (Asia/Jakarta). Branch: `codex/gauss-horizon-0.1.0`.
+Date: 2026-09-14–15 (Asia/Jakarta). Branch: `codex/chiron-horizon-0.1.0`.
 
 Kevin requested a consistent chatbot UI after comparing ChironDB and MongoDB in the open desktop application. Inspection confirmed that both already used `AiAssistant.vue`, but ChironDB conditionals inserted a separate collection form above the messages and replaced the common mode menu with a Generate only switch. MongoDB used the standard context row and Ask/Agent menu. The separate Mongo Chat example is not the desktop chatbot and is outside this change.
 
@@ -30,8 +30,8 @@ The change does not route ChironDB through MongoDB/generic agent execution, enab
 - Kevin's old running instance was closed normally for the native check, then the rebuilt application was reopened on his current profile. The existing MongoDB query workspace and prior conversation were restored from History. No installation into `/Applications`, profile import, commit, push, tag or publication occurred.
 - Vite, the disposable ChironDB/web/provider fixture processes and the temporary native application were stopped. Evidence/profile files were retained; Kevin's reopened application and unrelated services remain running.
 
-Artifact at this earlier checkpoint: `target/release/bundle/macos/Gauss Horizon.app`. Executable SHA-256: `14e0638b070ca96ee022f15e003a4fd37442d0a9a33c8d2edd487825d7cab972`. The existing DMG was not rebuilt for this change. Native verification applies to macOS arm64; Windows/Linux/macOS Intel were not rerun for this UI update.
+Artifact at this earlier checkpoint: `target/release/bundle/macos/Chiron Horizon.app`. Executable SHA-256: `14e0638b070ca96ee022f15e003a4fd37442d0a9a33c8d2edd487825d7cab972`. The existing DMG was not rebuilt for this change. Native verification applies to macOS arm64; Windows/Linux/macOS Intel were not rerun for this UI update.
 
 Initial tool invocations encountered pnpm's dependency auto-check rejecting an ignored third-party build script and the default Rust 1.92.0 being too old for locked dependencies. Verification was rerun using already-installed executable tools and installed Rust 1.94.1, without relaxing build-script approval or changing dependencies to work around the errors.
 
-Logs: `/tmp/gauss-horizon-chat-ui-regression.log`, `/tmp/gauss-horizon-chat-ui-typecheck-final.log`, `/tmp/gauss-horizon-chat-ui-build-final.log`, `/tmp/gauss-horizon-chat-ui-native-fixture.log`.
+Logs: `/tmp/chiron-horizon-chat-ui-regression.log`, `/tmp/chiron-horizon-chat-ui-typecheck-final.log`, `/tmp/chiron-horizon-chat-ui-build-final.log`, `/tmp/chiron-horizon-chat-ui-native-fixture.log`.

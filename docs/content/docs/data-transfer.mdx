@@ -5,7 +5,7 @@ description: Copy tables between connections, databases, schemas, or database en
 
 Data Transfer copies tables or collections from one source into another connection, database, or schema. Use it for environment migration, test data preparation, and one-off consolidation. It is not continuous replication, CDC, or bidirectional synchronization.
 
-<Callout type="warn">Cross-engine transfer passes through Gauss Horizon field and type conversion. Target privileges, constraints, triggers, defaults, and engine semantics still determine the result. Rehearse important migrations and validate row counts and key fields afterward.</Callout>
+<Callout type="warn">Cross-engine transfer passes through Chiron Horizon field and type conversion. Target privileges, constraints, triggers, defaults, and engine semantics still determine the result. Rehearse important migrations and validate row counts and key fields afterward.</Callout>
 
 ## Two Entry Points
 
@@ -27,7 +27,7 @@ After copying one or more tables in the object tree, paste them at a target loca
   <Step>
     ### Select the Source
 
-    Choose the source connection, catalog when applicable, database, and schema. Gauss Horizon lists transferable base tables; MongoDB paths list collections.
+    Choose the source connection, catalog when applicable, database, and schema. Chiron Horizon lists transferable base tables; MongoDB paths list collections.
 
   </Step>
   <Step>
@@ -61,7 +61,7 @@ After copying one or more tables in the object tree, paste them at a target loca
 | Option | Details |
 | --- | --- |
 | Create target tables | Generates target structure from source metadata when the table does not exist and the path supports it |
-| Rebuild structure and data | Renames existing target tables to backup (`__gauss_horizon_bak_` prefix), rebuilds from source structure, inserts data, then drops backup on success. Any failure preserves the backup table for manual recovery. Requires confirmation on production databases. Available for MySQL, PostgreSQL, SQL Server, KingBase, GaussDB, OpenGauss, KWDB, GoldenDB, SQLite, DuckDB, and Cloudflare D1. |
+| Rebuild structure and data | Renames existing target tables to backup (`__chiron_horizon_bak_` prefix), rebuilds from source structure, inserts data, then drops backup on success. Any failure preserves the backup table for manual recovery. Requires confirmation on production databases. Available for MySQL, PostgreSQL, SQL Server, KingBase, GaussDB, OpenGauss, KWDB, GoldenDB, SQLite, DuckDB, and Cloudflare D1. |
 | Append | Keeps existing target rows and inserts source rows |
 | Overwrite | Clears each target table before writing its source rows |
 | Upsert | Updates or inserts by key when the target path supports it and a usable key is available |
@@ -74,7 +74,7 @@ If table creation is disabled, compatible target tables must already exist. Even
 
 ## PostgreSQL Structure and Ownership
 
-For PostgreSQL-to-PostgreSQL transfers with table creation enabled, Gauss Horizon handles supported sequences, indexes, foreign keys, and selected schema-level objects and dependencies. If source owners do not exist on the target instance, Gauss Horizon prompts you to:
+For PostgreSQL-to-PostgreSQL transfers with table creation enabled, Chiron Horizon handles supported sequences, indexes, foreign keys, and selected schema-level objects and dependencies. If source owners do not exist on the target instance, Chiron Horizon prompts you to:
 
 - Skip the affected ownership metadata
 - Reassign missing owners to the current target user
@@ -84,7 +84,7 @@ This is not a full replacement for `pg_dump` and `pg_restore`. Use native Postgr
 
 ## Failure Handling
 
-A multi-table task does not discard the entire queue after the first table failure. Gauss Horizon records the failure, attempts later tables, and finishes either successfully or with a terminal error summary.
+A multi-table task does not discard the entire queue after the first table failure. Chiron Horizon records the failure, attempts later tables, and finishes either successfully or with a terminal error summary.
 
 - Progress keeps per-table failure details
 - When failures exceed the display limit, the UI reports how many entries were omitted
@@ -95,7 +95,7 @@ As a result, a finished task does not necessarily mean every table succeeded. Ch
 
 ## Database Coverage
 
-Gauss Horizon filters source and target connections through the driver capability manifest. The implementation includes SQL-to-SQL, MongoDB-to-MongoDB, and selected MongoDB/SQL conversion paths. Not every connectable database supports Data Transfer.
+Chiron Horizon filters source and target connections through the driver capability manifest. The implementation includes SQL-to-SQL, MongoDB-to-MongoDB, and selected MongoDB/SQL conversion paths. Not every connectable database supports Data Transfer.
 
 Capabilities also vary by combination:
 

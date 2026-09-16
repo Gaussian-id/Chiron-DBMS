@@ -59,7 +59,7 @@ const filteredTables = computed(() => {
   return tables.value.filter((name) => name.toLowerCase().includes(q));
 });
 const tableError = ref<string | null>(null);
-const POSTGRES_ALL_SCHEMAS = "__GAUSS_HORIZON_ALL_SCHEMAS__";
+const POSTGRES_ALL_SCHEMAS = "__CHIRON_HORIZON_ALL_SCHEMAS__";
 
 // Options
 const includeStructure = ref(true);

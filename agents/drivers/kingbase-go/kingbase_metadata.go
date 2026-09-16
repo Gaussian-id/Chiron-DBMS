@@ -204,7 +204,7 @@ func detectDatabaseMode(db *sql.DB) string {
 
 func supportsBacktickIdentifiers(db *sql.DB) bool {
 	var value int
-	return db.QueryRow("SELECT 1 AS `gauss_horizon_identifier_probe`").Scan(&value) == nil
+	return db.QueryRow("SELECT 1 AS `chiron_horizon_identifier_probe`").Scan(&value) == nil
 }
 
 func (s *server) identifierQuote() string {

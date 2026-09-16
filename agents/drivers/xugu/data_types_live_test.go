@@ -79,7 +79,7 @@ func TestLiveXuguSelectableDataTypes(t *testing.T) {
 
 	for index, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			tableName := fmt.Sprintf("GAUSS_HORIZON_DATA_TYPE_%02d", index)
+			tableName := fmt.Sprintf("CHIRON_HORIZON_DATA_TYPE_%02d", index)
 			qualifiedTable := quoteIdentifier(params.Username) + "." + quoteIdentifier(tableName)
 			_, _ = db.ExecContext(ctx, "DROP TABLE "+qualifiedTable)
 			defer func() { _, _ = db.ExecContext(context.Background(), "DROP TABLE "+qualifiedTable) }()

@@ -3,11 +3,11 @@ import { tmpdir } from "node:os";
 import { basename, join, resolve } from "node:path";
 import { spawnSync } from "node:child_process";
 
-const packageDirectory = resolve(process.argv[2] ?? "/tmp/gauss-horizon-pack-check");
+const packageDirectory = resolve(process.argv[2] ?? "/tmp/chiron-horizon-pack-check");
 const expectedPackages = [
-  "@gauss-horizon/cli",
-  "@gauss-horizon/mcp-server",
-  "@gauss-horizon/plugin-cli",
+  "@chiron-horizon/cli",
+  "@chiron-horizon/mcp-server",
+  "@chiron-horizon/plugin-cli",
 ];
 const tarballs = readdirSync(packageDirectory)
   .filter((file) => file.endsWith(".tgz"))
@@ -20,10 +20,10 @@ if (tarballs.length !== expectedPackages.length) {
   );
 }
 
-const installDirectory = mkdtempSync(join(tmpdir(), "gauss-horizon-package-install-"));
+const installDirectory = mkdtempSync(join(tmpdir(), "chiron-horizon-package-install-"));
 writeFileSync(
   join(installDirectory, "package.json"),
-  `${JSON.stringify({ name: "gauss-horizon-package-install-check", private: true }, null, 2)}\n`,
+  `${JSON.stringify({ name: "chiron-horizon-package-install-check", private: true }, null, 2)}\n`,
 );
 
 // Installing every release tarball together verifies workspace dependencies are publishable and semver-compatible.

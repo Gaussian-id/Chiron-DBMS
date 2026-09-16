@@ -6,17 +6,17 @@ import process from "node:process";
 import { fileURLToPath } from "node:url";
 
 const root = path.dirname(fileURLToPath(import.meta.url));
-const target = process.env.GAUSS_HORIZON_PLUGIN_TARGET || platformTarget();
-const candidate = path.resolve(process.argv[2] || path.join(root, "dist", `gauss.horizon.example.hello-1.0.0-${target}.gauss-horizonp`));
+const target = process.env.CHIRON_HORIZON_PLUGIN_TARGET || platformTarget();
+const candidate = path.resolve(process.argv[2] || path.join(root, "dist", `chiron.horizon.example.hello-1.0.0-${target}.chiron-horizonp`));
 const signed = path.resolve(
-  process.argv[3] || path.join(root, "dist", `gauss.horizon.example.hello-1.0.0-${target}.signed.gauss-horizonp`),
+  process.argv[3] || path.join(root, "dist", `chiron.horizon.example.hello-1.0.0-${target}.signed.chiron-horizonp`),
 );
-const metadata = signed.replace(/\.gauss-horizonp$/, ".artifact.json");
-const keyId = process.env.GAUSS_HORIZON_PLUGIN_SIGNING_KEY_ID;
-const buildRoot = await mkdtemp(path.join(os.tmpdir(), "gauss-horizon-repository-sign-"));
+const metadata = signed.replace(/\.chiron-horizonp$/, ".artifact.json");
+const keyId = process.env.CHIRON_HORIZON_PLUGIN_SIGNING_KEY_ID;
+const buildRoot = await mkdtemp(path.join(os.tmpdir(), "chiron-horizon-repository-sign-"));
 
-if (!process.env.GAUSS_HORIZON_PLUGIN_SIGNING_KEY || !keyId) {
-  throw new Error("Repository signing requires GAUSS_HORIZON_PLUGIN_SIGNING_KEY and GAUSS_HORIZON_PLUGIN_SIGNING_KEY_ID");
+if (!process.env.CHIRON_HORIZON_PLUGIN_SIGNING_KEY || !keyId) {
+  throw new Error("Repository signing requires CHIRON_HORIZON_PLUGIN_SIGNING_KEY and CHIRON_HORIZON_PLUGIN_SIGNING_KEY_ID");
 }
 
 try {
@@ -44,7 +44,7 @@ try {
     { CARGO_TARGET_DIR: path.join(buildRoot, "cargo-target") },
   );
 
-  if (process.env.GAUSS_HORIZON_PLUGIN_SKIP_EXAMPLE_CATALOG !== "1") await updateExampleCatalog(metadata);
+  if (process.env.CHIRON_HORIZON_PLUGIN_SKIP_EXAMPLE_CATALOG !== "1") await updateExampleCatalog(metadata);
   console.log(`Repository-signed ${signed}`);
 } finally {
   await rm(buildRoot, { recursive: true, force: true });

@@ -76,11 +76,11 @@ export interface DataGridViewProbeInput {
 
 const MAX_ENTRIES = 32;
 /**
- * Rollback switch (default on). Set `VITE_GAUSS_HORIZON_DISABLE_GRID_VIEW_SNAPSHOT=true`
+ * Rollback switch (default on). Set `VITE_CHIRON_HORIZON_DISABLE_GRID_VIEW_SNAPSHOT=true`
  * to skip capture and restore entirely, which restores the pre-feature
  * behavior without a code change.
  */
-export const DATA_GRID_VIEW_SNAPSHOT_RESTORE = import.meta.env?.VITE_GAUSS_HORIZON_DISABLE_GRID_VIEW_SNAPSHOT !== "true";
+export const DATA_GRID_VIEW_SNAPSHOT_RESTORE = import.meta.env?.VITE_CHIRON_HORIZON_DISABLE_GRID_VIEW_SNAPSHOT !== "true";
 /** Per-snapshot serialized budget. */
 export const MAX_SNAPSHOT_BYTES = 64 * 1024;
 /** Whole-cache serialized budget. */

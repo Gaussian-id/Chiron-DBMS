@@ -40,13 +40,13 @@ func TestVastbaseHandshakeAdvertisesMultiSessionSQLAgent(t *testing.T) {
 func TestQueryOptionsFromParams(t *testing.T) {
 	params := map[string]json.RawMessage{
 		"sql":         json.RawMessage(`"SELECT 1"`),
-		"database":    json.RawMessage(`"gauss-horizon"`),
+		"database":    json.RawMessage(`"chiron-horizon"`),
 		"schema":      json.RawMessage(`"public"`),
 		"maxRows":     json.RawMessage(`1000`),
 		"fetchSize":   json.RawMessage(`250`),
 		"timeoutSecs": json.RawMessage(`15`),
 	}
-	expected := queryOptions{SQL: "SELECT 1", Database: "gauss-horizon", Schema: "public", MaxRows: 1000, FetchSize: 250, TimeoutSecs: 15}
+	expected := queryOptions{SQL: "SELECT 1", Database: "chiron-horizon", Schema: "public", MaxRows: 1000, FetchSize: 250, TimeoutSecs: 15}
 	if actual := queryOptionsFromParams(params); actual != expected {
 		t.Fatalf("queryOptionsFromParams() = %+v, want %+v", actual, expected)
 	}
@@ -59,7 +59,7 @@ func TestVastbaseBuildDSNUsesNativeDefaultsForJDBCURL(t *testing.T) {
 		Username:         "vbadmin",
 		Password:         "secret",
 		ConnectionString: "jdbc:vastbase://vastbase.example.com:5432/postgres",
-		URLParams:        "application_name=gauss-horizon",
+		URLParams:        "application_name=chiron-horizon",
 	})
 	for _, expected := range []string{
 		"host='vastbase.example.com'",
@@ -68,7 +68,7 @@ func TestVastbaseBuildDSNUsesNativeDefaultsForJDBCURL(t *testing.T) {
 		"password='secret'",
 		"dbname='postgres'",
 		"sslmode=prefer",
-		"application_name='gauss-horizon'",
+		"application_name='chiron-horizon'",
 	} {
 		if !strings.Contains(dsn, expected) {
 			t.Fatalf("DSN missing %s: %s", expected, dsn)
@@ -78,9 +78,9 @@ func TestVastbaseBuildDSNUsesNativeDefaultsForJDBCURL(t *testing.T) {
 
 func TestVastbaseBuildDSNPreservesNativeConnectionString(t *testing.T) {
 	dsn := buildDSNWithSSLMode(connectParams{
-		ConnectionString: "postgresql://vbadmin:secret@vastbase.example.com:5432/postgres?application_name=gauss-horizon&sslmode=disable",
+		ConnectionString: "postgresql://vbadmin:secret@vastbase.example.com:5432/postgres?application_name=chiron-horizon&sslmode=disable",
 	}, "verify-full")
-	if !strings.Contains(dsn, "application_name=gauss-horizon") || !strings.Contains(dsn, "sslmode=verify-full") {
+	if !strings.Contains(dsn, "application_name=chiron-horizon") || !strings.Contains(dsn, "sslmode=verify-full") {
 		t.Fatalf("unexpected rewritten native DSN: %s", dsn)
 	}
 	if strings.Contains(dsn, "sslmode=disable") {
@@ -94,13 +94,13 @@ func TestVastbaseBuildDSNTranslatesJDBCParameters(t *testing.T) {
 		Database:  "postgres",
 		Username:  "vbadmin",
 		Password:  "secret",
-		URLParams: "targetServerType=master&connectTimeout=7&currentSchema=app&applicationName=gauss-horizon&sslmode=enable&autosave=always&enable_ce=1&db_compatibility=PG",
+		URLParams: "targetServerType=master&connectTimeout=7&currentSchema=app&applicationName=chiron-horizon&sslmode=enable&autosave=always&enable_ce=1&db_compatibility=PG",
 	})
 	for _, expected := range []string{
 		"target_session_attrs='primary'",
 		"connect_timeout='7'",
 		"search_path='app'",
-		"application_name='gauss-horizon'",
+		"application_name='chiron-horizon'",
 		"sslmode=require",
 	} {
 		if !strings.Contains(dsn, expected) {

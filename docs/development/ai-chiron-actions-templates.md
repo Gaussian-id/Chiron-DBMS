@@ -1,6 +1,6 @@
 # ChironDB AI actions and prompt templates
 
-Date: 2026-09-15 (Asia/Jakarta). Branch: `codex/gauss-horizon-0.1.0`.
+Date: 2026-09-15 (Asia/Jakarta). Branch: `codex/chiron-horizon-0.1.0`.
 
 The screenshot follow-up identified two remaining differences: ChironDB hid the shared action list, and its template selector was disabled. Both are now enabled in the shared `AiAssistant.vue` composer and connected to native prompt generation.
 
@@ -29,10 +29,10 @@ The first macOS arm64 standalone build completed in 15m40s and passed ad-hoc sig
 
 This first bundle contained frontend assets from before the final SQL-to-ChironQL label/privacy-copy edit. Native inspection caught the mismatch; a second complete build was started from the final assets. Execution logic and template wiring were already present in the first bundle. The second build completed in 10m16s, passed local ad-hoc signature verification, and was launched as a foreground process on Kevin's existing profile. Final native inspection confirmed Generate/Explain/Optimize ChironQL labels and the updated privacy text. The template dropdown opened normally; this profile has no saved templates, so it showed the empty state. Templates can be created in Settings → AI → Scenario Prompt Templates. The original `test@ChironQL` workspace/query and saved model selection remained intact; no user-database query or live model request was submitted.
 
-App at the actions/templates checkpoint (superseded by the attachment follow-up): `target/release/bundle/macos/Gauss Horizon.app`. Executable SHA-256: `a68699b72e1549ff2e7f0897d881a0b6ffc98f689b5f56e0bee7f81f14f5035c`. The final app is running with its embedded frontend and no Vite server. The earlier DMG was not rebuilt. Native evidence applies to macOS arm64 only; Windows, Linux and macOS Intel were not rerun for this update. No notarization is claimed.
+App at the actions/templates checkpoint (superseded by the attachment follow-up): `target/release/bundle/macos/Chiron Horizon.app`. Executable SHA-256: `a68699b72e1549ff2e7f0897d881a0b6ffc98f689b5f56e0bee7f81f14f5035c`. The final app is running with its embedded frontend and no Vite server. The earlier DMG was not rebuilt. Native evidence applies to macOS arm64 only; Windows, Linux and macOS Intel were not rerun for this update. No notarization is claimed.
 
 The temporary native app, browser tab, Vite (1420) and disposable provider/web/ChironDB processes were stopped. Fixture evidence was retained. Kevin's application was reopened on its existing profile with the original `test@ChironQL` workspace. No release, tag, push, package publication or installation into `/Applications` is part of this update.
 
-Sources: `apps/desktop/src/lib/ai/chironPrompt.ts`, `apps/desktop/src/components/editor/AiAssistant.vue`, `crates/gauss-horizon-core/src/ai_chiron.rs`, `crates/gauss-horizon-core/assets/chironql-reference.md`, `scripts/chirondb-smoke.mjs`.
+Sources: `apps/desktop/src/lib/ai/chironPrompt.ts`, `apps/desktop/src/components/editor/AiAssistant.vue`, `crates/chiron-horizon-core/src/ai_chiron.rs`, `crates/chiron-horizon-core/assets/chironql-reference.md`, `scripts/chirondb-smoke.mjs`.
 
-Logs: `/tmp/gauss-horizon-actions-templates-tests-final.log`, `/tmp/gauss-horizon-actions-templates-types-final.log`, `/tmp/gauss-horizon-actions-templates-rust-tests-final.log`, `/tmp/gauss-horizon-actions-templates-build.log`, `/tmp/gauss-horizon-actions-templates-build-final.log`, `/tmp/gauss-horizon-actions-templates-fixture.log`.
+Logs: `/tmp/chiron-horizon-actions-templates-tests-final.log`, `/tmp/chiron-horizon-actions-templates-types-final.log`, `/tmp/chiron-horizon-actions-templates-rust-tests-final.log`, `/tmp/chiron-horizon-actions-templates-build.log`, `/tmp/chiron-horizon-actions-templates-build-final.log`, `/tmp/chiron-horizon-actions-templates-fixture.log`.

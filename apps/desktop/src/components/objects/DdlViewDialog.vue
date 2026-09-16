@@ -6,7 +6,7 @@ import { useToast } from "@/composables/useToast";
 import { useTheme } from "@/composables/useTheme";
 import { useSettingsStore } from "@/stores/settingsStore";
 import { loadEditorTheme, editorFontTheme } from "@/lib/editor/editorThemes";
-import { createGaussHorizonCodeMirrorSqlDialect } from "@/lib/editor/codemirrorSqlDialect";
+import { createChironHorizonCodeMirrorSqlDialect } from "@/lib/editor/codemirrorSqlDialect";
 import { copyToClipboard } from "@/lib/common/clipboard";
 import { formatSqlForDisplay, type SqlFormatDialect } from "@/lib/sql/sqlFormatter";
 import { omitDdlIdentifierQuotes } from "@/lib/sql/ddlDisplay";
@@ -189,7 +189,7 @@ async function initDdlEditor(content: string) {
   const fontFamily = settingsStore.editorSettings.fontFamily;
   const themeExt = await loadEditorTheme(editorTheme, appAppearance, undefined, themePalette.value);
   const fontExt = editorFontTheme(EditorView, fontSize, fontFamily, { fixedHeight: true, scrollable: true });
-  const dialect = createGaussHorizonCodeMirrorSqlDialect(langSql, props.dialect, props.databaseType);
+  const dialect = createChironHorizonCodeMirrorSqlDialect(langSql, props.dialect, props.databaseType);
   const state = EditorState.create({
     doc: content,
     extensions: [
@@ -286,7 +286,7 @@ function onClose() {
 
 <template>
   <Dialog :open="props.open" @update:open="onClose">
-    <DialogContent :style="dialogContentStyle" class="gauss-horizon-ddl-view-dialog sm:max-w-190" @close-auto-focus="onDdlDialogCloseAutoFocus">
+    <DialogContent :style="dialogContentStyle" class="chiron-horizon-ddl-view-dialog sm:max-w-190" @close-auto-focus="onDdlDialogCloseAutoFocus">
       <DialogHeader class="cursor-move select-none" @pointerdown="startDialogDrag" @pointermove="moveDialogDrag" @pointerup="endDialogDrag" @pointercancel="endDialogDrag">
         <DialogTitle>DDL - {{ props.tableName }}</DialogTitle>
       </DialogHeader>
@@ -341,10 +341,10 @@ function onClose() {
 
 .ddl-view-editor :deep(.cm-selectionBackground),
 .ddl-view-editor :deep(.cm-focused > .cm-scroller > .cm-selectionLayer .cm-selectionBackground) {
-  background: var(--gauss-horizon-editor-selection-background, rgba(59, 130, 246, 0.35)) !important;
+  background: var(--chiron-horizon-editor-selection-background, rgba(59, 130, 246, 0.35)) !important;
 }
 
 .ddl-view-editor :deep(.cm-content ::selection) {
-  background: var(--gauss-horizon-editor-selection-background, rgba(59, 130, 246, 0.35)) !important;
+  background: var(--chiron-horizon-editor-selection-background, rgba(59, 130, 246, 0.35)) !important;
 }
 </style>

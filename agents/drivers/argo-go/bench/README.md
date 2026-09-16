@@ -1,6 +1,6 @@
 # Hive Agent benchmark
 
-This benchmark compares the same Gauss Horizon JSON-RPC operations through the native
+This benchmark compares the same Chiron Horizon JSON-RPC operations through the native
 Go Hive Agent and the archived JDBC Hive Agent. Both candidates run on the same
 host and connect to the same HiveServer2 instance.
 
@@ -14,7 +14,7 @@ The runner measures:
 - artifact size, idle RSS, and peak RSS;
 - `SELECT 1`-shape lookup and 100/1,000/10,000-row decoding;
 - `list_databases`, `list_tables`, and complete paged reads;
-- 1, 8, and 32 concurrent Gauss Horizon Agent sessions;
+- 1, 8, and 32 concurrent Chiron Horizon Agent sessions;
 - mean, p50, p95, p99, throughput, and clean shutdown behavior.
 
 Candidate order rotates between rounds to reduce warm-cache and server-order
@@ -22,12 +22,12 @@ bias. Startup and connection samples always use a fresh Agent process.
 
 ## Prepare the fixture
 
-The defaults expect `gauss_horizon_agent_bench.agent_bench` with exactly 10,000 or more
+The defaults expect `chiron_horizon_agent_bench.agent_bench` with exactly 10,000 or more
 rows and columns named `id` and `payload`:
 
 ```sql
-CREATE DATABASE IF NOT EXISTS gauss_horizon_agent_bench;
-CREATE TABLE IF NOT EXISTS gauss_horizon_agent_bench.agent_bench (
+CREATE DATABASE IF NOT EXISTS chiron_horizon_agent_bench;
+CREATE TABLE IF NOT EXISTS chiron_horizon_agent_bench.agent_bench (
   id BIGINT,
   payload STRING
 ) STORED AS ORC;
@@ -42,15 +42,15 @@ candidates.
 Functional parity probe:
 
 ```bash
-GO_AGENT=/tmp/gauss-horizon-hive-bench/hive-agent-linux-amd64 \
-JDBC_AGENT_JAR=/tmp/gauss-horizon-hive-bench/gauss-horizon-agent-hive.jar \
-JAVA_BIN=/tmp/gauss-horizon-hive-bench/jre21/bin/java \
+GO_AGENT=/tmp/chiron-horizon-hive-bench/hive-agent-linux-amd64 \
+JDBC_AGENT_JAR=/tmp/chiron-horizon-hive-bench/chiron-horizon-agent-hive.jar \
+JAVA_BIN=/tmp/chiron-horizon-hive-bench/jre21/bin/java \
 HIVE_HOST=127.0.0.1 \
 HIVE_PORT=10000 \
-HIVE_DATABASE=gauss_horizon_agent_bench \
+HIVE_DATABASE=chiron_horizon_agent_bench \
 HIVE_URL_PARAMS=auth=noSasl \
 python3 agents/drivers/hive-go/bench/functional_probe.py \
-  > /tmp/gauss-horizon-hive-bench/functional-result.json
+  > /tmp/chiron-horizon-hive-bench/functional-result.json
 ```
 
 The functional probe runs the Go candidate only by default. Set
@@ -60,14 +60,14 @@ needed.
 Performance benchmark:
 
 ```bash
-GO_AGENT=/tmp/gauss-horizon-hive-bench/hive-agent-linux-amd64 \
-JDBC_AGENT_JAR=/tmp/gauss-horizon-hive-bench/gauss-horizon-agent-hive.jar \
+GO_AGENT=/tmp/chiron-horizon-hive-bench/hive-agent-linux-amd64 \
+JDBC_AGENT_JAR=/tmp/chiron-horizon-hive-bench/chiron-horizon-agent-hive.jar \
 HIVE_HOST=127.0.0.1 \
 HIVE_PORT=10000 \
-HIVE_DATABASE=gauss_horizon_agent_bench \
+HIVE_DATABASE=chiron_horizon_agent_bench \
 HIVE_URL_PARAMS=auth=noSasl \
 python3 agents/drivers/hive-go/bench/agent_compare.py \
-  > /tmp/gauss-horizon-hive-bench/result.json
+  > /tmp/chiron-horizon-hive-bench/result.json
 ```
 
 ## Configuration
@@ -97,5 +97,5 @@ credentials outside an isolated compatibility environment, and delete the
 generated directory after validation.
 
 ```bash
-go run ./bench/kdc_fixture -dir /tmp/gauss-horizon-hive-kerberos
+go run ./bench/kdc_fixture -dir /tmp/chiron-horizon-hive-kerberos
 ```

@@ -229,8 +229,8 @@ const props = withDefaults(
     allowBinaryEdit: false,
     enableBase64Utf8Preview: false,
     readOnly: false,
-    exportFormat: "gauss-horizon-kv-bundle",
-    exportFileExtension: ".gauss-horizon-kv.json",
+    exportFormat: "chiron-horizon-kv-bundle",
+    exportFileExtension: ".chiron-horizon-kv.json",
     exportFallbackName: "kv-key",
     searchHighlight: null,
     enableMultiSelect: false,
@@ -329,7 +329,7 @@ const pageSize = 200;
 const metadataRefreshIntervalMs = 1000;
 const keyListRefreshBaseIntervalMs = 2000;
 const keyListRefreshMaxIntervalMs = 30000;
-const kvBrowserSplitSizeStorageKey = "gauss-horizon-kv-browser-split-size";
+const kvBrowserSplitSizeStorageKey = "chiron-horizon-kv-browser-split-size";
 const savedKvBrowserSplitSize = Number(safeLocalStorageGet(kvBrowserSplitSizeStorageKey));
 const kvBrowserSplitSize = ref(restoredUiState.kvBrowserSplitSize ?? (savedKvBrowserSplitSize >= 20 && savedKvBrowserSplitSize <= 70 ? savedKvBrowserSplitSize : 38));
 
@@ -1874,7 +1874,7 @@ onMounted(() => {
     try {
       await connectionStore.ensureConnected(props.connectionId);
     } catch (e) {
-      console.warn("[Gauss Horizon] ensureConnected failed for", props.connectionId, e);
+      console.warn("[Chiron Horizon] ensureConnected failed for", props.connectionId, e);
     }
     try {
       await loadKeys(true, { preserveSelection: Boolean(restoredUiState.selectedKey) });
@@ -2160,7 +2160,7 @@ defineExpose({
                   </Button>
                   <pre
                     data-native-clipboard
-                    class="gauss-horizon-editor-font-family m-0 max-h-[40vh] min-h-32 overflow-auto rounded-md border bg-muted/20 p-3 pr-12 text-sm"
+                    class="chiron-horizon-editor-font-family m-0 max-h-[40vh] min-h-32 overflow-auto rounded-md border bg-muted/20 p-3 pr-12 text-sm"
                     :class="settingsStore.editorSettings.wordWrap ? 'whitespace-pre-wrap break-words' : 'whitespace-pre'"
                   ><template v-for="(segment, index) in selectedValueHighlightSegments" :key="index"><mark v-if="segment.matched" class="rounded-sm bg-amber-300/80 px-0.5 text-foreground dark:bg-amber-500/40">{{ segment.text }}</mark><span v-else>{{ segment.text }}</span></template></pre>
                 </div>
@@ -2181,7 +2181,7 @@ defineExpose({
                 <div class="grid gap-x-10 gap-y-4 sm:grid-cols-2">
                   <div v-for="row in zookeeperMetadataRows" :key="row.label" class="grid grid-cols-[minmax(96px,auto)_1fr] items-baseline gap-5 text-sm">
                     <div class="text-foreground">{{ row.label }}</div>
-                    <div class="gauss-horizon-editor-font-family min-w-0 break-all text-blue-600 dark:text-blue-400">{{ row.value }}</div>
+                    <div class="chiron-horizon-editor-font-family min-w-0 break-all text-blue-600 dark:text-blue-400">{{ row.value }}</div>
                   </div>
                 </div>
               </div>
@@ -2191,7 +2191,7 @@ defineExpose({
                   <dl class="grid grid-cols-2 divide-x divide-y sm:grid-cols-3">
                     <div v-for="row in consulMetadataRows" :key="row[0]" class="min-w-0 px-3 py-2.5">
                       <dt class="text-[11px] font-medium text-muted-foreground">{{ row[0] }}</dt>
-                      <dd class="gauss-horizon-editor-font-family mt-1 truncate text-sm font-medium text-blue-600 dark:text-blue-400" :title="String(row[1])">{{ row[1] }}</dd>
+                      <dd class="chiron-horizon-editor-font-family mt-1 truncate text-sm font-medium text-blue-600 dark:text-blue-400" :title="String(row[1])">{{ row[1] }}</dd>
                     </div>
                   </dl>
                 </div>

@@ -47,7 +47,7 @@ export function buildSiteStructuredData() {
       logo: `${SITE_URL}/logo.png`,
       sameAs: [
         "https://github.com/Gaussian-id/Gauss-Horizon",
-        "https://www.npmjs.com/package/@gauss-horizon/mcp-server",
+        "https://www.npmjs.com/package/@chiron-horizon/mcp-server",
       ],
     },
   ] as const;
@@ -88,7 +88,7 @@ export function buildSoftwareApplicationStructuredData(lang: DocsLang, version: 
     publisher: { "@id": `${SITE_URL}/#organization` },
     sameAs: [
       "https://github.com/Gaussian-id/Gauss-Horizon",
-      "https://www.npmjs.com/package/@gauss-horizon/mcp-server",
+      "https://www.npmjs.com/package/@chiron-horizon/mcp-server",
     ],
   } as const;
 }

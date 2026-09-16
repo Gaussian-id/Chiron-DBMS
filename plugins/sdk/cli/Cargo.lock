@@ -211,10 +211,10 @@ dependencies = [
 ]
 
 [[package]]
-name = "gauss-horizon-plugin-cli"
+name = "chiron-horizon-plugin-cli"
 version = "0.1.0"
 dependencies = [
- "gauss-horizon-plugin-packager",
+ "chiron-horizon-plugin-packager",
  "semver",
  "serde",
  "serde_json",
@@ -223,7 +223,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "gauss-horizon-plugin-packager"
+name = "chiron-horizon-plugin-packager"
 version = "0.1.0"
 dependencies = [
  "base64",

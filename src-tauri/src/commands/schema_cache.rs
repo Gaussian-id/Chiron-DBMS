@@ -1,7 +1,7 @@
 use std::sync::Arc;
 use tauri::State;
 
-use gauss_horizon_core::connection::AppState;
+use chiron_horizon_core::connection::AppState;
 
 #[tauri::command]
 pub async fn save_schema_cache(

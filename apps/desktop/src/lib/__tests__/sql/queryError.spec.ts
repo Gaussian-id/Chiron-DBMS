@@ -11,7 +11,7 @@ describe("isConnectionTimeoutErrorMessage", () => {
   it("detects structured connect-stage timeouts", () => {
     const timeoutError = {
       version: 1,
-      code: "Gauss Horizon-JDBC-2001",
+      code: "Chiron Horizon-JDBC-2001",
       messageKey: "backendErrors.jdbc.operationTimedOut",
       messageParams: { stage: "connect" },
       source: "jdbcAgent",
@@ -29,7 +29,7 @@ describe("isConnectionTimeoutErrorMessage", () => {
     expect(
       isConnectionTimeoutErrorMessage("Database operation timed out (stage: execute).", {
         version: 1,
-        code: "Gauss Horizon-JDBC-2002",
+        code: "Chiron Horizon-JDBC-2002",
         messageKey: "backendErrors.jdbc.operationTimedOut",
         messageParams: { stage: "execute" },
         source: "jdbcAgent",
@@ -40,7 +40,7 @@ describe("isConnectionTimeoutErrorMessage", () => {
 });
 
 describe("isQueryTimeoutErrorMessage", () => {
-  it("detects Gauss Horizon query timeout messages", () => {
+  it("detects Chiron Horizon query timeout messages", () => {
     expect(isQueryTimeoutErrorMessage("Query timed out after 30 seconds")).toBe(true);
     expect(isQueryTimeoutErrorMessage("查询超时 (60s)，请检查数据库连接是否正常")).toBe(true);
     expect(isQueryTimeoutErrorMessage("查詢逾時 (60s)，請檢查資料庫連線是否正常")).toBe(true);
@@ -80,7 +80,7 @@ describe("isQueryTimeoutErrorMessage", () => {
   it("detects structured query operation timeouts before localized text matching", () => {
     const timeoutError = {
       version: 1,
-      code: "Gauss Horizon-JDBC-2002",
+      code: "Chiron Horizon-JDBC-2002",
       messageKey: "backendErrors.jdbc.operationTimedOut",
       messageParams: { stage: "execute" },
       source: "jdbcAgent",
@@ -94,7 +94,7 @@ describe("isQueryTimeoutErrorMessage", () => {
   it("does not offer query timeout settings for structured infrastructure timeouts", () => {
     const timeoutError = {
       version: 1,
-      code: "Gauss Horizon-JDBC-2001",
+      code: "Chiron Horizon-JDBC-2001",
       messageKey: "backendErrors.jdbc.operationTimedOut",
       messageParams: { stage: "connect" },
       source: "jdbcAgent",

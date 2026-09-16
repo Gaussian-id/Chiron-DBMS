@@ -1,18 +1,18 @@
 [package]
-name = "gauss-horizon-plugin-cli"
+name = "chiron-horizon-plugin-cli"
 version = "0.1.0"
 edition = "2021"
 license = "Apache-2.0"
-description = "Scaffold and package Gauss Horizon plugins"
+description = "Scaffold and package Chiron Horizon plugins"
 
 [workspace]
 
 [[bin]]
-name = "gauss-horizon-plugin"
+name = "chiron-horizon-plugin"
 path = "src/main.rs"
 
 [dependencies]
-gauss-horizon-plugin-packager = { version = "0.1.0", path = "../packager" }
+chiron-horizon-plugin-packager = { version = "0.1.0", path = "../packager" }
 semver = "1"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"

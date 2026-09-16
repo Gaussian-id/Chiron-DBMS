@@ -79,19 +79,19 @@ describe("renderCodeSnapshotHtml", () => {
 
     expect(html).toContain("<style>");
     expect(html).toContain(CODE_SNAPSHOT_CSS);
-    expect(html).toContain('class="gauss-horizon-code-snapshot"');
+    expect(html).toContain('class="chiron-horizon-code-snapshot"');
     expect(html).toContain('data-snapshot-appearance="dark"');
-    expect(html).toContain('class="gauss-horizon-code-snapshot__pre gauss-horizon-code-snapshot__pre--numbered"');
-    expect(html).toContain(".gauss-horizon-code-snapshot *");
+    expect(html).toContain('class="chiron-horizon-code-snapshot__pre chiron-horizon-code-snapshot__pre--numbered"');
+    expect(html).toContain(".chiron-horizon-code-snapshot *");
     expect(html).toContain("border: 0");
     expect(html).toContain("outline: 0");
-    expect(html).toContain(".gauss-horizon-code-snapshot__line-number");
+    expect(html).toContain(".chiron-horizon-code-snapshot__line-number");
   });
 
   it("renders macOS traffic lights and an optional title by default", async () => {
     const html = await renderCodeSnapshotHtml({ code: "SELECT 1", lang: "sql", title: "Query example" }, { appearance: "dark" });
 
-    expect(html).toContain('class="gauss-horizon-code-snapshot__bar"');
+    expect(html).toContain('class="chiron-horizon-code-snapshot__bar"');
     expect(html).toContain("#ff5f57");
     expect(html).toContain("#febc2e");
     expect(html).toContain("#28c840");
@@ -101,22 +101,22 @@ describe("renderCodeSnapshotHtml", () => {
   it("hides the bar when traffic lights are disabled and no title is set", async () => {
     const html = await renderCodeSnapshotHtml({ code: "SELECT 1", lang: "sql" }, { appearance: "light", showTrafficLights: false });
 
-    expect(html).not.toContain('class="gauss-horizon-code-snapshot__bar"');
+    expect(html).not.toContain('class="chiron-horizon-code-snapshot__bar"');
   });
 
   it("keeps the title bar but hides traffic lights when window controls are disabled", async () => {
     const html = await renderCodeSnapshotHtml({ code: "SELECT 1", lang: "sql", title: "Query example" }, { appearance: "dark", showTrafficLights: false });
 
-    expect(html).toContain('class="gauss-horizon-code-snapshot__bar"');
+    expect(html).toContain('class="chiron-horizon-code-snapshot__bar"');
     expect(html).toContain("Query example");
-    expect(html).not.toContain('class="gauss-horizon-code-snapshot__dot"');
+    expect(html).not.toContain('class="chiron-horizon-code-snapshot__dot"');
   });
 
   it("hides line numbers when disabled", async () => {
     const html = await renderCodeSnapshotHtml({ code: "SELECT 1", lang: "sql" }, { appearance: "light", showLineNumbers: false });
 
-    expect(html).toContain('class="gauss-horizon-code-snapshot__pre"');
-    expect(html).not.toContain('class="gauss-horizon-code-snapshot__pre gauss-horizon-code-snapshot__pre--numbered"');
+    expect(html).toContain('class="chiron-horizon-code-snapshot__pre"');
+    expect(html).not.toContain('class="chiron-horizon-code-snapshot__pre chiron-horizon-code-snapshot__pre--numbered"');
   });
 
   it("gives SQL table names their own color, distinct from quoted fields", async () => {
@@ -185,10 +185,10 @@ describe("renderCodeSnapshotHtml", () => {
     const light = await renderCodeSnapshotHtml({ code: "SELECT 1", lang: "sql" }, { appearance: "light" });
 
     expect(dark).toContain("background:#0d1117");
-    expect(dark).toContain("--gauss-horizon-snapshot-line-number:#484f58");
+    expect(dark).toContain("--chiron-horizon-snapshot-line-number:#484f58");
     expect(dark).toContain("color:#e1e4e8");
     expect(light).toContain("background:#ffffff");
-    expect(light).toContain("--gauss-horizon-snapshot-line-number:#d0d7de");
+    expect(light).toContain("--chiron-horizon-snapshot-line-number:#d0d7de");
     expect(light).toContain("color:#24292f");
   });
 
@@ -206,19 +206,19 @@ describe("renderCodeSnapshotHtml", () => {
   });
 
   it("materializes real line-number nodes in the export clone", () => {
-    document.body.innerHTML = '<div class="gauss-horizon-code-snapshot"><pre class="gauss-horizon-code-snapshot__pre gauss-horizon-code-snapshot__pre--numbered"><code><span class="line">SELECT 1</span><span class="line">FROM dual</span></code></pre></div>';
+    document.body.innerHTML = '<div class="chiron-horizon-code-snapshot"><pre class="chiron-horizon-code-snapshot__pre chiron-horizon-code-snapshot__pre--numbered"><code><span class="line">SELECT 1</span><span class="line">FROM dual</span></code></pre></div>';
     const root = document.body.firstElementChild as HTMLElement;
 
     materializeSnapshotCloneLineNumbers(root);
 
-    const pre = root.querySelector(".gauss-horizon-code-snapshot__pre") as HTMLElement;
+    const pre = root.querySelector(".chiron-horizon-code-snapshot__pre") as HTMLElement;
     const lines = Array.from(root.querySelectorAll<HTMLElement>("code > .line"));
-    expect(pre.classList.contains("gauss-horizon-code-snapshot__pre--numbered")).toBe(false);
+    expect(pre.classList.contains("chiron-horizon-code-snapshot__pre--numbered")).toBe(false);
     expect(lines).toHaveLength(2);
-    expect(lines[0]?.querySelector(".gauss-horizon-code-snapshot__line-number")?.textContent).toBe("1");
-    expect(lines[1]?.querySelector(".gauss-horizon-code-snapshot__line-number")?.textContent).toBe("2");
-    expect(lines[0]?.querySelector(".gauss-horizon-code-snapshot__line-content")?.textContent).toBe("SELECT 1");
-    expect(lines[1]?.querySelector(".gauss-horizon-code-snapshot__line-content")?.textContent).toBe("FROM dual");
+    expect(lines[0]?.querySelector(".chiron-horizon-code-snapshot__line-number")?.textContent).toBe("1");
+    expect(lines[1]?.querySelector(".chiron-horizon-code-snapshot__line-number")?.textContent).toBe("2");
+    expect(lines[0]?.querySelector(".chiron-horizon-code-snapshot__line-content")?.textContent).toBe("SELECT 1");
+    expect(lines[1]?.querySelector(".chiron-horizon-code-snapshot__line-content")?.textContent).toBe("FROM dual");
   });
 
   it("exports at a capped device-pixel ratio for crisp high-DPI snapshots", async () => {
@@ -264,10 +264,10 @@ describe("renderCodeSnapshotHtml", () => {
 
       const clone = document.createElement("div");
       clone.innerHTML =
-        '<div class="gauss-horizon-code-snapshot"><pre class="gauss-horizon-code-snapshot__pre gauss-horizon-code-snapshot__pre--numbered" style="--gauss-horizon-snapshot-line-number:#d0d7de"><code><span class="line">SELECT 1</span><span class="line">FROM dual</span></code></pre></div>';
+        '<div class="chiron-horizon-code-snapshot"><pre class="chiron-horizon-code-snapshot__pre chiron-horizon-code-snapshot__pre--numbered" style="--chiron-horizon-snapshot-line-number:#d0d7de"><code><span class="line">SELECT 1</span><span class="line">FROM dual</span></code></pre></div>';
       options.onclone?.(clone);
 
-      const line = clone.querySelector<HTMLElement>(".gauss-horizon-code-snapshot__line-number");
+      const line = clone.querySelector<HTMLElement>(".chiron-horizon-code-snapshot__line-number");
       expect(line?.textContent).toBe("1");
       expect(line?.getAttribute("style")).toContain("display: inline-block");
       expect(line?.getAttribute("style")).toContain("margin-right: 1.4em");

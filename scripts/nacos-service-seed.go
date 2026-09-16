@@ -7,7 +7,7 @@
 //	go run ./scripts/nacos-service-seed.go -target both -serve
 //
 // Nacos 3 registration intentionally uses the 8848 Admin API. The generated
-// instances can then be inspected through a separate 8080 Console API Gauss Horizon
+// instances can then be inspected through a separate 8080 Console API Chiron Horizon
 // connection to verify the reduced Console capability set.
 package main
 
@@ -31,7 +31,7 @@ import (
 
 const (
 	maxResponseBytes   = 1 << 20
-	serviceOwnerSource = "gauss-horizon-nacos-service-seed"
+	serviceOwnerSource = "chiron-horizon-nacos-service-seed"
 	catalogPageSize    = 100
 )
 
@@ -149,7 +149,7 @@ func parseFlags() options {
 	flag.StringVar(&opts.namespace, "namespace", "public", "existing namespace ID")
 	flag.StringVar(&opts.group, "group", "DEFAULT_GROUP", "service group")
 	flag.StringVar(&opts.cluster, "cluster", "DEFAULT", "instance cluster")
-	flag.StringVar(&opts.prefix, "prefix", "gauss-horizon-test-service", "generated service name prefix")
+	flag.StringVar(&opts.prefix, "prefix", "chiron-horizon-test-service", "generated service name prefix")
 	flag.IntVar(&opts.serviceCount, "services", 5, "number of services")
 	flag.IntVar(&opts.instancesPerSvc, "instances", 2, "persistent instances per service")
 	flag.StringVar(&opts.instanceIP, "ip", "127.0.0.1", "registered instance IP")

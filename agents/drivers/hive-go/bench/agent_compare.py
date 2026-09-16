@@ -312,7 +312,7 @@ def connection_params() -> dict:
     return {
         "host": env_default("HIVE_HOST", "127.0.0.1"),
         "port": env_int("HIVE_PORT", 10000),
-        "database": env_default("HIVE_DATABASE", "gauss_horizon_agent_bench"),
+        "database": env_default("HIVE_DATABASE", "chiron_horizon_agent_bench"),
         "username": os.getenv("HIVE_USERNAME", ""),
         "password": os.getenv("HIVE_PASSWORD", ""),
         "url_params": env_default("HIVE_URL_PARAMS", "auth=noSasl"),

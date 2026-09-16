@@ -1,18 +1,18 @@
-# Gauss Horizon white-label boundary
+# Chiron Horizon white-label boundary
 
-Product: Gauss Horizon by Gaussian. Application identifier: `id.gaussian.gauss-horizon`.
-Initial Gaussian version: 0.1.0 (unreleased). Repository: Gaussian-id/Gauss-Horizon.
+Product: Chiron Horizon. Application identifier: `id.chiron.horizon`.
+Initial Chiron Horizon version: 0.1.0 (unreleased). Repository: Gaussian-id/Gauss-Horizon.
 
-The active application, internally owned packages, events, environment names, exporters and installers use the Gauss Horizon identity. The old upstream updater is unavailable at the frontend and backend; old cached packages cannot be installed. Default driver/plugin distribution is unavailable until Gaussian artifacts exist. `.invalid` distribution sentinels are explicitly disabled before network access; they are not proposed Gaussian services.
+The active application, internally owned packages, events, environment names, exporters and installers use the Chiron Horizon identity. The old upstream updater is unavailable at the frontend and backend; old cached packages cannot be installed. Default driver/plugin distribution is unavailable until Chiron Horizon artifacts exist. `.invalid` distribution sentinels are explicitly disabled before network access; they are not proposed Chiron Horizon services.
 
 ## Deliberate legacy references
 
 - LICENSE/NOTICE files, README attribution, contributor history, pinned third-party dependencies and vendored source retain their original identity.
-- `crates/gauss-horizon-core/src/legacy.rs` identifies old profiles, encrypted formats, persisted binary format markers and old environment-variable names. These are compatibility input, never branding or new exports.
+- `crates/chiron-horizon-core/src/legacy.rs` identifies old profiles, encrypted formats, persisted binary format markers and old environment-variable names. These are compatibility input, never branding or new exports.
 - `src-tauri/src/data_dir.rs` recognizes the old portable marker for existing users.
 - `apps/desktop/src/lib/compat/` reads old export/storage formats and tests migration.
 - `packages/{mcp-server,plugin-cli}/bin/legacy-environment.js` adapts legacy launcher environment variables.
-- `agents/go-common/{go-gssapi/krb5,gosasl}/legacy_env.go` adapts project-specific Kerberos environment options in local forks; their third-party module names remain intact. The owned `gohive` wrapper module uses the Gaussian repository namespace.
+- `agents/go-common/{go-gssapi/krb5,gosasl}/legacy_env.go` adapts project-specific Kerberos environment options in local forks; their third-party module names remain intact. The owned `gohive` wrapper module uses the current repository namespace.
 - Dependency checksums (`go.sum`, lockfile integrity values) and embedded image data are opaque, preserved bytes; a coincidental substring in those values is not branding.
 - Historical architecture/source citations and disabled workflows retain provenance. They are not an active distribution channel.
 
@@ -28,9 +28,9 @@ macOS persistent WKWebView data is copied before the application data profile is
 
 Only `.github/workflows/verify.yml` is active. It builds CI artifacts, with read-only repository permissions. Archived workflows have a `.disabled` suffix. Release entry scripts stop before publication.
 
-Native launch evidence is required for each supported target: macOS arm64/x64, Windows 10/11 x64 and Ubuntu 22.04+ x64. A configuration or successful cross-build alone does not establish native acceptance. No Apple Developer ID/notarization, Windows signing or Gaussian updater signing is implied by development builds.
+Native launch evidence is required for each supported target: macOS arm64/x64, Windows 10/11 x64 and Ubuntu 22.04+ x64. A configuration or successful cross-build alone does not establish native acceptance. No Apple Developer ID/notarization, Windows signing or Chiron Horizon updater signing is implied by development builds.
 
 
 Build prerequisites follow [Tauri prerequisites](https://v2.tauri.app/start/prerequisites/) and [distribution guidance](https://v2.tauri.app/distribute/). CI uses native OS runners, Linux WebKitGTK 4.1 dependencies, Windows NSIS/WebView2, and local ad-hoc macOS signing. No updater artifacts or publication steps run.
 
-See [0.1.0 implementation verification](gauss-horizon-0.1.0-verification.md) for measured outcomes and pending acceptance.
+See [0.1.0 implementation verification](chiron-horizon-0.1.0-verification.md) for measured outcomes and pending acceptance.

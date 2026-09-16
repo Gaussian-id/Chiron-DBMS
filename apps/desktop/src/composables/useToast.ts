@@ -10,12 +10,12 @@ type ToastState = {
 };
 
 declare global {
-  var __GAUSS_HORIZON_TOAST_STATE__: ToastState | undefined;
+  var __CHIRON_HORIZON_TOAST_STATE__: ToastState | undefined;
 }
 
 const toastState =
-  globalThis.__GAUSS_HORIZON_TOAST_STATE__ ??
-  (globalThis.__GAUSS_HORIZON_TOAST_STATE__ = {
+  globalThis.__CHIRON_HORIZON_TOAST_STATE__ ??
+  (globalThis.__CHIRON_HORIZON_TOAST_STATE__ = {
     message: ref(""),
     visible: ref(false),
     timer: 0,

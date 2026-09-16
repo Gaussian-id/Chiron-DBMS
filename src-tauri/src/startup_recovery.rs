@@ -10,14 +10,14 @@ use tauri::Manager;
 const STARTUP_LOG_FILE: &str = "startup.log";
 #[cfg(target_os = "windows")]
 const RUNTIME_RECOVERY_LOG_FILE: &str = "webview2-recovery.log";
-const STARTUP_LOG_DIR_ENV: &str = "GAUSS_HORIZON_STARTUP_LOG_DIR";
-const KEEP_STARTUP_LOG_ENV: &str = "GAUSS_HORIZON_KEEP_STARTUP_LOG";
+const STARTUP_LOG_DIR_ENV: &str = "CHIRON_HORIZON_STARTUP_LOG_DIR";
+const KEEP_STARTUP_LOG_ENV: &str = "CHIRON_HORIZON_KEEP_STARTUP_LOG";
 #[cfg(target_os = "windows")]
-const NO_SANDBOX_ENV: &str = "GAUSS_HORIZON_WEBVIEW2_NO_SANDBOX";
-const RECOVERY_ATTEMPT_ENV: &str = "GAUSS_HORIZON_STARTUP_COMPAT_RECOVERY";
-const RECOVERY_PARENT_PID_ENV: &str = "GAUSS_HORIZON_STARTUP_COMPAT_PARENT_PID";
-const DISABLE_ENTERPRISE_COMPAT_ENV: &str = "GAUSS_HORIZON_DISABLE_ENTERPRISE_COMPAT";
-const WINDOWS_APP_DATA_DIR_NAME: &str = "id.gaussian.gauss-horizon";
+const NO_SANDBOX_ENV: &str = "CHIRON_HORIZON_WEBVIEW2_NO_SANDBOX";
+const RECOVERY_ATTEMPT_ENV: &str = "CHIRON_HORIZON_STARTUP_COMPAT_RECOVERY";
+const RECOVERY_PARENT_PID_ENV: &str = "CHIRON_HORIZON_STARTUP_COMPAT_PARENT_PID";
+const DISABLE_ENTERPRISE_COMPAT_ENV: &str = "CHIRON_HORIZON_DISABLE_ENTERPRISE_COMPAT";
+const WINDOWS_APP_DATA_DIR_NAME: &str = "id.chiron.horizon";
 const COMPATIBILITY_MARKER_FILE: &str = "webview2-enterprise-compat.enabled";
 const COMPATIBILITY_PROFILE_DIR: &str = "webview2-enterprise-compat";
 const STARTUP_LOG_BUFFER_CAPACITY: usize = 256;
@@ -41,7 +41,7 @@ static RUN_EVENT_COUNT: AtomicUsize = AtomicUsize::new(0);
 static FRONTEND_READY_SIGNAL: LazyLock<(Mutex<bool>, Condvar)> = LazyLock::new(|| (Mutex::new(false), Condvar::new()));
 
 fn env_flag(name: &str) -> bool {
-    matches!(gauss_horizon_core::legacy::var(name).as_deref(), Ok("1"))
+    matches!(chiron_horizon_core::legacy::var(name).as_deref(), Ok("1"))
 }
 
 fn startup_log_dir_from_inputs(
@@ -62,8 +62,8 @@ fn startup_log_dir_from_inputs(
 fn startup_log_dir() -> Option<PathBuf> {
     startup_log_dir_from_inputs(
         std::env::consts::OS,
-        gauss_horizon_core::legacy::var_os(STARTUP_LOG_DIR_ENV),
-        gauss_horizon_core::legacy::var_os("APPDATA"),
+        chiron_horizon_core::legacy::var_os(STARTUP_LOG_DIR_ENV),
+        chiron_horizon_core::legacy::var_os("APPDATA"),
     )
 }
 
@@ -79,7 +79,7 @@ fn compatibility_marker_path_from_appdata(windows_appdata: Option<OsString>) -> 
 }
 
 fn compatibility_marker_path() -> Option<PathBuf> {
-    compatibility_marker_path_from_appdata(gauss_horizon_core::legacy::var_os("APPDATA"))
+    compatibility_marker_path_from_appdata(chiron_horizon_core::legacy::var_os("APPDATA"))
 }
 
 fn compatibility_marker_contents(version: &str) -> String {
@@ -106,8 +106,8 @@ fn compatibility_profile_path_from_inputs(
 #[cfg(target_os = "windows")]
 fn compatibility_profile_path() -> (Option<PathBuf>, &'static str) {
     compatibility_profile_path_from_inputs(
-        gauss_horizon_core::legacy::var_os("LOCALAPPDATA"),
-        gauss_horizon_core::legacy::var_os("APPDATA"),
+        chiron_horizon_core::legacy::var_os("LOCALAPPDATA"),
+        chiron_horizon_core::legacy::var_os("APPDATA"),
     )
 }
 
@@ -133,7 +133,7 @@ fn wait_for_recovery_parent_exit() -> &'static str {
     use windows_sys::Win32::System::Threading::{OpenProcess, WaitForSingleObject, PROCESS_SYNCHRONIZE};
 
     let parent_pid =
-        gauss_horizon_core::legacy::var(RECOVERY_PARENT_PID_ENV).ok().and_then(|value| value.parse::<u32>().ok());
+        chiron_horizon_core::legacy::var(RECOVERY_PARENT_PID_ENV).ok().and_then(|value| value.parse::<u32>().ok());
     std::env::remove_var(RECOVERY_PARENT_PID_ENV);
     let Some(parent_pid) = parent_pid.filter(|pid| *pid != 0) else {
         return "parent_pid_unavailable";
@@ -315,7 +315,7 @@ fn install_panic_hook() {
 
 #[cfg(target_os = "windows")]
 fn append_webview2_argument(argument: &str) {
-    let mut args = gauss_horizon_core::legacy::var("WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS").unwrap_or_default();
+    let mut args = chiron_horizon_core::legacy::var("WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS").unwrap_or_default();
     if args.split_whitespace().any(|value| value == argument) {
         return;
     }
@@ -496,7 +496,7 @@ pub(crate) fn mark_frontend_ready(main_window_visible: bool) {
         );
         std::env::remove_var(RECOVERY_ATTEMPT_ENV);
     } else if keep_requested {
-        record("frontend ready; startup log retained by GAUSS_HORIZON_KEEP_STARTUP_LOG=1");
+        record("frontend ready; startup log retained by CHIRON_HORIZON_KEEP_STARTUP_LOG=1");
         persist_buffer();
         deactivate_probe();
     } else if let Some(path) = startup_log_path() {
@@ -529,14 +529,14 @@ fn confirm_keep_compatibility_mode() -> bool {
     let locale = sys_locale::get_locale().unwrap_or_default().to_ascii_lowercase();
     let body = if locale.starts_with("zh") {
         format!(
-            "Gauss Horizon 已通过企业环境兼容模式恢复主界面。\n\n该模式会为 WebView2 使用独立数据目录并关闭沙箱，仅建议在标准模式无法显示窗口时保留。\n\n是否让当前 Gauss Horizon 版本后续启动直接使用兼容模式？\n选择“否”后，下次启动会重新尝试标准模式。\n\n本次恢复日志：{log_path}"
+            "Chiron Horizon 已通过企业环境兼容模式恢复主界面。\n\n该模式会为 WebView2 使用独立数据目录并关闭沙箱，仅建议在标准模式无法显示窗口时保留。\n\n是否让当前 Chiron Horizon 版本后续启动直接使用兼容模式？\n选择“否”后，下次启动会重新尝试标准模式。\n\n本次恢复日志：{log_path}"
         )
     } else {
         format!(
-            "Gauss Horizon restored the main window using enterprise environment compatibility mode.\n\nThis mode uses an isolated WebView2 data directory and disables the sandbox. Keep it only when the standard mode cannot display the window.\n\nUse compatibility mode directly for future launches of this Gauss Horizon version?\nChoose No to retry standard mode on the next launch.\n\nRecovery log: {log_path}"
+            "Chiron Horizon restored the main window using enterprise environment compatibility mode.\n\nThis mode uses an isolated WebView2 data directory and disables the sandbox. Keep it only when the standard mode cannot display the window.\n\nUse compatibility mode directly for future launches of this Chiron Horizon version?\nChoose No to retry standard mode on the next launch.\n\nRecovery log: {log_path}"
         )
     };
-    let title = "Gauss Horizon".encode_utf16().chain(std::iter::once(0)).collect::<Vec<_>>();
+    let title = "Chiron Horizon".encode_utf16().chain(std::iter::once(0)).collect::<Vec<_>>();
     let body = body.encode_utf16().chain(std::iter::once(0)).collect::<Vec<_>>();
     unsafe {
         MessageBoxW(
@@ -559,13 +559,13 @@ fn show_recovery_failure_message() {
         startup_log_path().map(|path| path.display().to_string()).unwrap_or_else(|| "startup.log".to_string());
     let locale = sys_locale::get_locale().unwrap_or_default().to_ascii_lowercase();
     let body = if locale.starts_with("zh") {
-        format!("Gauss Horizon 已尝试企业环境兼容模式，但主窗口仍未显示。\n\n请将此日志发给维护者：{log_path}")
+        format!("Chiron Horizon 已尝试企业环境兼容模式，但主窗口仍未显示。\n\n请将此日志发给维护者：{log_path}")
     } else {
         format!(
-            "Gauss Horizon tried enterprise environment compatibility mode, but the main window was still not visible.\n\nPlease send this log to the maintainer: {log_path}"
+            "Chiron Horizon tried enterprise environment compatibility mode, but the main window was still not visible.\n\nPlease send this log to the maintainer: {log_path}"
         )
     };
-    windows_ok_message("Gauss Horizon", &body);
+    windows_ok_message("Chiron Horizon", &body);
 }
 
 #[cfg(not(target_os = "windows"))]
@@ -585,7 +585,7 @@ mod tests {
     fn startup_log_uses_windows_appdata() {
         assert_eq!(
             startup_log_dir_from_inputs("windows", None, Some(OsString::from(r"C:\Users\test\AppData\Roaming")),),
-            Some(PathBuf::from(r"C:\Users\test\AppData\Roaming").join("id.gaussian.gauss-horizon"))
+            Some(PathBuf::from(r"C:\Users\test\AppData\Roaming").join("id.chiron.horizon"))
         );
     }
 
@@ -594,10 +594,10 @@ mod tests {
         assert_eq!(
             startup_log_dir_from_inputs(
                 "windows",
-                Some(OsString::from(r"D:\GaussHorizonDiagnostics")),
+                Some(OsString::from(r"D:\ChironHorizonDiagnostics")),
                 Some(OsString::from(r"C:\Users\test\AppData\Roaming")),
             ),
-            Some(PathBuf::from(r"D:\GaussHorizonDiagnostics"))
+            Some(PathBuf::from(r"D:\ChironHorizonDiagnostics"))
         );
     }
 
@@ -607,7 +607,7 @@ mod tests {
             compatibility_marker_path_from_appdata(Some(OsString::from(r"C:\Users\test\AppData\Roaming"))),
             Some(
                 PathBuf::from(r"C:\Users\test\AppData\Roaming")
-                    .join("id.gaussian.gauss-horizon")
+                    .join("id.chiron.horizon")
                     .join("webview2-enterprise-compat.enabled")
             )
         );
@@ -619,7 +619,7 @@ mod tests {
             (
                 Some(
                     PathBuf::from(r"C:\Users\test\AppData\Local")
-                        .join("id.gaussian.gauss-horizon")
+                        .join("id.chiron.horizon")
                         .join("webview2-enterprise-compat")
                 ),
                 "local_appdata",
@@ -673,7 +673,7 @@ mod tests {
 
     #[test]
     fn recovery_child_receives_parent_handoff_without_disabling_single_instance() {
-        let mut command = std::process::Command::new("gauss-horizon-test");
+        let mut command = std::process::Command::new("chiron-horizon-test");
         configure_recovery_child(&mut command, 4242);
         let envs = command.get_envs().collect::<Vec<_>>();
         assert!(envs

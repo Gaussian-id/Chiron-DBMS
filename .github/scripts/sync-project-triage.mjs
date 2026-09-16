@@ -68,7 +68,7 @@ async function graphql(query, token) {
     headers: {
       Authorization: `bearer ${t}`,
       "Content-Type": "application/json",
-      "User-Agent": "gauss-horizon-project-triage/1.0",
+      "User-Agent": "chiron-horizon-project-triage/1.0",
     },
     body: JSON.stringify({ query }),
   });

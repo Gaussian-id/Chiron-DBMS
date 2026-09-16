@@ -1,10 +1,10 @@
 {
   "id": "jdbc",
-  "name": "Gauss Horizon JDBC Plugin",
+  "name": "Chiron Horizon JDBC Plugin",
   "version": "0.1.0",
   "protocol_version": 1,
-  "description": "Adds optional JDBC driver support to Gauss Horizon.",
-  "executable": "bin/gauss-horizon-jdbc-plugin",
+  "description": "Adds optional JDBC driver support to Chiron Horizon.",
+  "executable": "bin/chiron-horizon-jdbc-plugin",
   "drivers": [
     {
       "id": "jdbc",

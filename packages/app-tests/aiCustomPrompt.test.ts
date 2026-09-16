@@ -28,7 +28,7 @@ class MemoryStorage {
 }
 
 const localStorage = new MemoryStorage();
-localStorage.setItem("gauss-horizon-locale", "en");
+localStorage.setItem("chiron-horizon-locale", "en");
 
 Object.defineProperty(globalThis, "localStorage", {
   value: localStorage,

@@ -24,7 +24,7 @@ export default async function Layout({ params, children }: { params: Promise<{ l
           title: (
             <div className="flex items-center gap-2">
               <img src="/logo-64.png" alt="" aria-hidden="true" width={24} height={24} />
-              <span className="font-semibold">Gauss Horizon</span>
+              <span className="font-semibold">Chiron Horizon</span>
             </div>
           ),
         }}

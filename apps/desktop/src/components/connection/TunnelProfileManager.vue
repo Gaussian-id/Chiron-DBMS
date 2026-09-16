@@ -333,7 +333,7 @@ async function testSelected() {
       <template v-else-if="selectedHttp">
         <div class="grid grid-cols-4 items-center gap-4">
           <Label class="text-xs">{{ t("connection.httpTunnelUrl") }}</Label>
-          <Input v-model="selectedHttp.url" class="col-span-3" placeholder="https://gauss-horizon.example.com/gauss_horizon_tunnel.php" />
+          <Input v-model="selectedHttp.url" class="col-span-3" placeholder="https://chiron-horizon.example.com/chiron_horizon_tunnel.php" />
         </div>
         <div class="grid grid-cols-4 items-center gap-4">
           <Label class="text-xs">{{ t("connection.httpTunnelToken") }}</Label>
@@ -368,18 +368,18 @@ async function testSelected() {
 </template>
 
 <style>
-html.gauss-horizon-legacy-webview .tunnel-profile-option--selected {
+html.chiron-horizon-legacy-webview .tunnel-profile-option--selected {
   color: var(--foreground) !important;
   border-color: var(--ring) !important;
   background-color: var(--muted) !important;
   box-shadow: inset 0 0 0 1px var(--border);
 }
 
-html.gauss-horizon-legacy-webview .tunnel-profile-option--selected:hover {
+html.chiron-horizon-legacy-webview .tunnel-profile-option--selected:hover {
   background-color: var(--accent) !important;
 }
 
-html.gauss-horizon-legacy-webview .tunnel-profile-option--selected .text-muted-foreground {
+html.chiron-horizon-legacy-webview .tunnel-profile-option--selected .text-muted-foreground {
   color: var(--muted-foreground) !important;
 }
 </style>

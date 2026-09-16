@@ -109,7 +109,7 @@ function oracleJdbcConnection(): ConnectionConfig {
     ...genericJdbcConnection(),
     id: "jdbc-oracle-1",
     name: "Oracle JDBC",
-    username: "GAUSS_HORIZON_TEST",
+    username: "CHIRON_HORIZON_TEST",
     database: undefined,
     connection_string: "jdbc:oracle:thin:@//127.0.0.1:1521/XE",
     jdbc_driver_class: "oracle.jdbc.OracleDriver",
@@ -136,7 +136,7 @@ function gbase8sConnection(): ConnectionConfig {
     name: "GBase 8s",
     db_type: "gbase",
     driver_profile: "gbase8s",
-    database: "gauss_horizon_test",
+    database: "chiron_horizon_test",
   } as ConnectionConfig;
 }
 
@@ -643,14 +643,14 @@ describe("connectionStore metadata loading", () => {
 
   it("loads inferred Oracle JDBC schemas without requesting empty catalogs", async () => {
     const listDatabases = vi.fn().mockResolvedValue([]);
-    const listSchemas = vi.fn().mockResolvedValue(["ANONYMOUS", "GAUSS_HORIZON_TEST", "SYS", "SYSTEM"]);
+    const listSchemas = vi.fn().mockResolvedValue(["ANONYMOUS", "CHIRON_HORIZON_TEST", "SYS", "SYSTEM"]);
     const listTables = vi.fn().mockResolvedValue([{ name: "sheet", table_type: "TABLE", comment: null }]);
 
     vi.doMock("@/lib/backend/tauriRuntime", () => ({ isTauriRuntime: () => false }));
     const executeQuery = vi.fn().mockResolvedValue({
       columns: ["OWNER", "DB_LINK", "USERNAME", "HOST", "CREATED"],
       rows: [
-        ["GAUSS_HORIZON_TEST", "PRIVATE.EXAMPLE", "REMOTE", "service", ""],
+        ["CHIRON_HORIZON_TEST", "PRIVATE.EXAMPLE", "REMOTE", "service", ""],
         ["PUBLIC", "PUBLIC.EXAMPLE", "REMOTE", "service", ""],
       ],
     });
@@ -683,7 +683,7 @@ describe("connectionStore metadata loading", () => {
     expect(listDatabases).not.toHaveBeenCalled();
     expect(listSchemas).toHaveBeenCalledWith(connection.id, "");
     expect(connectionNode.children?.map((node) => [node.type, node.label, node.database, node.schema])).toEqual([
-      ["schema", "GAUSS_HORIZON_TEST", "GAUSS_HORIZON_TEST", "GAUSS_HORIZON_TEST"],
+      ["schema", "CHIRON_HORIZON_TEST", "CHIRON_HORIZON_TEST", "CHIRON_HORIZON_TEST"],
       ["oracle-db-links", "tree.databaseLinks", "", undefined],
     ]);
 
@@ -691,7 +691,7 @@ describe("connectionStore metadata loading", () => {
     await store.loadTreeNodeChildren(linkRoot, { force: true });
     expect(executeQuery).toHaveBeenCalledWith(connection.id, "", expect.stringContaining("SESSION_USER"), undefined, undefined, { maxRows: 10000, timeoutSecs: 15 });
     expect(linkRoot.children?.map((node) => [node.type, node.label, node.schema])).toEqual([
-      ["oracle-db-link", "PRIVATE.EXAMPLE", "GAUSS_HORIZON_TEST"],
+      ["oracle-db-link", "PRIVATE.EXAMPLE", "CHIRON_HORIZON_TEST"],
       ["oracle-db-link", "PUBLIC.EXAMPLE", "PUBLIC"],
     ]);
     expect(linkRoot.objectCount).toBe(2);
@@ -704,8 +704,8 @@ describe("connectionStore metadata loading", () => {
     expect(schemaNode).toBeDefined();
     await store.loadTreeNodeChildren(schemaNode!, { force: true });
 
-    expect(listTables.mock.calls[0]?.slice(0, 3)).toEqual([connection.id, "GAUSS_HORIZON_TEST", "GAUSS_HORIZON_TEST"]);
-    expect(schemaNode?.children?.map((node) => [node.type, node.label, node.schema])).toEqual([["table", "sheet", "GAUSS_HORIZON_TEST"]]);
+    expect(listTables.mock.calls[0]?.slice(0, 3)).toEqual([connection.id, "CHIRON_HORIZON_TEST", "CHIRON_HORIZON_TEST"]);
+    expect(schemaNode?.children?.map((node) => [node.type, node.label, node.schema])).toEqual([["table", "sheet", "CHIRON_HORIZON_TEST"]]);
   });
 
   it("keeps the flat object tree for unknown generic JDBC databases without schemas", async () => {
@@ -767,14 +767,14 @@ describe("connectionStore metadata loading", () => {
     const store = useConnectionStore();
     useSettingsStore().editorSettings.sidebarObjectDisplay = "simple";
     const connection = gbase8sConnection();
-    const databaseNode: TreeNode = { id: `${connection.id}:gauss_horizon_test`, label: "gauss_horizon_test", type: "database", connectionId: connection.id, database: "gauss_horizon_test", isExpanded: false, children: [] };
+    const databaseNode: TreeNode = { id: `${connection.id}:chiron_horizon_test`, label: "chiron_horizon_test", type: "database", connectionId: connection.id, database: "chiron_horizon_test", isExpanded: false, children: [] };
     store.connections = [connection];
     store.connectedIds.add(connection.id);
     store.treeNodes = [{ id: connection.id, label: connection.name, type: "connection", connectionId: connection.id, isExpanded: true, children: [databaseNode] }];
 
     await store.loadTreeNodeChildren(databaseNode, { force: true });
 
-    expect(listSchemaInfos).toHaveBeenCalledWith(connection.id, "gauss_horizon_test");
+    expect(listSchemaInfos).toHaveBeenCalledWith(connection.id, "chiron_horizon_test");
     expect(listTables).toHaveBeenCalled();
     expect(databaseNode.children?.map((node) => [node.type, node.label, node.schema])).toEqual([
       ["table", "connection_smoke", undefined],
@@ -953,7 +953,7 @@ describe("connectionStore metadata loading", () => {
     await expect(store.loadSidebarTableSearchIndex(tablesGroup.id)).resolves.toEqual([{ name: "indexed_table", table_type: "TABLE", comment: null }]);
     // The refreshed index is served from the in-memory cache; refreshing
     // additionally registers the scope by reading the sidebar index manifest.
-    expect(loadSchemaCache).toHaveBeenLastCalledWith("gauss-horizon:sidebar-table-search-index-manifest-v1");
+    expect(loadSchemaCache).toHaveBeenLastCalledWith("chiron-horizon:sidebar-table-search-index-manifest-v1");
   });
 
   it("bypasses Oracle object-group caches created before DIP visibility was fixed", async () => {

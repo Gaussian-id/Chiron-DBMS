@@ -121,7 +121,7 @@ test("findEligibleMergedPullRequest requires the assignee's merged PR on the def
       { ...eligible, number: 101, state: "OPEN" },
       { ...eligible, number: 102, baseRefName: "release" },
       { ...eligible, number: 103, author: { login: "someone-else" } },
-      { ...eligible, number: 104, repository: { nameWithOwner: "someone/gauss-horizon" } },
+      { ...eligible, number: 104, repository: { nameWithOwner: "someone/chiron-horizon" } },
       eligible,
     ],
   });

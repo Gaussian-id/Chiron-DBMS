@@ -495,7 +495,7 @@ td {
   padding: 2px 8px;
   background: var(--color-primary-alpha);
   color: var(--color-primary);
-  border-radius: var(--gauss-horizon-radius-fixed-4);
+  border-radius: var(--chiron-horizon-radius-fixed-4);
   font-size: 12px;
 }
 
@@ -540,7 +540,7 @@ button:disabled {
 
 .dialog {
   background: var(--color-background);
-  border-radius: var(--gauss-horizon-radius-fixed-6);
+  border-radius: var(--chiron-horizon-radius-fixed-6);
   width: 90%;
   max-width: 500px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
@@ -580,7 +580,7 @@ button:disabled {
   width: 100%;
   padding: 8px 12px;
   border: 1px solid var(--color-border);
-  border-radius: var(--gauss-horizon-radius-fixed-4);
+  border-radius: var(--chiron-horizon-radius-fixed-4);
   font-size: 14px;
   box-sizing: border-box;
 }
@@ -609,7 +609,7 @@ button:disabled {
   gap: 8px;
   padding: 6px 10px;
   border: 1px solid var(--color-border);
-  border-radius: var(--gauss-horizon-radius-fixed-4);
+  border-radius: var(--chiron-horizon-radius-fixed-4);
   background: var(--color-background);
   color: var(--color-text);
   cursor: pointer;
@@ -648,7 +648,7 @@ button:disabled {
   max-height: 180px;
   overflow-y: auto;
   border: 1px solid var(--color-border);
-  border-radius: var(--gauss-horizon-radius-fixed-4);
+  border-radius: var(--chiron-horizon-radius-fixed-4);
   background: var(--color-background);
   box-shadow: 0 8px 20px rgba(0, 0, 0, 0.12);
 }
@@ -709,7 +709,7 @@ button:disabled {
   padding: 8px 12px;
   background: var(--color-error-bg);
   color: var(--color-error);
-  border-radius: var(--gauss-horizon-radius-fixed-4);
+  border-radius: var(--chiron-horizon-radius-fixed-4);
   font-size: 13px;
 }
 

@@ -1,11 +1,11 @@
 import { safeLocalStorageGet, safeLocalStorageRemove, safeLocalStorageSet } from "@/lib/backend/safeStorage";
 import type { DatabaseType } from "@/types/database";
 
-const STORAGE_PREFIX = "gauss-horizon-data-grid-column-layout:";
-const TABLE_STORAGE_PREFIX = "gauss-horizon-data-grid-table-column-order:";
+const STORAGE_PREFIX = "chiron-horizon-data-grid-column-layout:";
+const TABLE_STORAGE_PREFIX = "chiron-horizon-data-grid-table-column-order:";
 const STORAGE_VERSION = 1;
 
-export const TABLE_DATA_GRID_COLUMN_ORDER_CHANGED_EVENT = "gauss-horizon:table-data-grid-column-order-changed";
+export const TABLE_DATA_GRID_COLUMN_ORDER_CHANGED_EVENT = "chiron-horizon:table-data-grid-column-order-changed";
 
 export interface TableDataGridColumnOrderChangedDetail {
   scopeKey: string;
@@ -92,7 +92,7 @@ export function loadDataGridColumnLayout(scopeKey: string, columnKeys: readonly 
     if (parsed.columnSignature && parsed.columnSignature !== columnKeys.join("\0")) return null;
     return { orderKeys: normalizedStringList(parsed.order), hiddenKeys: [] };
   } catch (error) {
-    console.warn(`[Gauss Horizon][data-grid-column-layout:parse] ${scopeKey}`, error);
+    console.warn(`[Chiron Horizon][data-grid-column-layout:parse] ${scopeKey}`, error);
     return null;
   }
 }
@@ -158,7 +158,7 @@ export function notifyTableDataGridColumnOrderChanged(scopeKey: string) {
   window.dispatchEvent(new CustomEvent<TableDataGridColumnOrderChangedDetail>(TABLE_DATA_GRID_COLUMN_ORDER_CHANGED_EVENT, { detail: { scopeKey } }));
 }
 
-const FROZEN_STORAGE_PREFIX = "gauss-horizon-data-grid-frozen-columns:";
+const FROZEN_STORAGE_PREFIX = "chiron-horizon-data-grid-frozen-columns:";
 
 export interface DataGridColumnFrozenState {
   frozenCount: number;

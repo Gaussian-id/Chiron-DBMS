@@ -2,7 +2,7 @@ import { safeLocalStorageGet, safeLocalStorageSet } from "@/lib/backend/safeStor
 
 export type DbPickerView = "icon" | "list";
 
-export const CONNECTION_PICKER_VIEW_STORAGE_KEY = "gauss-horizon-connection-picker-view";
+export const CONNECTION_PICKER_VIEW_STORAGE_KEY = "chiron-horizon-connection-picker-view";
 
 export function normalizeConnectionPickerView(value: unknown): DbPickerView {
   return value === "list" ? "list" : "icon";

@@ -36,7 +36,7 @@ interface EtcdBundleEntry {
 }
 
 interface EtcdBundle {
-  format: "gauss-horizon-etcd-bundle";
+  format: "chiron-horizon-etcd-bundle";
   version: 1;
   exportedAt: string;
   clusterId?: string | null;
@@ -551,7 +551,7 @@ function bundleFromSummaries(entries: api.KvKeySummary[], prefix: string, revisi
     throw new Error(`Value data is unavailable for Key "${missingValue.key}". Update the etcd Agent, reconnect, and retry.`);
   }
   return {
-    format: "gauss-horizon-etcd-bundle",
+    format: "chiron-horizon-etcd-bundle",
     version: 1,
     exportedAt: new Date().toISOString(),
     readRevision: revision,
@@ -593,7 +593,7 @@ async function exportTreeSelection(format: EtcdExportFormat) {
         ...result.metadata,
       };
     });
-    const file = buildEtcdExportFile(entries, "", null, "selection", `gauss-horizon-etcd-selection-${Date.now()}`, format);
+    const file = buildEtcdExportFile(entries, "", null, "selection", `chiron-horizon-etcd-selection-${Date.now()}`, format);
     const exported = await downloadExport(file);
     if (exported) toast(t("etcd.exported", { count: entries.length }), 2500);
   } catch (error) {
@@ -677,7 +677,7 @@ function buildEtcdExportFile(entries: api.KvKeySummary[], prefix: string, revisi
 }
 
 function exportFileFilter(format: EtcdExportFormat) {
-  return format === "json" ? { name: "Gauss Horizon etcd Bundle", extensions: ["json"] } : format === "csv" ? { name: "CSV Table", extensions: ["csv"] } : { name: "Markdown", extensions: ["md"] };
+  return format === "json" ? { name: "Chiron Horizon etcd Bundle", extensions: ["json"] } : format === "csv" ? { name: "CSV Table", extensions: ["csv"] } : { name: "Markdown", extensions: ["md"] };
 }
 
 function exportMimeType(format: EtcdExportFormat): string {
@@ -708,7 +708,7 @@ async function exportAll(format: EtcdExportFormat) {
   try {
     searchCancelled = false;
     const scan = await scanConnection(props.connectionId, "");
-    const file = buildEtcdExportFile(scan.entries, "", scan.revision, "prefix", `gauss-horizon-etcd-${Date.now()}`, format);
+    const file = buildEtcdExportFile(scan.entries, "", scan.revision, "prefix", `chiron-horizon-etcd-${Date.now()}`, format);
     const exported = await downloadExport(file);
     if (exported) toast(t("etcd.exported", { count: scan.entries.length }), 2500);
   } catch (error) {
@@ -741,7 +741,7 @@ async function exportEtcdNodeScope(connectionId: string, request: KvExportScopeR
       revision = scan.revision;
     }
 
-    const file = buildEtcdExportFile(entries, request.path, revision, request.kind, `gauss-horizon-etcd-${kvExportFilenameStem(request.path)}-${Date.now()}`, "json");
+    const file = buildEtcdExportFile(entries, request.path, revision, request.kind, `chiron-horizon-etcd-${kvExportFilenameStem(request.path)}-${Date.now()}`, "json");
     const exported = await downloadExport(file);
     if (exported) toast(t("etcd.exported", { count: entries.length }), 2500);
   } catch (error) {
@@ -751,8 +751,8 @@ async function exportEtcdNodeScope(connectionId: string, request: KvExportScopeR
 
 function validateBundle(input: unknown): EtcdBundle {
   const candidate = input as Partial<EtcdBundle>;
-  if (candidate.format !== "gauss-horizon-etcd-bundle" || candidate.version !== 1 || !Array.isArray(candidate.entries)) {
-    throw new Error("Unsupported etcd bundle. Expected Gauss Horizon etcd bundle v1.");
+  if (candidate.format !== "chiron-horizon-etcd-bundle" || candidate.version !== 1 || !Array.isArray(candidate.entries)) {
+    throw new Error("Unsupported etcd bundle. Expected Chiron Horizon etcd bundle v1.");
   }
   for (const entry of candidate.entries) {
     if (!entry || !["utf8", "base64"].includes(entry.key?.encoding) || !["utf8", "base64"].includes(entry.value?.encoding) || typeof entry.key.data !== "string" || typeof entry.value.data !== "string") {
@@ -1096,7 +1096,7 @@ async function exportSearchResults(format: EtcdExportFormat) {
   const selected = selectedSearchResults.value.map((result) => result.summary);
   if (!selected.length) return;
   try {
-    const file = buildEtcdExportFile(selected, searchPrefix.value, null, "selection", `gauss-horizon-etcd-search-${Date.now()}`, format);
+    const file = buildEtcdExportFile(selected, searchPrefix.value, null, "selection", `chiron-horizon-etcd-search-${Date.now()}`, format);
     const exported = await downloadExport(file);
     if (exported) toast(t("etcd.exported", { count: selected.length }), 2500);
   } catch (error) {
@@ -1180,8 +1180,8 @@ defineExpose({ focusSearch, refresh });
       :can-write-key="canWriteCurrentKey"
       :enable-multi-select="true"
       :on-watch-key="openWatchForKey"
-      export-format="gauss-horizon-etcd-bundle"
-      export-file-extension=".gauss-horizon-etcd.json"
+      export-format="chiron-horizon-etcd-bundle"
+      export-file-extension=".chiron-horizon-etcd.json"
       export-fallback-name="etcd-key"
       :lease-options="leaseOptions"
       :on-lease-options-requested="refreshLeaseOptions"

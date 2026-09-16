@@ -250,7 +250,7 @@ export function issueAiRequestTimeoutMs(imageCount: number): number {
 function issuePrompt(language: IssueLanguage): string {
   if (language === "en") {
     return [
-      "You turn a short Gauss Horizon user report and optional screenshots into a GitHub Issue draft.",
+      "You turn a short Chiron Horizon user report and optional screenshots into a GitHub Issue draft.",
       "Return one JSON object only, without a Markdown fence.",
       'Schema: {"type":"bug|feature|question|compatibility","title":"...","summary":"...","body":"..."}.',
       "The body must be editable Markdown with useful section headings.",
@@ -260,7 +260,7 @@ function issuePrompt(language: IssueLanguage): string {
     ].join("\n");
   }
   return [
-    "你负责把 Gauss Horizon 用户的简短描述和可选截图整理成 GitHub Issue 草稿。",
+    "你负责把 Chiron Horizon 用户的简短描述和可选截图整理成 GitHub Issue 草稿。",
     "只返回一个 JSON 对象，不要使用 Markdown 代码块。",
     '结构：{"type":"bug|feature|question|compatibility","title":"...","summary":"...","body":"..."}。',
     "body 使用可编辑的 Markdown 和清晰的小标题。",
@@ -404,7 +404,7 @@ async function getGitHubInstallationToken(config: GitHubIssueConfig): Promise<{ 
   const headers = {
     Accept: "application/vnd.github+json",
     Authorization: `Bearer ${appJwt}`,
-    "User-Agent": "gauss-horizon-issue-form",
+    "User-Agent": "chiron-horizon-issue-form",
     "X-GitHub-Api-Version": "2022-11-28",
   };
   const installation = await githubJson(`https://api.github.com/repos/${repository}/installation`, { headers });
@@ -434,7 +434,7 @@ export async function createPublicGitHubIssue(
       Accept: "application/vnd.github+json",
       Authorization: `Bearer ${token}`,
       "Content-Type": "application/json",
-      "User-Agent": "gauss-horizon-issue-form",
+      "User-Agent": "chiron-horizon-issue-form",
       "X-GitHub-Api-Version": "2022-11-28",
     },
     body: JSON.stringify(issue),
@@ -450,12 +450,12 @@ export function buildGitHubIssueBody(body: string, imageUrls: string[], language
   const sections = [cleanText(body)];
   if (imageUrls.length > 0) {
     const heading = language === "cn" ? "## 附件" : "## Attachments";
-    const images = imageUrls.map((url, index) => `![Gauss Horizon issue image ${index + 1}](${url})`).join("\n\n");
+    const images = imageUrls.map((url, index) => `![Chiron Horizon issue image ${index + 1}](${url})`).join("\n\n");
     sections.push(`${heading}\n\n${images}`);
   }
   const source = language === "cn"
-    ? "此 Issue 通过 Gauss Horizon 官网匿名反馈入口提交，发布前已由提交者确认。"
-    : "This Issue was submitted through the anonymous Gauss Horizon website form and confirmed before publication.";
+    ? "此 Issue 通过 Chiron Horizon 官网匿名反馈入口提交，发布前已由提交者确认。"
+    : "This Issue was submitted through the anonymous Chiron Horizon website form and confirmed before publication.";
   sections.push(`---\n\n_${source}_`);
   return sections.join("\n\n");
 }

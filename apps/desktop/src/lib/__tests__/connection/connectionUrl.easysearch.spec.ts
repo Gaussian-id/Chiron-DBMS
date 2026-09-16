@@ -3,13 +3,13 @@ import { connectionProfileForScheme, parseConnectionUrl } from "@/lib/connection
 
 describe("Easysearch connection URLs", () => {
   it("parses the dedicated Easysearch scheme", () => {
-    expect(parseConnectionUrl("easysearch://gauss_horizon_test:secret@easysearch.example.com:9200")).toMatchObject({
+    expect(parseConnectionUrl("easysearch://chiron_horizon_test:secret@easysearch.example.com:9200")).toMatchObject({
       dbType: "easysearch",
       driverProfile: "easysearch",
       driverLabel: "Easysearch",
       host: "easysearch.example.com",
       port: 9200,
-      username: "gauss_horizon_test",
+      username: "chiron_horizon_test",
       password: "secret",
       ssl: false,
     });

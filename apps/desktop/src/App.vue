@@ -338,11 +338,11 @@ const showTabSwitcher = ref(false);
 const tabSwitcherIndex = ref(0);
 const agentDriverUpdateCount = ref(0);
 const showHistory = ref(false);
-const showAiPanel = ref(safeLocalStorageGet("gauss-horizon-ai-panel-open") === "true");
+const showAiPanel = ref(safeLocalStorageGet("chiron-horizon-ai-panel-open") === "true");
 const isAiPanelMaximized = ref(false);
 const isZenMode = ref(false);
-const showSqlLibraryPanel = ref(safeLocalStorageGet("gauss-horizon-sql-library-open") === "true");
-const showSqlFilePanel = ref(safeLocalStorageGet("gauss-horizon-sql-file-panel-open") === "true");
+const showSqlLibraryPanel = ref(safeLocalStorageGet("chiron-horizon-sql-library-open") === "true");
+const showSqlFilePanel = ref(safeLocalStorageGet("chiron-horizon-sql-file-panel-open") === "true");
 const rightSidebarPanelRefs: Record<RightSidebarPanelId, typeof showAiPanel> = {
   ai: showAiPanel,
   history: showHistory,
@@ -350,12 +350,12 @@ const rightSidebarPanelRefs: Record<RightSidebarPanelId, typeof showAiPanel> = {
   sqlFile: showSqlFilePanel,
 };
 const rightSidebarPanelStorageKeys: Partial<Record<RightSidebarPanelId, string>> = {
-  ai: "gauss-horizon-ai-panel-open",
-  sqlLibrary: "gauss-horizon-sql-library-open",
-  sqlFile: "gauss-horizon-sql-file-panel-open",
+  ai: "chiron-horizon-ai-panel-open",
+  sqlLibrary: "chiron-horizon-sql-library-open",
+  sqlFile: "chiron-horizon-sql-file-panel-open",
 };
 let lastOpenedRightSidebarPanel = RIGHT_SIDEBAR_PANEL_IDS.find((panelId) => rightSidebarPanelRefs[panelId].value);
-const sidebarOpen = ref(safeLocalStorageGet("gauss-horizon-sidebar-open") !== "false");
+const sidebarOpen = ref(safeLocalStorageGet("chiron-horizon-sidebar-open") !== "false");
 const aiPanelReady = ref(false);
 const { sidebarWidth, aiPanelWidth, historyWidth, sqlLibraryWidth, sqlFilePanelWidth, tabBarWidth, tabBarCollapsed, startSidebarResize, startAiPanelResize, startHistoryResize, startSqlLibraryResize, startSqlFilePanelResize, startLeftTabBarResize, startRightTabBarResize, setTabBarCollapsed } =
   usePanelResize();
@@ -523,7 +523,7 @@ async function persistDetachedReturnRequest(reason: "return" | "close") {
     const handoff = await queryStore.prepareDetachedTab(detachedContextTabId, { activeOutputView: activeOutputView.value });
     await api.saveDetachedTabHandoff(detachedContextTabId, handoff);
     detachedCloseInProgress = true;
-    await emitDetachedEvent("gauss-horizon:detached-tab-return-requested", { tabId: detachedContextTabId, revision: handoff.revision, reason });
+    await emitDetachedEvent("chiron-horizon:detached-tab-return-requested", { tabId: detachedContextTabId, revision: handoff.revision, reason });
   } catch (error: any) {
     detachedCloseInProgress = false;
     toast(error?.message || String(error), 5000);
@@ -553,12 +553,12 @@ function cancelDetachedTabClose() {
 
 async function handleDetachedHeaderDragStart(position: { x: number; y: number }) {
   if (!detachedContextTabId) return;
-  await emitDetachedEvent("gauss-horizon:detached-tab-dragging", { tabId: detachedContextTabId, x: position.x, y: position.y });
+  await emitDetachedEvent("chiron-horizon:detached-tab-dragging", { tabId: detachedContextTabId, x: position.x, y: position.y });
 }
 
 async function handleDetachedHeaderDragging(position: { x: number; y: number }) {
   if (!detachedContextTabId) return;
-  await emitDetachedEvent("gauss-horizon:detached-tab-dragging", { tabId: detachedContextTabId, x: position.x, y: position.y });
+  await emitDetachedEvent("chiron-horizon:detached-tab-dragging", { tabId: detachedContextTabId, x: position.x, y: position.y });
 }
 
 async function handleDetachedHeaderDragEnd(position: { x: number; y: number }) {
@@ -566,7 +566,7 @@ async function handleDetachedHeaderDragEnd(position: { x: number; y: number }) {
   try {
     const handoff = await queryStore.prepareDetachedTab(detachedContextTabId, { activeOutputView: activeOutputView.value });
     await api.saveDetachedTabHandoff(detachedContextTabId, handoff);
-    await emitDetachedEvent("gauss-horizon:detached-tab-dropped", { tabId: detachedContextTabId, revision: handoff.revision, x: position.x, y: position.y });
+    await emitDetachedEvent("chiron-horizon:detached-tab-dropped", { tabId: detachedContextTabId, revision: handoff.revision, x: position.x, y: position.y });
   } catch (error: any) {
     toast(error?.message || String(error), 5000);
   }
@@ -608,7 +608,7 @@ async function handleDetachedTabLost(payload: unknown) {
     await queryStore.flushPendingPersist();
     await api.deleteDetachedTabHandoff(tabId);
   } catch (error) {
-    console.warn("[Gauss Horizon][detached-tab:lost-restore:error]", error);
+    console.warn("[Chiron Horizon][detached-tab:lost-restore:error]", error);
   }
 }
 
@@ -625,7 +625,7 @@ async function handleDetachedReturnRequested(payload: unknown) {
     // least one durable store at every point of the flow.
     await queryStore.flushPendingPersist();
     await api.deleteDetachedTabHandoff(data.tabId);
-    await emitDetachedEvent("gauss-horizon:detached-tab-return-complete", { tabId: data.tabId });
+    await emitDetachedEvent("chiron-horizon:detached-tab-return-complete", { tabId: data.tabId });
   } catch (error: any) {
     toast(error?.message || String(error), 5000);
   }
@@ -645,7 +645,7 @@ async function initDetachedWindow() {
   await queryStore.hydrateSavedSqlTabs();
   if (handoff.runtime.activeOutputView) activeOutputView.value = handoff.runtime.activeOutputView;
   const { emit } = await import("@tauri-apps/api/event");
-  await emit("gauss-horizon:detached-tab-ready", { tabId: detachedContextTabId, revision: handoff.revision });
+  await emit("chiron-horizon:detached-tab-ready", { tabId: detachedContextTabId, revision: handoff.revision });
 }
 
 async function setupDetachedWindowEvents() {
@@ -653,15 +653,15 @@ async function setupDetachedWindowEvents() {
   const { listen } = await import("@tauri-apps/api/event");
   const events: Array<[string, (payload: unknown) => Promise<void>]> = isDetachedWindowContext
     ? [
-        ["gauss-horizon:detached-tab-close-requested", handleDetachedCloseRequested],
-        ["gauss-horizon:detached-tab-return-complete", handleDetachedReturnComplete],
+        ["chiron-horizon:detached-tab-close-requested", handleDetachedCloseRequested],
+        ["chiron-horizon:detached-tab-return-complete", handleDetachedReturnComplete],
       ]
     : [
-        ["gauss-horizon:detached-tab-ready", handleDetachedTabReady],
-        ["gauss-horizon:detached-tab-return-requested", handleDetachedReturnRequested],
-        ["gauss-horizon:detached-tab-dragging", handleDetachedTabDragging],
-        ["gauss-horizon:detached-tab-dropped", handleDetachedTabDropped],
-        ["gauss-horizon:detached-tab-lost", handleDetachedTabLost],
+        ["chiron-horizon:detached-tab-ready", handleDetachedTabReady],
+        ["chiron-horizon:detached-tab-return-requested", handleDetachedReturnRequested],
+        ["chiron-horizon:detached-tab-dragging", handleDetachedTabDragging],
+        ["chiron-horizon:detached-tab-dropped", handleDetachedTabDropped],
+        ["chiron-horizon:detached-tab-lost", handleDetachedTabLost],
       ];
   for (const [event, handler] of events) {
     detachedEventUnlisteners.push(await listen(event, (message) => void (handler as (payload: unknown) => Promise<void>)(message.payload)));
@@ -1196,10 +1196,10 @@ const uiScaleApplyQueue = createUiScaleApplyQueue(
     await getCurrentWebview().setZoom(scale);
   },
   (scale) => {
-    window.dispatchEvent(new CustomEvent("gauss-horizon:ui-scale-applied", { detail: { scale } }));
+    window.dispatchEvent(new CustomEvent("chiron-horizon:ui-scale-applied", { detail: { scale } }));
   },
   (scale, error) => {
-    console.warn("[Gauss Horizon] Failed to apply UI scale", { scale, error });
+    console.warn("[Chiron Horizon] Failed to apply UI scale", { scale, error });
   },
 );
 
@@ -1281,7 +1281,7 @@ watch(
   (id, previousId) => {
     if (previousId && previousId !== id && typeof window !== "undefined") {
       window.dispatchEvent(
-        new CustomEvent("gauss-horizon:before-tab-switch", {
+        new CustomEvent("chiron-horizon:before-tab-switch", {
           detail: { tabId: id, fromTabId: previousId },
         }),
       );
@@ -2744,7 +2744,7 @@ function openMcpGuide() {
 
 function setSidebarOpen(open: boolean) {
   sidebarOpen.value = open;
-  safeLocalStorageSet("gauss-horizon-sidebar-open", open ? "true" : "false");
+  safeLocalStorageSet("chiron-horizon-sidebar-open", open ? "true" : "false");
 }
 
 async function locateTabInSidebar(tab: QueryTab) {
@@ -2771,11 +2771,11 @@ function routeAiRedisCommand(command: string, execute: boolean): boolean {
   // recreate the original bug by opening a SQL tab for a Redis command.
   const routed = execute ? contentAreaRef.value?.executeRedisCommand(command) : contentAreaRef.value?.insertRedisCommand(command);
   if (!routed) {
-    console.warn("[Gauss Horizon] Redis AI command could not reach the active Redis console");
+    console.warn("[Chiron Horizon] Redis AI command could not reach the active Redis console");
     return true;
   }
   void routed.then((handled: any) => {
-    if (!handled) console.warn("[Gauss Horizon] Redis AI command could not reach the active Redis console");
+    if (!handled) console.warn("[Chiron Horizon] Redis AI command could not reach the active Redis console");
   });
   return true;
 }
@@ -3019,7 +3019,7 @@ async function handleQuickOpenSelect(item: any) {
 
 function dispatchBeforeTabSwitch(tabId: string) {
   if (tabId === queryStore.activeTabId) return;
-  window.dispatchEvent(new CustomEvent("gauss-horizon:before-tab-switch", { detail: { tabId, fromTabId: queryStore.activeTabId } }));
+  window.dispatchEvent(new CustomEvent("chiron-horizon:before-tab-switch", { detail: { tabId, fromTabId: queryStore.activeTabId } }));
 }
 
 function activateQueryTab(tabId: string): boolean {
@@ -3465,10 +3465,10 @@ onMounted(async () => {
   window.addEventListener("keyup", handleKeyup, true);
   window.addEventListener("blur", handleTabSwitcherWindowBlur);
   document.addEventListener("visibilitychange", handleTabSwitcherVisibilityChange);
-  window.addEventListener("gauss-horizon-open-driver-store", openDriverStoreFromEvent);
-  window.addEventListener("gauss-horizon:activate-query-surface", activateQuerySurface);
-  window.addEventListener("gauss-horizon-mcp-status-changed", handleMcpStatusChanged);
-  window.addEventListener("gauss-horizon:ai-run-notify", handleAiRunNotify);
+  window.addEventListener("chiron-horizon-open-driver-store", openDriverStoreFromEvent);
+  window.addEventListener("chiron-horizon:activate-query-surface", activateQuerySurface);
+  window.addEventListener("chiron-horizon-mcp-status-changed", handleMcpStatusChanged);
+  window.addEventListener("chiron-horizon:ai-run-notify", handleAiRunNotify);
   if (isDesktop) {
     document.addEventListener("contextmenu", handleContextMenu);
   }
@@ -3546,10 +3546,10 @@ onUnmounted(() => {
   window.removeEventListener("blur", handleTabSwitcherWindowBlur);
   document.removeEventListener("visibilitychange", handleTabSwitcherVisibilityChange);
   tabSwitcherKeyboard.reset();
-  window.removeEventListener("gauss-horizon-open-driver-store", openDriverStoreFromEvent);
-  window.removeEventListener("gauss-horizon:activate-query-surface", activateQuerySurface);
-  window.removeEventListener("gauss-horizon-mcp-status-changed", handleMcpStatusChanged);
-  window.removeEventListener("gauss-horizon:ai-run-notify", handleAiRunNotify);
+  window.removeEventListener("chiron-horizon-open-driver-store", openDriverStoreFromEvent);
+  window.removeEventListener("chiron-horizon:activate-query-surface", activateQuerySurface);
+  window.removeEventListener("chiron-horizon-mcp-status-changed", handleMcpStatusChanged);
+  window.removeEventListener("chiron-horizon:ai-run-notify", handleAiRunNotify);
   document.removeEventListener("contextmenu", handleContextMenu);
   window.clearTimeout(sqlLibraryFlyAnimationTimer);
 });
@@ -3562,7 +3562,7 @@ onUnmounted(() => {
       <div class="h-full w-full" :style="appBackgroundImageStyle"></div>
     </div>
     <TooltipProvider :delay-duration="300">
-      <div class="h-screen w-screen max-w-full min-w-[760px] min-h-[600px] flex flex-col bg-background text-foreground overflow-hidden" :class="{ 'gauss-horizon-desktop-window-frame': drawDesktopWindowFrame }" :style="appUiFontFamilyStyle">
+      <div class="h-screen w-screen max-w-full min-w-[760px] min-h-[600px] flex flex-col bg-background text-foreground overflow-hidden" :class="{ 'chiron-horizon-desktop-window-frame': drawDesktopWindowFrame }" :style="appUiFontFamilyStyle">
         <AppToolbar
           v-if="!isDetachedWindowContext"
           :is-dark="isDark"
@@ -4101,7 +4101,7 @@ onUnmounted(() => {
         @saved="onQueryEditorObjectSourceSaved"
       />
     </TooltipProvider>
-    <div id="gauss-horizon-query-editor-tooltip-root" class="fixed left-0 top-0 z-[70] h-0 w-0 overflow-visible" />
+    <div id="chiron-horizon-query-editor-tooltip-root" class="fixed left-0 top-0 z-[70] h-0 w-0 overflow-visible" />
   </div>
 </template>
 

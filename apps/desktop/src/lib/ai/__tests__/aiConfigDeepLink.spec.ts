@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 import { clipboardApiKeyCandidate, importClipboardApiKeyAfterConfirmation, parseAiConfigDeepLink } from "@/lib/ai/aiConfigDeepLink";
 
 function buildLink(params: Record<string, string>): string {
-  const url = new URL("gauss-horizon://settings/ai/new");
+  const url = new URL("chiron-horizon://settings/ai/new");
   for (const [key, value] of Object.entries(params)) url.searchParams.set(key, value);
   return url.toString();
 }
@@ -58,9 +58,9 @@ describe("AI configuration deep links", () => {
     ).toMatchObject({ authMethod: "api-key", apiStyle: "anthropic-messages" });
   });
 
-  it("ignores unrelated Gauss Horizon routes", () => {
-    expect(parseAiConfigDeepLink("gauss-horizon://open")).toBeNull();
-    expect(parseAiConfigDeepLink("gauss-horizon://connection/new?type=mysql")).toBeNull();
+  it("ignores unrelated Chiron Horizon routes", () => {
+    expect(parseAiConfigDeepLink("chiron-horizon://open")).toBeNull();
+    expect(parseAiConfigDeepLink("chiron-horizon://connection/new?type=mysql")).toBeNull();
   });
 
   it("rejects secrets and ambiguous parameters in the URL", () => {
@@ -79,7 +79,7 @@ describe("AI configuration deep links", () => {
     const duplicate = `${buildLink({ name: "Example AI", provider: "custom", endpoint: "https://api.example.com/v1", model: "example-model" })}&model=other-model`;
     expect(() => parseAiConfigDeepLink(duplicate)).toThrow(/Duplicate parameter/);
 
-    expect(() => parseAiConfigDeepLink("gauss-horizon://secret@settings/ai/new?name=Example&provider=custom&endpoint=https%3A%2F%2Fapi.example.com%2Fv1&model=example#token")).toThrow(/must not be included/);
+    expect(() => parseAiConfigDeepLink("chiron-horizon://secret@settings/ai/new?name=Example&provider=custom&endpoint=https%3A%2F%2Fapi.example.com%2Fv1&model=example#token")).toThrow(/must not be included/);
   });
 
   it("rejects unsafe or incompatible endpoints and API styles", () => {

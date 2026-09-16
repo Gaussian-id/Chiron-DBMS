@@ -1,4 +1,4 @@
-// MQTT broker connection types, matching gauss-horizon-core/src/mqtt/types.rs
+// MQTT broker connection types, matching chiron-horizon-core/src/mqtt/types.rs
 
 export type MqttProtocolVersion = "v3" | "v4" | "v5";
 export type MqttTransport = "tcp" | "websocket";

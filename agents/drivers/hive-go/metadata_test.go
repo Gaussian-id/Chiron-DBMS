@@ -28,7 +28,7 @@ func TestKyuubiConnectionInfoReportsNativeIdentity(t *testing.T) {
 			case "SELECT VERSION()":
 				return newScriptedRows(ctx, []string{"version"}, []string{"STRING"}, [][]driver.Value{{"3.5.8"}}), nil
 			case "SELECT CURRENT_USER()":
-				return newScriptedRows(ctx, []string{"current_user"}, []string{"STRING"}, [][]driver.Value{{"gauss-horizon"}}), nil
+				return newScriptedRows(ctx, []string{"current_user"}, []string{"STRING"}, [][]driver.Value{{"chiron-horizon"}}), nil
 			default:
 				return nil, errors.New("unexpected query: " + query)
 			}
@@ -42,11 +42,11 @@ func TestKyuubiConnectionInfoReportsNativeIdentity(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if info["compatibilityMode"] != "kyuubi" || info["username"] != "gauss-horizon" || info["version"] != "3.5.8" {
+	if info["compatibilityMode"] != "kyuubi" || info["username"] != "chiron-horizon" || info["version"] != "3.5.8" {
 		t.Fatalf("unexpected Kyuubi connection info: %#v", info)
 	}
 	databaseInfo, ok := info["databaseInfo"].(map[string]string)
-	if !ok || databaseInfo["productName"] != "Apache Kyuubi" || databaseInfo["driverName"] != "Gauss Horizon Kyuubi Go Agent" {
+	if !ok || databaseInfo["productName"] != "Apache Kyuubi" || databaseInfo["driverName"] != "Chiron Horizon Kyuubi Go Agent" {
 		t.Fatalf("unexpected Kyuubi database identity: %#v", info["databaseInfo"])
 	}
 }
@@ -54,7 +54,7 @@ func TestKyuubiConnectionInfoReportsNativeIdentity(t *testing.T) {
 func TestGetObjectSourceReturnsProtocolObject(t *testing.T) {
 	behavior := &scriptedBehavior{
 		query: func(ctx context.Context, query string) (driver.Rows, error) {
-			if query != "SHOW CREATE TABLE `gauss_horizon_kyuubi_demo`.`high_value_orders`" {
+			if query != "SHOW CREATE TABLE `chiron_horizon_kyuubi_demo`.`high_value_orders`" {
 				t.Fatalf("unexpected query: %q", query)
 			}
 			return newScriptedRows(
@@ -62,8 +62,8 @@ func TestGetObjectSourceReturnsProtocolObject(t *testing.T) {
 				[]string{"createtab_stmt"},
 				[]string{"STRING"},
 				[][]driver.Value{
-					{"CREATE VIEW gauss_horizon_kyuubi_demo.high_value_orders"},
-					{"AS SELECT id, customer, amount FROM gauss_horizon_kyuubi_demo.orders WHERE amount >= 50"},
+					{"CREATE VIEW chiron_horizon_kyuubi_demo.high_value_orders"},
+					{"AS SELECT id, customer, amount FROM chiron_horizon_kyuubi_demo.orders WHERE amount >= 50"},
 				},
 			), nil
 		},
@@ -72,7 +72,7 @@ func TestGetObjectSourceReturnsProtocolObject(t *testing.T) {
 	defer server.disconnect()
 
 	result, _, err := server.dispatch("get_object_source", map[string]json.RawMessage{
-		"schema":      json.RawMessage(`"gauss_horizon_kyuubi_demo"`),
+		"schema":      json.RawMessage(`"chiron_horizon_kyuubi_demo"`),
 		"name":        json.RawMessage(`"high_value_orders"`),
 		"object_type": json.RawMessage(`"VIEW"`),
 	})
@@ -83,10 +83,10 @@ func TestGetObjectSourceReturnsProtocolObject(t *testing.T) {
 	if !ok {
 		t.Fatalf("get_object_source returned %T instead of objectSource", result)
 	}
-	if source.Name != "high_value_orders" || source.ObjectType != "VIEW" || source.Schema == nil || *source.Schema != "gauss_horizon_kyuubi_demo" {
+	if source.Name != "high_value_orders" || source.ObjectType != "VIEW" || source.Schema == nil || *source.Schema != "chiron_horizon_kyuubi_demo" {
 		t.Fatalf("unexpected object source metadata: %#v", source)
 	}
-	expected := "CREATE VIEW gauss_horizon_kyuubi_demo.high_value_orders\nAS SELECT id, customer, amount FROM gauss_horizon_kyuubi_demo.orders WHERE amount >= 50\n"
+	expected := "CREATE VIEW chiron_horizon_kyuubi_demo.high_value_orders\nAS SELECT id, customer, amount FROM chiron_horizon_kyuubi_demo.orders WHERE amount >= 50\n"
 	if source.Source != expected {
 		t.Fatalf("unexpected object source DDL: %q", source.Source)
 	}

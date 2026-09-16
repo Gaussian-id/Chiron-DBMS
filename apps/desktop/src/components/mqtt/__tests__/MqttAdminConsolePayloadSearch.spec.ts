@@ -14,7 +14,7 @@ vi.mock("@/lib/backend/api", () => ({
   mqttGetBrokerInfo: vi.fn(
     async (): Promise<MqttBrokerInfo> => ({
       brokerUrl: "mqtt://localhost:1883",
-      clientId: "gauss-horizon-test",
+      clientId: "chiron-horizon-test",
       connected: true,
       protocolVersion: "5.0",
       subscriptionCount: 1,

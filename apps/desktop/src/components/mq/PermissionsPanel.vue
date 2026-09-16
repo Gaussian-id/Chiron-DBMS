@@ -519,7 +519,7 @@ watch(
 .permissions-table {
   padding: 14px;
   border: 1px solid var(--color-border);
-  border-radius: var(--gauss-horizon-radius-fixed-6);
+  border-radius: var(--chiron-horizon-radius-fixed-6);
   background: var(--color-background-secondary);
 }
 
@@ -553,7 +553,7 @@ input[type="number"] {
   width: 100%;
   padding: 7px 10px;
   border: 1px solid var(--color-border);
-  border-radius: var(--gauss-horizon-radius-fixed-4);
+  border-radius: var(--chiron-horizon-radius-fixed-4);
   background: var(--color-background);
   color: var(--color-text);
   box-sizing: border-box;
@@ -581,7 +581,7 @@ input.invalid {
 .actions-group.invalid {
   padding: 8px;
   border: 1px solid var(--color-error);
-  border-radius: var(--gauss-horizon-radius-fixed-6);
+  border-radius: var(--chiron-horizon-radius-fixed-6);
   background: var(--color-error-bg);
 }
 
@@ -648,7 +648,7 @@ th {
 
 .tag {
   padding: 2px 8px;
-  border-radius: var(--gauss-horizon-radius-fixed-4);
+  border-radius: var(--chiron-horizon-radius-fixed-4);
   background: var(--color-primary-alpha);
   color: var(--color-primary);
   font-size: 12px;
@@ -666,7 +666,7 @@ th {
 .readonly-hint {
   padding: 12px 16px;
   margin-bottom: 12px;
-  border-radius: var(--gauss-horizon-radius-fixed-6);
+  border-radius: var(--chiron-horizon-radius-fixed-6);
   font-size: 13px;
 }
 
@@ -700,7 +700,7 @@ th {
   max-height: 86vh;
   display: flex;
   flex-direction: column;
-  border-radius: var(--gauss-horizon-radius-fixed-6);
+  border-radius: var(--chiron-horizon-radius-fixed-6);
   background: var(--color-background);
   box-shadow: 0 12px 32px rgba(0, 0, 0, 0.18);
 }
@@ -738,7 +738,7 @@ th {
   padding: 12px;
   margin-bottom: 16px;
   border: 1px solid var(--color-warning);
-  border-radius: var(--gauss-horizon-radius-fixed-6);
+  border-radius: var(--chiron-horizon-radius-fixed-6);
   background: var(--color-warning-alpha);
 }
 
@@ -749,7 +749,7 @@ th {
   margin-bottom: 16px;
   border: 1px solid var(--color-warning);
   border-left-width: 4px;
-  border-radius: var(--gauss-horizon-radius-fixed-6);
+  border-radius: var(--chiron-horizon-radius-fixed-6);
   background: var(--color-warning-alpha);
   color: var(--color-text);
   font-size: 13px;
@@ -778,7 +778,7 @@ th {
   min-height: 96px;
   padding: 8px 10px;
   border: 1px solid var(--color-border);
-  border-radius: var(--gauss-horizon-radius-fixed-4);
+  border-radius: var(--chiron-horizon-radius-fixed-4);
   background: var(--color-background);
   color: var(--color-text);
   font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;

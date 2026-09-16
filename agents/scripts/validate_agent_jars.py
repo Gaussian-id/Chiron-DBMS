@@ -8,8 +8,8 @@ from pathlib import Path
 def agent_modules(root: Path) -> list[str]:
     return sorted(
         path.parents[2].name
-        for path in list(root.glob("*/build/libs/gauss-horizon-agent-*.jar"))
-        + list(root.glob("drivers/*/build/libs/gauss-horizon-agent-*.jar"))
+        for path in list(root.glob("*/build/libs/chiron-horizon-agent-*.jar"))
+        + list(root.glob("drivers/*/build/libs/chiron-horizon-agent-*.jar"))
         if path.is_file()
     )
 
@@ -24,7 +24,7 @@ def module_dir(root: Path, module: str) -> Path:
 def validate_agent_jars(root: Path) -> list[str]:
     problems: list[str] = []
     for module in agent_modules(root):
-        jar = module_dir(root, module) / "build/libs" / f"gauss-horizon-agent-{module}.jar"
+        jar = module_dir(root, module) / "build/libs" / f"chiron-horizon-agent-{module}.jar"
         relative = jar.relative_to(root)
         try:
             with zipfile.ZipFile(jar) as archive:

@@ -1,8 +1,8 @@
-# Gauss Horizon Agents
+# Chiron Horizon Agents
 
-Agent drivers for [Gauss Horizon](https://github.com/Gaussian-id/Gauss-Horizon) — database support via JDBC and native database drivers.
+Agent drivers for [Chiron Horizon](https://github.com/Gaussian-id/Gauss-Horizon) — database support via JDBC and native database drivers.
 
-Each agent runs as a standalone process and communicates with Gauss Horizon via stdin/stdout JSON-RPC 2.0.
+Each agent runs as a standalone process and communicates with Chiron Horizon via stdin/stdout JSON-RPC 2.0.
 
 ## Supported Databases
 
@@ -54,7 +54,7 @@ Each agent runs as a standalone process and communicates with Gauss Horizon via 
 
 ## Multi-JRE Support
 
-Most Java agents target JRE 21. Native agents, such as `cassandra`, `duckdb`, `hive`, `iotdb`, `oracle`, `kingbase`, `tdengine`, `xugu`, `rabbitmq`, `rocketmq`, `zookeeper`, `etcd`, and `etcd2`, do not require a JRE. Gauss Horizon downloads and manages the JRE 21 installation automatically for Java agents.
+Most Java agents target JRE 21. Native agents, such as `cassandra`, `duckdb`, `hive`, `iotdb`, `oracle`, `kingbase`, `tdengine`, `xugu`, `rabbitmq`, `rocketmq`, `zookeeper`, `etcd`, and `etcd2`, do not require a JRE. Chiron Horizon downloads and manages the JRE 21 installation automatically for Java agents.
 
 ## JDBC Connection Pooling
 
@@ -64,17 +64,17 @@ The default maximum is 8 physical connections per immutable connection identity,
 
 | System property | Environment variable | Default |
 |---|---|---:|
-| `gauss.horizon.agent.jdbc.pool.enabled` | `GAUSS_HORIZON_AGENT_JDBC_POOL_ENABLED` | `true` |
-| `gauss.horizon.agent.jdbc.pool.maximumPoolSize` | `GAUSS_HORIZON_AGENT_JDBC_POOL_MAXIMUM_POOL_SIZE` | `8` |
-| `gauss.horizon.agent.jdbc.pool.minimumIdle` | `GAUSS_HORIZON_AGENT_JDBC_POOL_MINIMUM_IDLE` | `0` |
-| `gauss.horizon.agent.jdbc.pool.connectionTimeoutMillis` | `GAUSS_HORIZON_AGENT_JDBC_POOL_CONNECTION_TIMEOUT_MILLIS` | `30000` |
-| `gauss.horizon.agent.jdbc.pool.validationTimeoutMillis` | `GAUSS_HORIZON_AGENT_JDBC_POOL_VALIDATION_TIMEOUT_MILLIS` | `5000` |
-| `gauss.horizon.agent.jdbc.pool.idleTimeoutMillis` | `GAUSS_HORIZON_AGENT_JDBC_POOL_IDLE_TIMEOUT_MILLIS` | `120000` |
-| `gauss.horizon.agent.jdbc.pool.maxLifetimeMillis` | `GAUSS_HORIZON_AGENT_JDBC_POOL_MAX_LIFETIME_MILLIS` | `1800000` |
-| `gauss.horizon.agent.jdbc.pool.retireMillis` | `GAUSS_HORIZON_AGENT_JDBC_POOL_RETIRE_MILLIS` | `300000` |
+| `chiron.horizon.agent.jdbc.pool.enabled` | `CHIRON_HORIZON_AGENT_JDBC_POOL_ENABLED` | `true` |
+| `chiron.horizon.agent.jdbc.pool.maximumPoolSize` | `CHIRON_HORIZON_AGENT_JDBC_POOL_MAXIMUM_POOL_SIZE` | `8` |
+| `chiron.horizon.agent.jdbc.pool.minimumIdle` | `CHIRON_HORIZON_AGENT_JDBC_POOL_MINIMUM_IDLE` | `0` |
+| `chiron.horizon.agent.jdbc.pool.connectionTimeoutMillis` | `CHIRON_HORIZON_AGENT_JDBC_POOL_CONNECTION_TIMEOUT_MILLIS` | `30000` |
+| `chiron.horizon.agent.jdbc.pool.validationTimeoutMillis` | `CHIRON_HORIZON_AGENT_JDBC_POOL_VALIDATION_TIMEOUT_MILLIS` | `5000` |
+| `chiron.horizon.agent.jdbc.pool.idleTimeoutMillis` | `CHIRON_HORIZON_AGENT_JDBC_POOL_IDLE_TIMEOUT_MILLIS` | `120000` |
+| `chiron.horizon.agent.jdbc.pool.maxLifetimeMillis` | `CHIRON_HORIZON_AGENT_JDBC_POOL_MAX_LIFETIME_MILLIS` | `1800000` |
+| `chiron.horizon.agent.jdbc.pool.retireMillis` | `CHIRON_HORIZON_AGENT_JDBC_POOL_RETIRE_MILLIS` | `300000` |
 
 HikariCP is shaded into each pooled Agent JAR. Existing installations already using the managed JRE 21 do not need to reinstall or replace the JRE.
-Set `GAUSS_HORIZON_AGENT_JDBC_POOL_ENABLED=false` for a runtime-level compatibility fallback to the previous one-connection-per-logical-session behavior.
+Set `CHIRON_HORIZON_AGENT_JDBC_POOL_ENABLED=false` for a runtime-level compatibility fallback to the previous one-connection-per-logical-session behavior.
 
 ## Choosing a Driver Language
 
@@ -106,19 +106,19 @@ Requires JDK 21 (Gradle toolchain auto-downloads if needed).
 
 Output JARs are in `drivers/{module}/build/libs/`. Native agents build from `drivers/cassandra-go`, `drivers/duckdb`, `drivers/hive-go`, `drivers/iotdb`, `drivers/oracle-go`, `drivers/kingbase-go`, `drivers/vastbase-go`, `drivers/tdengine`, `drivers/xugu`, `drivers/rabbitmq`, `drivers/rocketmq`, `drivers/zookeeper`, `drivers/etcd-go`, and `drivers/etcd2-go`.
 
-### Local Gauss Horizon Runtime Test
+### Local Chiron Horizon Runtime Test
 
-When changing a Java agent under `agents/drivers/<db_type>/` or shared Java agent protocol code, rebuild the target agent and replace the runtime JAR used by the local Gauss Horizon app:
+When changing a Java agent under `agents/drivers/<db_type>/` or shared Java agent protocol code, rebuild the target agent and replace the runtime JAR used by the local Chiron Horizon app:
 
 ```bash
 ./gradlew :<db_type>:shadowJar
-cp ~/.gauss-horizon/agents/drivers/<db_type>/agent.jar ~/.gauss-horizon/agents/drivers/<db_type>/agent.jar.bak
-cp agents/drivers/<db_type>/build/libs/*-all.jar ~/.gauss-horizon/agents/drivers/<db_type>/agent.jar
+cp ~/.chiron-horizon/agents/drivers/<db_type>/agent.jar ~/.chiron-horizon/agents/drivers/<db_type>/agent.jar.bak
+cp agents/drivers/<db_type>/build/libs/*-all.jar ~/.chiron-horizon/agents/drivers/<db_type>/agent.jar
 ```
 
-Restart Gauss Horizon or disconnect and reconnect the database so the new agent process loads the replacement JAR.
+Restart Chiron Horizon or disconnect and reconnect the database so the new agent process loads the replacement JAR.
 
-Native agents such as `cassandra`, `hive`, `iotdb`, `oracle`, `kingbase`, `tdengine`, `xugu`, `rabbitmq`, `rocketmq`, `zookeeper`, `etcd`, and `etcd2` use an `agent` executable instead of `agent.jar`. TDengine builds `target/release/gauss-horizon-tdengine-driver` from `drivers/tdengine/Cargo.toml`.
+Native agents such as `cassandra`, `hive`, `iotdb`, `oracle`, `kingbase`, `tdengine`, `xugu`, `rabbitmq`, `rocketmq`, `zookeeper`, `etcd`, and `etcd2` use an `agent` executable instead of `agent.jar`. TDengine builds `target/release/chiron-horizon-tdengine-driver` from `drivers/tdengine/Cargo.toml`.
 
 ## Versioning
 
@@ -136,10 +136,10 @@ Agent module versions are tracked in [`versions.json`](versions.json).
 ## Architecture
 
 ```
-Gauss Horizon Main Process (Rust/Tauri)
+Chiron Horizon Main Process (Rust/Tauri)
     │ stdin/stdout (JSON-RPC 2.0)
     ▼
-agent / java -jar gauss-horizon-agent-{type}.jar
+agent / java -jar chiron-horizon-agent-{type}.jar
     │
     ▼
 Native driver / JDBC → Database

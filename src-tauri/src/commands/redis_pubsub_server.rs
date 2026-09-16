@@ -13,7 +13,7 @@ use serde::Deserialize;
 use tauri::async_runtime::JoinHandle;
 use tokio_util::sync::CancellationToken;
 
-use gauss_horizon_core::connection::AppState;
+use chiron_horizon_core::connection::AppState;
 
 const DEFAULT_PUBSUB_PORT: u16 = 4224;
 
@@ -65,7 +65,7 @@ pub fn build_pubsub_router(state: Arc<AppState>) -> Router {
 }
 
 fn pubsub_server_port() -> u16 {
-    gauss_horizon_core::legacy::var("GAUSS_HORIZON_PORT")
+    chiron_horizon_core::legacy::var("CHIRON_HORIZON_PORT")
         .ok()
         .and_then(|p| p.parse().ok())
         .unwrap_or(DEFAULT_PUBSUB_PORT)
@@ -109,7 +109,7 @@ async fn ws_handler(
 
 async fn handle_monitor_socket(mut socket: WebSocket, state: Arc<AppState>, connection_id: String) {
     let monitor = tokio::select! {
-        result = gauss_horizon_core::redis_ops::redis_create_monitor_core(&state, &connection_id) => result,
+        result = chiron_horizon_core::redis_ops::redis_create_monitor_core(&state, &connection_id) => result,
         _ = socket.recv() => return,
     };
     let monitor = match monitor {
@@ -152,7 +152,7 @@ async fn handle_monitor_socket(mut socket: WebSocket, state: Arc<AppState>, conn
 
 async fn handle_socket(socket: WebSocket, state: Arc<AppState>, connection_id: String) {
     // Create PubSub connection
-    let pubsub = match gauss_horizon_core::redis_ops::redis_create_pubsub_core(&state, &connection_id).await {
+    let pubsub = match chiron_horizon_core::redis_ops::redis_create_pubsub_core(&state, &connection_id).await {
         Ok(p) => p,
         Err(e) => {
             let (mut sender, _) = socket.split();

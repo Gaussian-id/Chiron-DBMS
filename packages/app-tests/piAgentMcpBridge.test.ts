@@ -4,8 +4,8 @@ import { join, resolve } from "node:path";
 import { pathToFileURL } from "node:url";
 import { afterEach, describe, expect, it } from "vitest";
 
-const bridgePath = resolve("crates/gauss-horizon-core/assets/pi-mcp-bridge.mjs");
-const envNames = ["GAUSS_HORIZON_PI_MCP_PROGRAM", "GAUSS_HORIZON_PI_MCP_ARGS", "GAUSS_HORIZON_PI_ENABLED_TOOLS", "GAUSS_HORIZON_PI_BRIDGE_READY_FILE"] as const;
+const bridgePath = resolve("crates/chiron-horizon-core/assets/pi-mcp-bridge.mjs");
+const envNames = ["CHIRON_HORIZON_PI_MCP_PROGRAM", "CHIRON_HORIZON_PI_MCP_ARGS", "CHIRON_HORIZON_PI_ENABLED_TOOLS", "CHIRON_HORIZON_PI_BRIDGE_READY_FILE"] as const;
 const originalEnv = Object.fromEntries(envNames.map((name) => [name, process.env[name]]));
 
 afterEach(() => {
@@ -20,8 +20,8 @@ afterEach(() => {
 });
 
 describe("Pi Coding Agent MCP bridge", () => {
-  it("registers an allowed Gauss Horizon MCP tool and forwards its result", async () => {
-    const directory = await mkdtemp(join(tmpdir(), "gauss-horizon-pi-bridge-test-"));
+  it("registers an allowed Chiron Horizon MCP tool and forwards its result", async () => {
+    const directory = await mkdtemp(join(tmpdir(), "chiron-horizon-pi-bridge-test-"));
     const readyPath = join(directory, "ready");
     const fakeMcp = String.raw`
       const readline = require("node:readline");
@@ -33,8 +33,8 @@ describe("Pi Coding Agent MCP bridge", () => {
         if (request.method === "tools/list") {
           result = {
             tools: [{
-              name: "gauss_horizon_ping",
-              title: "Gauss Horizon Ping",
+              name: "chiron_horizon_ping",
+              title: "Chiron Horizon Ping",
               description: "Return a deterministic value",
               inputSchema: {
                 type: "object",
@@ -52,10 +52,10 @@ describe("Pi Coding Agent MCP bridge", () => {
         process.stdout.write(JSON.stringify({ jsonrpc: "2.0", id: request.id, result }) + "\n");
       });
     `;
-    process.env.GAUSS_HORIZON_PI_MCP_PROGRAM = process.execPath;
-    process.env.GAUSS_HORIZON_PI_MCP_ARGS = JSON.stringify(["-e", fakeMcp]);
-    process.env.GAUSS_HORIZON_PI_ENABLED_TOOLS = JSON.stringify(["gauss_horizon_ping"]);
-    process.env.GAUSS_HORIZON_PI_BRIDGE_READY_FILE = readyPath;
+    process.env.CHIRON_HORIZON_PI_MCP_PROGRAM = process.execPath;
+    process.env.CHIRON_HORIZON_PI_MCP_ARGS = JSON.stringify(["-e", fakeMcp]);
+    process.env.CHIRON_HORIZON_PI_ENABLED_TOOLS = JSON.stringify(["chiron_horizon_ping"]);
+    process.env.CHIRON_HORIZON_PI_BRIDGE_READY_FILE = readyPath;
 
     const registeredTools: Array<{
       name: string;
@@ -74,7 +74,7 @@ describe("Pi Coding Agent MCP bridge", () => {
 
     try {
       expect(await readFile(readyPath, "utf8")).toBe("ready");
-      expect(registeredTools.map((tool) => tool.name)).toEqual(["gauss_horizon_ping"]);
+      expect(registeredTools.map((tool) => tool.name)).toEqual(["chiron_horizon_ping"]);
       const result = await registeredTools[0].execute("call-1", { value: "ok" }, new AbortController().signal);
       expect(result.content).toEqual([{ type: "text", text: "pong:ok" }]);
       expect(result.details).toMatchObject({ isError: false });

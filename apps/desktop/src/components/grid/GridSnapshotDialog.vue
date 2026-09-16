@@ -55,7 +55,7 @@ watch(
 );
 
 function snapshotRoot(): HTMLElement | null {
-  return previewWrapRef.value?.querySelector<HTMLElement>(".gauss-horizon-grid-snapshot") ?? null;
+  return previewWrapRef.value?.querySelector<HTMLElement>(".chiron-horizon-grid-snapshot") ?? null;
 }
 
 function renderSnapshot() {
@@ -147,7 +147,7 @@ async function exportSnapshot(kind: "clipboard" | "file") {
 
 <template>
   <Dialog v-model:open="open">
-    <DialogContent class="flex max-h-[calc(var(--gauss-horizon-viewport-height)-2rem)] flex-col overflow-hidden border border-border !bg-background text-foreground shadow-2xl !backdrop-blur-none sm:max-w-[980px]">
+    <DialogContent class="flex max-h-[calc(var(--chiron-horizon-viewport-height)-2rem)] flex-col overflow-hidden border border-border !bg-background text-foreground shadow-2xl !backdrop-blur-none sm:max-w-[980px]">
       <DialogHeader>
         <DialogTitle class="flex items-center gap-2"><Camera class="h-5 w-5 text-primary" />{{ t("gridSnapshot.title") }}</DialogTitle>
       </DialogHeader>

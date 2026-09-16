@@ -1,7 +1,7 @@
 [CmdletBinding()]
 param(
   [string]$RuntimeDirectory = (Join-Path $PSScriptRoot "..\..\src-tauri\webview2-fixed-runtime"),
-  [string]$LoaderPath = (Join-Path ([System.IO.Path]::GetTempPath()) "gauss-horizon-win7-webview2-loader-probe\WebView2Loader.dll"),
+  [string]$LoaderPath = (Join-Path ([System.IO.Path]::GetTempPath()) "chiron-horizon-win7-webview2-loader-probe\WebView2Loader.dll"),
   [string]$ExpectedVersion = "109.0.1518.78"
 )
 
@@ -20,7 +20,7 @@ $source = @"
 using System;
 using System.Runtime.InteropServices;
 
-public static class GaussHorizonWebView2LoaderProbe
+public static class ChironHorizonWebView2LoaderProbe
 {
     [DllImport(@"$escapedLoaderPath", CharSet = CharSet.Unicode, ExactSpelling = true)]
     public static extern int GetAvailableCoreWebView2BrowserVersionString(
@@ -31,7 +31,7 @@ public static class GaussHorizonWebView2LoaderProbe
 
 Add-Type -TypeDefinition $source -Language CSharp
 $versionPointer = [IntPtr]::Zero
-$result = [GaussHorizonWebView2LoaderProbe]::GetAvailableCoreWebView2BrowserVersionString(
+$result = [ChironHorizonWebView2LoaderProbe]::GetAvailableCoreWebView2BrowserVersionString(
   $runtimeDirectory,
   [ref]$versionPointer
 )

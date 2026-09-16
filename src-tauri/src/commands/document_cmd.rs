@@ -3,8 +3,8 @@ use std::sync::Arc;
 use tauri::State;
 
 use crate::commands::connection::{ensure_connection_writable, AppState};
-use gauss_horizon_core::db::document_result::DocumentQueryResult;
-use gauss_horizon_core::document_ops::CollectionInfo;
+use chiron_horizon_core::db::document_result::DocumentQueryResult;
+use chiron_horizon_core::document_ops::CollectionInfo;
 
 pub(crate) async fn run_cancellable<T, F>(
     state: &Arc<AppState>,
@@ -20,7 +20,7 @@ where
         let token = query.token();
         tokio::select! {
             biased;
-            _ = token.cancelled() => Err(gauss_horizon_core::query::canceled_error()),
+            _ = token.cancelled() => Err(chiron_horizon_core::query::canceled_error()),
             result = future => result,
         }
     } else {
@@ -33,7 +33,7 @@ pub async fn document_list_databases(
     state: State<'_, Arc<AppState>>,
     connection_id: String,
 ) -> Result<Vec<String>, String> {
-    gauss_horizon_core::document_ops::list_databases_core(&state, &connection_id).await
+    chiron_horizon_core::document_ops::list_databases_core(&state, &connection_id).await
 }
 
 #[tauri::command]
@@ -42,7 +42,7 @@ pub async fn document_list_collections(
     connection_id: String,
     database: String,
 ) -> Result<Vec<CollectionInfo>, String> {
-    gauss_horizon_core::document_ops::list_collections_core(&state, &connection_id, &database).await
+    chiron_horizon_core::document_ops::list_collections_core(&state, &connection_id, &database).await
 }
 
 #[tauri::command]
@@ -66,7 +66,7 @@ pub async fn document_find_documents(
     run_cancellable(
         &app,
         execution_id,
-        gauss_horizon_core::document_ops::find_documents_core(
+        chiron_horizon_core::document_ops::find_documents_core(
             &app,
             &connection_id,
             &database,
@@ -96,7 +96,7 @@ pub async fn document_count_documents(
     run_cancellable(
         &app,
         execution_id,
-        gauss_horizon_core::document_ops::count_document_store_documents_core(
+        chiron_horizon_core::document_ops::count_document_store_documents_core(
             &app,
             &connection_id,
             &collection,
@@ -111,8 +111,8 @@ pub async fn dynamodb_describe_table(
     state: State<'_, Arc<AppState>>,
     connection_id: String,
     table: String,
-) -> Result<gauss_horizon_core::db::dynamodb_driver::DynamoDbTableDescription, String> {
-    gauss_horizon_core::document_ops::describe_dynamodb_table_core(&state, &connection_id, &table).await
+) -> Result<chiron_horizon_core::db::dynamodb_driver::DynamoDbTableDescription, String> {
+    chiron_horizon_core::document_ops::describe_dynamodb_table_core(&state, &connection_id, &table).await
 }
 
 #[tauri::command]
@@ -127,7 +127,7 @@ pub async fn elasticsearch_count_documents(
     run_cancellable(
         &app,
         execution_id,
-        gauss_horizon_core::document_ops::count_elasticsearch_documents_core(
+        chiron_horizon_core::document_ops::count_elasticsearch_documents_core(
             &app,
             &connection_id,
             &index,
@@ -142,9 +142,9 @@ pub async fn elasticsearch_get_index_metadata(
     state: State<'_, Arc<AppState>>,
     connection_id: String,
     index: String,
-    kind: gauss_horizon_core::document_ops::ElasticsearchIndexMetadataKind,
+    kind: chiron_horizon_core::document_ops::ElasticsearchIndexMetadataKind,
 ) -> Result<serde_json::Value, String> {
-    gauss_horizon_core::document_ops::elasticsearch_get_index_metadata_core(&state, &connection_id, &index, kind).await
+    chiron_horizon_core::document_ops::elasticsearch_get_index_metadata_core(&state, &connection_id, &index, kind).await
 }
 
 #[tauri::command]
@@ -152,9 +152,9 @@ pub async fn elasticsearch_delete_all_documents(
     state: State<'_, Arc<AppState>>,
     connection_id: String,
     index: String,
-) -> Result<gauss_horizon_core::db::elasticsearch_driver::ElasticsearchDeleteByQueryResult, String> {
+) -> Result<chiron_horizon_core::db::elasticsearch_driver::ElasticsearchDeleteByQueryResult, String> {
     ensure_connection_writable(&state, &connection_id, "Delete all documents").await?;
-    gauss_horizon_core::document_ops::elasticsearch_delete_all_documents_core(&state, &connection_id, &index).await
+    chiron_horizon_core::document_ops::elasticsearch_delete_all_documents_core(&state, &connection_id, &index).await
 }
 
 #[tauri::command]
@@ -169,7 +169,7 @@ pub async fn document_insert_document(
 ) -> Result<String, String> {
     ensure_connection_writable(&state, &connection_id, "Insert").await?;
     if preserve_bson_types.unwrap_or(false) {
-        gauss_horizon_core::document_ops::insert_document_preserving_bson_types_core(
+        chiron_horizon_core::document_ops::insert_document_preserving_bson_types_core(
             &state,
             &connection_id,
             &database,
@@ -179,7 +179,7 @@ pub async fn document_insert_document(
         )
         .await
     } else {
-        gauss_horizon_core::document_ops::insert_document_core(
+        chiron_horizon_core::document_ops::insert_document_core(
             &state,
             &connection_id,
             &database,
@@ -202,7 +202,7 @@ pub async fn document_update_document(
     routing: Option<String>,
 ) -> Result<u64, String> {
     ensure_connection_writable(&state, &connection_id, "Update").await?;
-    gauss_horizon_core::document_ops::update_document_core(
+    chiron_horizon_core::document_ops::update_document_core(
         &state,
         &connection_id,
         &database,
@@ -225,7 +225,7 @@ pub async fn document_delete_document(
     document_type: Option<String>,
 ) -> Result<u64, String> {
     ensure_connection_writable(&state, &connection_id, "Delete").await?;
-    gauss_horizon_core::document_ops::delete_document_core_with_type(
+    chiron_horizon_core::document_ops::delete_document_core_with_type(
         &state,
         &connection_id,
         &database,
@@ -242,12 +242,12 @@ pub async fn document_save_meilisearch_batch(
     state: State<'_, Arc<AppState>>,
     connection_id: String,
     collection: String,
-    updates: Vec<gauss_horizon_core::db::meilisearch_driver::MeilisearchDocumentUpdate>,
+    updates: Vec<chiron_horizon_core::db::meilisearch_driver::MeilisearchDocumentUpdate>,
     delete_ids: Vec<String>,
     inserts: Vec<String>,
 ) -> Result<u64, String> {
     ensure_connection_writable(&state, &connection_id, "Save").await?;
-    gauss_horizon_core::document_ops::save_meilisearch_document_batch_core(
+    chiron_horizon_core::document_ops::save_meilisearch_document_batch_core(
         &state,
         &connection_id,
         &collection,
@@ -273,8 +273,8 @@ pub async fn meilisearch_search_documents(
     hybrid_semantic_ratio: Option<f64>,
     show_ranking_score: Option<bool>,
     ranking_score_threshold: Option<f64>,
-) -> Result<gauss_horizon_core::db::meilisearch_driver::MeilisearchSearchResult, String> {
-    gauss_horizon_core::document_ops::meilisearch_search_documents_core(
+) -> Result<chiron_horizon_core::db::meilisearch_driver::MeilisearchSearchResult, String> {
+    chiron_horizon_core::document_ops::meilisearch_search_documents_core(
         &state,
         &connection_id,
         &index,
@@ -301,8 +301,8 @@ pub async fn meilisearch_fetch_documents(
     sort: Option<String>,
     limit: u64,
     offset: u64,
-) -> Result<gauss_horizon_core::db::meilisearch_driver::MeilisearchDocumentPage, String> {
-    gauss_horizon_core::document_ops::meilisearch_fetch_document_page_core(
+) -> Result<chiron_horizon_core::db::meilisearch_driver::MeilisearchDocumentPage, String> {
+    chiron_horizon_core::document_ops::meilisearch_fetch_document_page_core(
         &state,
         &connection_id,
         &index,
@@ -321,7 +321,7 @@ pub async fn meilisearch_get_document(
     index: String,
     id: String,
 ) -> Result<String, String> {
-    gauss_horizon_core::document_ops::meilisearch_get_document_core(&state, &connection_id, &index, &id).await
+    chiron_horizon_core::document_ops::meilisearch_get_document_core(&state, &connection_id, &index, &id).await
 }
 
 #[tauri::command]
@@ -330,7 +330,7 @@ pub async fn meilisearch_get_index_settings(
     connection_id: String,
     index: String,
 ) -> Result<serde_json::Value, String> {
-    gauss_horizon_core::document_ops::meilisearch_get_index_settings_core(&state, &connection_id, &index).await
+    chiron_horizon_core::document_ops::meilisearch_get_index_settings_core(&state, &connection_id, &index).await
 }
 
 #[tauri::command]
@@ -341,7 +341,7 @@ pub async fn meilisearch_update_index_settings(
     settings: serde_json::Value,
 ) -> Result<(), String> {
     ensure_connection_writable(&state, &connection_id, "Update settings").await?;
-    gauss_horizon_core::document_ops::meilisearch_update_index_settings_core(&state, &connection_id, &index, &settings)
+    chiron_horizon_core::document_ops::meilisearch_update_index_settings_core(&state, &connection_id, &index, &settings)
         .await
 }
 
@@ -351,7 +351,7 @@ pub async fn meilisearch_get_index_stats(
     connection_id: String,
     index: String,
 ) -> Result<serde_json::Value, String> {
-    gauss_horizon_core::document_ops::meilisearch_get_index_stats_core(&state, &connection_id, &index).await
+    chiron_horizon_core::document_ops::meilisearch_get_index_stats_core(&state, &connection_id, &index).await
 }
 
 #[tauri::command]
@@ -359,8 +359,8 @@ pub async fn meilisearch_get_index_overview(
     state: State<'_, Arc<AppState>>,
     connection_id: String,
     index: String,
-) -> Result<gauss_horizon_core::db::meilisearch_driver::MeilisearchIndexOverview, String> {
-    gauss_horizon_core::document_ops::meilisearch_get_index_overview_core(&state, &connection_id, &index).await
+) -> Result<chiron_horizon_core::db::meilisearch_driver::MeilisearchIndexOverview, String> {
+    chiron_horizon_core::document_ops::meilisearch_get_index_overview_core(&state, &connection_id, &index).await
 }
 
 #[tauri::command]
@@ -370,7 +370,7 @@ pub async fn meilisearch_delete_index(
     index: String,
 ) -> Result<(), String> {
     ensure_connection_writable(&state, &connection_id, "Delete index").await?;
-    gauss_horizon_core::document_ops::meilisearch_delete_index_core(&state, &connection_id, &index).await
+    chiron_horizon_core::document_ops::meilisearch_delete_index_core(&state, &connection_id, &index).await
 }
 
 #[tauri::command]
@@ -380,15 +380,15 @@ pub async fn meilisearch_delete_all_documents(
     index: String,
 ) -> Result<(), String> {
     ensure_connection_writable(&state, &connection_id, "Delete all documents").await?;
-    gauss_horizon_core::document_ops::meilisearch_delete_all_documents_core(&state, &connection_id, &index).await
+    chiron_horizon_core::document_ops::meilisearch_delete_all_documents_core(&state, &connection_id, &index).await
 }
 
 #[tauri::command]
 pub async fn meilisearch_get_system_overview(
     state: State<'_, Arc<AppState>>,
     connection_id: String,
-) -> Result<gauss_horizon_core::db::meilisearch_driver::MeilisearchSystemOverview, String> {
-    gauss_horizon_core::document_ops::meilisearch_get_system_overview_core(&state, &connection_id).await
+) -> Result<chiron_horizon_core::db::meilisearch_driver::MeilisearchSystemOverview, String> {
+    chiron_horizon_core::document_ops::meilisearch_get_system_overview_core(&state, &connection_id).await
 }
 
 #[tauri::command]
@@ -397,8 +397,8 @@ pub async fn meilisearch_list_keys(
     connection_id: String,
     offset: u64,
     limit: u64,
-) -> Result<gauss_horizon_core::db::meilisearch_driver::MeilisearchKeyPage, String> {
-    gauss_horizon_core::document_ops::meilisearch_list_keys_core(&state, &connection_id, offset, limit).await
+) -> Result<chiron_horizon_core::db::meilisearch_driver::MeilisearchKeyPage, String> {
+    chiron_horizon_core::document_ops::meilisearch_list_keys_core(&state, &connection_id, offset, limit).await
 }
 
 #[tauri::command]
@@ -406,18 +406,18 @@ pub async fn meilisearch_get_key(
     state: State<'_, Arc<AppState>>,
     connection_id: String,
     uid: String,
-) -> Result<gauss_horizon_core::db::meilisearch_driver::MeilisearchKeyListItem, String> {
-    gauss_horizon_core::document_ops::meilisearch_get_key_core(&state, &connection_id, &uid).await
+) -> Result<chiron_horizon_core::db::meilisearch_driver::MeilisearchKeyListItem, String> {
+    chiron_horizon_core::document_ops::meilisearch_get_key_core(&state, &connection_id, &uid).await
 }
 
 #[tauri::command]
 pub async fn meilisearch_create_key(
     state: State<'_, Arc<AppState>>,
     connection_id: String,
-    input: gauss_horizon_core::db::meilisearch_driver::MeilisearchKeyCreateInput,
-) -> Result<gauss_horizon_core::db::meilisearch_driver::MeilisearchCreatedKey, String> {
+    input: chiron_horizon_core::db::meilisearch_driver::MeilisearchKeyCreateInput,
+) -> Result<chiron_horizon_core::db::meilisearch_driver::MeilisearchCreatedKey, String> {
     ensure_connection_writable(&state, &connection_id, "Create API key").await?;
-    gauss_horizon_core::document_ops::meilisearch_create_key_core(&state, &connection_id, &input).await
+    chiron_horizon_core::document_ops::meilisearch_create_key_core(&state, &connection_id, &input).await
 }
 
 #[tauri::command]
@@ -425,10 +425,10 @@ pub async fn meilisearch_update_key(
     state: State<'_, Arc<AppState>>,
     connection_id: String,
     uid: String,
-    input: gauss_horizon_core::db::meilisearch_driver::MeilisearchKeyUpdateInput,
-) -> Result<gauss_horizon_core::db::meilisearch_driver::MeilisearchKeyListItem, String> {
+    input: chiron_horizon_core::db::meilisearch_driver::MeilisearchKeyUpdateInput,
+) -> Result<chiron_horizon_core::db::meilisearch_driver::MeilisearchKeyListItem, String> {
     ensure_connection_writable(&state, &connection_id, "Update API key").await?;
-    gauss_horizon_core::document_ops::meilisearch_update_key_core(&state, &connection_id, &uid, &input).await
+    chiron_horizon_core::document_ops::meilisearch_update_key_core(&state, &connection_id, &uid, &input).await
 }
 
 #[tauri::command]
@@ -438,16 +438,16 @@ pub async fn meilisearch_delete_key(
     uid: String,
 ) -> Result<(), String> {
     ensure_connection_writable(&state, &connection_id, "Delete API key").await?;
-    gauss_horizon_core::document_ops::meilisearch_delete_key_core(&state, &connection_id, &uid).await
+    chiron_horizon_core::document_ops::meilisearch_delete_key_core(&state, &connection_id, &uid).await
 }
 
 #[tauri::command]
 pub async fn meilisearch_get_tasks(
     state: State<'_, Arc<AppState>>,
     connection_id: String,
-    input: gauss_horizon_core::db::meilisearch_driver::MeilisearchTaskListInput,
-) -> Result<gauss_horizon_core::db::meilisearch_driver::MeilisearchTaskPage, String> {
-    gauss_horizon_core::document_ops::meilisearch_get_tasks_core(
+    input: chiron_horizon_core::db::meilisearch_driver::MeilisearchTaskListInput,
+) -> Result<chiron_horizon_core::db::meilisearch_driver::MeilisearchTaskPage, String> {
+    chiron_horizon_core::document_ops::meilisearch_get_tasks_core(
         &state,
         &connection_id,
         &input.selector,
@@ -463,8 +463,8 @@ pub async fn meilisearch_get_task(
     connection_id: String,
     uid: u64,
     expected_index_uid: Option<String>,
-) -> Result<gauss_horizon_core::db::meilisearch_driver::MeilisearchTask, String> {
-    gauss_horizon_core::document_ops::meilisearch_get_task_core(
+) -> Result<chiron_horizon_core::db::meilisearch_driver::MeilisearchTask, String> {
+    chiron_horizon_core::document_ops::meilisearch_get_task_core(
         &state,
         &connection_id,
         uid,
@@ -477,20 +477,20 @@ pub async fn meilisearch_get_task(
 pub async fn meilisearch_cancel_tasks(
     state: State<'_, Arc<AppState>>,
     connection_id: String,
-    selector: gauss_horizon_core::db::meilisearch_driver::MeilisearchTaskSelector,
-) -> Result<gauss_horizon_core::db::meilisearch_driver::MeilisearchEnqueuedTaskSummary, String> {
+    selector: chiron_horizon_core::db::meilisearch_driver::MeilisearchTaskSelector,
+) -> Result<chiron_horizon_core::db::meilisearch_driver::MeilisearchEnqueuedTaskSummary, String> {
     ensure_connection_writable(&state, &connection_id, "Cancel tasks").await?;
-    gauss_horizon_core::document_ops::meilisearch_cancel_tasks_core(&state, &connection_id, &selector).await
+    chiron_horizon_core::document_ops::meilisearch_cancel_tasks_core(&state, &connection_id, &selector).await
 }
 
 #[tauri::command]
 pub async fn meilisearch_delete_tasks(
     state: State<'_, Arc<AppState>>,
     connection_id: String,
-    selector: gauss_horizon_core::db::meilisearch_driver::MeilisearchTaskSelector,
-) -> Result<gauss_horizon_core::db::meilisearch_driver::MeilisearchEnqueuedTaskSummary, String> {
+    selector: chiron_horizon_core::db::meilisearch_driver::MeilisearchTaskSelector,
+) -> Result<chiron_horizon_core::db::meilisearch_driver::MeilisearchEnqueuedTaskSummary, String> {
     ensure_connection_writable(&state, &connection_id, "Delete tasks").await?;
-    gauss_horizon_core::document_ops::meilisearch_delete_tasks_core(&state, &connection_id, &selector).await
+    chiron_horizon_core::document_ops::meilisearch_delete_tasks_core(&state, &connection_id, &selector).await
 }
 
 #[tauri::command]
@@ -500,8 +500,8 @@ pub async fn document_list_gridfs_buckets(
     database: String,
     filter: Option<String>,
     sort: Option<String>,
-) -> Result<Vec<gauss_horizon_core::document_ops::MongoGridFsBucketInfo>, String> {
-    gauss_horizon_core::document_ops::list_gridfs_buckets_core(
+) -> Result<Vec<chiron_horizon_core::document_ops::MongoGridFsBucketInfo>, String> {
+    chiron_horizon_core::document_ops::list_gridfs_buckets_core(
         &state,
         &connection_id,
         &database,
@@ -519,7 +519,7 @@ pub async fn document_create_gridfs_bucket(
     bucket: String,
 ) -> Result<(), String> {
     ensure_connection_writable(&state, &connection_id, "Create GridFS bucket").await?;
-    gauss_horizon_core::document_ops::create_gridfs_bucket_core(&state, &connection_id, &database, &bucket).await
+    chiron_horizon_core::document_ops::create_gridfs_bucket_core(&state, &connection_id, &database, &bucket).await
 }
 
 #[tauri::command]
@@ -530,7 +530,7 @@ pub async fn document_delete_gridfs_bucket(
     bucket: String,
 ) -> Result<(), String> {
     ensure_connection_writable(&state, &connection_id, "Delete GridFS bucket").await?;
-    gauss_horizon_core::document_ops::delete_gridfs_bucket_core(&state, &connection_id, &database, &bucket).await
+    chiron_horizon_core::document_ops::delete_gridfs_bucket_core(&state, &connection_id, &database, &bucket).await
 }
 
 #[tauri::command]
@@ -541,8 +541,8 @@ pub async fn document_list_gridfs_files(
     bucket: String,
     filter: Option<String>,
     sort: Option<String>,
-) -> Result<Vec<gauss_horizon_core::document_ops::MongoGridFsFileInfo>, String> {
-    gauss_horizon_core::document_ops::list_gridfs_files_core(
+) -> Result<Vec<chiron_horizon_core::document_ops::MongoGridFsFileInfo>, String> {
+    chiron_horizon_core::document_ops::list_gridfs_files_core(
         &state,
         &connection_id,
         &database,
@@ -561,7 +561,7 @@ pub async fn document_download_gridfs_file(
     bucket: String,
     file_id: String,
 ) -> Result<Vec<u8>, String> {
-    gauss_horizon_core::document_ops::download_gridfs_file_core(&state, &connection_id, &database, &bucket, &file_id)
+    chiron_horizon_core::document_ops::download_gridfs_file_core(&state, &connection_id, &database, &bucket, &file_id)
         .await
 }
 
@@ -576,7 +576,7 @@ pub async fn document_upload_gridfs_file(
     content_type: Option<String>,
 ) -> Result<String, String> {
     ensure_connection_writable(&state, &connection_id, "Upload GridFS file").await?;
-    gauss_horizon_core::document_ops::upload_gridfs_file_core(
+    chiron_horizon_core::document_ops::upload_gridfs_file_core(
         &state,
         &connection_id,
         &database,
@@ -597,6 +597,6 @@ pub async fn document_delete_gridfs_file(
     file_id: String,
 ) -> Result<(), String> {
     ensure_connection_writable(&state, &connection_id, "Delete GridFS file").await?;
-    gauss_horizon_core::document_ops::delete_gridfs_file_core(&state, &connection_id, &database, &bucket, &file_id)
+    chiron_horizon_core::document_ops::delete_gridfs_file_core(&state, &connection_id, &database, &bucket, &file_id)
         .await
 }
