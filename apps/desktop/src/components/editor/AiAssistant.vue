@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { relationalComingSoon } from "@/lib/app/relationalComingSoon";
 import { computed, defineAsyncComponent, h, nextTick, onMounted, onUnmounted, reactive, ref, toRaw, watch, type Component } from "vue";
 import { uuid } from "@/lib/common/utils";
 import { useI18n } from "vue-i18n";
@@ -1107,7 +1106,6 @@ const isAttachmentProcessing = computed(() => pendingAttachmentReads.value > 0);
 const canSubmitPrompt = computed(
   () =>
     !chironBusy.value &&
-    !relationalComingSoon(props.connection?.db_type) &&
     (props.connection?.db_type === "chirondb"
       ? !!props.connection && !!settings.activeModel && !isAttachmentProcessing.value && (!!prompt.value.trim() || !!selectedCsvAttachments.value.length || !!selectedImageAttachments.value.length)
       : canSubmitAiPrompt({
@@ -3003,10 +3001,6 @@ function openChiron(msg: ChatMessage, query: string) {
 
 async function send() {
   if (chironBusy.value) return;
-  if (relationalComingSoon(props.connection?.db_type)) {
-    toast("Relational database AI tools · Coming Soon");
-    return;
-  }
   if (props.connection?.db_type === "chirondb") {
     if (pendingAutoSends.shift()) {
       toast("Automatic SQL retries are disabled for ChironDB. Review and send a new native request.");

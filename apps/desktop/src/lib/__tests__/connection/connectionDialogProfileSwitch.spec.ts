@@ -2,6 +2,7 @@ import { readFileSync } from "node:fs";
 import { parse } from "vue/compiler-sfc";
 import ts from "typescript";
 import { describe, expect, it } from "vitest";
+import { CONNECTION_PROFILES } from "@/types/generated/connectionProfiles";
 
 const dialogSource = readFileSync(new URL("../../../components/connection/ConnectionDialog.vue", import.meta.url), "utf8");
 const parsedDialog = parse(dialogSource, { filename: "ConnectionDialog.vue" });
@@ -133,6 +134,13 @@ function igniteProfileSwitchHarness(selectedProfile: "ignite" | "ignite3") {
 }
 
 describe("ConnectionDialog database profile switching", () => {
+  it.each(Object.keys(CONNECTION_PROFILES))("allows selecting the %s profile", (profile) => {
+    const harness = profileSwitchHarness("unselected");
+    harness.selectProfile(profile);
+    expect(harness.selectedType.value).toBe(profile);
+    expect(harness.events).toContain(`apply:${profile}:false`);
+  });
+
   it.each([
     ["mysql", ""],
     ["custom_mysql", "Draft custom_mysql"],

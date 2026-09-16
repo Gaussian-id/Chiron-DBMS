@@ -115,6 +115,7 @@ const NacosAccessControlConsole = defineAsyncComponent(() => import("@/component
 const NacosDashboard = defineAsyncComponent(() => import("@/components/nacos/NacosDashboard.vue"));
 const DoltVersionControl = defineAsyncComponent(() => import("@/components/dolt/DoltVersionControl.vue"));
 const DatabaseBrowser = defineAsyncComponent(() => import("@/components/objects/DatabaseBrowser.vue"));
+const TableStructureEditor = defineAsyncComponent(() => import("@/components/structure/TableStructureEditor.vue"));
 const ObjectBrowser = defineAsyncComponent(() => import("@/components/objects/ObjectBrowser.vue"));
 const DatabaseUserAdmin = defineAsyncComponent(() => import("@/components/admin/DatabaseUserAdmin.vue"));
 const ProcessListPanel = defineAsyncComponent(() => import("@/components/admin/ProcessListPanel.vue"));
@@ -2611,10 +2612,23 @@ defineExpose({
 
     <!-- Structure mode: table structure editor -->
     <template v-else-if="activeTab.mode === 'structure'">
-      <section class="flex flex-1 flex-col items-center justify-center gap-3 p-6 text-muted-foreground" aria-label="Table design · Coming Soon">
-        <h2 class="text-base font-medium">Table design · Coming Soon</h2>
-        <p class="text-sm">Relational schema editing is not available. Existing drafts are preserved.</p>
-      </section>
+      <TableStructureEditor
+        ref="tableStructureEditorRef"
+        :key="activeTab.id"
+        :connection-id="activeTab.connectionId"
+        :database="activeTab.database"
+        :catalog="activeTab.catalog"
+        :schema="activeTab.schema"
+        :table-name="activeTab.structureTableName || ''"
+        :initial-tab="activeTab.structureInitialTab"
+        :initial-tab-request-id="activeTab.structureInitialTabRequestId"
+        :initial-target="activeTab.structureInitialTarget"
+        :draft="activeTab.structureDraft"
+        @update:draft="(draft) => (activeTab.structureDraft = draft)"
+        @saved="(commentChanged) => emit('structureEditorSaved', activeTab.id, commentChanged)"
+        @close="emit('structureEditorClose', activeTab.id)"
+        @open-settings="(initialTab, initialSection) => emit('openSettings', initialTab, initialSection)"
+      />
     </template>
 
     <template v-else-if="activeTab.mode === 'users' && activeConnection">

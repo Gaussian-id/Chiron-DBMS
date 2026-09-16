@@ -43,6 +43,7 @@
     "fmt": "oxfmt \"apps/desktop/src/**/*.{ts,vue}\"",
     "pretest": "pnpm generate:connection-types",
     "test": "vitest run",
+    "test:database-availability": "vitest run apps/desktop/src/lib/__tests__/app/databaseAvailability.spec.ts apps/desktop/src/lib/__tests__/connection/connectionDialogProfileSwitch.spec.ts apps/desktop/src/components/layout/__tests__/EditorGroup.databaseAvailability.spec.ts apps/desktop/src/composables/__tests__/useDialogSources.spec.ts",
     "test:watch": "vitest",
     "preview": "vite preview --config apps/desktop/vite.config.ts",
     "tauri": "tauri",

@@ -14,10 +14,12 @@ vi.mock("../EditorToolbar.vue", () => ({ default: { render: () => h("div", { "da
 vi.mock("../QueryEditorSurface.vue", () => ({ default: { render: () => h("div", { "data-query-surface": "" }) } }));
 vi.mock("../ContentArea.vue", () => ({ default: { render: () => h("div", { "data-content-surface": "" }) } }));
 import EditorGroup from "../EditorGroup.vue";
+import driverManifest from "../../../../../../crates/gauss-horizon-core/assets/database-drivers.manifest.json";
 let app: App;
 let root: HTMLElement;
-async function mount(type: string) {
+async function mount(type: string, mode = "query") {
   state.connection.db_type = type;
+  state.tab.mode = mode;
   root = document.createElement("div");
   document.body.append(root);
   app = createApp({ render: () => h(EditorGroup as Component, { groupId: "main", tabIds: ["draft"], activeTabId: "draft", showTabNavigation: false }) });
@@ -28,11 +30,20 @@ afterEach(() => {
   app?.unmount();
   root?.remove();
 });
-it.each(["postgres", "mysql", "sqlite"])("does not mount executable surfaces for a restored %s draft", async (type) => {
+it.each(driverManifest.drivers.map((driver) => driver.dbType))("mounts a restored %s query workspace", async (type) => {
   await mount(type);
-  expect(root.textContent).toContain("Relational databases · Coming Soon");
-  expect(root.querySelector("[data-query-surface], [data-content-surface], [data-sql-toolbar]")).toBeNull();
+  expect(root.querySelector("[data-query-surface]")).not.toBeNull();
+  expect(root.textContent).not.toContain("Coming Soon");
   expect(state.tab.sql).toBe("SELECT 1;");
+});
+it.each(driverManifest.drivers.filter((driver) => "dialect" in driver).map((driver) => driver.dbType))("restores the %s SQL toolbar", async (type) => {
+  await mount(type);
+  expect(root.querySelector("[data-sql-toolbar]")).not.toBeNull();
+});
+it.each(["data", "structure"])("mounts a restored relational %s workspace", async (mode) => {
+  await mount("postgres", mode);
+  expect(root.querySelector("[data-content-surface]")).not.toBeNull();
+  expect(root.querySelector("[data-query-surface]")).toBeNull();
 });
 it("keeps the native ChironDB query surface available", async () => {
   await mount("chirondb");

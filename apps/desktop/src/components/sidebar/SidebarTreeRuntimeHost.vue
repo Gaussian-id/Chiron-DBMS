@@ -6569,15 +6569,6 @@ function buildContextMenu(node: TreeNode): ContextMenuItem[] {
   // Normalization is intentionally evaluated only when a menu opens. Besides
   // parity tests, it provides deterministic action identifiers for diagnostics.
   normalizeSidebarMenuDescriptors(menuContext, rawItems);
-  const deferredActions = new Set<ContextMenuItem["action"]>([openTransfer, openSchemaDiff, openSchemaDiffForRoutine, openDataCompare, openDiagram, openDocs, openTableImport, openFieldLineage, openStructureEditor, duplicateStructure, exportStructure]);
-  if (databaseTypeForNode(node) !== "hbase") deferredActions.add(createTable);
-  const markComingSoon = (items: ContextMenuItem[]): ContextMenuItem[] =>
-    items.map((item) => ({
-      ...item,
-      ...(item.action && deferredActions.has(item.action) ? { label: `${item.label} · Coming Soon`, disabled: true, action: undefined } : {}),
-      ...(item.children ? { children: markComingSoon(item.children) } : {}),
-    }));
-  rawItems = markComingSoon(rawItems);
   const items = bindMenuTarget(rawItems, menuContext.target, menuContext.selectedNodeIds);
   activateRuntimeNode(previousNode);
   return items;

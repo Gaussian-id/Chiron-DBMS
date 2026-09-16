@@ -53,6 +53,7 @@ jobs:
       - run: node scripts/sync-connection-types.mjs --check
       - run: pnpm exec vue-tsc --noEmit -p apps/desktop/tsconfig.json
       - run: pnpm exec vitest run apps/desktop/src/lib/chiron apps/desktop/src/components/vector/__tests__ apps/desktop/src/lib/compat
+      - run: pnpm test:database-availability
       - run: cargo test -p gauss-horizon-core --no-default-features --features sqlite-bundled --lib legacy::tests
       - run: cargo test -p gauss-horizon-core --no-default-features --features sqlite-bundled --test ai_credentials --test chirondb_connector
       - run: cargo check -p gauss-horizon-cli -p gauss-horizon-web --no-default-features

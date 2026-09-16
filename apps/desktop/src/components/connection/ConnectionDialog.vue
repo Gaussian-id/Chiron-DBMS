@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { relationalComingSoon } from "@/lib/app/relationalComingSoon";
 import type { ObjectDirective } from "vue";
 import { computed, nextTick, onMounted, onUnmounted, reactive, ref, watch } from "vue";
 import { uuid } from "@/lib/common/utils";
@@ -2898,7 +2897,6 @@ function defaultDatabaseForProfile() {
 }
 
 function onDbTypeChange(val: string) {
-  if (relationalComingSoon(driverProfiles[val]?.type ?? val)) return;
   if (!editingId.value && val === selectedType.value) return;
   if (!editingId.value) {
     resetForm({ preservePickerState: true });
@@ -3726,7 +3724,6 @@ const mongoDriverMode = computed({
 });
 
 function goToConnectionStep(value = selectedType.value) {
-  if (relationalComingSoon(driverProfiles[value]?.type ?? value)) return;
   if (value !== selectedType.value) {
     onDbTypeChange(value);
   }
@@ -3761,7 +3758,6 @@ watch(customDriverName, (value) => {
 });
 
 async function testConnection() {
-  if (relationalComingSoon(form.value.db_type)) return;
   if (isTestingSshTunnel.value) return;
   if (!ensureConnectionHostResolvedFromUrl()) return;
 
@@ -5701,10 +5697,6 @@ async function persistConnectionNoteVisibilityDraft() {
 }
 
 async function save(options: { connectAfterSave?: boolean; closeOnSuccess?: boolean } = {}) {
-  if (relationalComingSoon(form.value.db_type)) {
-    toast("Relational database connections · Coming Soon");
-    return;
-  }
   if (!ensureConnectionHostResolvedFromUrl()) return;
   if (isSaving.value) return;
   if (!hasNacosNamespaceScopeForSave()) {
@@ -6226,9 +6218,9 @@ function openExternalUrl(url: string) {
                 <Input v-model="dbSearchQuery" v-connection-dialog-auto-focus class="h-9 pl-8" :placeholder="t('connection.searchDatabasePlaceholder')" />
               </div>
             </div>
-            <Button data-jdbc-connection-entry type="button" variant="outline" class="h-9 shrink-0 gap-2" disabled title="JDBC · Coming Soon">
+            <Button data-jdbc-connection-entry type="button" variant="outline" class="h-9 shrink-0 gap-2" @click="goToConnectionStep('jdbc')">
               <DatabaseIcon db-type="jdbc" class="h-4 w-4" />
-              {{ t("connection.jdbcConnection") }} · Coming Soon
+              {{ t("connection.jdbcConnection") }}
             </Button>
           </div>
 
@@ -6258,8 +6250,7 @@ function openExternalUrl(url: string) {
                     v-for="opt in category.options"
                     :key="opt.value"
                     type="button"
-                    :title="relationalComingSoon(driverProfiles[opt.value]?.type ?? opt.value) ? `${opt.label} · Coming Soon` : opt.label"
-                    :disabled="relationalComingSoon(driverProfiles[opt.value]?.type ?? opt.value)"
+                    :title="opt.label"
                     class="connection-db-picker-option group flex min-h-24 flex-col items-center justify-center gap-2 rounded-[4px] border bg-background/70 p-3 text-center transition hover:border-primary/40 hover:bg-muted/40 hover:shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                     :class="isPickerOptionSelected(opt.value) ? 'gauss-horizon-tile-selected shadow-sm' : 'border-border'"
                     :aria-pressed="isPickerOptionSelected(opt.value)"
@@ -6272,7 +6263,6 @@ function openExternalUrl(url: string) {
                     </span>
                     <span class="flex min-h-8 max-w-full flex-col items-center justify-center gap-1">
                       <span class="line-clamp-2 text-sm leading-4 font-medium">{{ opt.label }}</span>
-                      <span v-if="relationalComingSoon(driverProfiles[opt.value]?.type ?? opt.value)" class="text-xs text-muted-foreground">Coming Soon</span>
                     </span>
                   </button>
                 </div>
@@ -6283,7 +6273,6 @@ function openExternalUrl(url: string) {
                     :key="opt.value"
                     type="button"
                     class="connection-db-picker-option flex items-center gap-3 rounded-[4px] border bg-background px-3 py-2 text-left transition hover:border-primary/40 hover:bg-muted/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                    :disabled="relationalComingSoon(driverProfiles[opt.value]?.type ?? opt.value)"
                     :class="isPickerOptionSelected(opt.value) ? 'gauss-horizon-tile-selected' : 'border-border'"
                     :aria-pressed="isPickerOptionSelected(opt.value)"
                     @click="onDbTypeChange(opt.value)"
@@ -6291,7 +6280,7 @@ function openExternalUrl(url: string) {
                   >
                     <PluginIcon v-if="opt.plugin" :plugin-id="opt.pluginId || ''" :icon="opt.pluginIcon" class="h-5 w-5 shrink-0" />
                     <DatabaseIcon v-else :db-type="iconTypeMap[opt.value] || opt.value" class="h-5 w-5 shrink-0" />
-                    <span class="min-w-0 flex-1 truncate text-sm font-medium">{{ opt.label }}<span v-if="relationalComingSoon(driverProfiles[opt.value]?.type ?? opt.value)" class="ml-2 text-xs text-muted-foreground">Coming Soon</span></span>
+                    <span class="min-w-0 flex-1 truncate text-sm font-medium">{{ opt.label }}</span>
                     <span v-if="isDbSearchActive" class="text-xs text-muted-foreground">{{ category.title }}</span>
                   </button>
                 </div>
@@ -6310,7 +6299,7 @@ function openExternalUrl(url: string) {
             <DatabaseIcon v-else :db-type="selectedDbIcon" class="h-4 w-4 shrink-0" />
             <span class="truncate">{{ t("connection.selectedDatabase") }}: {{ selectedProfile().label }}</span>
           </div>
-          <Button :disabled="!hasDbPickerResults || !selectedDbOptionIsVisible || relationalComingSoon(selectedType)" @click="goToConnectionStep()">
+          <Button :disabled="!hasDbPickerResults || !selectedDbOptionIsVisible" @click="goToConnectionStep()">
             {{ t("connection.next") }}
             <ChevronRight class="h-4 w-4" />
           </Button>
@@ -9308,10 +9297,10 @@ function openExternalUrl(url: string) {
               <ListFilter v-else class="mr-1.5 h-4 w-4" />
               {{ visibleSchemaSummary }}
             </Button>
-            <Button variant="outline" class="shrink-0" :disabled="isTesting || isTestingSshTunnel || isSaving || relationalComingSoon(form.db_type)" :title="relationalComingSoon(form.db_type) ? 'Coming Soon' : undefined" @click="testConnection">
+            <Button variant="outline" class="shrink-0" :disabled="isTesting || isTestingSshTunnel || isSaving" @click="testConnection">
               {{ isTesting ? t("connection.testing") : t("connection.test") }}
             </Button>
-            <Button class="shrink-0" @click="save" :disabled="isSaving || isTestingSshTunnel || !hasRequiredConnectionTarget || relationalComingSoon(form.db_type)" :title="relationalComingSoon(form.db_type) ? 'Coming Soon' : undefined">
+            <Button class="shrink-0" @click="save" :disabled="isSaving || isTestingSshTunnel || !hasRequiredConnectionTarget">
               {{ isSaving ? t("common.loading") : editingId || isJdbcConnection ? t("connection.save") : t("connection.saveAndConnect") }}
             </Button>
           </template>

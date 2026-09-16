@@ -50,6 +50,7 @@ jobs:
       - run: node scripts/sync-connection-types.mjs --check
       - run: pnpm exec vue-tsc --noEmit -p apps/desktop/tsconfig.json
       - run: pnpm exec vitest run apps/desktop/src/lib/chiron apps/desktop/src/components/vector/__tests__ apps/desktop/src/lib/compat
+      - run: pnpm test:database-availability
       - run: pnpm build:docs-export
       - run: pnpm --dir docs content:check
       - run: cargo test -p gauss-horizon-core --no-default-features --features sqlite-bundled --lib

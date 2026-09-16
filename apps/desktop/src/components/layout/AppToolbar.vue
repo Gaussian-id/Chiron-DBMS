@@ -263,7 +263,7 @@ const collapsibleRightItemDefs = computed(() => {
       disabled: false,
     });
   }
-  return items.map((item) => (["sqlLibrary", "sqlFileTree"].includes(item.key) ? { ...item, label: `${item.label} · Coming Soon`, disabled: true } : item));
+  return items;
 });
 
 const overflowedRightKeys = computed(() => {
@@ -484,7 +484,7 @@ const moreItems = computed(() => {
     });
   }
 
-  return items.map((item) => (["transfer", "schema-diff", "data-compare", "sql-file", "driver-store", "plugin-center"].includes(item.value) ? { ...item, label: `${item.label} · Coming Soon`, disabled: true } : item));
+  return items;
 });
 
 const showMoreDropdown = computed(() => moreItems.value.length > 0);
@@ -516,7 +516,7 @@ const collapsedItems = computed(() => {
   if (moreItems.value.length > 0) {
     items.push(...moreItems.value);
   }
-  return items.map((item) => (["transfer", "driver-store", "plugin-center"].includes(item.value) && !item.disabled ? { ...item, label: `${item.label} · Coming Soon`, disabled: true } : item));
+  return items;
 });
 
 function runMoreItem(value: string) {
@@ -568,16 +568,16 @@ const toolbarStyle = computed(() => {
     </Button>
 
     <template v-if="!toolbarCollapsed">
-      <Button v-if="toolbarItems.dataTransfer" variant="ghost" size="sm" :class="toolbarTextButtonClass" disabled title="Coming Soon">
+      <Button v-if="toolbarItems.dataTransfer" variant="ghost" size="sm" :class="toolbarTextButtonClass" @click="emit('open-transfer')" :disabled="!hasConnections">
         <ArrowLeftRight class="h-3.5 w-3.5" />
-        <span :class="toolbarTextLabelClass">{{ t("transfer.dataTransfer") }} · Coming Soon</span>
+        <span :class="toolbarTextLabelClass">{{ t("transfer.dataTransfer") }}</span>
       </Button>
 
-      <Button v-if="toolbarItems.driverManager" variant="ghost" size="sm" :class="toolbarTextButtonClass" disabled title="Coming Soon">
+      <Button v-if="toolbarItems.driverManager" variant="ghost" size="sm" :class="[toolbarTextButtonClass, { 'bg-accent': showDriverStore }]" @click="emit('open-driver-store')">
         <Package class="h-3.5 w-3.5" />
         <span :class="toolbarTextLabelClass">{{ t("toolbar.driverManager") }}</span>
       </Button>
-      <Button v-if="toolbarItems.pluginCenter" variant="ghost" size="sm" :class="toolbarTextButtonClass" disabled title="Coming Soon">
+      <Button v-if="toolbarItems.pluginCenter" variant="ghost" size="sm" :class="[toolbarTextButtonClass, { 'bg-accent': showPluginCenter }]" @click="emit('open-plugin-center')">
         <PlugZap class="h-3.5 w-3.5" />
         <span :class="toolbarTextLabelClass">{{ t("toolbar.pluginCenter") }}</span>
       </Button>
@@ -638,8 +638,6 @@ const toolbarStyle = computed(() => {
           <Button
             v-show="isRightItemVisible('sqlLibrary')"
             data-sql-library-trigger
-            disabled
-            title="SQL Library · Coming Soon"
             variant="ghost"
             size="icon"
             class="toolbar-action-button relative h-8 w-8 shrink-0"
@@ -669,17 +667,17 @@ const toolbarStyle = computed(() => {
             <span v-if="showSqlLibrary" class="toolbar-panel-status" aria-hidden="true" />
           </Button>
         </TooltipTrigger>
-        <TooltipContent>{{ t("sqlLibrary.title") }} · Coming Soon</TooltipContent>
+        <TooltipContent>{{ t("sqlLibrary.title") }}</TooltipContent>
       </Tooltip>
 
       <Tooltip v-if="toolbarItems.sqlFileTree">
         <TooltipTrigger as-child>
-          <Button v-show="isRightItemVisible('sqlFileTree')" variant="ghost" size="icon" class="toolbar-action-button relative h-8 w-8 shrink-0" :class="{ 'toolbar-action-button--active bg-accent': showSqlFilePanel }" disabled title="SQL files · Coming Soon">
+          <Button v-show="isRightItemVisible('sqlFileTree')" variant="ghost" size="icon" class="toolbar-action-button relative h-8 w-8 shrink-0" :class="{ 'toolbar-action-button--active bg-accent': showSqlFilePanel }" @click="emit('toggle-sql-file-panel')">
             <FolderTree class="toolbar-action-icon h-4 w-4" :class="{ 'toolbar-action-icon--active': showSqlFilePanel }" />
             <span v-if="showSqlFilePanel" class="toolbar-panel-status" aria-hidden="true" />
           </Button>
         </TooltipTrigger>
-        <TooltipContent>{{ t("sqlFileTree.title") }} · Coming Soon</TooltipContent>
+        <TooltipContent>{{ t("sqlFileTree.title") }}</TooltipContent>
       </Tooltip>
 
       <Tooltip v-if="toolbarItems.history">

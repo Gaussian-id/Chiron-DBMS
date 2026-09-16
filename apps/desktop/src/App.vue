@@ -66,7 +66,6 @@ import { resolveExecutableSql, resolveExecutableSqlWithBackend, type SqlExecutio
 import { uuid } from "@/lib/common/utils";
 import { isMacOS, isWindows } from "@/lib/backend/platform";
 import { isTauriRuntime } from "@/lib/backend/tauriRuntime";
-import { relationalComingSoon, relationalComingSoonPanel } from "@/lib/app/relationalComingSoon";
 import { openQueryResultArchiveFile } from "@/lib/query/queryResultArchiveFile";
 import { rememberExternalSqlFileTarget, resolveExternalSqlFileTarget, unassociatedExternalSqlFileTarget } from "@/lib/sql/externalSqlFileTarget";
 import { externalSqlFileOpenErrorMessage, externalSqlEditorMaxBytes, isSqlFilePath, readBrowserSqlFile, sqlFileTitleFromPath } from "@/lib/sql/sqlFileOpen";
@@ -187,7 +186,6 @@ const savedSqlStore = useSavedSqlStore();
 const promptTemplateStore = usePromptTemplateStore();
 const recentConnectionIds = ref<readonly string[]>(parseRecentConnectionIds(safeLocalStorageGet(RECENT_CONNECTION_IDS_STORAGE_KEY)));
 connectionStore.setBeforeConnectHandler(async (config) => {
-  if (relationalComingSoon(config.db_type)) throw new Error("Relational database connections · Coming Soon");
   await ensureJdbcxRuntimeDrivers(config, api);
   const jdbcProductRuntimeBefore = JSON.stringify({
     connectionString: config.connection_string ?? null,
@@ -343,8 +341,8 @@ const showHistory = ref(false);
 const showAiPanel = ref(safeLocalStorageGet("gauss-horizon-ai-panel-open") === "true");
 const isAiPanelMaximized = ref(false);
 const isZenMode = ref(false);
-const showSqlLibraryPanel = relationalComingSoonPanel();
-const showSqlFilePanel = relationalComingSoonPanel();
+const showSqlLibraryPanel = ref(safeLocalStorageGet("gauss-horizon-sql-library-open") === "true");
+const showSqlFilePanel = ref(safeLocalStorageGet("gauss-horizon-sql-file-panel-open") === "true");
 const rightSidebarPanelRefs: Record<RightSidebarPanelId, typeof showAiPanel> = {
   ai: showAiPanel,
   history: showHistory,
@@ -1076,8 +1074,18 @@ function closeSettingsPage() {
 
 const driverStoreFocus = ref<DriverStoreFocus | null>(null);
 
-function openDriverStorePage(_target?: "agent" | "jdbc" | "storage" | "runtime" | DriverStoreFocus | null) {
-  toast("Driver Manager · Coming Soon");
+function openDriverStorePage(target?: "agent" | "jdbc" | "storage" | "runtime" | DriverStoreFocus | null) {
+  if (typeof target === "string") {
+    driverStoreActiveTab.value = target;
+    driverStoreFocus.value = null;
+  } else if (target && target.target === "tab") {
+    driverStoreActiveTab.value = target.tab;
+    driverStoreFocus.value = null;
+  } else {
+    driverStoreFocus.value = target ?? null;
+  }
+  driverStoreTabOpen.value = true;
+  activateMainContentSurface("driverStore");
 }
 
 function closeDriverStorePage() {
@@ -1087,8 +1095,10 @@ function closeDriverStorePage() {
   driverStoreFocus.value = null;
 }
 
-function openPluginCenterPage(_focus?: PluginCenterFocus | null) {
-  toast("Plugin Center · Coming Soon");
+function openPluginCenterPage(focus?: PluginCenterFocus | null) {
+  pluginCenterFocus.value = focus ?? null;
+  pluginCenterTabOpen.value = true;
+  activateMainContentSurface("pluginCenter");
 }
 
 function closePluginCenterPage() {
