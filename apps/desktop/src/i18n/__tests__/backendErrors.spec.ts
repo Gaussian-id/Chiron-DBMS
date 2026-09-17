@@ -46,14 +46,14 @@ const STRUCTURED_BACKEND_ERROR_KEYS = [
   "backendErrors.unknown",
 ] as const;
 
-// Reproduces the exact string crates/chiron-horizon-core/src/agent_service.rs builds on
+// Reproduces the exact string crates/dbx-core/src/agent_service.rs builds on
 // Windows: `\` line continuations strip the newline plus the following indent.
 const WINDOWS_JRE_REMOVE_ERROR = [
-  "Failed to remove the old JRE directory: C:\\chiron-horizon\\jre21",
+  "Failed to remove the old JRE directory: C:\\dbx\\jre21",
   "Possible causes:",
-  "  - a chiron-horizon Agent / java process still holds the directory",
+  "  - a dbx Agent / java process still holds the directory",
   "  - antivirus software is scanning it",
-  "Close any process that may hold the directory, or restart chiron-horizon and try again.",
+  "Close any process that may hold the directory, or restart dbx and try again.",
   "(original error: Access is denied. (os error 5))",
 ].join("\n");
 
@@ -102,6 +102,34 @@ const CASES: { name: string; message: string; key: string; params?: Record<strin
     key: "exportProgress.agentSessionMissing",
   },
   {
+    name: "MongoDB Legacy insertMany unsupported",
+    message: "MongoDB Legacy Agent does not support insertMany; upgrade or reinstall the MongoDB Legacy driver",
+    key: "mongo.import.legacyInsertUnsupported",
+  },
+  {
+    // crates/dbx-core/src/mongodb_import_export.rs attributes a batch-level failure to a row.
+    name: "MongoDB Legacy insertMany unsupported on a located row",
+    message: "row 1: MongoDB Legacy Agent does not support insertMany; upgrade or reinstall the MongoDB Legacy driver",
+    key: "mongo.import.legacyInsertUnsupported",
+  },
+  {
+    name: "MongoDB Legacy partial insert",
+    message: "MongoDB Legacy Agent rejected 2 of 500 documents: E11000 duplicate key error collection: app.users",
+    key: "mongo.insert.partialFailure",
+    params: { failed: "2", total: "500", message: "E11000 duplicate key error collection: app.users" },
+  },
+  {
+    name: "MongoDB Legacy export cursor invalid",
+    message: "MongoDB Legacy Agent returned an invalid find cursor",
+    key: "mongo.import.legacyCursorInvalid",
+  },
+  {
+    // Agent-raised messages reach the frontend through the "Agent RPC error (<code>): " envelope.
+    name: "MongoDB Legacy export cursor expired",
+    message: "Agent RPC error (-1): Find cursor not found",
+    key: "mongo.import.legacyCursorInvalid",
+  },
+  {
     name: "DuckDB draining",
     message: "The previous DuckDB query is still stopping. Please try again shortly.",
     key: "editor.duckdbDraining",
@@ -110,13 +138,13 @@ const CASES: { name: string; message: string; key: string; params?: Record<strin
     name: "JRE directory remove failure (Windows)",
     message: WINDOWS_JRE_REMOVE_ERROR,
     key: "driverStore.jreDirRemoveFailedWindows",
-    params: { path: "C:\\chiron-horizon\\jre21", error: "Access is denied. (os error 5)" },
+    params: { path: "C:\\dbx\\jre21", error: "Access is denied. (os error 5)" },
   },
   {
     name: "JRE directory remove failure (POSIX)",
-    message: "Failed to remove the old JRE directory: /home/u/.chiron-horizon/jre21 (original error: Permission denied (os error 13))",
+    message: "Failed to remove the old JRE directory: /home/u/.dbx/jre21 (original error: Permission denied (os error 13))",
     key: "driverStore.jreDirRemoveFailed",
-    params: { path: "/home/u/.chiron-horizon/jre21", error: "Permission denied (os error 13)" },
+    params: { path: "/home/u/.dbx/jre21", error: "Permission denied (os error 13)" },
   },
   {
     name: "JRE still in use",
@@ -215,7 +243,7 @@ describe("backend error translation", () => {
 
   test("hides internal Agent error data from user-facing messages", () => {
     const t = translatorFor("zh-CN");
-    const message = 'Agent RPC error (-1): driver: bad connection\nCHIRON_HORIZON_AGENT_ERROR_DATA:{"category":null,"retryable":null,"sessionDisposition":null,"stage":null,"operationOutcome":null,"agentSessionId":"e1a4d0a2907947b8adf31abb10c4dff9"}';
+    const message = 'Agent RPC error (-1): driver: bad connection\nDBX_AGENT_ERROR_DATA:{"category":null,"retryable":null,"sessionDisposition":null,"stage":null,"operationOutcome":null,"agentSessionId":"e1a4d0a2907947b8adf31abb10c4dff9"}';
     const expected = "Agent RPC error (-1): driver: bad connection";
 
     expect(sanitizeBackendErrorMessage(message)).toBe(expected);
@@ -225,9 +253,23 @@ describe("backend error translation", () => {
   });
 
   test("preserves marker-like database messages without valid internal data", () => {
-    const message = "database returned\nCHIRON_HORIZON_AGENT_ERROR_DATA:not-json";
+    const message = "database returned\nDBX_AGENT_ERROR_DATA:not-json";
 
     expect(sanitizeBackendErrorMessage(message)).toBe(message);
+  });
+
+  test("strips the SQL error-position transport suffix from raw messages", () => {
+    const message = 'ERROR: relation "missing" does not exist\nDBX_SQL_ERROR_POSITION:15';
+    const expected = 'ERROR: relation "missing" does not exist';
+
+    expect(sanitizeBackendErrorMessage(message)).toBe(expected);
+    expect(formatError(new Error(message))).toBe(expected);
+  });
+
+  test("strips the position suffix that precedes appended context text", () => {
+    const message = "ERROR: boom\nDBX_SQL_ERROR_POSITION:7; cleanup failed";
+
+    expect(sanitizeBackendErrorMessage(message)).toBe("ERROR: boom; cleanup failed");
   });
 
   test("normalizes Error and structural message objects before translation", () => {
@@ -248,7 +290,7 @@ describe("backend error translation", () => {
       messageParams: { stage: "execute" },
       source: "jdbcAgent",
       operationOutcome: "unknown",
-      detail: "relation chiron_horizon_table_that_does_not_exist does not exist",
+      detail: "relation dbx_table_that_does_not_exist does not exist",
     } as const;
 
     expect(normalizeBackendError(error)).toEqual(error);
@@ -266,7 +308,7 @@ describe("backend error translation", () => {
       messageParams: {},
       source: "jdbcAgentLegacy",
       operationOutcome: "unknown",
-      detail: "Table chiron_horizon_table_that_does_not_exist does not exist",
+      detail: "Table dbx_table_that_does_not_exist does not exist",
     } as const;
 
     expect(translateBackendError(t, error)).toBe(`${t(error.messageKey)}\n\n${error.detail}`);
@@ -291,7 +333,7 @@ describe("backend error translation", () => {
 
   test("hides internal Agent error data from structured error details", () => {
     const t = translatorFor("zh-CN");
-    const detail = 'driver: bad connection\nCHIRON_HORIZON_AGENT_ERROR_DATA:{"category":null,"agentSessionId":"session-1"}';
+    const detail = 'driver: bad connection\nDBX_AGENT_ERROR_DATA:{"category":null,"agentSessionId":"session-1"}';
     const error = {
       version: 1,
       code: "Chiron Horizon-JDBC-9001",
@@ -327,10 +369,48 @@ describe("backend error translation", () => {
     ).toBeNull();
   });
 
+  test("accepts an optional driver-reported error position", () => {
+    const error = normalizeBackendError({
+      version: 1,
+      code: "Chiron Horizon-JDBC-4001",
+      messageKey: "backendErrors.jdbc.sqlFailed",
+      messageParams: { stage: "execute" },
+      source: "jdbcAgent",
+      operationOutcome: "unknown",
+      detail: 'ERROR: relation "missing" does not exist',
+      errorPosition: { line: 2, column: 6, offset: 12 },
+    });
+
+    expect(error?.errorPosition).toEqual({ line: 2, column: 6, offset: 12 });
+
+    const t = translatorFor("zh-CN");
+    expect(translateBackendError(t, error)).toBe(`${t("backendErrors.jdbc.sqlFailed", { stage: "execute" })}\n\nERROR: relation "missing" does not exist`);
+  });
+
+  test.each([
+    ["zero line", { line: 0, column: 1, offset: 0 }],
+    ["negative column", { line: 1, column: -1, offset: 0 }],
+    ["non-integer offset", { line: 1, column: 1, offset: 1.5 }],
+    ["string line", { line: "1", column: 1, offset: 0 }],
+    ["array position", [1, 1, 0]],
+  ])("rejects a malformed error position with %s", (_name, errorPosition) => {
+    expect(
+      normalizeBackendError({
+        version: 1,
+        code: "Chiron Horizon-JDBC-4001",
+        messageKey: "backendErrors.jdbc.sqlFailed",
+        messageParams: { stage: "execute" },
+        source: "jdbcAgent",
+        operationOutcome: "unknown",
+        errorPosition,
+      }),
+    ).toBeNull();
+  });
+
   test("accepts unknown compatibility sources and extensible origins", () => {
     const error = normalizeBackendError({
       version: 1,
-      code: "Chiron Horizon-DB-4001",
+      code: "DBX-DB-4001",
       messageKey: "backendErrors.jdbc.sqlFailed",
       messageParams: { stage: "execute" },
       source: "nativeDatabase",
@@ -345,15 +425,26 @@ describe("backend error translation", () => {
   test("falls back to legacy text for plain HTTP and Tauri failures", () => {
     const t = translatorFor("zh-CN");
     const error = new BackendErrorException("legacy backend failure");
-    expect(error.backendError.code).toBe("Chiron Horizon-LEGACY-0001");
+    expect(error.backendError.code).toBe("DBX-LEGACY-0001");
     expect(translateBackendError(t, error)).toBe(`${t("backendErrors.legacy")}\n\nlegacy backend failure`);
+  });
+
+  // Tauri wraps every backend rejection in a legacy envelope, so a message the catalog knows must
+  // still be phrased by the catalog rather than surfaced as raw English under a generic summary.
+  test("phrases a known message that arrived inside a legacy envelope", () => {
+    const t = translatorFor("zh-CN");
+    const wrap = (message: string) => new BackendErrorException(message);
+
+    expect(translateBackendError(t, wrap("row 1: MongoDB Legacy Agent does not support insertMany; upgrade or reinstall the MongoDB Legacy driver"))).toBe(t("mongo.import.legacyInsertUnsupported"));
+    expect(translateBackendError(t, wrap("Agent RPC error (-1): Find cursor not found"))).toBe(t("mongo.import.legacyCursorInvalid"));
+    expect(translateBackendError(t, wrap("MongoDB Legacy Agent rejected 2 of 500 documents: E11000 duplicate key"))).toBe(t("mongo.insert.partialFailure", { failed: "2", total: "500", message: "E11000 duplicate key" }));
   });
 
   test("keeps an explicit original detail when a structured legacy error omits detail", () => {
     const t = translatorFor("zh-CN");
     const error = {
       version: 1 as const,
-      code: "Chiron Horizon-LEGACY-0001",
+      code: "DBX-LEGACY-0001",
       messageKey: "backendErrors.legacy",
       messageParams: {},
       source: "legacyBackend",
@@ -367,7 +458,7 @@ describe("backend error translation", () => {
     const t = translatorFor("zh-CN");
     const error = {
       version: 1 as const,
-      code: "Chiron Horizon-LEGACY-0001",
+      code: "DBX-LEGACY-0001",
       messageKey: "backendErrors.legacy",
       messageParams: {},
       source: "legacyBackend",
@@ -381,7 +472,7 @@ describe("backend error translation", () => {
     const t = translatorFor("zh-CN");
     const error = {
       version: 1 as const,
-      code: "Chiron Horizon-LEGACY-0001",
+      code: "DBX-LEGACY-0001",
       messageKey: "backendErrors.legacy",
       messageParams: {},
       source: "legacyBackend",
@@ -408,7 +499,7 @@ describe("backend error translation", () => {
 
   test("retains bounded diagnostics from unknown rejection objects", () => {
     const error = new BackendErrorException({ reason: "database worker returned a vendor diagnostic" });
-    expect(error.backendError.code).toBe("Chiron Horizon-LEGACY-0001");
+    expect(error.backendError.code).toBe("DBX-LEGACY-0001");
     expect(error.backendError.detail).toBe("database worker returned a vendor diagnostic");
     expect(new BackendErrorException({ reason: "x".repeat(70_000) }).backendError.detail).toHaveLength(64 * 1024);
   });
@@ -475,14 +566,17 @@ describe("backend error wording is pinned to the Rust sources", () => {
   const rust = (path: string) => readFileSync(new URL(`../../../../../${path}`, import.meta.url), "utf8");
 
   test.each([
-    ["crates/chiron-horizon-core/src/query_result_export.rs", "Streaming export is unsupported for this query. Simplify it or use a supported driver."],
-    ["crates/chiron-horizon-core/src/query_result_export.rs", "Streaming export needs a result-set session, but this driver returned no session_id."],
-    ["crates/chiron-horizon-core/src/agent_service.rs", "Failed to remove the old JRE directory: "],
-    ["crates/chiron-horizon-core/src/agent_service.rs", "is in use by drivers: "],
-    ["crates/chiron-horizon-core/src/agent_service.rs", "agent-registry.json not found in the ZIP; not a valid offline driver package."],
-    ["crates/chiron-horizon-core/src/mq/adapters/kafka.rs", "Kafka does not support unloading topics"],
-    ["crates/chiron-horizon-web/src/auth.rs", "Please try again in {remaining}s"],
-    ["crates/chiron-horizon-web/src/routes/agents.rs", "Close these database connections before updating drivers: "],
+    ["crates/dbx-core/src/query_result_export.rs", "Streaming export is unsupported for this query. Simplify it or use a supported driver."],
+    ["crates/dbx-core/src/query_result_export.rs", "Streaming export needs a result-set session, but this driver returned no session_id."],
+    ["crates/dbx-core/src/mongodb_import_export.rs", "MongoDB Legacy Agent does not support insertMany; upgrade or reinstall the MongoDB Legacy driver"],
+    ["crates/dbx-core/src/mongodb_import_export.rs", "MongoDB Legacy Agent returned an invalid find cursor"],
+    ["crates/dbx-core/src/mongo_ops.rs", "MongoDB Legacy Agent rejected "],
+    ["crates/dbx-core/src/agent_service.rs", "Failed to remove the old JRE directory: "],
+    ["crates/dbx-core/src/agent_service.rs", "is in use by drivers: "],
+    ["crates/dbx-core/src/agent_service.rs", "agent-registry.json not found in the ZIP; not a valid offline driver package."],
+    ["crates/dbx-core/src/mq/adapters/kafka.rs", "Kafka does not support unloading topics"],
+    ["crates/dbx-web/src/auth.rs", "Please try again in {remaining}s"],
+    ["crates/dbx-web/src/routes/agents.rs", "Close these database connections before updating drivers: "],
     ["src-tauri/src/commands/agents.rs", "Close these database connections before updating drivers: "],
     ["src-tauri/src/commands/fs_open.rs", "file does not exist: "],
   ])("%s still emits %j", (path, fragment) => {

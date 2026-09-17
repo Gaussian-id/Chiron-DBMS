@@ -6,10 +6,13 @@ const HOST_MESSAGE_SOURCE = "chiron-horizon-host";
 const BRIDGE_VERSION = 1;
 const MAX_BRIDGE_PAYLOAD_BYTES = 2 * 1024 * 1024;
 const MAX_BRIDGE_BINARY_BYTES = 8 * 1024 * 1024;
+// Distinct from the sidecar binary cap: saved files go straight from the
+// plugin iframe to disk and never traverse plugin frames.
+const MAX_BRIDGE_SAVE_BYTES = 512 * 1024 * 1024;
 
 export interface PluginBridgeTheme {
   appearance: "light" | "dark";
-  /** Resolved Chiron Horizon design tokens (`--color-*`, `--radius-*`, ...) for the current theme. */
+  /** Resolved DBX design tokens (`--color-*`, `--radius-*`, ...) for the current theme. */
   tokens: Record<string, string>;
 }
 
@@ -21,6 +24,15 @@ export interface PluginWorkbenchContext {
   [key: string]: unknown;
 }
 
+export interface PluginSaveFileRequest {
+  fileName?: string;
+  contentType?: string;
+}
+
+export interface PluginSaveFileResult {
+  path: string;
+}
+
 export interface PluginHostBridgeApi {
   invoke<T = unknown>(pluginId: string, method: string, params?: unknown, timeoutMs?: number): Promise<T>;
   notify(pluginId: string, method: string, params?: unknown): Promise<void>;
@@ -29,6 +41,10 @@ export interface PluginHostBridgeApi {
   openWorkbench?(pluginId: string, contributionId: string, context?: PluginWorkbenchContext): Promise<void> | void;
   openFilesystem?(pluginId: string, providerId: string, context?: PluginWorkbenchContext): Promise<void> | void;
   closeTab?(): Promise<void> | void;
+  /** Persist plugin bytes through the host's native save dialog. Resolves null when the user cancels. */
+  saveFile?(pluginId: string, request: PluginSaveFileRequest, data: Uint8Array): Promise<PluginSaveFileResult | null>;
+  /** Write text to the system clipboard on behalf of the sandboxed plugin iframe. */
+  copyText?(pluginId: string, text: string): Promise<void>;
 }
 
 interface PluginRequestMessage {
@@ -108,7 +124,7 @@ export class PluginHostBridge {
     this.post({ source: HOST_MESSAGE_SOURCE, version: BRIDGE_VERSION, type: "env", locale });
   }
 
-  /** Push resolved theme tokens so the plugin UI can follow Chiron Horizon light/dark and palette changes. */
+  /** Push resolved theme tokens so the plugin UI can follow DBX light/dark and palette changes. */
   updateTheme(theme: PluginBridgeTheme): void {
     this.theme = clonePluginData(theme);
     this.post({ source: HOST_MESSAGE_SOURCE, version: BRIDGE_VERSION, type: "env", locale: this.locale, theme: this.theme });
@@ -180,6 +196,30 @@ export class PluginHostBridge {
       await this.api.openFilesystem(this.plugin.manifest.id, requireProtocolName(input.providerId, "filesystem provider"), isRecord(input.context) ? input.context : undefined);
       return null;
     }
+    if (method === "host.saveFile") {
+      const input = isRecord(params) ? params : {};
+      // The sandboxed iframe cannot trigger downloads (WKWebView cancels blob
+      // navigations without a host download handler), so plugins hand the bytes
+      // to the host, which runs the native save dialog and the disk write.
+      let bytes: Uint8Array;
+      if (binary instanceof ArrayBuffer) bytes = new Uint8Array(binary);
+      else if (typeof input.dataBase64 === "string") bytes = new Uint8Array(base64ToBytes(requireBase64(input.dataBase64)));
+      else throw new Error("host.saveFile requires transferred binary data or dataBase64");
+      if (bytes.byteLength > MAX_BRIDGE_SAVE_BYTES) throw new Error(`Plugin save payload exceeds ${MAX_BRIDGE_SAVE_BYTES} bytes`);
+      if (!this.api.saveFile) throw new Error("Host file saving is unavailable");
+      return this.api.saveFile(this.plugin.manifest.id, { fileName: optionalTrimmedString(input.fileName), contentType: optionalTrimmedString(input.contentType) }, bytes);
+    }
+    if (method === "host.copy") {
+      const input = isRecord(params) ? params : {};
+      // The sandboxed workbench iframe has an opaque origin and no clipboard
+      // permission, so every scripted copy path is denied there; the host
+      // writes the system clipboard instead.
+      if (typeof input.text !== "string" || !input.text) throw new Error("host.copy requires text");
+      if (input.text.length > MAX_BRIDGE_PAYLOAD_BYTES) throw new Error(`Plugin copy payload exceeds ${MAX_BRIDGE_PAYLOAD_BYTES} characters`);
+      if (!this.api.copyText) throw new Error("Host clipboard is unavailable");
+      await this.api.copyText(this.plugin.manifest.id, input.text);
+      return { success: true };
+    }
     throw new Error(`Unsupported plugin host method '${method}'`);
   }
 
@@ -217,20 +257,45 @@ export function pluginNetworkOrigins(permissions: readonly string[] | undefined)
   return [...origins];
 }
 
-export function pluginSandboxDocument(html: string, permissions?: readonly string[]): string {
+export function pluginSandboxDocument(html: string, permissions?: readonly string[], theme?: PluginBridgeTheme): string {
   const networkOrigins = pluginNetworkOrigins(permissions);
   const connectSrc = networkOrigins.length > 0 ? `connect-src ${networkOrigins.join(" ")};` : "connect-src 'none';";
   const csp = `<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline' blob:; style-src 'unsafe-inline' blob:; img-src data: blob:; font-src data: blob:; ${connectSrc} media-src data: blob:;">`;
-  const sdk = `<script>${pluginSdkSource()}</script>`;
+  const sdk = `<script>${pluginSdkSource(theme)}</script>`;
   const uiKit = `<style>${pluginUiKitCss()}</style>`;
-  const injection = `${csp}${uiKit}${sdk}`;
+  // Placed after the uiKit so the boot `color-scheme` wins the cascade: the
+  // bridge init message (and the SDK's applyTheme) only runs once the iframe
+  // has loaded, and the uiKit's token fallbacks would otherwise paint the
+  // first frame white on dark hosts.
+  const bootTheme = pluginBootThemeCss(theme);
+  const injection = `${csp}${uiKit}${bootTheme ? `<style>${bootTheme}</style>` : ""}${sdk}`;
   if (/<head(?:\s[^>]*)?>/i.test(html)) return html.replace(/<head(?:\s[^>]*)?>/i, (head) => `${head}${injection}`);
   return `<!doctype html><html><head>${injection}</head><body>${html}</body></html>`;
 }
 
 /**
+ * Pre-paint theme seed for the sandbox document. The bridge init message only
+ * arrives after the iframe load event, so without this style the first frame
+ * renders with the uiKit fallbacks (white background) before the real tokens
+ * land — the white flash when opening a plugin workbench on a dark host.
+ */
+export function pluginBootThemeCss(theme?: PluginBridgeTheme): string {
+  if (!theme || (theme.appearance !== "dark" && theme.appearance !== "light")) return "";
+  const declarations: string[] = [`color-scheme: ${theme.appearance}`];
+  const tokens = theme.tokens && typeof theme.tokens === "object" ? theme.tokens : {};
+  for (const [name, value] of Object.entries(tokens)) {
+    // Same name validation as the SDK's applyTheme; values must stay inside a
+    // single CSS declaration so they cannot break out of the style element.
+    if (!/^--[a-z0-9-]+$/i.test(name) || typeof value !== "string" || !value.trim()) continue;
+    if (!/^[^"{}<>;]*$/.test(value)) continue;
+    declarations.push(`${name}: ${value}`);
+  }
+  return `:root{${declarations.join(";")}}`;
+}
+
+/**
  * Minimal official component kit for plugin workbenches. Every class is built
- * on the Chiron Horizon design tokens the host pushes through the bridge, so plugin UI
+ * on the DBX design tokens the host pushes through the bridge, so plugin UI
  * follows light/dark and palette changes without any plugin-side logic.
  */
 export function pluginUiKitCss(): string {
@@ -304,7 +369,14 @@ body {
 `.trim();
 }
 
-function pluginSdkSource(): string {
+export function pluginSdkSource(initialTheme?: PluginBridgeTheme): string {
+  const safeTokens = Object.fromEntries(Object.entries(initialTheme?.tokens || {}).filter(([name, value]) => /^--[a-z0-9-]+$/i.test(name) && typeof value === "string" && !!value.trim() && /^[^"{}<>;]*$/.test(value)));
+  const safeInitialTheme = initialTheme && (initialTheme.appearance === "dark" || initialTheme.appearance === "light") ? { appearance: initialTheme.appearance, tokens: safeTokens } : null;
+  const serializedInitialTheme = JSON.stringify(safeInitialTheme)
+    .replace(/</g, "\\u003c")
+    .replace(/>/g, "\\u003e")
+    .replace(/\u2028/g, "\\u2028")
+    .replace(/\u2029/g, "\\u2029");
   return `(() => {
     const pending = new Map();
     const listeners = { event: new Set(), binary: new Set(), init: new Set(), context: new Set() };
@@ -313,21 +385,36 @@ function pluginSdkSource(): string {
     let locale = 'en';
     let theme;
     let resolveReady;
+    const initialTheme = ${serializedInitialTheme};
     const applyTheme = (value) => {
       if (!value || typeof value !== 'object') return;
       theme = value;
       const root = document.documentElement;
-      root.dataset.chironHorizonTheme = value.appearance === 'dark' ? 'dark' : 'light';
+      root.dataset.chironHorizonTheme = theme.appearance === "dark" ? "dark" : "light";
+      root.style.colorScheme = theme.appearance === "dark" ? "dark" : "light";
       const tokens = value.tokens && typeof value.tokens === 'object' ? value.tokens : {};
       for (const [name, tokenValue] of Object.entries(tokens)) {
         if (/^--[a-z0-9-]+$/i.test(name) && typeof tokenValue === 'string') root.style.setProperty(name, tokenValue);
       }
     };
     const ready = new Promise((resolve) => { resolveReady = resolve; });
+    if (initialTheme) applyTheme(initialTheme);
+    // Plugin UIs routinely hand reactive state (Vue Proxy arrays/objects)
+    // straight to invoke(); postMessage cannot structured-clone a Proxy and
+    // WebKit rejects with "The object can not be cloned.". Mirror the host's
+    // structuredCloneSafe: clone when possible, otherwise recover the plain
+    // data with a JSON round-trip (the sidecar transport is JSON anyway).
+    const toPlain = (value) => {
+      if (!value || typeof value !== 'object') return value;
+      if (typeof structuredClone === 'function') {
+        try { return structuredClone(value); } catch {}
+      }
+      return JSON.parse(JSON.stringify(value));
+    };
     const request = (method, params, options = {}) => new Promise((resolve, reject) => {
       const id = String(++sequence);
       pending.set(id, { resolve, reject });
-      const message = { source: '${PLUGIN_MESSAGE_SOURCE}', version: ${BRIDGE_VERSION}, type: 'request', id, method, params };
+      const message = { source: '${PLUGIN_MESSAGE_SOURCE}', version: ${BRIDGE_VERSION}, type: 'request', id, method, params: toPlain(params) };
       if (options.transfer) {
         message.data = options.transfer;
         parent.postMessage(message, '*', [options.transfer]);
@@ -342,6 +429,56 @@ function pluginSdkSource(): string {
       for (const byte of bytes) binary += String.fromCharCode(byte);
       return btoa(binary);
     };
+    const stream = async (method, params = {}, options = {}) => {
+      const streamId = options.streamId || (globalThis.crypto?.randomUUID?.() || 'stream-' + Date.now() + '-' + (++sequence));
+      const closeMethod = options.closeMethod || 'filesystem/stream/close';
+      let removeListener;
+      let closeRequested = false;
+      let resolveOpen;
+      let rejectOpen;
+      const metadata = {};
+      const opened = new Promise((resolve, reject) => { resolveOpen = resolve; rejectOpen = reject; });
+      const readable = new ReadableStream({
+        start(controller) {
+          const onEvent = (message) => {
+            if (message?.method !== 'host.stream.chunk' && message?.method !== 'host.stream.end' && message?.method !== 'host.stream.error') return;
+            const event = message.params || {};
+            if (event.streamId !== streamId) return;
+            if (message.method === 'host.stream.chunk') {
+              try { controller.enqueue(decode(event.dataBase64 || '')); } catch (error) { controller.error(error); }
+              return;
+            }
+            removeListener?.();
+            removeListener = undefined;
+            if (message.method === 'host.stream.error') {
+              const error = new Error(event.message || 'Plugin stream failed');
+              rejectOpen(error);
+              controller.error(error);
+            } else {
+              Object.assign(metadata, event);
+              controller.close();
+            }
+          };
+          removeListener = () => listeners.event.delete(onEvent);
+          listeners.event.add(onEvent);
+          request('backend.invoke', { method, params: { ...(params || {}), streamId }, timeoutMs: options.timeoutMs }).then(resolveOpen, (error) => {
+            removeListener?.();
+            removeListener = undefined;
+            rejectOpen(error);
+            controller.error(error);
+          });
+        },
+        cancel() {
+          removeListener?.();
+          removeListener = undefined;
+          if (closeRequested) return undefined;
+          closeRequested = true;
+          return request('backend.invoke', { method: closeMethod, params: { streamId } }).catch(() => undefined);
+        },
+      });
+      Object.assign(metadata, await opened);
+      return { stream: readable, metadata };
+    };
     window.chironHorizonPlugin = Object.freeze({
       ready,
       get context() { return context; },
@@ -349,6 +486,7 @@ function pluginSdkSource(): string {
       get theme() { return theme; },
       request,
       invoke: (method, params, options = {}) => request('backend.invoke', { method, params, timeoutMs: options.timeoutMs }),
+      stream,
       notify: (method, params) => request('backend.notify', { method, params }),
       sendBinary: (channel, data) => {
         if (typeof data === 'string') return request('backend.sendBinary', { channel, dataBase64: data });
@@ -362,6 +500,13 @@ function pluginSdkSource(): string {
       },
       openWorkbench: (contributionId, childContext) => request('host.openWorkbench', { contributionId, context: childContext }),
       openFilesystem: (providerId, childContext) => request('host.openFilesystem', { providerId, context: childContext }),
+      saveFile: (options = {}, data) => {
+        if (data === undefined) return request('host.saveFile', options);
+        if (typeof data === 'string') return request('host.saveFile', { ...(options || {}), dataBase64: data });
+        const bytes = data instanceof ArrayBuffer ? data : (data instanceof Uint8Array ? data.buffer : new Uint8Array(data).buffer);
+        return request('host.saveFile', options, { transfer: bytes });
+      },
+      copy: (text) => request('host.copy', { text }),
       onEvent: (listener) => { listeners.event.add(listener); return () => listeners.event.delete(listener); },
       onBinary: (listener) => { listeners.binary.add(listener); return () => listeners.binary.delete(listener); },
       onContext: (listener) => { listeners.context.add(listener); return () => listeners.context.delete(listener); },
@@ -383,23 +528,26 @@ function pluginSdkSource(): string {
         applyTheme(message.theme);
         resolveReady(context);
         listeners.init.forEach((listener) => listener(context));
-        dispatchEvent(new CustomEvent('chiron-horizon-plugin-init', { detail: message }));
+        // Plugin listeners register on the document (onHostThemeChange);
+        // bare dispatchEvent targets window, which document listeners never
+        // receive — env theme pushes were silently lost.
+        document.dispatchEvent(new CustomEvent('chiron-horizon-plugin-init', { detail: message }));
       } else if (message.type === 'context') {
         context = message.context;
         listeners.context.forEach((listener) => listener(context));
-        dispatchEvent(new CustomEvent('chiron-horizon-plugin-context', { detail: context }));
+        document.dispatchEvent(new CustomEvent('chiron-horizon-plugin-context', { detail: context }));
       } else if (message.type === 'env') {
         if (typeof message.locale === 'string') locale = message.locale;
         if (message.theme) applyTheme(message.theme);
         listeners.event.forEach((listener) => listener(message));
-        dispatchEvent(new CustomEvent('chiron-horizon-plugin-env', { detail: message }));
+        document.dispatchEvent(new CustomEvent('chiron-horizon-plugin-env', { detail: message }));
       } else if (message.type === 'event') {
         listeners.event.forEach((listener) => listener(message));
-        dispatchEvent(new CustomEvent('chiron-horizon-plugin-event', { detail: message }));
+        document.dispatchEvent(new CustomEvent('chiron-horizon-plugin-event', { detail: message }));
       } else if (message.type === 'binary') {
         const payload = { channel: message.channel, data: message.data ? new Uint8Array(message.data) : new Uint8Array(0) };
         listeners.binary.forEach((listener) => listener(payload));
-        dispatchEvent(new CustomEvent('chiron-horizon-plugin-binary', { detail: payload }));
+        document.dispatchEvent(new CustomEvent('chiron-horizon-plugin-binary', { detail: payload }));
       }
     });
     addEventListener('keydown', (event) => {
@@ -451,6 +599,10 @@ function bytesToBase64(bytes: Uint8Array): string {
 function requireBase64(value: unknown): string {
   if (typeof value !== "string" || value.length > MAX_BRIDGE_PAYLOAD_BYTES * 2 || !/^[A-Za-z0-9+/]*={0,2}$/.test(value)) throw new Error("Binary payload must be base64");
   return value;
+}
+
+function optionalTrimmedString(value: unknown): string | undefined {
+  return typeof value === "string" && value.trim() ? value.trim() : undefined;
 }
 
 function requireSafeAssetPath(value: unknown): string {

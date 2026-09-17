@@ -127,7 +127,7 @@ import { dataTabOpenModeFromTreeClick, type DataTabOpenMode } from "@/lib/sideba
 import { isCopySidebarSelectionShortcut, isEditSidebarConnectionShortcut, isModRShortcut, isPasteSidebarSelectionShortcut } from "@/lib/editor/keyboardShortcuts";
 import { handleSidebarTreeDeleteShortcut } from "@/lib/sidebar/sidebarTreeDeleteShortcut";
 import { dataTableDoubleClickAction } from "@/lib/tabs/dataTabActivation";
-import { attachedDatabaseNameFromPath, buildCreateDatabaseSql, buildDuckDbAttachDatabaseSql, buildSqliteAttachDatabaseSql, supportsCreateDatabaseCharset, uniqueAttachedDatabaseName } from "@/lib/database/createDatabaseSql";
+import { attachedDatabaseNameFromPath, buildCreateDatabaseSql, buildDuckDbAttachDatabaseSql, buildSqliteAttachDatabaseSql, supportsCreateDatabaseCharset, supportsCreateDatabaseLocale, uniqueAttachedDatabaseName } from "@/lib/database/createDatabaseSql";
 import { appendCreateDatabaseErrorHint } from "@/lib/database/createDatabaseErrorHints";
 import { SQLITE_DATABASE_FILE_EXTENSIONS } from "@/lib/database/databaseFileDetection";
 import {
@@ -156,13 +156,13 @@ import {
   type TableChildObjectType,
 } from "@/lib/database/dbAdminSql";
 import { buildRenameObjectSql, buildRenameDatabaseSql, buildRenameDatabasePreflightSql, databaseRenameMaintenanceDatabase, supportsDatabaseRename, supportsObjectRename, type RenameableObjectType } from "@/lib/table/objectRenameSql";
-import { buildEditableObjectSource, buildRoutineRenameObjectSourceStatements, supportsSourceBackedRoutineRename } from "@/lib/table/objectSourceEditor";
-import { loadEditableObjectSourceForEditor } from "@/lib/table/objectSourceLoad";
+import { buildRoutineRenameObjectSourceStatements, supportsSourceBackedRoutineRename } from "@/lib/table/objectSourceEditor";
 import { buildViewDdl } from "@/lib/table/viewDdl";
 import { formatSqlForDisplay, sqlFormatDialectForDbType } from "@/lib/sql/sqlFormatter";
 import { omitDdlIdentifierQuotes } from "@/lib/sql/ddlDisplay";
 import { getTableStructureCapabilities } from "@/lib/table/tableStructureCapabilities";
-import { connectionObjectTreeNodeSchema, connectionObjectTreeQuerySchema, connectionUsesDatabaseObjectTreeMode, effectiveDatabaseTypeForConnection, tableStructureDatabaseTypeForConnection } from "@/lib/database/jdbcDialect";
+import { connectionObjectTreeNodeSchema, connectionObjectTreeQuerySchema, connectionTableSqlSchema, connectionUsesDatabaseObjectTreeMode, effectiveDatabaseTypeForConnection, tableStructureDatabaseTypeForConnection } from "@/lib/database/jdbcDialect";
+import { isObjectCacheInvalidationError } from "@/lib/metadata/objectCacheInvalidationError";
 import { hasTreeNodeDatabaseContext } from "@/lib/sidebar/treeNodeContext";
 import {
   defaultPasteTableMode,
@@ -202,7 +202,7 @@ import { savedSqlClipboardFileIds, savedSqlPasteTargetForNode } from "@/lib/save
 import { exportSavedSqlFileContent } from "@/lib/savedSql/savedSqlExport";
 import { isSqlServerLinkedNode } from "@/lib/database/sqlServerLinkedServers";
 import { flattenTree } from "@/composables/useFlatTree";
-import { createDatabaseCollationOptionsForCharset, nextCreateDatabaseCollation, normalizeCreateDatabaseCharset, parseCreateDatabaseCharsetMetadata } from "@/lib/database/createDatabaseCharsetOptions";
+import { createDatabaseCollationOptionsForCharset, DEFAULT_GBASE8S_DATABASE_LOCALE, GBASE8S_DATABASE_LOCALES, nextCreateDatabaseCollation, normalizeCreateDatabaseCharset, parseCreateDatabaseCharsetMetadata } from "@/lib/database/createDatabaseCharsetOptions";
 import { executeWithProductionContextGuard, executeWithProductionSqlGuard } from "@/lib/database/productionExecutionGuard";
 import { connectionIsEffectivelyReadOnly } from "@/lib/database/readOnlyWriteAccess";
 import { buildXuguCompileSql } from "@/lib/database/xuguCompileSql";
@@ -410,15 +410,31 @@ const { copyStructureAs, copyStructureDocText, copyStructurePreview, exportData,
   acceptedSelectionIds: () => acceptedSelectionIds,
 });
 
-const { openAllDatabasesExport, openDataCompare, openDatabaseExport, openDatabaseSearch, openDiagram, openDocs, openFieldLineage, openMongoImport, openScheduledBackups, openSchemaDiff, openSchemaDiffForRoutine, openSqlFileExecution, openStructureEditor, openTableImport, openTransfer } =
-  useSidebarTreeToolRuntime({
-    activeNode,
-    connectionStore,
-    queryStore,
-    settingsStore,
-    tableChildObjectName: tableChildDropObjectName,
-    acceptedSelectionIds: () => acceptedSelectionIds,
-  });
+const {
+  openAllDatabasesExport,
+  openDataCompare,
+  openDatabaseExport,
+  openDatabaseSearch,
+  openDiagram,
+  openDocs,
+  openFieldLineage,
+  openMongoImport,
+  openMongoDatabaseDump,
+  openScheduledBackups,
+  openSchemaDiff,
+  openSchemaDiffForRoutine,
+  openSqlFileExecution,
+  openStructureEditor,
+  openTableImport,
+  openTransfer,
+} = useSidebarTreeToolRuntime({
+  activeNode,
+  connectionStore,
+  queryStore,
+  settingsStore,
+  tableChildObjectName: tableChildDropObjectName,
+  acceptedSelectionIds: () => acceptedSelectionIds,
+});
 
 const emit = defineEmits<{
   "rename-started": [];
@@ -903,7 +919,8 @@ async function toggle(requestId = beginNavigationRequest()) {
       return;
     }
 
-    if (node.type === "package" && node.connectionId && supportsPackageMemberExpansion(currentDatabaseType())) {
+    const packageDatabaseType = currentDatabaseType();
+    if (node.type === "package" && node.connectionId && supportsPackageMemberExpansion(packageDatabaseType, packageDatabaseType === "opengauss" ? connectionStore.databaseCompatibilityMode(node.connectionId, node.database) : undefined)) {
       await connectionStore.loadPackageMembers(node);
       emitNodeToggled(node, wasExpanded);
       return;
@@ -928,7 +945,7 @@ async function toggle(requestId = beginNavigationRequest()) {
         await connectionStore.loadElasticsearchIndices(node.connectionId);
       } else if (config?.db_type === "milvus") {
         await connectionStore.loadMilvusDatabases(node.connectionId);
-      } else if (config?.db_type === "chirondb" || config?.db_type === "qdrant" || config?.db_type === "weaviate" || config?.db_type === "chromadb") {
+      } else if (config?.db_type === "qdrant" || config?.db_type === "weaviate" || config?.db_type === "chromadb") {
         await connectionStore.loadVectorCollections(node.connectionId);
       } else if (config?.db_type === "mq") {
         await connectionStore.loadMqTenants(node.connectionId);
@@ -1114,14 +1131,14 @@ function runRowClickAction(clickDetail: number, requestId: number) {
 
 function refreshActiveKvBrowserAfterOpen(mode: "etcd" | "zookeeper" | "consul", connectionId: string) {
   void nextTick(() => {
-    window.dispatchEvent(new CustomEvent("chiron-horizon-refresh-active-kv-browser", { detail: { mode, connectionId } }));
+    window.dispatchEvent(new CustomEvent("dbx-refresh-active-kv-browser", { detail: { mode, connectionId } }));
   });
 }
 
 function openDriverStoreForInstallError(errMsg: string, node: TreeNode = activeNode.value) {
   const config = node.connectionId ? connectionStore.getConfig(node.connectionId) : undefined;
   const focus = driverStoreFocusForInstallError(errMsg, config?.db_type, config?.driver_profile);
-  if (focus) window.dispatchEvent(new CustomEvent("chiron-horizon-open-driver-store", { detail: focus }));
+  if (focus) window.dispatchEvent(new CustomEvent("dbx-open-driver-store", { detail: focus }));
 }
 
 async function loadMoreObjectGroupChildren() {
@@ -1891,7 +1908,7 @@ async function loadTemplateContext(allowView = false, node: TreeNode = activeNod
     const querySchema = connectionObjectTreeQuerySchema(config, node.database, tableSchema);
     columns = await api.getColumns(node.connectionId, node.database, querySchema, node.label, node.catalog);
   } catch (e) {
-    console.warn("[Chiron Horizon][tableSqlTemplate:getColumns:error]", e);
+    console.warn("[DBX][tableSqlTemplate:getColumns:error]", e);
   }
 
   let tableType = node.tableType;
@@ -1902,7 +1919,7 @@ async function loadTemplateContext(allowView = false, node: TreeNode = activeNod
       const matched = tables.find((table) => table.name.toLowerCase() === node.label.toLowerCase());
       if (matched?.table_type) tableType = matched.table_type;
     } catch (e) {
-      console.warn("[Chiron Horizon][tableSqlTemplate:listTables:error]", e);
+      console.warn("[DBX][tableSqlTemplate:listTables:error]", e);
     }
   }
 
@@ -2191,6 +2208,19 @@ function openElasticsearchIndexMetadata(kind: ElasticsearchIndexMetadataKind) {
 
 async function refresh() {
   const node = activeNode.value;
+  if (node.type === "connection" && node.connectionId) {
+    try {
+      await connectionStore.refreshConnectionTreeNode(node);
+    } catch (e: any) {
+      if (isObjectCacheInvalidationError(e)) {
+        toast(t("connection.objectCacheRefreshFailed", { message: translateBackendError(t, e) }), 5000);
+        return;
+      }
+      toast(t("connection.connectFailed", { message: translateBackendError(t, e) }), 5000);
+      openDriverStoreForInstallError(e?.message || String(e), node);
+    }
+    return;
+  }
   try {
     await connectionStore.refreshTreeNode(node);
   } catch (e: any) {
@@ -2525,63 +2555,22 @@ function openObjectSourceDialog(initialEditing: boolean, viewPackageBody = false
   const database = node.database;
   const sourceTarget = objectSourceTargetForTreeNode(sourceNode);
   if (!sourceTarget) return;
-  const openMode = settingsStore.editorSettings.routineSourceOpenMode;
-  if (openMode === "query-tab") {
-    void connectionStore
-      .ensureConnected(connectionId)
-      .then(async () => {
-        connectionStore.activeConnectionId = connectionId;
-        const schema = sourceTarget.schema || database;
-        const databaseType = effectiveDatabaseTypeForConnection(connectionStore.getConfig(connectionId));
-        if (!databaseType) throw new Error("Connection type is unavailable.");
-        const objectName = sourceTarget.name;
-        const {
-          raw,
-          editableSource,
-          objectType: resolvedType,
-        } = await loadEditableObjectSourceForEditor(api.getObjectSource, buildEditableObjectSource, {
-          connectionId,
-          database,
-          schema,
-          name: objectName,
-          objectType: sourceTarget.objectType as any,
-          databaseType,
-          signature: sourceNode.signature,
-        });
-        const sourceIsEditable = raw.editable !== false && !["SEQUENCE", "TRIGGER", "TYPE", "TYPE_BODY", "JOB"].includes(resolvedType);
-        if (sourceIsEditable) {
-          queryStore.openObjectSourceTab({
-            connectionId,
-            database,
-            title: `Source - ${node.label}`,
-            schema,
-            catalog: node.catalog,
-            sql: editableSource,
-            objectSource: {
-              schema,
-              name: objectName,
-              objectType: resolvedType,
-              signature: node.signature,
-            },
-          });
-        } else {
-          queryStore.createTab(connectionId, database, `Source - ${node.label}`, "query", schema, editableSource, node.catalog, { forceNew: true, sourceView: true });
-        }
-      })
-      .catch((e: any) => {
-        toast(e?.message || String(e), 5000);
-      });
+  const schema = sourceTarget.schema || database;
+  // issue #9035：两个分支都不再 await 连接与取源。先把容器挂出来（源码 tab /
+  // 源码弹窗），ensureConnected 与 getObjectSource 都发生在已挂载的 UI 之内，
+  // 加载中有状态、失败就地重试，而不是点击后一段时间毫无反应。
+  if (settingsStore.editorSettings.routineSourceOpenMode === "query-tab") {
+    queryStore.openObjectSourceTabPending({
+      connectionId,
+      database,
+      title: `Source - ${node.label}`,
+      schema,
+      catalog: node.catalog,
+      request: { name: sourceTarget.name, objectType: sourceTarget.objectType, signature: sourceNode.signature },
+    });
     return;
   }
-  void connectionStore
-    .ensureConnected(connectionId)
-    .then(() => {
-      connectionStore.activeConnectionId = connectionId;
-      emit("open-object-source", sourceNode, initialEditing);
-    })
-    .catch((e: any) => {
-      toast(e?.message || String(e), 5000);
-    });
+  emit("open-object-source", sourceNode, initialEditing);
 }
 
 function openProcedureExecution() {
@@ -2708,7 +2697,7 @@ async function refreshMutatedTableDataTabsForNode(node: TreeNode) {
   try {
     await queryStore.refreshDataTabsForTable(target);
   } catch (error) {
-    console.warn("[Chiron Horizon][table-data-refresh-after-mutation:error]", { target, error });
+    console.warn("[DBX][table-data-refresh-after-mutation:error]", { target, error });
   }
 }
 
@@ -2798,11 +2787,13 @@ function batchTruncateConfirmMessage(): string {
 
 async function dropSqlForTreeNode(node: TreeNode, options?: { cascade?: boolean }): Promise<string | null> {
   if (node.type === "table" && node.connectionId && node.database) {
+    const config = connectionStore.getConfig(node.connectionId);
     return buildDropTableSql({
       databaseType: databaseTypeForNode(node),
-      schema: node.schema,
+      schema: connectionTableSqlSchema(config, node.schema),
       tableName: node.label,
       cascade: options?.cascade && supportsDropTableCascade(databaseTypeForNode(node)),
+      identifierQuote: connectionStore.connectionIdentifierQuote?.(node.connectionId),
     });
   }
   const objectOptions = dropObjectSqlOptionsForNode(node);
@@ -3524,6 +3515,11 @@ const canSetCreateDatabaseCharset = computed(() => {
   return connectionNamespaceCreationTarget(config) === "database" && supportsCreateDatabaseCharset(config?.db_type, config?.driver_profile);
 });
 
+const canSetCreateDatabaseLocale = computed(() => {
+  const config = activeNode.value.connectionId ? connectionStore.getConfig(activeNode.value.connectionId) : undefined;
+  return connectionNamespaceCreationTarget(config) === "database" && supportsCreateDatabaseLocale(config?.db_type, config?.driver_profile);
+});
+
 const canDropDatabase = computed(() => {
   const config = activeNode.value.connectionId ? connectionStore.getConfig(activeNode.value.connectionId) : undefined;
   return activeNode.value.type === "database" && !isSqlServerLinkedNode(activeNode.value) && supportsDatabaseCreation(config?.db_type);
@@ -3830,7 +3826,15 @@ function openCreateDatabaseDialog() {
   createDatabaseCharsetOptions.value = fallbackCreateDatabaseCharset.charsets;
   createDatabaseCollationsByCharset.value = fallbackCreateDatabaseCharset.collationsByCharset;
   showCreateDatabaseDialog.value = true;
-  if (canSetCreateDatabaseCharset.value) {
+  if (canSetCreateDatabaseLocale.value) {
+    // GBase 8s / Informix: the "charset" control selects the new database's DB_LOCALE, which the
+    // agent applies by opening the CREATE DATABASE session with it. Default to UTF-8 so new
+    // databases can store Chinese; no server charset catalog query is needed.
+    createDatabaseCharsetOptions.value = [...GBASE8S_DATABASE_LOCALES];
+    createDatabaseCollationsByCharset.value = {};
+    createDatabaseCharset.value = DEFAULT_GBASE8S_DATABASE_LOCALE;
+    createDatabaseCollation.value = "";
+  } else if (canSetCreateDatabaseCharset.value) {
     void loadCreateDatabaseCharsetMetadata();
   }
   void loadCreateDatabaseUsers();
@@ -4518,6 +4522,8 @@ function createView() {
           identifierQuote: connectionStore.connectionIdentifierQuote?.(node.connectionId),
           schema: node.schema,
           tableName: viewName,
+          includeDatabaseName: settingsStore.editorSettings.generateSqlIncludeDatabaseName,
+          quoteIdentifiers: settingsStore.editorSettings.generateSqlQuoteIdentifiers,
         });
   const tabId = queryStore.createTab(node.connectionId, node.database, t("contextMenu.createView"), "query", node.schema, undefined, node.catalog);
   queryStore.updateSql(tabId, `CREATE VIEW ${viewSqlName} AS\nSELECT\n  *\nFROM table_name;\n`);
@@ -4578,7 +4584,7 @@ const canOpenSqlFileExecution = computed(() => {
 const canExportAllDatabases = computed(() => {
   if (activeNode.value.type !== "connection" || !activeNode.value.connectionId) return false;
   const dbType = connectionStore.getConfig(activeNode.value.connectionId)?.db_type;
-  return !["redis", "mongodb", "dynamodb", "elasticsearch", "easysearch", "meilisearch", "chirondb", "qdrant", "milvus", "weaviate", "chromadb", "etcd", "zookeeper", "consul", "mq", "nacos"].includes(dbType || "");
+  return !["redis", "mongodb", "dynamodb", "elasticsearch", "easysearch", "meilisearch", "qdrant", "milvus", "weaviate", "chromadb", "etcd", "zookeeper", "consul", "mq", "nacos", "plugin"].includes(dbType || "");
 });
 
 const canOpenScheduledBackups = computed(() => {
@@ -5153,7 +5159,7 @@ function databaseDialogCapabilities() {
   return {
     showCreateDatabaseDialog,
     createDatabaseName,
-    canSetCreateDatabaseCharset: canSetCreateDatabaseCharset.value,
+    canSetCreateDatabaseCharset: canSetCreateDatabaseCharset.value || canSetCreateDatabaseLocale.value,
     createDatabaseCharset,
     createDatabaseCharsetOptions,
     createDatabaseCharsetLoading,
@@ -5880,6 +5886,8 @@ function buildSpecialSidebarMenu(context: SidebarMenuFactoryContext): boolean {
     if (node.type === "mongo-db") {
       items.push({ label: "", separator: true });
       items.push({ label: t("transfer.dataTransfer"), action: openTransfer, icon: ArrowRightLeft });
+      items.push({ label: t("mongoDump.menuDump"), action: () => openMongoDatabaseDump("dump"), icon: Upload });
+      items.push({ label: t("mongoDump.menuRestore"), action: () => openMongoDatabaseDump("restore"), icon: Download });
     }
     if (node.type === "redis-db") {
       items.push({ label: "", separator: true });
@@ -5960,6 +5968,8 @@ function buildSpecialSidebarMenu(context: SidebarMenuFactoryContext): boolean {
       children: [
         { label: "CSV", action: () => void exportMongoCollection("csv") },
         { label: "NDJSON", action: () => void exportMongoCollection("ndjson") },
+        { label: "BSON dump", action: () => void exportMongoCollection("bson") },
+        { label: "BSON dump (gzip)", action: () => void exportMongoCollection("bsonGzip") },
       ],
     });
     if (canDropMongoCollection.value) {

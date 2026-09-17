@@ -1,21 +1,22 @@
-package com.chiron.horizon.agent.oceanbaseoracle;
+package com.dbx.agent.oceanbaseoracle;
 
-import com.chiron.horizon.agent.ColumnInfo;
-import com.chiron.horizon.agent.ConfiguredJdbcAgent;
-import com.chiron.horizon.agent.ConnectParams;
-import com.chiron.horizon.agent.DatabaseInfo;
-import com.chiron.horizon.agent.DdlBuilder;
-import com.chiron.horizon.agent.ForeignKeyInfo;
-import com.chiron.horizon.agent.IndexInfo;
-import com.chiron.horizon.agent.JdbcAgentProfile;
-import com.chiron.horizon.agent.JdbcExecutor;
-import com.chiron.horizon.agent.JdbcIdentifiers;
-import com.chiron.horizon.agent.MultiSessionJsonRpcServer;
-import com.chiron.horizon.agent.MetadataListConstraints;
-import com.chiron.horizon.agent.ObjectInfo;
-import com.chiron.horizon.agent.ObjectSource;
-import com.chiron.horizon.agent.TableInfo;
-import com.chiron.horizon.agent.TriggerInfo;
+import com.dbx.agent.ColumnInfo;
+import com.dbx.agent.ConfiguredJdbcAgent;
+import com.dbx.agent.ConnectParams;
+import com.dbx.agent.DatabaseInfo;
+import com.dbx.agent.DdlBuilder;
+import com.dbx.agent.ForeignKeyInfo;
+import com.dbx.agent.IndexInfo;
+import com.dbx.agent.JdbcAgentProfile;
+import com.dbx.agent.JdbcExecutor;
+import com.dbx.agent.JdbcIdentifiers;
+import com.dbx.agent.MultiSessionJsonRpcServer;
+import com.dbx.agent.MetadataListConstraints;
+import com.dbx.agent.ObjectInfo;
+import com.dbx.agent.ObjectSource;
+import com.dbx.agent.OracleObjectPrivilege;
+import com.dbx.agent.TableInfo;
+import com.dbx.agent.TriggerInfo;
 
 import java.sql.Connection;
 import java.sql.ResultSet;
@@ -301,15 +302,15 @@ public final class OceanBaseOracleAgent extends ConfiguredJdbcAgent {
         if (constraints.hasLimit()) {
             // OceanBase Oracle mode is safest with the classic ordered ROWNUM wrapper for paged metadata.
             int offset = constraints.getOffset() == null ? 0 : constraints.getOffset();
-            sql = "SELECT " + selectList + "\nFROM (\n  SELECT CHIRON_HORIZON_Q.*, ROWNUM AS CHIRON_HORIZON_RN\n  FROM (\n"
+            sql = "SELECT " + selectList + "\nFROM (\n  SELECT DBX_Q.*, ROWNUM AS DBX_RN\n  FROM (\n"
                 + sql
-                + "\n  ) CHIRON_HORIZON_Q\n  WHERE ROWNUM <= ?\n)\nWHERE CHIRON_HORIZON_RN > ?";
+                + "\n  ) DBX_Q\n  WHERE ROWNUM <= ?\n)\nWHERE DBX_RN > ?";
             args.add(offset + constraints.getLimit());
             args.add(offset);
         } else if (constraints.hasOffset()) {
-            sql = "SELECT " + selectList + "\nFROM (\n  SELECT CHIRON_HORIZON_Q.*, ROWNUM AS CHIRON_HORIZON_RN\n  FROM (\n"
+            sql = "SELECT " + selectList + "\nFROM (\n  SELECT DBX_Q.*, ROWNUM AS DBX_RN\n  FROM (\n"
                 + sql
-                + "\n  ) CHIRON_HORIZON_Q\n)\nWHERE CHIRON_HORIZON_RN > ?";
+                + "\n  ) DBX_Q\n)\nWHERE DBX_RN > ?";
             args.add(constraints.getOffset());
         }
         return new MetadataSql(sql, args);
@@ -556,7 +557,141 @@ public final class OceanBaseOracleAgent extends ConfiguredJdbcAgent {
             // Table comment is optional; DDL generation should still succeed without it.
         }
 
-        return DdlBuilder.buildTableDdl(schema, table, getColumns(schema, table), indexes, foreignKeys, java.util.Collections.emptyList(), false, true, tableComment);
+        String ddl = DdlBuilder.buildTableDdl(
+            schema,
+            table,
+            getColumns(schema, table),
+            indexes,
+            foreignKeys,
+            java.util.Collections.emptyList(),
+            false,
+            true,
+            tableComment
+        );
+        try {
+            String owner = normalizeSchema(schema);
+            return DdlBuilder.appendTrailingSql(ddl, queryObjectGrantSql(owner, table));
+        } catch (RuntimeException | SQLException ignored) {
+            // Privilege metadata is optional; CREATE TABLE DDL should still succeed without it.
+            return ddl;
+        }
+    }
+
+    private String queryObjectGrantSql(String owner, String table) throws SQLException {
+        List<OracleObjectPrivilege> privileges = new ArrayList<>();
+        privileges.addAll(queryTablePrivileges(owner, table));
+        try {
+            privileges.addAll(queryColumnPrivileges(owner, table));
+        } catch (SQLException ignored) {
+            // Column privileges are optional when table-level grants are available.
+        }
+        return DdlBuilder.buildOracleObjectGrantSql(owner, table, privileges);
+    }
+
+    private List<OracleObjectPrivilege> queryTablePrivileges(String owner, String table) throws SQLException {
+        // DBA_TAB_PRIVS shows every object grant (OWNER column). ALL_TAB_PRIVS is limited to
+        // grants where the session user is owner/grantor/grantee (or PUBLIC), so admins
+        // browsing another schema often see nothing unless we prefer the DBA view.
+        return queryFirstAvailablePrivileges(tablePrivilegeQueries(), owner, table, null);
+    }
+
+    private List<OracleObjectPrivilege> queryColumnPrivileges(String owner, String table) throws SQLException {
+        return queryFirstAvailablePrivileges(columnPrivilegeQueries(), owner, table, "COLUMN_NAME");
+    }
+
+    private List<OracleObjectPrivilege> queryFirstAvailablePrivileges(
+        List<String> queries,
+        String owner,
+        String table,
+        String columnNameField
+    ) throws SQLException {
+        SQLException firstError = null;
+        for (String sql : queries) {
+            try {
+                return queryPrivileges(sql, owner, table, columnNameField);
+            } catch (SQLException error) {
+                if (firstError == null) {
+                    firstError = error;
+                } else {
+                    firstError.addSuppressed(error);
+                }
+            }
+        }
+        throw firstError == null ? new SQLException("No privilege views available") : firstError;
+    }
+
+    private static List<String> tablePrivilegeQueries() {
+        return List.of(
+            """
+                SELECT GRANTEE, PRIVILEGE, GRANTABLE
+                FROM DBA_TAB_PRIVS
+                WHERE OWNER = ? AND TABLE_NAME = ?
+                ORDER BY GRANTEE, PRIVILEGE
+                """.stripIndent().trim(),
+            """
+                SELECT GRANTEE, PRIVILEGE, GRANTABLE
+                FROM SYS.DBA_TAB_PRIVS
+                WHERE OWNER = ? AND TABLE_NAME = ?
+                ORDER BY GRANTEE, PRIVILEGE
+                """.stripIndent().trim(),
+            """
+                SELECT GRANTEE, PRIVILEGE, GRANTABLE
+                FROM ALL_TAB_PRIVS
+                WHERE TABLE_SCHEMA = ? AND TABLE_NAME = ?
+                ORDER BY GRANTEE, PRIVILEGE
+                """.stripIndent().trim()
+        );
+    }
+
+    private static List<String> columnPrivilegeQueries() {
+        return List.of(
+            """
+                SELECT GRANTEE, PRIVILEGE, GRANTABLE, COLUMN_NAME
+                FROM DBA_COL_PRIVS
+                WHERE OWNER = ? AND TABLE_NAME = ?
+                ORDER BY GRANTEE, COLUMN_NAME, PRIVILEGE
+                """.stripIndent().trim(),
+            """
+                SELECT GRANTEE, PRIVILEGE, GRANTABLE, COLUMN_NAME
+                FROM SYS.DBA_COL_PRIVS
+                WHERE OWNER = ? AND TABLE_NAME = ?
+                ORDER BY GRANTEE, COLUMN_NAME, PRIVILEGE
+                """.stripIndent().trim(),
+            """
+                SELECT GRANTEE, PRIVILEGE, GRANTABLE, COLUMN_NAME
+                FROM ALL_COL_PRIVS
+                WHERE TABLE_SCHEMA = ? AND TABLE_NAME = ?
+                ORDER BY GRANTEE, COLUMN_NAME, PRIVILEGE
+                """.stripIndent().trim()
+        );
+    }
+
+    private List<OracleObjectPrivilege> queryPrivileges(
+        String sql,
+        String owner,
+        String table,
+        String columnNameField
+    ) throws SQLException {
+        List<OracleObjectPrivilege> result = new ArrayList<>();
+        try (var stmt = requireConnection().prepareStatement(sql)) {
+            stmt.setString(1, owner);
+            stmt.setString(2, table);
+            try (ResultSet rs = stmt.executeQuery()) {
+                while (rs.next()) {
+                    result.add(new OracleObjectPrivilege(
+                        rs.getString("GRANTEE"),
+                        rs.getString("PRIVILEGE"),
+                        isYes(rs.getString("GRANTABLE")),
+                        columnNameField == null ? null : rs.getString(columnNameField)
+                    ));
+                }
+            }
+        }
+        return result;
+    }
+
+    private static boolean isYes(String value) {
+        return value != null && "YES".equalsIgnoreCase(value.trim());
     }
 
     @Override

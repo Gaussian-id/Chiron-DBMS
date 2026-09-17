@@ -1,4 +1,4 @@
-import { isMacShortcutPlatform, parseShortcutStrokes, shortcutDisplayParts } from "@/lib/editor/shortcutDisplay";
+import { isMacShortcutPlatform, parseShortcutParts, parseShortcutStrokes, shortcutDisplayParts } from "@/lib/editor/shortcutDisplay";
 
 export type ShortcutActionId =
   | "executeSql"
@@ -644,6 +644,7 @@ export function needsTabNavigationHistoryShortcutMigration(settings?: Partial<Sh
 }
 
 export function normalizeShortcutSettings(settings?: Partial<ShortcutSettings>, platform = globalThis.navigator?.platform || ""): ShortcutSettings {
+  const reservedKeyRepairedActionIds = new Set<ShortcutActionId>();
   const normalized = Object.fromEntries(
     SHORTCUT_DEFINITIONS.map((definition) => {
       const configuredValue = settings?.[definition.id];
@@ -661,6 +662,14 @@ export function normalizeShortcutSettings(settings?: Partial<ShortcutSettings>, 
         configured = definition.defaultShortcut;
       }
       const normalized = definition.inputKind === "modifier-only" ? normalizeModifierOnlyShortcut(configured, definition.defaultShortcut) : configured;
+      // 用户显式配置（或云同步带入）的 macOS 保留键会重新劫持 ⌘H（#9068 的
+      // 配置层复现：CodeMirror 对匹配的绑定 preventDefault，AppKit 菜单的 Hide
+      // key equivalent 永远收不到），因此解析后如果命中保留键，则回退到该动作
+      // 的平台默认值——而非清空——与上面云同步跨平台默认值的修复行为保持一致。
+      if (isReservedShortcut(normalized, platform)) {
+        reservedKeyRepairedActionIds.add(definition.id);
+        return [definition.id, platformDefault];
+      }
       return [definition.id, normalized];
     }),
   ) as ShortcutSettings;
@@ -676,6 +685,21 @@ export function normalizeShortcutSettings(settings?: Partial<ShortcutSettings>, 
     if (!definition) continue;
     const defaultShortcut = normalized[actionId];
     const occupiedByExistingAction = SHORTCUT_DEFINITIONS.some((item) => item.id !== actionId && item.scope === definition.scope && hasExplicitShortcut(settings, item.id) && shortcutsUseSameKeys(normalized[item.id], defaultShortcut, platform));
+    if (occupiedByExistingAction) normalized[actionId] = "";
+  }
+
+  // 修复后的平台默认值如果被同一作用域内另一动作的显式配置占用，则清空而非套用：
+  // 默认值不是用户的选择，强加回去会让用户刻意绑定的动作变得不可达——运行时的
+  // keymap 先匹配先执行（QueryEditor.vue 中 find 绑定注册在 formatSql 之前，
+  // 二者默认都是 Mod+F 时 formatSql 永远轮不到）。用户显式配置必须赢，
+  // 占用者只统计显式配置（hasExplicitShortcut），默认值之间的“占位”不算。
+  // 与上面 TAB_NAVIGATION_HISTORY_ACTIONS 的占用判定同构；清空后由上方
+  // copyCurrentRow/editTableStructure 迁移与 tab 导航占位判定依赖的值均不受影响。
+  for (const actionId of reservedKeyRepairedActionIds) {
+    const definition = SHORTCUT_DEFINITIONS.find((item) => item.id === actionId);
+    if (!definition) continue;
+    const repairedValue = normalized[actionId];
+    const occupiedByExistingAction = SHORTCUT_DEFINITIONS.some((item) => item.id !== actionId && item.scope === definition.scope && hasExplicitShortcut(settings, item.id) && shortcutsUseSameKeys(normalized[item.id], repairedValue, platform));
     if (occupiedByExistingAction) normalized[actionId] = "";
   }
 
@@ -705,6 +729,47 @@ export function formatShortcut(shortcut: string, platform = globalThis.navigator
     .join("+");
 }
 
+// macOS 上由系统/应用菜单占用的快捷键（DBX 自己的应用子菜单，
+// src-tauri/src/lib.rs）：
+//   Mod+H      Hide，⌘H
+//   Alt+Mod+H  Hide Others，⌥⌘H
+// Web 视图中任何绑定只要 preventDefault 都会挡住 AppKit 的菜单 key
+// equivalent —— 这正是 #9068 里 ⌘H 打开替换面板、应用无法隐藏的机制，
+// 所以配置层必须把这些键从所有可绑定动作中排除出去。
+// 刻意不包含 ⌘M（Minimize）与 ⌘Q（Quit）：它们不在报告的问题范围内，
+// 加入会静默解绑已有用户配置；将来如需覆盖，扩展该集合即可。
+export const MACOS_RESERVED_SHORTCUTS: ReadonlySet<string> = new Set(["Mod+H", "Alt+Mod+H"]);
+
+// 本模块内的规范比较形式：在 macOS 分支上（isReservedShortcut 已短路掉非 mac
+// 平台），Mod 永远是 ⌘，因此把 Meta/Cmd 别名写成 Mod 后再解析为 Meta，与
+// Ctrl/Control 区分开——不能复用 canonicalShortcutKey，它按 "Win32" 把 Mod
+// 展开为 Ctrl，会把 ⌃H 误判成 ⌘H。修饰键排序、键名小写，使
+// Alt+Mod+H 与 Mod+Alt+H 归一为同一个串。
+function macCanonicalShortcut(shortcut: string): string {
+  // 保留键判定必须先 trim：配置层消费时会对值做 trim（createQueryEditorReplaceShortcutHandler
+  // 等），手工编辑设置 JSON 时误留的前后空白不能成为绕过保留键判定的途径。
+  const parts = parseShortcutParts(shortcut.replace(/\b(?:Meta|Cmd)\b/g, "Mod").trim());
+  if (parts.length === 0) return "";
+  const key = parts[parts.length - 1] ?? "";
+  const modifiers = parts
+    .slice(0, -1)
+    .map((modifier) => (modifier === "Mod" ? "Meta" : modifier === "Control" ? "Ctrl" : modifier))
+    .sort()
+    .join("+");
+  return `${modifiers}${modifiers ? "+" : ""}${key}`.toLowerCase();
+}
+
+export function isReservedShortcut(shortcut: string, platform = globalThis.navigator?.platform || ""): boolean {
+  // 仅 macOS 保留：Mod+H 在 Windows/Linux 上展开为 Ctrl+H（正常的替换键），
+  // 必须原样保留。该短路条件必须先于下面的比较执行。
+  if (!shortcut || !isMacShortcutPlatform(platform)) return false;
+  const canonical = macCanonicalShortcut(shortcut);
+  for (const reserved of MACOS_RESERVED_SHORTCUTS) {
+    if (macCanonicalShortcut(reserved) === canonical) return true;
+  }
+  return false;
+}
+
 export function findShortcutConflict(actionId: ShortcutActionId, shortcut: string, shortcuts: ShortcutSettings, platform = globalThis.navigator?.platform || ""): ShortcutActionId | null {
   if (!shortcut) return null;
   const definition = SHORTCUT_DEFINITIONS.find((item) => item.id === actionId);
@@ -712,4 +777,50 @@ export function findShortcutConflict(actionId: ShortcutActionId, shortcut: strin
 
   const conflict = SHORTCUT_DEFINITIONS.find((item) => item.id !== actionId && item.scope === definition.scope && shortcutsUseSameKeys(shortcuts[item.id], shortcut, platform));
   return conflict?.id ?? null;
+}
+
+/**
+ * 跨作用域同键（**仅用于提示，不参与任何修复**）。
+ *
+ * 不同作用域共用同一个组合是**有意的设计**：`find`（editor）与
+ * `focusSearch`（global）默认都是 `Mod+F`，运行时由焦点/目标路由区分
+ * （`App.vue` 在 `defaultPrevented` 时让位，`ContentArea.focusSearch()`
+ * 按聚焦面路由）。因此本函数只**只读地报告**这类重叠，供设置界面以
+ * “提示”级别展示；绝不能拿它的结果去改写配置——`normalizeShortcutSettings`
+ * 的占用判定刻意只统计**同作用域**（见该函数内的两张占用轮），跨作用域
+ * 重叠不在其范围内。
+ *
+ * 同作用域重复**不**在此返回（那是必须阻断的冲突，见 `findShortcutConflict`）。
+ * 未绑定（空串）不参与比较。比较口径与 `findShortcutConflict` 一致：
+ * `formatShortcut` 展开 `Mod`、修饰键排序、大小写不敏感，因此
+ * `Mod+Shift+D` 与 `Shift+Mod+D` 视为同键。
+ */
+export function findCrossScopeShortcutConflicts(shortcuts: ShortcutSettings, platform = globalThis.navigator?.platform || ""): Partial<Record<ShortcutActionId, ShortcutActionId[]>> {
+  const conflicts: Partial<Record<ShortcutActionId, ShortcutActionId[]>> = {};
+  for (const definition of SHORTCUT_DEFINITIONS) {
+    const shortcut = shortcuts[definition.id];
+    if (!shortcut) continue;
+    const others = SHORTCUT_DEFINITIONS.filter((item) => item.id !== definition.id && item.scope !== definition.scope && shortcutsUseSameKeys(shortcuts[item.id], shortcut, platform)).map((item) => item.id);
+    if (others.length > 0) conflicts[definition.id] = others;
+  }
+  return conflicts;
+}
+
+/**
+ * 去重后的重复对数。行→对方 的映射会把同一对重复算两次（双向各一次），
+ * 而摘要文案要说的是“有多少组重复”，故统一按无序对折算。
+ *
+ * 同时接受 L1（每行单个对方）与 L2（每行多个对方）两种形状，
+ * 让同作用域与跨作用域的计数口径保持一致。
+ */
+export function countShortcutConflictPairs(conflicts: Partial<Record<ShortcutActionId, ShortcutActionId | ShortcutActionId[]>>): number {
+  const pairs = new Set<string>();
+  for (const [actionId, value] of Object.entries(conflicts)) {
+    if (!value) continue;
+    for (const other of Array.isArray(value) ? value : [value]) {
+      if (!other) continue;
+      pairs.add([actionId, other].sort().join("|"));
+    }
+  }
+  return pairs.size;
 }

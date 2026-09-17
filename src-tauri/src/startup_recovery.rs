@@ -10,14 +10,14 @@ use tauri::Manager;
 const STARTUP_LOG_FILE: &str = "startup.log";
 #[cfg(target_os = "windows")]
 const RUNTIME_RECOVERY_LOG_FILE: &str = "webview2-recovery.log";
-const STARTUP_LOG_DIR_ENV: &str = "CHIRON_HORIZON_STARTUP_LOG_DIR";
-const KEEP_STARTUP_LOG_ENV: &str = "CHIRON_HORIZON_KEEP_STARTUP_LOG";
+const STARTUP_LOG_DIR_ENV: &str = "DBX_STARTUP_LOG_DIR";
+const KEEP_STARTUP_LOG_ENV: &str = "DBX_KEEP_STARTUP_LOG";
 #[cfg(target_os = "windows")]
-const NO_SANDBOX_ENV: &str = "CHIRON_HORIZON_WEBVIEW2_NO_SANDBOX";
-const RECOVERY_ATTEMPT_ENV: &str = "CHIRON_HORIZON_STARTUP_COMPAT_RECOVERY";
-const RECOVERY_PARENT_PID_ENV: &str = "CHIRON_HORIZON_STARTUP_COMPAT_PARENT_PID";
-const DISABLE_ENTERPRISE_COMPAT_ENV: &str = "CHIRON_HORIZON_DISABLE_ENTERPRISE_COMPAT";
-const WINDOWS_APP_DATA_DIR_NAME: &str = "id.chiron.horizon";
+const NO_SANDBOX_ENV: &str = "DBX_WEBVIEW2_NO_SANDBOX";
+const RECOVERY_ATTEMPT_ENV: &str = "DBX_STARTUP_COMPAT_RECOVERY";
+const RECOVERY_PARENT_PID_ENV: &str = "DBX_STARTUP_COMPAT_PARENT_PID";
+const DISABLE_ENTERPRISE_COMPAT_ENV: &str = "DBX_DISABLE_ENTERPRISE_COMPAT";
+const WINDOWS_APP_DATA_DIR_NAME: &str = "com.dbx.app";
 const COMPATIBILITY_MARKER_FILE: &str = "webview2-enterprise-compat.enabled";
 const COMPATIBILITY_PROFILE_DIR: &str = "webview2-enterprise-compat";
 const STARTUP_LOG_BUFFER_CAPACITY: usize = 256;
@@ -41,7 +41,7 @@ static RUN_EVENT_COUNT: AtomicUsize = AtomicUsize::new(0);
 static FRONTEND_READY_SIGNAL: LazyLock<(Mutex<bool>, Condvar)> = LazyLock::new(|| (Mutex::new(false), Condvar::new()));
 
 fn env_flag(name: &str) -> bool {
-    matches!(chiron_horizon_core::legacy::var(name).as_deref(), Ok("1"))
+    matches!(std::env::var(name).as_deref(), Ok("1"))
 }
 
 fn startup_log_dir_from_inputs(
@@ -62,8 +62,8 @@ fn startup_log_dir_from_inputs(
 fn startup_log_dir() -> Option<PathBuf> {
     startup_log_dir_from_inputs(
         std::env::consts::OS,
-        chiron_horizon_core::legacy::var_os(STARTUP_LOG_DIR_ENV),
-        chiron_horizon_core::legacy::var_os("APPDATA"),
+        std::env::var_os(STARTUP_LOG_DIR_ENV),
+        std::env::var_os("APPDATA"),
     )
 }
 
@@ -79,11 +79,11 @@ fn compatibility_marker_path_from_appdata(windows_appdata: Option<OsString>) -> 
 }
 
 fn compatibility_marker_path() -> Option<PathBuf> {
-    compatibility_marker_path_from_appdata(chiron_horizon_core::legacy::var_os("APPDATA"))
+    compatibility_marker_path_from_appdata(std::env::var_os("APPDATA"))
 }
 
 fn compatibility_marker_contents(version: &str) -> String {
-    format!("version={version}\nmode=isolated-profile-no-sandbox\n")
+    format!("version={version}\nmode=isolated-profile-no-sandbox-disable-gpu\n")
 }
 
 fn compatibility_marker_matches_version(path: &Path, version: &str) -> bool {
@@ -105,10 +105,7 @@ fn compatibility_profile_path_from_inputs(
 
 #[cfg(target_os = "windows")]
 fn compatibility_profile_path() -> (Option<PathBuf>, &'static str) {
-    compatibility_profile_path_from_inputs(
-        chiron_horizon_core::legacy::var_os("LOCALAPPDATA"),
-        chiron_horizon_core::legacy::var_os("APPDATA"),
-    )
+    compatibility_profile_path_from_inputs(std::env::var_os("LOCALAPPDATA"), std::env::var_os("APPDATA"))
 }
 
 fn resolve_compatibility_mode(recovery_requested: bool, marker_enabled: bool, disabled: bool) -> (bool, bool) {
@@ -132,8 +129,7 @@ fn wait_for_recovery_parent_exit() -> &'static str {
     use windows_sys::Win32::Foundation::{CloseHandle, WAIT_OBJECT_0, WAIT_TIMEOUT};
     use windows_sys::Win32::System::Threading::{OpenProcess, WaitForSingleObject, PROCESS_SYNCHRONIZE};
 
-    let parent_pid =
-        chiron_horizon_core::legacy::var(RECOVERY_PARENT_PID_ENV).ok().and_then(|value| value.parse::<u32>().ok());
+    let parent_pid = std::env::var(RECOVERY_PARENT_PID_ENV).ok().and_then(|value| value.parse::<u32>().ok());
     std::env::remove_var(RECOVERY_PARENT_PID_ENV);
     let Some(parent_pid) = parent_pid.filter(|pid| *pid != 0) else {
         return "parent_pid_unavailable";
@@ -313,17 +309,25 @@ fn install_panic_hook() {
     }));
 }
 
-#[cfg(target_os = "windows")]
-fn append_webview2_argument(argument: &str) {
-    let mut args = chiron_horizon_core::legacy::var("WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS").unwrap_or_default();
+fn append_webview2_argument_to_value(mut args: String, argument: &str) -> String {
     if args.split_whitespace().any(|value| value == argument) {
-        return;
+        return args;
     }
     if !args.is_empty() {
         args.push(' ');
     }
     args.push_str(argument);
-    std::env::set_var("WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS", args);
+    args
+}
+
+fn webview2_compatibility_arguments(mut args: String, enterprise_compat: bool, manual_no_sandbox: bool) -> String {
+    if enterprise_compat || manual_no_sandbox {
+        args = append_webview2_argument_to_value(args, "--no-sandbox");
+    }
+    if enterprise_compat {
+        args = append_webview2_argument_to_value(args, "--disable-gpu");
+    }
+    args
 }
 
 #[cfg(target_os = "windows")]
@@ -343,8 +347,15 @@ fn configure_webview2_compatibility(enterprise_compat: bool) {
         }
     }
     if enterprise_compat || manual_no_sandbox {
-        append_webview2_argument("--no-sandbox");
+        let args = std::env::var("WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS").unwrap_or_default();
+        std::env::set_var(
+            "WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS",
+            webview2_compatibility_arguments(args, enterprise_compat, manual_no_sandbox),
+        );
         record(format!("WebView2 no-sandbox enabled enterprise_compat={enterprise_compat} manual={manual_no_sandbox}"));
+    }
+    if enterprise_compat {
+        record("WebView2 GPU acceleration disabled for enterprise compatibility recovery");
     }
 }
 
@@ -496,7 +507,7 @@ pub(crate) fn mark_frontend_ready(main_window_visible: bool) {
         );
         std::env::remove_var(RECOVERY_ATTEMPT_ENV);
     } else if keep_requested {
-        record("frontend ready; startup log retained by CHIRON_HORIZON_KEEP_STARTUP_LOG=1");
+        record("frontend ready; startup log retained by DBX_KEEP_STARTUP_LOG=1");
         persist_buffer();
         deactivate_probe();
     } else if let Some(path) = startup_log_path() {
@@ -529,11 +540,11 @@ fn confirm_keep_compatibility_mode() -> bool {
     let locale = sys_locale::get_locale().unwrap_or_default().to_ascii_lowercase();
     let body = if locale.starts_with("zh") {
         format!(
-            "Chiron Horizon 已通过企业环境兼容模式恢复主界面。\n\n该模式会为 WebView2 使用独立数据目录并关闭沙箱，仅建议在标准模式无法显示窗口时保留。\n\n是否让当前 Chiron Horizon 版本后续启动直接使用兼容模式？\n选择“否”后，下次启动会重新尝试标准模式。\n\n本次恢复日志：{log_path}"
+            "Chiron Horizon 已通过企业环境兼容模式恢复主界面。\n\n该模式会为 WebView2 使用独立数据目录，并关闭沙箱和 GPU 加速，仅建议在标准模式无法显示窗口时保留。\n\n是否让当前 Chiron Horizon 版本后续启动直接使用兼容模式？\n选择“否”后，下次启动会重新尝试标准模式。\n\n本次恢复日志：{log_path}"
         )
     } else {
         format!(
-            "Chiron Horizon restored the main window using enterprise environment compatibility mode.\n\nThis mode uses an isolated WebView2 data directory and disables the sandbox. Keep it only when the standard mode cannot display the window.\n\nUse compatibility mode directly for future launches of this Chiron Horizon version?\nChoose No to retry standard mode on the next launch.\n\nRecovery log: {log_path}"
+            "Chiron Horizon restored the main window using enterprise environment compatibility mode.\n\nThis mode uses an isolated WebView2 data directory and disables the sandbox and GPU acceleration. Keep it only when the standard mode cannot display the window.\n\nUse compatibility mode directly for future launches of this Chiron Horizon version?\nChoose No to retry standard mode on the next launch.\n\nRecovery log: {log_path}"
         )
     };
     let title = "Chiron Horizon".encode_utf16().chain(std::iter::once(0)).collect::<Vec<_>>();
@@ -559,13 +570,13 @@ fn show_recovery_failure_message() {
         startup_log_path().map(|path| path.display().to_string()).unwrap_or_else(|| "startup.log".to_string());
     let locale = sys_locale::get_locale().unwrap_or_default().to_ascii_lowercase();
     let body = if locale.starts_with("zh") {
-        format!("Chiron Horizon 已尝试企业环境兼容模式，但主窗口仍未显示。\n\n请将此日志发给维护者：{log_path}")
+        format!("DBX 已尝试企业环境兼容模式，但主窗口仍未显示。\n\n请将此日志发给维护者：{log_path}")
     } else {
         format!(
-            "Chiron Horizon tried enterprise environment compatibility mode, but the main window was still not visible.\n\nPlease send this log to the maintainer: {log_path}"
+            "DBX tried enterprise environment compatibility mode, but the main window was still not visible.\n\nPlease send this log to the maintainer: {log_path}"
         )
     };
-    windows_ok_message("Chiron Horizon", &body);
+    windows_ok_message("DBX", &body);
 }
 
 #[cfg(not(target_os = "windows"))]
@@ -576,7 +587,8 @@ mod tests {
     use super::{
         compatibility_marker_contents, compatibility_marker_path_from_appdata, compatibility_profile_path_from_inputs,
         compatibility_profile_ready_record, configure_recovery_child, resolve_compatibility_mode,
-        should_attempt_enterprise_recovery, startup_log_dir_from_inputs, RECOVERY_ATTEMPT_ENV, RECOVERY_PARENT_PID_ENV,
+        should_attempt_enterprise_recovery, startup_log_dir_from_inputs, webview2_compatibility_arguments,
+        RECOVERY_ATTEMPT_ENV, RECOVERY_PARENT_PID_ENV,
     };
     use std::ffi::OsString;
     use std::path::PathBuf;
@@ -585,7 +597,7 @@ mod tests {
     fn startup_log_uses_windows_appdata() {
         assert_eq!(
             startup_log_dir_from_inputs("windows", None, Some(OsString::from(r"C:\Users\test\AppData\Roaming")),),
-            Some(PathBuf::from(r"C:\Users\test\AppData\Roaming").join("id.chiron.horizon"))
+            Some(PathBuf::from(r"C:\Users\test\AppData\Roaming").join("com.dbx.app"))
         );
     }
 
@@ -594,10 +606,10 @@ mod tests {
         assert_eq!(
             startup_log_dir_from_inputs(
                 "windows",
-                Some(OsString::from(r"D:\ChironHorizonDiagnostics")),
+                Some(OsString::from(r"D:\DBXDiagnostics")),
                 Some(OsString::from(r"C:\Users\test\AppData\Roaming")),
             ),
-            Some(PathBuf::from(r"D:\ChironHorizonDiagnostics"))
+            Some(PathBuf::from(r"D:\DBXDiagnostics"))
         );
     }
 
@@ -607,7 +619,7 @@ mod tests {
             compatibility_marker_path_from_appdata(Some(OsString::from(r"C:\Users\test\AppData\Roaming"))),
             Some(
                 PathBuf::from(r"C:\Users\test\AppData\Roaming")
-                    .join("id.chiron.horizon")
+                    .join("com.dbx.app")
                     .join("webview2-enterprise-compat.enabled")
             )
         );
@@ -619,7 +631,7 @@ mod tests {
             (
                 Some(
                     PathBuf::from(r"C:\Users\test\AppData\Local")
-                        .join("id.chiron.horizon")
+                        .join("com.dbx.app")
                         .join("webview2-enterprise-compat")
                 ),
                 "local_appdata",
@@ -673,7 +685,7 @@ mod tests {
 
     #[test]
     fn recovery_child_receives_parent_handoff_without_disabling_single_instance() {
-        let mut command = std::process::Command::new("chiron-horizon-test");
+        let mut command = std::process::Command::new("dbx-test");
         configure_recovery_child(&mut command, 4242);
         let envs = command.get_envs().collect::<Vec<_>>();
         assert!(envs
@@ -686,6 +698,28 @@ mod tests {
 
     #[test]
     fn compatibility_marker_is_scoped_to_the_current_version() {
-        assert_eq!(compatibility_marker_contents("0.5.72"), "version=0.5.72\nmode=isolated-profile-no-sandbox\n");
+        assert_eq!(
+            compatibility_marker_contents("0.5.72"),
+            "version=0.5.72\nmode=isolated-profile-no-sandbox-disable-gpu\n"
+        );
+    }
+
+    #[test]
+    fn webview2_recovery_arguments_only_disable_gpu_for_enterprise_compatibility() {
+        let existing = "--remote-debugging-port=9222".to_string();
+
+        assert_eq!(webview2_compatibility_arguments(existing.clone(), false, false), existing);
+        assert_eq!(
+            webview2_compatibility_arguments(existing.clone(), false, true),
+            "--remote-debugging-port=9222 --no-sandbox"
+        );
+        assert_eq!(
+            webview2_compatibility_arguments(existing, true, false),
+            "--remote-debugging-port=9222 --no-sandbox --disable-gpu"
+        );
+        assert_eq!(
+            webview2_compatibility_arguments("--no-sandbox --disable-gpu".to_string(), true, false),
+            "--no-sandbox --disable-gpu"
+        );
     }
 }

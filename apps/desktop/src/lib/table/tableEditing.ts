@@ -1,8 +1,8 @@
 import type { ColumnInfo, DatabaseType, IndexInfo } from "@/types/database";
 import { getDatabaseCapability } from "@/lib/database/databaseCapabilities";
 
-export const CHIRON_HORIZON_ROWID_COLUMN = "__CHIRON_HORIZON_ROWID";
-export const CHIRON_HORIZON_NEO4J_ELEMENT_ID_COLUMN = "__CHIRON_HORIZON_ELEMENT_ID";
+export const CHIRON_HORIZON_ROWID_COLUMN = "__DBX_ROWID";
+export const CHIRON_HORIZON_NEO4J_ELEMENT_ID_COLUMN = "__DBX_ELEMENT_ID";
 export const CHIRON_HORIZON_TDENGINE_TBNAME_COLUMN = "tbname";
 
 function isViewTableType(tableType?: string): boolean {
@@ -117,6 +117,9 @@ export function shouldIncludeSyntheticRowId(databaseType: DatabaseType | undefin
 
 export function isHiddenGridColumn(databaseType: DatabaseType | undefined, column: string, primaryKeys: string[], tableType?: string): boolean {
   if (databaseType === "neo4j" && column === CHIRON_HORIZON_NEO4J_ELEMENT_ID_COLUMN) return true;
+  // Xugu may inject ROWID before table metadata finishes loading. Keep this
+  // internal projection hidden even after the real primary keys arrive.
+  if (databaseType === "xugu" && !isViewTableType(tableType) && column.toUpperCase() === CHIRON_HORIZON_ROWID_COLUMN) return true;
   return shouldIncludeSyntheticRowId(databaseType, primaryKeys, tableType) && column.toUpperCase() === CHIRON_HORIZON_ROWID_COLUMN;
 }
 

@@ -22,9 +22,9 @@ const PI_RPC_TIMEOUT: Duration = Duration::from_secs(15);
 const PI_BRIDGE_STARTUP_TIMEOUT: Duration = Duration::from_secs(15);
 const PI_SHUTDOWN_TIMEOUT: Duration = Duration::from_secs(3);
 const PI_MCP_BRIDGE: &str = include_str!("../assets/pi-mcp-bridge.mjs");
-const PI_PRIVATE_ENV_PREFIX: &str = "CHIRON_HORIZON_PI_";
+const PI_PRIVATE_ENV_PREFIX: &str = "DBX_PI_";
 #[cfg(not(windows))]
-const PI_SHELL_PATH_MARKER: &str = "__CHIRON_HORIZON_PI_SHELL_PATH__";
+const PI_SHELL_PATH_MARKER: &str = "__DBX_PI_SHELL_PATH__";
 
 pub type PiAgentRunOptions = CliAgentRunOptions;
 
@@ -36,11 +36,11 @@ struct PiIsolatedRuntime {
 
 impl PiIsolatedRuntime {
     fn create() -> Result<Self, String> {
-        let path = env::temp_dir().join(format!("chiron-horizon-pi-agent-{}", uuid::Uuid::new_v4()));
+        let path = env::temp_dir().join(format!("dbx-pi-agent-{}", uuid::Uuid::new_v4()));
         std::fs::create_dir(&path)
             .map_err(|error| format!("[piAgentRunFailed] Failed to create isolated Pi directory: {error}"))?;
-        let extension_path = path.join("chiron-horizon-mcp-bridge.mjs");
-        let ready_path = path.join("chiron-horizon-mcp-ready");
+        let extension_path = path.join("dbx-mcp-bridge.mjs");
+        let ready_path = path.join("dbx-mcp-ready");
         std::fs::write(&extension_path, PI_MCP_BRIDGE)
             .map_err(|error| format!("[piAgentRunFailed] Failed to write Pi MCP bridge: {error}"))?;
         Ok(Self { path, extension_path, ready_path })
@@ -123,7 +123,7 @@ impl PiRpcProcess {
     }
 
     async fn request(&mut self, command_type: &str, data: Value) -> Result<(Value, Vec<Value>), String> {
-        let id = format!("chiron-horizon-{}", self.next_id);
+        let id = format!("dbx-{}", self.next_id);
         self.next_id += 1;
         let mut request = match data {
             Value::Object(map) => map,
@@ -178,7 +178,7 @@ impl PiRpcProcess {
     }
 
     async fn abort_and_shutdown(&mut self) {
-        let id = format!("chiron-horizon-{}", self.next_id);
+        let id = format!("dbx-{}", self.next_id);
         self.next_id += 1;
         let _ = self.write(&json!({ "id": id, "type": "abort" })).await;
         self.stdin.take();
@@ -264,7 +264,7 @@ async fn pi_agent_process_env(
     config: &AiConfig,
     command: &CliAgentCommandSpec,
 ) -> Result<Vec<(String, String)>, String> {
-    let inherited_path = crate::legacy::var("PATH").ok();
+    let inherited_path = env::var("PATH").ok();
     let values = pi_agent_process_env_with_paths(config, command, None, inherited_path.as_deref())?;
     #[cfg(not(windows))]
     if pi_environment_needs_shell_path(command, &values) {
@@ -293,9 +293,9 @@ fn pi_agent_process_env_with_paths(
             ));
         }
         let upper = key.to_ascii_uppercase();
-        if upper.starts_with("CHIRON_HORIZON_MCP_") || upper.starts_with(PI_PRIVATE_ENV_PREFIX) {
+        if upper.starts_with("DBX_MCP_") || upper.starts_with(PI_PRIVATE_ENV_PREFIX) {
             return Err(format!(
-                "[piAgentEnvReserved] `{key}` is managed by Chiron Horizon for the scoped MCP bridge and cannot be set here."
+                "[piAgentEnvReserved] `{key}` is managed by DBX for the scoped MCP bridge and cannot be set here."
             ));
         }
         values.insert(key.to_string(), value.clone());
@@ -370,7 +370,7 @@ fn parse_shell_path(stdout: &str) -> Option<String> {
 
 #[cfg(not(windows))]
 fn user_shell() -> String {
-    crate::legacy::var("SHELL").ok().filter(|value| !value.trim().is_empty()).unwrap_or_else(|| {
+    env::var("SHELL").ok().filter(|value| !value.trim().is_empty()).unwrap_or_else(|| {
         if Path::new("/bin/zsh").exists() {
             "/bin/zsh".to_string()
         } else {
@@ -401,9 +401,9 @@ fn user_shell_args(script: &str) -> Vec<String> {
 #[cfg(not(windows))]
 fn bash_login_script(script: &str) -> String {
     format!(
-        "for chiron_horizon_profile in ~/.bash_profile ~/.bash_login ~/.profile ~/.bashrc; do \
-         [ -r \"$chiron_horizon_profile\" ] && . \"$chiron_horizon_profile\"; \
-         done; unset chiron_horizon_profile; {script}"
+        "for dbx_profile in ~/.bash_profile ~/.bash_login ~/.profile ~/.bashrc; do \
+         [ -r \"$dbx_profile\" ] && . \"$dbx_profile\"; \
+         done; unset dbx_profile; {script}"
     )
 }
 
@@ -452,7 +452,7 @@ fn classify_pi_run_error(message: &str) -> String {
         || lower.contains("please login")
     {
         format!("[piAgentNotAuthenticated] {message}")
-    } else if lower.contains("chiron-horizon mcp") || lower.contains("chiron-horizon-mcp") {
+    } else if lower.contains("dbx mcp") || lower.contains("dbx-mcp") {
         format!("[piAgentMcpStartupFailed] {message}")
     } else if message.starts_with('[') {
         message.to_string()
@@ -592,20 +592,21 @@ fn configure_pi_bridge(
     runtime: &PiIsolatedRuntime,
     options: &PiAgentRunOptions,
 ) -> Result<(), String> {
-    let mcp = options.mcp_server_command.as_ref().ok_or_else(|| {
-        "[chironHorizonMcpMissing] Chiron Horizon MCP server was not resolved for Pi Coding Agent".to_string()
-    })?;
-    process.env("CHIRON_HORIZON_PI_MCP_PROGRAM", &mcp.program);
+    let mcp = options
+        .mcp_server_command
+        .as_ref()
+        .ok_or_else(|| "[dbxMcpMissing] DBX MCP server was not resolved for Pi Coding Agent".to_string())?;
+    process.env("DBX_PI_MCP_PROGRAM", &mcp.program);
     process.env(
-        "CHIRON_HORIZON_PI_MCP_ARGS",
+        "DBX_PI_MCP_ARGS",
         serde_json::to_string(&mcp.args).map_err(|error| format!("[piAgentRunFailed] {error}"))?,
     );
     process.env(
-        "CHIRON_HORIZON_PI_ENABLED_TOOLS",
+        "DBX_PI_ENABLED_TOOLS",
         serde_json::to_string(&chiron_horizon_mcp_enabled_tools(options.agent_mode))
             .map_err(|error| format!("[piAgentRunFailed] {error}"))?,
     );
-    process.env("CHIRON_HORIZON_PI_BRIDGE_READY_FILE", &runtime.ready_path);
+    process.env("DBX_PI_BRIDGE_READY_FILE", &runtime.ready_path);
     for (name, value) in chiron_horizon_mcp_scope_env(options) {
         process.env(name, value);
     }
@@ -621,7 +622,7 @@ async fn wait_for_bridge(process: &mut PiRpcProcess, runtime: &PiIsolatedRuntime
             if let Some(status) = process.child.try_wait().map_err(|error| classify_pi_run_error(&error.to_string()))? {
                 let stderr = process.stderr_text();
                 let message = if stderr.is_empty() {
-                    format!("Pi exited before the Chiron Horizon MCP bridge started: {status}")
+                    format!("Pi exited before the DBX MCP bridge started: {status}")
                 } else {
                     stderr
                 };
@@ -633,7 +634,7 @@ async fn wait_for_bridge(process: &mut PiRpcProcess, runtime: &PiIsolatedRuntime
     .await
     .map_err(|_| {
         let stderr = process.stderr_text();
-        classify_pi_run_error(if stderr.is_empty() { "Chiron Horizon MCP bridge startup timed out" } else { &stderr })
+        classify_pi_run_error(if stderr.is_empty() { "DBX MCP bridge startup timed out" } else { &stderr })
     })?
 }
 
@@ -938,9 +939,9 @@ mod tests {
     }
 
     #[test]
-    fn rejects_chiron_horizon_managed_pi_environment_variables() {
+    fn rejects_dbx_managed_pi_environment_variables() {
         let mut config = config();
-        config.pi_agent_cli_env.insert("CHIRON_HORIZON_PI_ENABLED_TOOLS".to_string(), "[]".to_string());
+        config.pi_agent_cli_env.insert("DBX_PI_ENABLED_TOOLS".to_string(), "[]".to_string());
         let command = CliAgentCommandSpec { program: "pi".to_string(), args: Vec::new() };
 
         let error = pi_agent_process_env_with_paths(&config, &command, None, None).unwrap_err();
@@ -1005,7 +1006,7 @@ mod tests {
     #[test]
     #[cfg(not(windows))]
     fn parses_shell_path_after_startup_output() {
-        let stdout = "fnm startup notice\n__CHIRON_HORIZON_PI_SHELL_PATH__\n/fnm/bin:/usr/bin\n";
+        let stdout = "fnm startup notice\n__DBX_PI_SHELL_PATH__\n/fnm/bin:/usr/bin\n";
         assert_eq!(parse_shell_path(stdout).as_deref(), Some("/fnm/bin:/usr/bin"));
     }
 
@@ -1015,14 +1016,15 @@ mod tests {
         let options = CliAgentRunOptions {
             connection_id: "connection-1".to_string(),
             connection_name: "Test connection".to_string(),
-            database: "chiron_horizon_test".to_string(),
+            database: "dbx_test".to_string(),
+            selected_databases: Vec::new(),
             schema: Some("reporting".to_string()),
             agent_mode: true,
             allow_writes: true,
             allow_dangerous: false,
             confirmed_write_sql: None,
             mcp_server_command: Some(CliAgentCommandSpec {
-                program: "/usr/local/bin/chiron-horizon-mcp-server".to_string(),
+                program: "/usr/local/bin/dbx-mcp-server".to_string(),
                 args: vec!["--stdio".to_string()],
             }),
         };
@@ -1037,22 +1039,18 @@ mod tests {
                 value.map(|value| (name.to_string_lossy().into_owned(), value.to_string_lossy().into_owned()))
             })
             .collect::<HashMap<_, _>>();
-        assert_eq!(
-            env.get("CHIRON_HORIZON_PI_MCP_PROGRAM").map(String::as_str),
-            Some("/usr/local/bin/chiron-horizon-mcp-server")
-        );
-        assert_eq!(env.get("CHIRON_HORIZON_PI_MCP_ARGS").map(String::as_str), Some("[\"--stdio\"]"));
-        assert_eq!(env.get("CHIRON_HORIZON_MCP_ALLOW_WRITES").map(String::as_str), Some("1"));
-        assert_eq!(env.get("CHIRON_HORIZON_MCP_ALLOW_DANGEROUS_SQL").map(String::as_str), Some("0"));
-        assert_eq!(env.get("CHIRON_HORIZON_MCP_SCOPE_CONNECTION_ID").map(String::as_str), Some("connection-1"));
-        assert_eq!(env.get("CHIRON_HORIZON_MCP_SCOPE_CONNECTION_NAME").map(String::as_str), Some("Test connection"));
-        assert_eq!(env.get("CHIRON_HORIZON_MCP_SCOPE_DATABASE").map(String::as_str), Some("chiron_horizon_test"));
-        assert_eq!(env.get("CHIRON_HORIZON_MCP_SCOPE_SCHEMA").map(String::as_str), Some("reporting"));
+        assert_eq!(env.get("DBX_PI_MCP_PROGRAM").map(String::as_str), Some("/usr/local/bin/dbx-mcp-server"));
+        assert_eq!(env.get("DBX_PI_MCP_ARGS").map(String::as_str), Some("[\"--stdio\"]"));
+        assert_eq!(env.get("DBX_MCP_ALLOW_WRITES").map(String::as_str), Some("1"));
+        assert_eq!(env.get("DBX_MCP_ALLOW_DANGEROUS_SQL").map(String::as_str), Some("0"));
+        assert_eq!(env.get("DBX_MCP_SCOPE_CONNECTION_ID").map(String::as_str), Some("connection-1"));
+        assert_eq!(env.get("DBX_MCP_SCOPE_CONNECTION_NAME").map(String::as_str), Some("Test connection"));
+        assert_eq!(env.get("DBX_MCP_SCOPE_DATABASE").map(String::as_str), Some("dbx_test"));
+        assert_eq!(env.get("DBX_MCP_SCOPE_SCHEMA").map(String::as_str), Some("reporting"));
 
-        let enabled_tools =
-            serde_json::from_str::<Vec<String>>(env.get("CHIRON_HORIZON_PI_ENABLED_TOOLS").unwrap()).unwrap();
-        assert!(enabled_tools.iter().any(|tool| tool == "chiron_horizon_execute_query"));
-        assert!(enabled_tools.iter().any(|tool| tool == "chiron_horizon_execute_redis_command"));
+        let enabled_tools = serde_json::from_str::<Vec<String>>(env.get("DBX_PI_ENABLED_TOOLS").unwrap()).unwrap();
+        assert!(enabled_tools.iter().any(|tool| tool == "dbx_execute_query"));
+        assert!(enabled_tools.iter().any(|tool| tool == "dbx_execute_redis_command"));
     }
 
     #[test]
@@ -1062,7 +1060,7 @@ mod tests {
     }
 
     #[test]
-    fn maps_pi_stream_events_to_chiron_horizon_agent_events_and_usage() {
+    fn maps_pi_stream_events_to_dbx_agent_events_and_usage() {
         let events = Mutex::new(Vec::new());
         let on_event = |event| events.lock().unwrap().push(event);
         let mut text = String::new();

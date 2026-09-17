@@ -269,9 +269,27 @@ export type PluginFormFieldBinding = "config" | "secret" | "name" | "host" | "po
 
 export type PluginFormFieldValue = string | number | boolean | undefined;
 
+export interface LocalSshKey {
+  /** Absolute path to the private key file. */
+  path: string;
+  /** SSH algorithm name (e.g. `ssh-ed25519`); empty when undetectable. */
+  algorithm: string;
+  /** SHA-256 fingerprint (`SHA256:...`); empty when the key could not be decoded. */
+  fingerprint: string;
+  /** Heuristic: the key looks passphrase-protected. */
+  hasPassphrase: boolean;
+}
+
 export interface PluginFormFieldOption {
   label: string;
   value: string;
+}
+
+export interface PluginFieldCondition {
+  /** Key of another plugin form field whose current value drives the condition. */
+  field: string;
+  /** The condition matches when the referenced field's value is in this list. */
+  one_of: string[];
 }
 
 export interface PluginFormField {
@@ -283,7 +301,12 @@ export interface PluginFormField {
   required?: boolean;
   default?: PluginFormFieldValue;
   options?: PluginFormFieldOption[];
+  /** Plugin method returning `{ options: [{ value, label }] }` for dynamic
+   * select rendering; falls back to the declared type when unavailable. */
+  options_action?: string;
   binding?: PluginFormFieldBinding;
+  visible_when?: PluginFieldCondition;
+  required_when?: PluginFieldCondition;
 }
 
 export type PluginConnectionCapability = "test" | "connect" | "disconnect";
@@ -652,6 +675,8 @@ export interface DatabaseInfo {
   comment?: string | null;
   default_charset?: string | null;
   default_collation?: string | null;
+  /** Database-level compatibility mode, for example openGauss A/B/C/PG. */
+  compatibility_mode?: string | null;
 }
 
 export interface DatabaseStorageInfo {
@@ -1004,12 +1029,13 @@ export interface QueryResult {
   execution_error?: true;
   /** Set only for SQL Server informational messages emitted by the backend. */
   server_message?: true;
-  /** Oracle-only manual-transaction UX marker: set on a manual-transaction result
-   *  whose statement Chiron Horizon proved to be an ordinary top-level read. Absent for
-   *  every non-Oracle execution and every unproven Oracle statement. */
+  /** Manual-transaction UX marker for sticky proven-read-only dialects (Oracle,
+   *  OceanBase-Oracle, MySQL, PostgreSQL): set on a manual-transaction result
+   *  whose statement DBX proved to be an ordinary read by that dialect's strict
+   *  heuristic. Absent for unproven statements and non-participating dialects. */
   manual_transaction_proven_read_only?: true;
-  /** Oracle-only manual-transaction UX marker: set on the synthetic successful
-   *  result of an empty/whitespace/comments-only manual script. */
+  /** Manual-transaction UX marker for the same dialects: set on the synthetic
+   *  successful result of an empty/whitespace/comments-only manual script. */
   manual_transaction_no_statement?: true;
   /** Structured backend error; authoritative when execution_error is true. */
   error?: BackendError;
@@ -1058,6 +1084,13 @@ export interface QueryResult {
   /** Absolute offsets in the editor document at execution time. */
   sourceFrom?: number;
   sourceTo?: number;
+  /**
+   * Frontend-internal: the statement text actually sent for this result when it
+   * differs from `sourceStatement` (pagination wrapping, hidden-key rewrites…).
+   * Backend SQL error positions are relative to this text, so it is needed to
+   * map an error row/column back onto the user's original statement.
+   */
+  executedStatement?: string;
   /** Database server messages (notices, warnings) emitted while producing this result. Omitted when empty. */
   messages?: QueryMessage[];
 }
@@ -1336,6 +1369,8 @@ export interface TreeNode {
   pinned?: boolean;
   connectionId?: string;
   database?: string;
+  /** Database-level compatibility mode, for example openGauss A/B/C/PG. */
+  compatibilityMode?: string;
   catalog?: string;
   catalogType?: string;
   linkedServer?: string;
@@ -1663,6 +1698,29 @@ export interface QueryTab {
     objectType: ObjectSourceKind;
     signature?: string;
   };
+  /**
+   * 「先出 UI 再加载」的中间态：源码 tab 已经可见，但源码还在路上
+   * （ensureConnected + getObjectSource）。让 tab 栏与编辑区在等待期间就有反馈，
+   * 失败时就地显示错误 + Retry，而不是等到加载完才建 tab、失败只弹 toast。
+   *
+   * 纯运行期字段，刻意不进 openTabsPersistence 的落盘白名单：重启后恢复出的
+   * tab 只是普通空 tab，不会永久停在「加载中」。
+   */
+  sourceLoad?: {
+    startedAt: number;
+    /** 加载失败时写入；保留 request 以便就地重试 */
+    error?: string;
+    /**
+     * 重试所需的请求身份。与 `objectSource` 分开保存：objectType 在这里是
+     * **请求时**的类型，而 `objectSource.objectType` 是 routine fallback
+     * 解析后的类型（PROCEDURE↔FUNCTION、PACKAGE↔PACKAGE_BODY 会被改写）。
+     */
+    request: {
+      name: string;
+      objectType: ObjectSourceKind;
+      signature?: string;
+    };
+  };
   tableComment?: string | null;
   tableMeta?: {
     schema?: string;
@@ -1769,10 +1827,11 @@ export interface QueryTab {
   txnSessionId?: string;
   /** Set to true when a manual transaction was auto-rolled back due to inactivity */
   txnAutoRolledBack?: boolean;
-  /** Oracle-only, non-persisted: whether the current manual Oracle session has
-   *  executed at least one statement Chiron Horizon cannot prove read-only. Commit/Rollback
-   *  actions are hidden while a session is clean. Never cleared by a later read. */
-  oracleTxnPossiblyDirty?: boolean;
+  /** Sticky proven-read-only dialects (Oracle/OceanBase-Oracle/MySQL/PostgreSQL),
+   *  not persisted: whether the current manual session has executed at least one
+   *  statement DBX cannot prove read-only. Commit/Rollback actions are hidden
+   *  while a session is clean. Never cleared by a later read. */
+  txnPossiblyDirty?: boolean;
 }
 
 export interface SavedSqlFolder {

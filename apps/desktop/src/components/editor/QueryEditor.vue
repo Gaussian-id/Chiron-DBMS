@@ -15,7 +15,7 @@ let lastHandledCompressRequestId = 0;
 
 <script setup lang="ts">
 import { ref, onMounted, onBeforeUnmount, onActivated, onDeactivated, watch, shallowRef, computed, nextTick } from "vue";
-import { AlignLeft, Camera, CaseLower, CaseSensitive, CaseUpper, ClipboardPaste, Code2, Download, Eye, FileCode, MessageSquareText, Minimize2, Pencil, PencilRuler, Play, Copy, List, Scissors, Search, Sparkles, Table2, TextSelect, Trash2 } from "@lucide/vue";
+import { AlignLeft, Camera, CaseLower, CaseSensitive, CaseUpper, ClipboardPaste, Code2, Download, Eye, FileCode, Highlighter, MessageSquareText, Minimize2, Pencil, PencilRuler, Play, Copy, List, Scissors, Search, Sparkles, Table2, TextSelect, Trash2 } from "@lucide/vue";
 import { useI18n } from "vue-i18n";
 import type { Completion, CompletionContext } from "@codemirror/autocomplete";
 import { Transaction, StateEffect } from "@codemirror/state";
@@ -32,7 +32,16 @@ import { copyToClipboard, readTextFromClipboard } from "@/lib/common/clipboard";
 import { completionMatchRanges } from "@/lib/common/completionMatch";
 import { executionCandidateForMode, resolveExecutableSql, type SqlExecutionSnapshot, type SqlExecutionOverride, type SqlExecutionCandidate } from "@/lib/sql/sqlExecutionTarget";
 import { buildExecutionCandidates, hasMultipleExecutionTargets, supportsExecutionTargetPicker, type SqlTextRange } from "@/lib/sql/sqlStatementRanges";
-import { executableStatementRangeAtCursor, executableStatementRangeCacheForDoc, executableStatementRangeStartingAt as executableStatementRangeStartingAtLine, type ExecutableStatementRangeCache } from "@/lib/sql/executableStatementRangeCache";
+import {
+  executableStatementRangeAtCursor,
+  executableStatementRangeCacheForDoc,
+  executableStatementRangeStartingAt as executableStatementRangeStartingAtLine,
+  mapStatementGutterStartIndex,
+  statementGutterStartIndexForCache,
+  statementGutterStartIndexHasStartAt,
+  type ExecutableStatementRangeCache,
+  type StatementGutterStartIndex,
+} from "@/lib/sql/executableStatementRangeCache";
 import { createDeferredEditorTask } from "@/lib/editor/deferredEditorTask";
 import { currentStatementFrameRangeTo } from "@/lib/sql/currentStatementFrame";
 import { looksLikeDmlStatement } from "@/lib/sql/dmlChangePreview";
@@ -132,6 +141,7 @@ import {
 } from "@/lib/editor/queryEditorTableDrop";
 import { isPointOverElementRoot } from "@/lib/editor/tableReferenceDragFeedback";
 import type { SqlHighlighter } from "@/lib/sql/sqlHighlighter";
+import { copySqlAsRichText } from "@/lib/sql/sqlRichText";
 import { EDITOR_FONT_FAMILY_CSS_VAR, EDITOR_FONT_SIZE_CSS_VAR, editorDiagnosticColors, editorThemeAppearanceFor, loadEditorTheme, editorFontTheme, shellLineCommentTheme, sqlCompletionTheme, sqlSemanticHighlightTheme } from "@/lib/editor/editorThemes";
 import { createStatementGutterMarkerDom, shouldShowStatementGutter } from "@/lib/editor/codemirrorStatementGutter";
 import { createQueryEditorSqlShortcutDomHandler, isCharacterProducingShortcut } from "@/lib/editor/queryEditorSqlShortcut";
@@ -153,6 +163,7 @@ import { createSqlAliasHighlights } from "@/lib/editor/codemirrorSqlAliasHighlig
 import { createInsertValueHintsExtension, requestInsertValueHintsRefresh, supportsInsertValueHints } from "@/lib/editor/codemirrorInsertValueHints";
 import { sqlBlockFoldService } from "@/lib/editor/codemirrorSqlBlockFolding";
 import { focusEditorView } from "@/lib/editor/queryEditorFocus";
+import { stabilizeUnfocusedQueryEditorPointerDown } from "@/lib/editor/queryEditorUnfocusedPointer";
 import { createChironHorizonCodeMirrorSqlDialect, type CodeMirrorSqlDialectName } from "@/lib/editor/codemirrorSqlDialect";
 import { sqlSemanticTableNameSpansForSyntaxTree } from "@/lib/editor/codemirrorSqlSemanticHighlight";
 import { startsQueryEditorRectangularSelection, startsQueryEditorSelectionDrag, usesQueryEditorObjectNavigationModifier } from "@/lib/editor/queryEditorPointerSelection";
@@ -245,6 +256,9 @@ const COMPLETION_TRIGGER_DEFER_DELAY_MS = 50;
 const COMPLETION_TAB_RETRY_DELAY_MS = 16;
 const COMPLETION_TAB_MAX_WAIT_MS = COMPLETION_DEBOUNCE_DELAY_MS + COMPLETION_REMOTE_LATENCY_BUDGET_MS + 100;
 const COMPLETION_ENTER_MAX_WAIT_MS = 125;
+// Signature-help only ever looks backward from the cursor; past this distance
+// no human-authored call site is worth the scan on huge documents.
+const SQL_SIGNATURE_HELP_WINDOW_CHARS = 10_000;
 // Internal rollback switch: flip to false to route completion, diagnostics, and navigation through the legacy SQL context path.
 const SEMANTIC_SQL_COMPLETION_ENABLED = true;
 
@@ -293,7 +307,11 @@ const settingsStore = useSettingsStore();
 
 function sqlStatementParameterOptions() {
   const toggles = resolveSqlVariableSyntaxToggles(settingsStore.editorSettings.sqlVariableSyntaxOverrides, props.databaseType, settingsStore.editorSettings.sqlVariableSubstitutionEnabled);
-  return { databaseType: props.databaseType, enabledSyntaxes: enabledSqlParameterSyntaxes(toggles) };
+  return {
+    databaseType: props.databaseType,
+    compatibilityMode: props.databaseType === "opengauss" ? connectionStore.databaseCompatibilityMode(props.connectionId, props.database) : undefined,
+    enabledSyntaxes: enabledSqlParameterSyntaxes(toggles),
+  };
 }
 const { isDark, themePalette, activeCustomUiColors } = useTheme();
 const { t } = useI18n();
@@ -600,7 +618,7 @@ let codeMirrorVim: typeof import("@replit/codemirror-vim").vim | null = null;
 let codeMirrorVimApi: typeof import("@replit/codemirror-vim").Vim | null = null;
 let codeMirrorGetVimCm: typeof import("@replit/codemirror-vim").getCM | null = null;
 let codeMirrorVimImportPromise: Promise<typeof import("@replit/codemirror-vim")> | null = null;
-let chironHorizonVimCommandsConfigured = false;
+let dbxVimCommandsConfigured = false;
 let buildSqlDiagnosticExtension: (() => import("@codemirror/state").Extension) | null = null;
 let buildSqlSignatureExtension: (() => import("@codemirror/state").Extension) | null = null;
 let buildSqlCompletionExtension: (() => import("@codemirror/state").Extension) | null = null;
@@ -675,14 +693,76 @@ function runStatementGutterExtension(): import("@codemirror/state").Extension {
 }
 
 let executableStatementRangeCache: ExecutableStatementRangeCache | null = null;
+
+// Lenient statement-boundary view shared by the run-statement gutter and the
+// current-statement frame. Re-parsing the whole document on every keystroke is
+// the dominant typing cost on large scripts, so while typing we only shift the
+// known start positions / frame range through the ChangeSet (O(statements)) and
+// rebuild exactly once after typing pauses. Paths that must stay exact (gutter
+// click-to-execute, execution picker) keep using the full on-demand parse.
+const STATEMENT_BOUNDARIES_REFRESH_MS = 150;
+let statementBoundariesView: {
+  doc: import("@codemirror/state").Text;
+  startsIndex: StatementGutterStartIndex;
+  frameRange: { from: number; to: number } | null;
+  fresh: boolean;
+  generation: number;
+} | null = null;
+let statementBoundariesGeneration = 0;
+let statementBoundariesRefreshTimer: ReturnType<typeof setTimeout> | null = null;
+let statementBoundariesRefreshEffect: import("@codemirror/state").StateEffectType<null> | null = null;
+
+function refreshStatementBoundaries(state: import("@codemirror/state").EditorState) {
+  executableStatementRangeCache = executableStatementRangeCacheForDoc(executableStatementRangeCache, state.doc, props.databaseType, sqlStatementParameterOptions());
+  statementBoundariesView = {
+    doc: state.doc,
+    startsIndex: statementGutterStartIndexForCache(executableStatementRangeCache),
+    frameRange: null,
+    fresh: true,
+    generation: statementBoundariesGeneration,
+  };
+}
+
+interface StatementBoundariesView {
+  doc: import("@codemirror/state").Text;
+  startsIndex: StatementGutterStartIndex;
+  frameRange: { from: number; to: number } | null;
+  fresh: boolean;
+  generation: number;
+}
+
+// Returns the view matching `state`, rebuilding it synchronously when the
+// tracked doc fell out of sync (first use, tab switch via setState) or the
+// dialect generation moved. While typing, the tracking plugin keeps the doc
+// reference current through ChangeSet mapping, so this stays cheap.
+function statementBoundariesForState(state: import("@codemirror/state").EditorState): StatementBoundariesView {
+  if (statementBoundariesView && statementBoundariesView.doc === state.doc && statementBoundariesView.generation === statementBoundariesGeneration) return statementBoundariesView;
+  refreshStatementBoundaries(state);
+  return statementBoundariesView!;
+}
+
+function scheduleStatementBoundariesRefresh(currentView: EditorViewType) {
+  // True debounce: continuous typing must never pay a full-document parse —
+  // mapped positions serve the gutter/frame, and one rebuild lands only after
+  // the pause.
+  if (statementBoundariesRefreshTimer !== null) clearTimeout(statementBoundariesRefreshTimer);
+  statementBoundariesRefreshTimer = setTimeout(() => {
+    statementBoundariesRefreshTimer = null;
+    if (view.value !== currentView || !currentView.dom.isConnected) return;
+    refreshStatementBoundaries(currentView.state);
+    if (statementBoundariesRefreshEffect) {
+      currentView.dispatch({ effects: statementBoundariesRefreshEffect.of(null) });
+    }
+  }, STATEMENT_BOUNDARIES_REFRESH_MS);
+}
 let editorScrollbarPointerCleanup: (() => void) | null = null;
 let editorSelectionDragCleanup: (() => void) | null = null;
 let editorSelectionDropCursorEl: HTMLDivElement | null = null;
 const EDITOR_SCROLLBAR_POINTER_GUTTER_PX = 18;
 const EDITOR_SELECTION_DRAG_THRESHOLD_PX = 6;
 const tableNavigationHoverClass = "query-editor--table-navigation-hover";
-const CHIRON_HORIZON_VIM_SAVE_EVENT = "chiron-horizon-vim-save";
-const BEFORE_TAB_SWITCH_EVENT = "chiron-horizon:before-tab-switch";
+const DBX_VIM_SAVE_EVENT = "dbx-vim-save";
+const BEFORE_TAB_SWITCH_EVENT = "dbx:before-tab-switch";
 
 function editorThemeAppearance() {
   return editorThemeAppearanceFor(isDark.value ? "dark" : "light", themePalette.value, themePalette.value === "custom" ? activeCustomUiColors.value : undefined);
@@ -822,8 +902,8 @@ function syncEditorFontCssVars(fontSize = liveFontSize.value, fontFamily = setti
 function syncEditorDiagnosticCssVars() {
   if (!editorRef.value) return;
   const colors = editorDiagnosticColors(editorThemeAppearance());
-  editorRef.value.style.setProperty("--chiron-horizon-editor-diagnostic-error", colors.error);
-  editorRef.value.style.setProperty("--chiron-horizon-editor-diagnostic-warning", colors.warning);
+  editorRef.value.style.setProperty("--dbx-editor-diagnostic-error", colors.error);
+  editorRef.value.style.setProperty("--dbx-editor-diagnostic-warning", colors.warning);
 }
 
 let pendingFontReconfig: { size: number; family: string } | null = null;
@@ -912,7 +992,7 @@ function handleTab(view: EditorViewType): boolean {
 // but it must only accept an open completion popup when the user's configured
 // "accept completion" shortcut is actually Tab — otherwise a user who remapped
 // that shortcut (e.g. to Enter) would find Tab silently accepting completions
-// anyway, ignoring their setting (chiron-horizon#6236).
+// anyway, ignoring their setting (dbx#6236).
 function tabKeyAcceptsCompletion(): boolean {
   const shortcuts = normalizeShortcutSettings(settingsStore.editorSettings.shortcuts);
   return shortcutToCodeMirrorKey(shortcuts.acceptCompletion) === "Tab";
@@ -1109,6 +1189,17 @@ function focusStatementRange(range: { from: number; to: number } | null) {
   currentView.dispatch({
     selection: { anchor: from, head: to },
     effects: [setResultSourceRangeEffect.of({ from, to }), editorViewModule.EditorView.scrollIntoView(from, { y: "center" })],
+  });
+  currentView.focus();
+}
+
+function focusErrorPosition(offset: number) {
+  const currentView = view.value;
+  if (!currentView || !editorViewModule) return;
+  const errorPos = Math.max(0, Math.min(offset, currentView.state.doc.length));
+  currentView.dispatch({
+    selection: { anchor: errorPos },
+    effects: [editorViewModule.EditorView.scrollIntoView(errorPos, { y: "center" })],
   });
   currentView.focus();
 }
@@ -1327,7 +1418,11 @@ function tableNavigationIdentifierAt(currentView: EditorViewType, event: MouseEv
   if (!props.connectionId || props.database == null) return null;
   const pos = currentView.posAtCoords({ x: event.clientX, y: event.clientY });
   if (pos == null) return null;
-  const extracted = extractIdentifierDetailsAt(currentView.state.doc.toString(), pos);
+  // Identifier extraction only looks around `pos`; slice a small window so
+  // modifier-held mouse moves never materialize the whole document string.
+  const windowFrom = Math.max(0, pos - 1024);
+  const doc = currentView.state.doc;
+  const extracted = extractIdentifierDetailsAt(doc.sliceString(windowFrom, Math.min(doc.length, pos + 1024)), pos - windowFrom);
   if (!extracted || (!extracted.quoted && isSqlKeyword(extracted.identifier))) return null;
   return extracted.identifier;
 }
@@ -1431,7 +1526,7 @@ function updateEditorSelectionDropCursor(currentView: EditorViewType, event: Mou
   const cursor = editorSelectionDropCursorEl ?? ownerDocument.createElement("div");
   if (!editorSelectionDropCursorEl) {
     cursor.setAttribute("aria-hidden", "true");
-    cursor.className = "chiron-horizon-editor-selection-drop-cursor";
+    cursor.className = "dbx-editor-selection-drop-cursor";
     // Use a fixed overlay instead of CodeMirror's internal drop cursor layer so
     // the marker stays visible above selection layers, themes, and scrollers.
     cursor.style.position = "fixed";
@@ -1607,6 +1702,18 @@ async function copySelectedSqlFromContextMenu() {
   if (!canCopySelectedSql.value) return;
   try {
     await copyToClipboard(selectedSql.value);
+    toast(t("grid.copied"));
+    focusEditor();
+  } catch (e: any) {
+    toast(t("grid.copyFailed", { message: e?.message || String(e) }), 5000);
+  }
+}
+
+// 富文本复制：写入 text/html + text/plain，粘贴到邮件/Word/IM 时保留语法高亮。
+async function copySelectedSqlAsRichTextFromContextMenu() {
+  if (!canCopySelectedSql.value) return;
+  try {
+    await copySqlAsRichText(selectedSql.value);
     toast(t("grid.copied"));
     focusEditor();
   } catch (e: any) {
@@ -2045,6 +2152,12 @@ const contextMenuItems = computed<ContextMenuItem[]>(() => {
       shortcut: "Mod+C",
     },
     {
+      label: t("editor.contextMenu.copySelectionAsRichText"),
+      action: copySelectedSqlAsRichTextFromContextMenu,
+      disabled: !canCopySelectedSql.value,
+      icon: Highlighter,
+    },
+    {
       label: t("editor.contextMenu.screenshotSelection"),
       action: () => {
         if (selectedSql.value.trim()) {
@@ -2479,7 +2592,7 @@ function vimModeExtension(enabled = settingsStore.editorSettings.vimModeEnabled)
   const vimExtension = codeMirrorVim({ status: true });
   if (!codeMirrorPrec || !editorViewModule || !codeMirrorGetVimCm || !codeMirrorVimApi) return vimExtension;
 
-  // Beekeeper treats Vim as a first-class editor keymap. Keep it above Chiron Horizon's
+  // Beekeeper treats Vim as a first-class editor keymap. Keep it above DBX's
   // normal shortcuts so regular normal-mode keys are not stolen by other maps.
   return codeMirrorPrec.highest([
     editorViewModule.keymap.of([
@@ -2502,11 +2615,11 @@ function vimModeExtension(enabled = settingsStore.editorSettings.vimModeEnabled)
   ]);
 }
 
-function configureChironHorizonVimCommands(vimApi: typeof import("@replit/codemirror-vim").Vim) {
-  if (chironHorizonVimCommandsConfigured) return;
-  chironHorizonVimCommandsConfigured = true;
+function configureDbxVimCommands(vimApi: typeof import("@replit/codemirror-vim").Vim) {
+  if (dbxVimCommandsConfigured) return;
+  dbxVimCommandsConfigured = true;
   vimApi.defineEx("write", "w", (cm) => {
-    cm.cm6?.contentDOM.dispatchEvent(new CustomEvent(CHIRON_HORIZON_VIM_SAVE_EVENT, { bubbles: true }));
+    cm.cm6?.contentDOM.dispatchEvent(new CustomEvent(DBX_VIM_SAVE_EVENT, { bubbles: true }));
   });
 }
 
@@ -2517,7 +2630,7 @@ async function ensureCodeMirrorVim() {
   codeMirrorVim = vim;
   codeMirrorVimApi = Vim;
   codeMirrorGetVimCm = getCM;
-  configureChironHorizonVimCommands(Vim);
+  configureDbxVimCommands(Vim);
   return true;
 }
 
@@ -2889,7 +3002,7 @@ async function ensureForeignKeysForTable(table: { name: string; database?: strin
     const foreignKeys = await connectionStore.listCompletionForeignKeys(props.connectionId, target.database, table.name, target.schema);
     cachedForeignKeysByTable.set(cacheKey, foreignKeys);
   } catch (e) {
-    console.warn(`[Chiron Horizon] Failed to load foreign keys for ${cacheKey}:`, e);
+    console.warn(`[DBX] Failed to load foreign keys for ${cacheKey}:`, e);
     cachedForeignKeysByTable.set(cacheKey, []);
   }
 }
@@ -3047,7 +3160,7 @@ async function resolveSqlHoverTooltip(currentView: EditorViewType, pos: number) 
       semanticModel = buildSqlSemanticModel(sql, pos, sqlCompletionDialectOptions());
     } catch (error) {
       semanticModel = null;
-      console.warn(`[Chiron Horizon] Failed to build semantic model for hover tooltip:`, error);
+      console.warn(`[DBX] Failed to build semantic model for hover tooltip:`, error);
     }
   }
   const semanticTarget = semanticModel ? resolveSqlSemanticNavigationTarget(semanticModel, parts) : null;
@@ -3098,6 +3211,7 @@ async function resolveSqlHoverTooltip(currentView: EditorViewType, pos: number) 
         objectType: sqlObjectNavigationSourceKind(table),
       };
       let sqlContent: string | undefined;
+      const formatDialect = props.formatDialect ?? sqlFormatDialectForDbType(props.databaseType);
       let metadataLoadFailed = false;
 
       // The persisted display DDL is canonical across the full-page and hover
@@ -3112,12 +3226,11 @@ async function resolveSqlHoverTooltip(currentView: EditorViewType, pos: number) 
           // (the same one the sidebar/object-source viewers use). Tables keep
           // the aligned column layout from reformatHoverDdl.
           const isViewObject = objectMetadataRequest.objectType === "VIEW" || objectMetadataRequest.objectType === "MATERIALIZED_VIEW";
-          const formatDialect = props.formatDialect ?? sqlFormatDialectForDbType(props.databaseType);
           const formatted = isViewObject ? await formatSqlForDisplay(rawDdl, formatDialect, settingsStore.editorSettings.sqlFormatter) : reformatHoverDdl(rawDdl, quoteQualifiedName(hoverQualifiedName));
           sqlContent = settingsStore.editorSettings.generateSqlQuoteIdentifiers ? formatted : omitDdlIdentifierQuotes(formatted, formatDialect);
         }
       } catch (error) {
-        console.warn(`[Chiron Horizon] Failed to load table DDL for ${hoverDatabase}.${hoverSchema}.${table.name}:`, error);
+        console.warn(`[DBX] Failed to load table DDL for ${hoverDatabase}.${hoverSchema}.${table.name}:`, error);
       }
 
       // Fallback path: rebuild the DDL from cached table metadata when the
@@ -3135,18 +3248,19 @@ async function resolveSqlHoverTooltip(currentView: EditorViewType, pos: number) 
           fullIndexes = indexesResult.value;
         } catch (error) {
           metadataLoadFailed = true;
-          console.warn(`[Chiron Horizon] Failed to load table metadata for ${hoverDatabase}.${hoverSchema}.${table.name}:`, error);
+          console.warn(`[DBX] Failed to load table metadata for ${hoverDatabase}.${hoverSchema}.${table.name}:`, error);
         }
         if (!metadataLoadFailed) {
           try {
             const commentResult = await loadObjectMetadataFacet(objectMetadataRequest, "comment", () => api.getTableComment(props.connectionId!, hoverDatabase, hoverSchema, table.name, hoverScope.catalog));
             if (commentResult.value) tableComment = commentResult.value;
           } catch (error) {
-            console.warn(`[Chiron Horizon] Failed to load table comment for ${hoverDatabase}.${hoverSchema}.${table.name}:`, error);
+            console.warn(`[DBX] Failed to load table comment for ${hoverDatabase}.${hoverSchema}.${table.name}:`, error);
           }
         }
         if (fullColumns.length > 0) {
           sqlContent = buildHoverTableSql(quoteQualifiedName(hoverQualifiedName), fullColumns, fullIndexes, tableComment);
+          if (!settingsStore.editorSettings.generateSqlQuoteIdentifiers) sqlContent = omitDdlIdentifierQuotes(sqlContent, formatDialect);
           metadataLoadFailed = false;
         }
       }
@@ -3157,7 +3271,7 @@ async function resolveSqlHoverTooltip(currentView: EditorViewType, pos: number) 
       return {
         pos: range.from,
         end: range.to,
-        create: () => createHoverDom(table.name, sqlObjectHoverDetail(table), sqlContent, metadataLoadFailed ? ["[Chiron Horizon] Failed to load table structure — check connection"] : undefined),
+        create: () => createHoverDom(table.name, sqlObjectHoverDetail(table), sqlContent, metadataLoadFailed ? ["[DBX] Failed to load table structure — check connection"] : undefined),
       };
     }
 
@@ -3454,7 +3568,7 @@ async function refreshSemanticDiagnostics(options: { preserveOutsideRanges?: boo
   if (props.databaseType !== "sqlserver") {
     executableStatementRangeCache = executableStatementRangeCacheForDoc(executableStatementRangeCache, currentView.state.doc, props.databaseType, sqlStatementParameterOptions());
   }
-  const diagnosticRanges = sqlSemanticDiagnosticRangesForViewport(sql, visibleRanges, props.databaseType, props.databaseType === "sqlserver" ? undefined : executableStatementRangeCache?.ranges);
+  const diagnosticRanges = sqlSemanticDiagnosticRangesForViewport(sql, visibleRanges, props.databaseType, props.databaseType === "sqlserver" ? undefined : executableStatementRangeCache?.ranges, sqlStatementParameterOptions());
   if (diagnosticRanges.length === 0) {
     if (!options.preserveOutsideRanges) setSemanticDiagnostics([]);
     return;
@@ -3811,12 +3925,12 @@ interface BatchColumnSelectionActionItem {
 }
 
 type QueryCompletionOption = Completion & {
-  chironHorizonBatchColumnSelection?: { sessionKey: string; candidateKey: string };
-  chironHorizonBatchColumnSelectionAction?: { sessionKey: string };
+  dbxBatchColumnSelection?: { sessionKey: string; candidateKey: string };
+  dbxBatchColumnSelectionAction?: { sessionKey: string };
 };
 
 let batchColumnSelectionSession: BatchColumnSelectionSession | null = null;
-type BatchColumnSelectionCheckboxMarker = NonNullable<QueryCompletionOption["chironHorizonBatchColumnSelection"]>;
+type BatchColumnSelectionCheckboxMarker = NonNullable<QueryCompletionOption["dbxBatchColumnSelection"]>;
 interface BatchColumnSelectionDragState {
   view: EditorViewType;
   sessionKey: string;
@@ -3936,7 +4050,7 @@ function scheduleBatchColumnSelectionRefresh(view: EditorViewType, sessionKey: s
     // Keep CodeMirror's virtualized range anchored to the item where the drag ended.
     const focusIndex =
       codeMirrorCurrentCompletions?.(view.state).findIndex((completion) => {
-        const marker = (completion as QueryCompletionOption).chironHorizonBatchColumnSelection;
+        const marker = (completion as QueryCompletionOption).dbxBatchColumnSelection;
         return marker?.sessionKey === sessionKey && marker.candidateKey === focusCandidateKey;
       }) ?? -1;
     if (focusIndex >= 0 && codeMirrorSetSelectedCompletion) view.dispatch({ effects: codeMirrorSetSelectedCompletion(focusIndex) });
@@ -4011,7 +4125,7 @@ function prepareBatchColumnSelectionSession(items: SqlCompletionItem[], document
   return batchColumnSelectionSession;
 }
 
-function batchColumnSelectionMarkerForItem(item: QueryCompletionItem): QueryCompletionOption["chironHorizonBatchColumnSelection"] | undefined {
+function batchColumnSelectionMarkerForItem(item: QueryCompletionItem): QueryCompletionOption["dbxBatchColumnSelection"] | undefined {
   if (!("batchSelectionMode" in item) || item.type !== "column" || !item.batchSelectionMode || !item.apply) return undefined;
   const session = batchColumnSelectionSession;
   if (!session || session.mode !== item.batchSelectionMode) return undefined;
@@ -4020,7 +4134,7 @@ function batchColumnSelectionMarkerForItem(item: QueryCompletionItem): QueryComp
   return { sessionKey: session.key, candidateKey };
 }
 
-function cacheBatchColumnSelectionOption(marker: QueryCompletionOption["chironHorizonBatchColumnSelection"], option: QueryCompletionOption): QueryCompletionOption {
+function cacheBatchColumnSelectionOption(marker: QueryCompletionOption["dbxBatchColumnSelection"], option: QueryCompletionOption): QueryCompletionOption {
   if (!marker || !batchColumnSelectionSession || batchColumnSelectionSession.key !== marker.sessionKey) return option;
   const cached = batchColumnSelectionSession.completionOptions.get(marker.candidateKey);
   if (cached) return cached;
@@ -4039,7 +4153,7 @@ function toggleBatchColumnSelection(view: EditorViewType, sessionKey: string, ca
 
 function toggleSelectedBatchColumnSelection(view: EditorViewType): boolean {
   const completion = codeMirrorSelectedCompletion?.(view.state) as QueryCompletionOption | null | undefined;
-  const marker = completion?.chironHorizonBatchColumnSelection;
+  const marker = completion?.dbxBatchColumnSelection;
   if (!marker) return false;
   toggleBatchColumnSelection(view, marker.sessionKey, marker.candidateKey);
   return true;
@@ -4183,7 +4297,7 @@ function startBatchColumnSelectionDrag(view: EditorViewType, marker: BatchColumn
 }
 
 function renderBatchColumnSelectionCheckbox(completion: Completion, _state: import("@codemirror/state").EditorState, currentView: EditorViewType): Node | null {
-  const marker = (completion as QueryCompletionOption).chironHorizonBatchColumnSelection;
+  const marker = (completion as QueryCompletionOption).dbxBatchColumnSelection;
   const session = batchColumnSelectionSession;
   if (!marker || !session || session.key !== marker.sessionKey) return null;
 
@@ -4213,7 +4327,7 @@ function renderBatchColumnSelectionCheckbox(completion: Completion, _state: impo
 }
 
 function renderBatchColumnSelectionActionMarker(completion: Completion): Node | null {
-  const action = (completion as QueryCompletionOption).chironHorizonBatchColumnSelectionAction;
+  const action = (completion as QueryCompletionOption).dbxBatchColumnSelectionAction;
   if (!action) return null;
   const marker = document.createElement("span");
   marker.className = "cm-batch-column-selection-action-marker";
@@ -4415,7 +4529,7 @@ function completionOptionForItem(item: QueryCompletionItem | BatchColumnSelectio
   if (isBatchColumnSelectionAction(item)) {
     return {
       ...labelPresentation,
-      chironHorizonBatchColumnSelectionAction: { sessionKey: item.sessionKey },
+      dbxBatchColumnSelectionAction: { sessionKey: item.sessionKey },
       type: item.type,
       detail: item.detail,
       boost: item.boost,
@@ -4439,7 +4553,7 @@ function completionOptionForItem(item: QueryCompletionItem | BatchColumnSelectio
     const originalApply = completion.apply;
     return cacheBatchColumnSelectionOption(batchColumnSelection, {
       ...completion,
-      ...(batchColumnSelection ? { chironHorizonBatchColumnSelection: batchColumnSelection } : {}),
+      ...(batchColumnSelection ? { dbxBatchColumnSelection: batchColumnSelection } : {}),
       apply(view: EditorViewType, completionItem: unknown, from: number, to: number) {
         record();
         markCompletionAccepted(item);
@@ -4464,7 +4578,7 @@ function completionOptionForItem(item: QueryCompletionItem | BatchColumnSelectio
   }
   return cacheBatchColumnSelectionOption(batchColumnSelection, {
     ...labelPresentation,
-    ...(batchColumnSelection ? { chironHorizonBatchColumnSelection: batchColumnSelection } : {}),
+    ...(batchColumnSelection ? { dbxBatchColumnSelection: batchColumnSelection } : {}),
     type: item.type,
     detail: item.detail,
     info: item.info,
@@ -5315,9 +5429,31 @@ function shouldLoadCompletionObjects(completionContext: ReturnType<typeof getSql
   return routineContext && !isReferencedTableQualifier(completionContext);
 }
 
+/**
+ * Databases whose qualified routine completion treats the first qualifier as a
+ * package (Oracle) or as a package-or-schema in A compatibility mode
+ * (openGauss). The backend re-validates: non-package parents fall through to
+ * the ordinary routine search, so routing is safe even when the compatibility
+ * map is not yet warm. openGauss keeps the package-aware routing while the
+ * mode is unknown (cold start, so A-mode completion works immediately after
+ * connect) and once the mode is known to be A; a known B/PG mode skips the
+ * extra package-style queries entirely.
+ */
+function usesPackageAwareRoutineCompletion(): boolean {
+  if (props.databaseType === "oracle") return true;
+  if (props.databaseType !== "opengauss") return false;
+  const mode = connectionStore.databaseCompatibilityMode(props.connectionId, props.database)?.trim().toUpperCase();
+  return mode === undefined || mode === "A";
+}
+
 function oracleRoutineCompletionTargets(completionContext: ReturnType<typeof getSqlCompletionContext>): RoutineCompletionTarget[] {
   const parts = (completionContext.qualifierParts?.length ? completionContext.qualifierParts : completionContext.qualifier?.split("."))?.filter(Boolean) ?? [];
-  if (parts.length === 0) return [{ schema: props.schema, globalSearch: true }];
+  if (parts.length === 0) {
+    // Oracle resolves unqualified routines across all schemas (owner semantics).
+    // openGauss keeps the PG search_path scope for the unqualified case.
+    if (props.databaseType === "oracle") return [{ schema: props.schema, globalSearch: true }];
+    return [{ schema: props.schema }];
+  }
   if (parts.length === 1) {
     return [{ schema: props.schema, parentName: parts[0] }, { schema: parts[0] }];
   }
@@ -5334,14 +5470,14 @@ function routineCompletionTargetForContext(completionContext: ReturnType<typeof 
 }
 
 function routineCompletionScopeForContext(completionContext: ReturnType<typeof getSqlCompletionContext>, scope: CompletionMetadataScope): CompletionMetadataScope {
-  if (props.databaseType === "oracle") return scope;
+  if (usesPackageAwareRoutineCompletion()) return scope;
   const target = routineCompletionTargetForContext(completionContext, scope);
   return { database: target.database, schema: target.schema };
 }
 
 function lookupLocalCompletionObjectsForContext(completionContext: ReturnType<typeof getSqlCompletionContext>, scope: CompletionMetadataScope): SqlCompletionObject[] {
   if (!props.connectionId || props.database == null) return [];
-  if (props.databaseType === "oracle") {
+  if (usesPackageAwareRoutineCompletion()) {
     return connectionStore.lookupLocalCompletionObjects(props.connectionId, scope.database, completionContext.prefix, MAX_COMPLETION_TABLES);
   }
   const target = routineCompletionTargetForContext(completionContext, scope);
@@ -5351,7 +5487,7 @@ function lookupLocalCompletionObjectsForContext(completionContext: ReturnType<ty
 async function listCompletionObjectsForContext(completionContext: ReturnType<typeof getSqlCompletionContext>, scope: CompletionMetadataScope): Promise<SqlCompletionObject[]> {
   if (!props.connectionId || props.database == null) return [];
   const objectKinds = completionObjectKindsForContext(completionContext);
-  if (props.databaseType !== "oracle") {
+  if (!usesPackageAwareRoutineCompletion()) {
     const target = routineCompletionTargetForContext(completionContext, scope);
     return connectionStore.listCompletionObjects(props.connectionId, target.database, target.mask, MAX_COMPLETION_TABLES, target.schema, undefined, false, scope.schema, objectKinds);
   }
@@ -5549,7 +5685,7 @@ async function performAsyncCompletionWithResult(epoch: number, completionContext
           if (prefixCacheKey) cachedPrefixColumnsByTable.set(prefixCacheKey, columns);
           else cachedColumnsByTable.set(cacheKey, columns);
         } catch (e) {
-          console.error(`[Chiron Horizon] Failed to load columns for ${cacheKey}:`, e);
+          console.error(`[DBX] Failed to load columns for ${cacheKey}:`, e);
         }
       }),
     );
@@ -5815,6 +5951,45 @@ onMounted(async () => {
   previewRangeComp = new Compartment();
   indentComp = new Compartment();
   setSqlDiagnosticsEffect = StateEffect.define<SqlSemanticDiagnostic[]>();
+  statementBoundariesRefreshEffect = StateEffect.define<null>();
+  // Keeps the lenient statement-boundary view glued to the live document:
+  // each keystroke shifts the known starts / frame range through the
+  // ChangeSet (O(statements)) and schedules one full rebuild after typing
+  // pauses, so neither the run gutter nor the statement frame re-parses the
+  // whole document synchronously on every keystroke.
+  const statementBoundariesTrackingPlugin = ViewPlugin.fromClass(
+    class {
+      update(update: import("@codemirror/view").ViewUpdate) {
+        if (!update.docChanged) return;
+        const boundaries = statementBoundariesView;
+        // No consumer (run gutter off + statement frame off) ever initialized
+        // the view — nothing to maintain and no refresh to schedule.
+        if (!boundaries) return;
+        if (boundaries.doc === update.startState.doc) {
+          statementBoundariesView = {
+            doc: update.state.doc,
+            startsIndex: mapStatementGutterStartIndex(boundaries.startsIndex, update.changes),
+            frameRange: boundaries.frameRange
+              ? {
+                  from: update.changes.mapPos(boundaries.frameRange.from, 1),
+                  to: update.changes.mapPos(boundaries.frameRange.to, 1),
+                }
+              : null,
+            fresh: false,
+            generation: boundaries.generation,
+          };
+        }
+        scheduleStatementBoundariesRefresh(update.view);
+      }
+
+      destroy() {
+        if (statementBoundariesRefreshTimer !== null) {
+          clearTimeout(statementBoundariesRefreshTimer);
+          statementBoundariesRefreshTimer = null;
+        }
+      }
+    },
+  );
   codeMirrorCompletionStatus = completionStatus;
   codeMirrorAcceptCompletion = acceptCompletion;
   codeMirrorCurrentCompletions = currentCompletions;
@@ -5849,11 +6024,11 @@ onMounted(async () => {
 
   const diagnosticTheme = EditorView.baseTheme({
     ".cm-sql-error": {
-      textDecoration: "underline wavy var(--chiron-horizon-editor-diagnostic-error, var(--destructive))",
+      textDecoration: "underline wavy var(--dbx-editor-diagnostic-error, var(--destructive))",
       textUnderlineOffset: "3px",
     },
     ".cm-sql-semantic-warning": {
-      textDecoration: "underline wavy var(--chiron-horizon-editor-diagnostic-warning, var(--warning))",
+      textDecoration: "underline wavy var(--dbx-editor-diagnostic-warning, var(--warning))",
       textUnderlineOffset: "3px",
     },
   });
@@ -6050,8 +6225,17 @@ onMounted(async () => {
           markers: (currentView) => currentView.state.field(field),
           lineMarker(currentView, line, markers) {
             const executionMarker = markers.find((marker) => marker instanceof StatementExecutionStateMarker)?.marker;
-            const canExecute = showRunButtons && !!executableStatementRangeStartingAt(currentView, line.from);
+            // Membership check against the lenient index (mapped through the
+            // ChangeSet while typing) instead of a full-document re-parse per
+            // keystroke. The click handler still resolves the exact range on
+            // demand, so display-level approximation never affects execution.
+            const canExecute = showRunButtons && statementGutterStartIndexHasStartAt(statementBoundariesForState(currentView.state).startsIndex, line.from);
             return canExecute || executionMarker ? new StatementGutterMarker(canExecute, executionMarker) : null;
+          },
+          lineMarkerChange(update) {
+            // Redraw once the debounced full rebuild has landed.
+            const refreshEffect = statementBoundariesRefreshEffect;
+            return !!refreshEffect && update.transactions.some((transaction) => transaction.effects.some((effect) => effect.is(refreshEffect)));
           },
           domEventHandlers: showRunButtons
             ? {
@@ -6064,10 +6248,15 @@ onMounted(async () => {
   };
   buildSqlSignatureExtension = () =>
     showTooltip.compute(["doc", "selection"], (currentState) => {
-      const signature = getSqlFunctionSignatureHelp(currentState.doc.toString(), currentState.selection.main.head, props.databaseType, sqlDriverProfile.value);
+      const cursor = currentState.selection.main.head;
+      // Signature detection only scans backward from the cursor, so window the
+      // text instead of materializing the whole document prefix on every
+      // keystroke — doc.toString() was O(document) per key on large scripts.
+      const windowFrom = Math.max(0, cursor - SQL_SIGNATURE_HELP_WINDOW_CHARS);
+      const signature = getSqlFunctionSignatureHelp(currentState.doc.sliceString(windowFrom, cursor), cursor - windowFrom, props.databaseType, sqlDriverProfile.value, { truncatedPrefix: windowFrom > 0 });
       if (!signature) return null;
       return {
-        pos: currentState.selection.main.head,
+        pos: cursor,
         above: false,
         clip: false,
         create: () => ({ dom: createSqlSignatureTooltipDom(signature) }),
@@ -6082,7 +6271,7 @@ onMounted(async () => {
       compareCompletions: (a, b) => compareSqlCompletions(a, b, settingsStore.editorSettings.sortCompletionColumnsAlphabetically),
       // Keep normal completion lists virtualized; batch-field selection needs every row in the DOM.
       maxRenderedOptions: batchColumnSelectionExpandedRendering ? Number.MAX_SAFE_INTEGER : 100,
-      optionClass: (completion) => ((completion as QueryCompletionOption).chironHorizonBatchColumnSelectionAction ? "cm-batch-column-selection-action" : ""),
+      optionClass: (completion) => ((completion as QueryCompletionOption).dbxBatchColumnSelectionAction ? "cm-batch-column-selection-action" : ""),
       addToOptions: [
         { position: 5, render: renderBatchColumnSelectionActionMarker },
         { position: 10, render: renderBatchColumnSelectionCheckbox },
@@ -6255,43 +6444,60 @@ onMounted(async () => {
     await ensureCodeMirrorVim();
   }
 
-  const currentStatementFrameExtension = currentStatementFrameLayer({ layer, RectangleMarker }, (view) => {
-    if (!settingsStore.editorSettings.showCurrentStatementFrame) return null;
-    if (view.state.selection.ranges.some((range) => !range.empty)) return null;
-    let range = currentExecutableStatementRange(view);
-    if (!range) {
+  const currentStatementFrameExtension = currentStatementFrameLayer(
+    { layer, RectangleMarker },
+    (view) => {
+      if (!settingsStore.editorSettings.showCurrentStatementFrame) return null;
+      if (view.state.selection.ranges.some((range) => !range.empty)) return null;
       const cursorPos = view.state.selection.main.head;
-      const cursorLine = view.state.doc.lineAt(cursorPos);
-      executableStatementRangeCache = executableStatementRangeCacheForDoc(executableStatementRangeCache, view.state.doc, props.databaseType, sqlStatementParameterOptions());
-      // Find ranges that overlap the cursor line, then expand to include
-      // adjacent ranges (handles parser fragments from edge cases like
-      // ultra-long comments splitting a statement).
-      let mergedFrom = cursorLine.from;
-      let mergedTo = cursorLine.from;
-      let changed = true;
-      while (changed) {
-        changed = false;
-        for (const cachedRange of executableStatementRangeCache.ranges) {
-          // Only merge ranges that overlap the cursor line or are adjacent
-          // to the current merged region
-          if (cachedRange.from <= mergedTo && cachedRange.to >= mergedFrom) {
-            const newFrom = Math.min(mergedFrom, cachedRange.from);
-            const newTo = Math.max(mergedTo, cachedRange.to);
-            if (newFrom !== mergedFrom || newTo !== mergedTo) {
-              mergedFrom = newFrom;
-              mergedTo = newTo;
-              changed = true;
+      const boundaries = statementBoundariesForState(view.state);
+      if (boundaries && !boundaries.fresh && boundaries.frameRange && cursorPos >= boundaries.frameRange.from && cursorPos <= boundaries.frameRange.to) {
+        // Typing in progress: reuse the ChangeSet-shifted range instead of
+        // re-parsing the whole document. The debounced refresh rebuilds and
+        // repaints the exact frame once typing pauses.
+        return { from: boundaries.frameRange.from, to: currentStatementFrameTo(view, { from: boundaries.frameRange.from, to: boundaries.frameRange.to, sql: "" }) };
+      }
+      let range = currentExecutableStatementRange(view);
+      if (!range) {
+        const cursorLine = view.state.doc.lineAt(cursorPos);
+        executableStatementRangeCache = executableStatementRangeCacheForDoc(executableStatementRangeCache, view.state.doc, props.databaseType, sqlStatementParameterOptions());
+        // Find ranges that overlap the cursor line, then expand to include
+        // adjacent ranges (handles parser fragments from edge cases like
+        // ultra-long comments splitting a statement).
+        let mergedFrom = cursorLine.from;
+        let mergedTo = cursorLine.from;
+        let changed = true;
+        while (changed) {
+          changed = false;
+          for (const cachedRange of executableStatementRangeCache.ranges) {
+            // Only merge ranges that overlap the cursor line or are adjacent
+            // to the current merged region
+            if (cachedRange.from <= mergedTo && cachedRange.to >= mergedFrom) {
+              const newFrom = Math.min(mergedFrom, cachedRange.from);
+              const newTo = Math.max(mergedTo, cachedRange.to);
+              if (newFrom !== mergedFrom || newTo !== mergedTo) {
+                mergedFrom = newFrom;
+                mergedTo = newTo;
+                changed = true;
+              }
             }
           }
         }
+        if (mergedTo > mergedFrom) {
+          range = { from: mergedFrom, to: mergedTo, sql: view.state.doc.sliceString(mergedFrom, mergedTo) };
+        }
       }
-      if (mergedTo > mergedFrom) {
-        range = { from: mergedFrom, to: mergedTo, sql: view.state.doc.sliceString(mergedFrom, mergedTo) };
-      }
-    }
-    if (!range) return null;
-    return { from: range.from, to: currentStatementFrameTo(view, range) };
-  });
+      if (boundaries) boundaries.frameRange = range ? { from: range.from, to: range.to } : null;
+      if (!range) return null;
+      return { from: range.from, to: currentStatementFrameTo(view, range) };
+    },
+    {
+      shouldRefresh(update) {
+        const refreshEffect = statementBoundariesRefreshEffect;
+        return !!refreshEffect && update.transactions.some((transaction) => transaction.effects.some((effect) => effect.is(refreshEffect)));
+      },
+    },
+  );
 
   function currentStatementFrameTo(view: import("@codemirror/view").EditorView, range: SqlTextRange): number {
     return currentStatementFrameRangeTo(view.state.doc, range);
@@ -6326,7 +6532,7 @@ onMounted(async () => {
 
   const editorElement = editorRef.value;
   if (!editorElement) return;
-  const tooltipParent = editorElement.closest<HTMLElement>("#root")?.querySelector<HTMLElement>("#chiron-horizon-query-editor-tooltip-root") ?? editorElement;
+  const tooltipParent = editorElement.closest<HTMLElement>("#root")?.querySelector<HTMLElement>("#dbx-query-editor-tooltip-root") ?? editorElement;
   const state = EditorState.create({
     doc: props.modelValue,
     selection: normalizedEditorSelection(props.initialSelection, props.modelValue.length),
@@ -6343,6 +6549,10 @@ onMounted(async () => {
         // immediate drag-select there trigger CodeMirror's edge autoscroll.
         scrollToMatch: (range) => EditorView.scrollIntoView(range, { y: "center" }),
       }),
+      // Must update before the run gutter's plugin registers below: each
+      // keystroke maps the boundary view to the new doc before any lineMarker
+      // callback reads it, otherwise the gutter would trigger a full parse.
+      statementBoundariesTrackingPlugin,
       runGutterComp.of(runStatementGutterExtension()),
       lineNumbersComp.of(lineNumbersExtension(initialSettings.showLineNumbers)),
       createQueryEditorLineNumberAlignmentExtension(ViewPlugin),
@@ -6382,7 +6592,7 @@ onMounted(async () => {
       syntaxHighlighting(defaultHighlightStyle, { fallback: true }),
       crosshairCursor(),
       activeLineHighlighter,
-      // Vim must be mounted before Chiron Horizon/default keymaps so normal-mode keys are handled first.
+      // Vim must be mounted before DBX/default keymaps so normal-mode keys are handled first.
       vimModeComp.of(vimModeExtension(initialSettings.vimModeEnabled)),
       defaultKeymapComp.of(defaultKeymapExtension()),
       keymap.of([...searchKeymapWithoutModD(searchKeymap), ...historyKeymap, ...foldKeymap, ...completionKeymap]),
@@ -6543,7 +6753,7 @@ onMounted(async () => {
           window.setTimeout(flushImeComposition, 0);
           return false;
         },
-        [CHIRON_HORIZON_VIM_SAVE_EVENT]() {
+        [DBX_VIM_SAVE_EVENT]() {
           emit("save");
           return true;
         },
@@ -6572,6 +6782,7 @@ onMounted(async () => {
           if (currentView && startEditorSelectionDrag(currentView, event)) {
             return true;
           }
+          if (currentView) stabilizeUnfocusedQueryEditorPointerDown(currentView, event);
           // Alt belongs to CodeMirror's rectangular and multi-cursor gestures,
           // even when Cmd/Ctrl is held at the same time.
           if (!usesQueryEditorObjectNavigationModifier(event)) {
@@ -6801,7 +7012,7 @@ onMounted(async () => {
                 emit("clickColumn", matchedCols);
               }
             } catch (e) {
-              console.error("[Chiron Horizon] Ctrl+click error:", e);
+              console.error("[DBX] Ctrl+click error:", e);
             }
           }, 0);
           return true;
@@ -7108,12 +7319,31 @@ watch([() => props.clientSessionId, () => props.completionContextVersion], () =>
 
 watch([() => props.databaseType, () => props.dialect, () => props.syntaxDialect, sqlDriverProfile], () => {
   executableStatementRangeCache = null;
+  statementBoundariesGeneration += 1;
   if (!view.value || !sqlLanguageComp || !buildSqlLanguageExtension || !sqlSemanticHighlightComp || !buildSqlSemanticHighlightExtension || !sqlSignatureComp || !buildSqlSignatureExtension) return;
   // Signature tooltips depend on the external dialect, so refresh them even when the document and selection stay unchanged.
   view.value.dispatch({
     effects: [sqlLanguageComp.reconfigure(buildSqlLanguageExtension()), sqlSemanticHighlightComp.reconfigure(buildSqlSemanticHighlightExtension()), sqlSignatureComp.reconfigure(buildSqlSignatureExtension())],
   });
 });
+
+// openGauss compatibility mode is loaded asynchronously from the backend into a
+// dedicated store map (not the sidebar tree). A restored tab may open before the
+// map is warm; when the mode arrives, re-derive statement boundaries and
+// diagnostics so package DDL is parsed with the correct PL/SQL rules.
+watch(
+  () => (props.databaseType === "opengauss" ? connectionStore.databaseCompatibilityMode(props.connectionId, props.database) : undefined),
+  (now, before) => {
+    if (now === before) return;
+    executableStatementRangeCache = null;
+    statementBoundariesGeneration += 1;
+    if (props.databaseType !== "opengauss") return;
+    if (!view.value) return;
+    refreshCompletionCache();
+    setSemanticDiagnostics([]);
+    scheduleSemanticDiagnostics(0);
+  },
+);
 
 watch(
   () => props.forceWordWrap,
@@ -7490,6 +7720,7 @@ defineExpose({
   captureExecutionSnapshot,
   pasteClipboardAsSqlInCondition,
   focusStatementRange,
+  focusErrorPosition,
   previewStatementRange,
   refreshCompletionCache,
 });
@@ -7568,11 +7799,11 @@ defineExpose({
 }
 
 :deep(.cm-db-execution-preview) {
-  background: var(--chiron-horizon-editor-selection-background, rgba(59, 130, 246, 0.35));
+  background: var(--dbx-editor-selection-background, rgba(59, 130, 246, 0.35));
 }
 
 :deep(.cm-db-result-source-highlight) {
-  background: var(--chiron-horizon-editor-selection-background, rgba(126, 34, 206, 0.2));
+  background: var(--dbx-editor-selection-background, rgba(126, 34, 206, 0.2));
 }
 
 :deep(.cm-lineNumbers .cm-db-result-source-line-number) {
@@ -7613,12 +7844,12 @@ defineExpose({
   align-items: center;
   justify-content: center;
   box-sizing: border-box;
-  width: min(24px, calc(var(--chiron-horizon-editor-font-size, 13px) * 1.6));
-  height: min(24px, calc(var(--chiron-horizon-editor-font-size, 13px) * 1.6));
+  width: min(24px, calc(var(--dbx-editor-font-size, 13px) * 1.6));
+  height: min(24px, calc(var(--dbx-editor-font-size, 13px) * 1.6));
   margin: 0;
   padding: 0;
   border: 1px solid transparent;
-  border-radius: var(--chiron-horizon-radius-fixed-6);
+  border-radius: var(--dbx-radius-fixed-6);
   vertical-align: middle;
   white-space: nowrap;
   transition:
@@ -7665,12 +7896,12 @@ defineExpose({
   align-items: center;
   justify-content: center;
   box-sizing: border-box;
-  width: min(24px, calc(var(--chiron-horizon-editor-font-size, 13px) * 1.6));
-  height: min(24px, calc(var(--chiron-horizon-editor-font-size, 13px) * 1.6));
+  width: min(24px, calc(var(--dbx-editor-font-size, 13px) * 1.6));
+  height: min(24px, calc(var(--dbx-editor-font-size, 13px) * 1.6));
   margin: 0;
   padding: 0;
   border: 1px solid transparent;
-  border-radius: var(--chiron-horizon-radius-fixed-6);
+  border-radius: var(--dbx-radius-fixed-6);
   background: transparent;
   color: transparent;
   vertical-align: middle;
@@ -7744,10 +7975,10 @@ defineExpose({
 }
 
 :deep(.cm-statement-execution-spinner) {
-  animation: chiron-horizon-statement-execution-spin 0.8s linear infinite;
+  animation: dbx-statement-execution-spin 0.8s linear infinite;
 }
 
-@keyframes chiron-horizon-statement-execution-spin {
+@keyframes dbx-statement-execution-spin {
   to {
     transform: rotate(360deg);
   }

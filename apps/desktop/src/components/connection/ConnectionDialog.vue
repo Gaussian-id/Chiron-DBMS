@@ -42,12 +42,14 @@ import type { NacosAdminConfig, NacosApiPlane, NacosAuthConfig, NacosImplementat
 import { CONNECTION_ATTEMPT_CANCELLED_MESSAGE, useConnectionStore } from "@/stores/connectionStore";
 import { useTunnelProfileStore } from "@/stores/tunnelProfileStore";
 import { detachTunnelProfileLayer, tunnelProfileReferenceLayer, tunnelProfileSummary } from "@/lib/connection/tunnelProfiles";
+import { sanitizeConnectionCredentials } from "@/lib/connection/credentialSanitizer";
 import { applySshAuthMethod, inferSshAuthMethod } from "@/lib/connection/sshAuthMethod";
 import { applySshConfigHostAliasPrefill as prefillSshConfigHostAlias } from "@/lib/connection/sshConfigHosts";
 import { canPersistConnectionTestResult, connectionEditDraftSyncAction } from "./connectionEditDraftSync";
 import { createConnectionNoteVisibilityDraft, persistConnectionNoteVisibilityDraft as persistConnectionNoteVisibilityDraftState, resetConnectionNoteVisibilityDraft, setConnectionNoteVisibilityDraft, syncConnectionNoteVisibilityDraft } from "./connectionNoteVisibilityDraft";
 import { REDIS_SCAN_PAGE_SIZE_DEFAULT, REDIS_SCAN_PAGE_SIZE_MIN, REDIS_SCAN_PAGE_SIZE_MAX, REDIS_SCAN_PAGE_SIZE_OPTIONS } from "@/lib/redis/redisKeyPattern";
 import { normalizeRedisKeyTemplates, redisKeyTemplatesToTextarea } from "@/lib/redis/redisKeyTemplates";
+import { normalizeRedisDatabaseValue } from "@/lib/redis/redisDatabaseIndex";
 import { normalizeGlobalConnectTimeoutSecs, normalizeGlobalQueryTimeoutSecs, useSettingsStore } from "@/stores/settingsStore";
 import { useToast } from "@/composables/useToast";
 import DatabaseIcon from "@/components/icons/DatabaseIcon.vue";
@@ -92,6 +94,7 @@ import { assertCompleteDatabaseCategories, databaseSelectionForCategory } from "
 import { loadConnectionPickerView, saveConnectionPickerView, type DbPickerView } from "@/lib/connection/connectionPickerViewPreference";
 import { normalizeRocketmqNamesrvAddr } from "@/lib/connection/rocketmqNamesrv";
 import { normalizeRabbitmqAddresses, parseRabbitmqAddress } from "@/lib/connection/rabbitmqAddresses";
+import { pluginFieldIsRequired, pluginFieldIsVisible } from "@/lib/plugins/pluginFieldConditions";
 import { detectMqUiAuthKind, isMqAuthKindAllowedForSystem, type MqUiAuthKind } from "@/lib/connection/mqAuth";
 import { driverInstallProgressChannel, driverInstallProgressPercent, isDriverInstallProgressForOperation, requestAgentInstallCancellation, resolveAgentInstallOutcome, type DriverInstallProgress } from "@/lib/connection/driverInstallProgressUi";
 import { requiresSqlServerLegacyCompatibilityComponent, setSqlServerLegacyCompatibilityConfig, sqlServerUsesLegacyCompatibility, SQLSERVER_LEGACY_COMPATIBILITY_DRIVER_KEY } from "@/lib/connection/sqlServerLegacyCompatibility";
@@ -255,6 +258,8 @@ type LegacyTransportFields = {
 type LegacyConnectionConfig = ConnectionConfig & LegacyTransportFields;
 type ConnectionForm = Omit<ConnectionConfig, "id">;
 type ConnectionTestState = ConnectionTestResult & { ok: boolean; scope?: "connection" | "ssh" };
+type PluginActionStatus = { ok: boolean; message: string };
+type SaveConnectionOptions = { connectAfterSave?: boolean; closeOnSuccess?: boolean };
 
 const { t, locale: appLocale } = useI18n();
 const { toast } = useToast();
@@ -285,7 +290,7 @@ const emit = defineEmits<{
 }>();
 
 const store = useConnectionStore();
-const UNGROUPED_CONNECTION_GROUP = "__chiron_horizon_ungrouped_connection_group__";
+const UNGROUPED_CONNECTION_GROUP = "__dbx_ungrouped_connection_group__";
 const selectedConnectionGroupId = ref<string | null>(null);
 const connectionGroupSelectValue = computed({
   get: () => selectedConnectionGroupId.value ?? UNGROUPED_CONNECTION_GROUP,
@@ -328,11 +333,9 @@ const connectionErrorDetail = ref("");
 const testResultCopied = ref(false);
 const connectionErrorCopied = ref(false);
 const editingId = ref<string | null>(null);
-const installedPlugins = ref<InstalledPlugin[]>([]);
 const pluginFormValues = ref<Record<string, PluginFormFieldValue>>({});
 const pluginLoadError = ref("");
 const runningPluginActionId = ref<string | null>(null);
-type PluginActionStatus = { ok: boolean; message: string };
 const pluginActionStatus = ref<PluginActionStatus | null>(null);
 const draftTestConnectionId = ref(uuid());
 const showVisibleDatabasesDialog = ref(false);
@@ -365,6 +368,7 @@ const isLoadingVisibleSchemas = ref(false);
 const visibleSchemaNames = ref<string[]>([]);
 const visibleSchemaInitialSelection = ref<string[]>([]);
 const visibleSchemaError = ref("");
+const installedPlugins = ref<InstalledPlugin[]>([]);
 let testRunId = 0;
 let unlistenAgentInstallProgress: (() => void) | null = null;
 
@@ -375,14 +379,14 @@ function initialConfigTab(): ConfigTab {
 const defaultForm = (): ConnectionForm => ({
   name: "",
   note: "",
-  db_type: "chirondb",
-  driver_profile: "chirondb",
-  driver_label: "ChironDB",
+  db_type: "mysql",
+  driver_profile: "mysql",
+  driver_label: "MySQL",
   url_params: "",
   agent_java_options: [],
   host: "127.0.0.1",
-  port: 7401,
-  username: "",
+  port: 3306,
+  username: "root",
   password: "",
   database: undefined,
   color: "",
@@ -758,7 +762,14 @@ const keepaliveEnabled = computed({
 });
 const selectedTransportLayerId = ref<string | null>(null);
 const draggedTransportLayerId = ref<string | null>(null);
-const selectedType = ref("chirondb");
+const selectedType = ref("mysql");
+const pluginRegistry = computed(() => createFrontendPluginRegistry(installedPlugins.value, appLocale.value));
+const pluginConnectionProviders = computed(() => pluginRegistry.value.listConnectionProviders());
+const selectedPluginProvider = computed(() => pluginProviderEntryForOption(selectedType.value));
+const selectedPluginIcon = computed(() => (selectedPluginProvider.value ? pluginConnectionProviderIcon(selectedPluginProvider.value) : undefined));
+const isPluginConnection = computed(() => form.value.db_type === "plugin");
+const pluginFooterActions = computed<PluginConnectionAction[]>(() => (selectedPluginProvider.value ? pluginConnectionActionsForDialog(selectedPluginProvider.value.contribution, !!editingId.value) : []));
+const pluginFooterBusy = computed(() => isTesting.value || isSaving.value || !!runningPluginActionId.value);
 const customDriverName = ref("");
 const mongoUseUrl = ref(false);
 const jdbcDriverPathsInput = ref("");
@@ -798,7 +809,7 @@ const damengJvmOptions = ref("");
 const dialogStep = ref<DialogStep>("select");
 const dbPickerView = ref<DbPickerView>(loadConnectionPickerView());
 const dbSearchQuery = ref("");
-const selectedDbCategory = ref<DbCategoryKey>("graph_ai");
+const selectedDbCategory = ref<DbCategoryKey>("sql");
 const configTab = ref<ConfigTab>("connection");
 
 // 对话框拖动功能
@@ -1190,13 +1201,6 @@ function selectedProfile() {
   return driverProfiles[profile] ?? driverProfiles.mysql;
 }
 
-const isPluginConnection = computed(() => form.value.db_type === "plugin");
-const pluginConnectionProviders = computed(() => createFrontendPluginRegistry(installedPlugins.value, appLocale.value).listConnectionProviders());
-const selectedPluginProvider = computed(() => pluginProviderEntryForOption(selectedType.value));
-const selectedPluginIcon = computed(() => (selectedPluginProvider.value ? pluginConnectionProviderIcon(selectedPluginProvider.value) : undefined));
-const pluginFooterActions = computed<PluginConnectionAction[]>(() => (selectedPluginProvider.value ? pluginConnectionActionsForDialog(selectedPluginProvider.value.contribution, !!editingId.value) : []));
-const pluginFooterBusy = computed(() => isTesting.value || isSaving.value || !!runningPluginActionId.value);
-
 function pluginProviderEntry(pluginId: string, providerId: string) {
   return pluginConnectionProviders.value.find((entry) => entry.plugin.manifest.id === pluginId && entry.contribution.id === providerId) || null;
 }
@@ -1204,62 +1208,6 @@ function pluginProviderEntry(pluginId: string, providerId: string) {
 function pluginProviderEntryForOption(value: string) {
   const target = parsePluginConnectionProviderOptionValue(value);
   return target ? pluginProviderEntry(target.pluginId, target.providerId) : null;
-}
-
-function applyPluginProvider(value: string, preserveConnectionFields = false, existing?: ConnectionConfig): boolean {
-  const target = parsePluginConnectionProviderOptionValue(value);
-  if (!target) return false;
-  const entry = pluginProviderEntry(target.pluginId, target.providerId);
-  if (!entry) return false;
-
-  selectedType.value = value;
-  if (!preserveConnectionFields) {
-    form.value = {
-      ...defaultForm(),
-      name: entry.contribution.label,
-      db_type: "plugin",
-      driver_profile: "plugin",
-      driver_label: entry.contribution.label,
-      host: "",
-      port: 0,
-      username: "",
-      password: "",
-      query_timeout_secs: 60,
-    };
-  } else {
-    form.value.db_type = "plugin";
-    form.value.driver_profile = "plugin";
-    form.value.driver_label = entry.contribution.label;
-  }
-  pluginFormValues.value = pluginConnectionFormValues(entry.contribution, existing);
-  if (!preserveConnectionFields) {
-    const nameField = entry.contribution.fields.find((field) => field.binding === "name");
-    const defaultName = nameField ? pluginFormValues.value[nameField.key] : undefined;
-    if (typeof defaultName === "string" && defaultName.trim()) form.value.name = defaultName.trim();
-  }
-  connectionUrlInput.value = "";
-  appliedConnectionUrlInput.value = "";
-  return true;
-}
-
-async function loadInstalledPlugins() {
-  pluginLoadError.value = "";
-  try {
-    installedPlugins.value = await api.listPlugins();
-  } catch (cause) {
-    installedPlugins.value = [];
-    pluginLoadError.value = cause instanceof Error ? cause.message : String(cause);
-  }
-}
-
-function applyRequestedPluginProvider(target: PluginCenterFocus | null | undefined) {
-  if (!target?.pluginId || !target.providerId) return false;
-  const value = pluginConnectionProviderOptionValue(target.pluginId, target.providerId);
-  if (!applyPluginProvider(value)) return false;
-  selectedDbCategory.value = "plugins";
-  dialogStep.value = "config";
-  configTab.value = "connection";
-  return true;
 }
 
 function mqExtraRecord(config?: Partial<MqAdminConfig>): Record<string, unknown> {
@@ -1524,7 +1472,7 @@ function buildMqttExternalConfig(): MqttConnectionConfig {
   return {
     host: mqttHost.value.trim(),
     port: mqttPort.value,
-    clientId: mqttClientId.value.trim() || `chiron-horizon-${Math.random().toString(36).slice(2, 10)}`,
+    clientId: mqttClientId.value.trim() || `dbx-${Math.random().toString(36).slice(2, 10)}`,
     protocolVersion: mqttProtocolVersion.value,
     transport: mqttTransportMode.value,
     tls: mqttTls.value,
@@ -2589,6 +2537,62 @@ function applyProfile(val: string, preserveConnectionFields = false) {
   }
 }
 
+function applyPluginProvider(value: string, preserveConnectionFields = false, existing?: ConnectionConfig): boolean {
+  const target = parsePluginConnectionProviderOptionValue(value);
+  if (!target) return false;
+  const entry = pluginProviderEntry(target.pluginId, target.providerId);
+  if (!entry) return false;
+
+  selectedType.value = value;
+  if (!preserveConnectionFields) {
+    form.value = {
+      ...defaultForm(),
+      name: entry.contribution.label,
+      db_type: "plugin",
+      driver_profile: "plugin",
+      driver_label: entry.contribution.label,
+      host: "",
+      port: 0,
+      username: "",
+      password: "",
+      query_timeout_secs: 60,
+    };
+  } else {
+    form.value.db_type = "plugin";
+    form.value.driver_profile = "plugin";
+    form.value.driver_label = entry.contribution.label;
+  }
+  pluginFormValues.value = pluginConnectionFormValues(entry.contribution, existing);
+  if (!preserveConnectionFields) {
+    const nameField = entry.contribution.fields.find((field) => field.binding === "name");
+    const defaultName = nameField ? pluginFormValues.value[nameField.key] : undefined;
+    if (typeof defaultName === "string" && defaultName.trim()) form.value.name = defaultName.trim();
+  }
+  connectionUrlInput.value = "";
+  appliedConnectionUrlInput.value = "";
+  return true;
+}
+
+async function loadInstalledPlugins() {
+  pluginLoadError.value = "";
+  try {
+    installedPlugins.value = await api.listPlugins();
+  } catch (cause) {
+    installedPlugins.value = [];
+    pluginLoadError.value = cause instanceof Error ? cause.message : String(cause);
+  }
+}
+
+function applyRequestedPluginProvider(target: PluginCenterFocus | null | undefined) {
+  if (!target?.pluginId || !target.providerId) return false;
+  const value = pluginConnectionProviderOptionValue(target.pluginId, target.providerId);
+  if (!applyPluginProvider(value)) return false;
+  selectedDbCategory.value = "plugins";
+  dialogStep.value = "config";
+  configTab.value = "connection";
+  return true;
+}
+
 function switchOceanbaseMode(mode: "mysql" | "oracle") {
   oceanbaseSubMode.value = mode;
   if (mode === "mysql") {
@@ -2626,7 +2630,7 @@ watch(
         name: config.name,
         note: config.note || "",
         db_type: oceanbasePatch?.db_type || profileConfig?.type || config.db_type,
-        driver_profile: oceanbasePatch?.driver_profile || config.driver_profile || profile,
+        driver_profile: config.db_type === "plugin" ? "plugin" : oceanbasePatch?.driver_profile || config.driver_profile || profile,
         driver_label: config.driver_label || oceanbasePatch?.driver_label || driverProfiles[profile]?.label || config.db_type,
         url_params: config.url_params || "",
         agent_java_options: config.agent_java_options || [],
@@ -2634,7 +2638,9 @@ watch(
         port: profile === "tdengine" && (config.port === 0 || config.port === 6030) ? 6041 : config.port,
         username: config.username,
         password: config.password,
-        database: config.database,
+        // Show the index the backend actually connects with; legacy dirty values
+        // (e.g. redis-cli flags in the field) are healed when the form is saved.
+        database: config.db_type === "redis" ? normalizeRedisDatabaseValue(config.database) || "" : config.database,
         color: config.color || "",
         transport_layers: transportLayersForConfig(legacyConfig),
         connect_timeout_secs: config.connect_timeout_inherit === true ? settingsStore.editorSettings.globalConnectTimeoutSecs : config.connect_timeout_secs || 10,
@@ -2770,6 +2776,7 @@ watch(
       productionProtectionEnabled.value = false;
       selectedTransportLayerId.value = null;
       selectedType.value = "mysql";
+      pluginFormValues.value = {};
       customDriverName.value = "";
       resetMqFields();
       resetCassandraTlsFields(undefined);
@@ -2877,11 +2884,12 @@ function transportLayerDisplayName(layer: TransportLayerConfig, index: number): 
 
 const transportPathSegments = computed(() => {
   const layers = transportLayers.value.filter((layer) => layer.enabled !== false);
-  return ["Chiron Horizon", ...layers.map(transportLayerDisplayName), form.value.host || "Database"];
+  return ["DBX", ...layers.map(transportLayerDisplayName), form.value.host || "Database"];
 });
 
 function defaultDatabaseForProfile() {
   if (form.value.db_type === "redshift") return "dev";
+  if (form.value.db_type === "redis") return "0";
   if (form.value.db_type === "gaussdb") return "postgres";
   if (form.value.db_type === "kwdb") return "defaultdb";
   if (form.value.db_type === "databend") return "default";
@@ -3013,10 +3021,10 @@ const dbCategoryMetadata: Array<{ key: DbCategoryKey; titleKey: string }> = [
   { key: "registry_config", titleKey: "connection.databaseCategoryRegistryConfig" },
 ];
 
-function jdbcProductCategory(profileId: string): DbCategoryKey {
-  const category = dbCategoryMetadata.find(({ key }) => jdbcProductProfileIdsForCategory(key).includes(profileId))?.key;
-  if (!category) throw new Error(`JDBC product profile ${profileId} has no connection picker category`);
-  return category;
+function jdbcProductCategory(profileId: string): ConnectionProfileCategory {
+  const category: DbCategoryKey | undefined = dbCategoryMetadata.find(({ key }) => jdbcProductProfileIdsForCategory(key).includes(profileId))?.key;
+  if (category !== "plugins" && category) return category;
+  throw new Error(`JDBC product profile ${profileId} has no connection picker category`);
 }
 
 // `influxdb3` is presented as a version option inside the InfluxDB card
@@ -3092,7 +3100,7 @@ const selectedDbOptionIsVisible = computed(() => visibleDbCategories.value.some(
 function selectDbCategory(category: DbCategoryKey) {
   selectedDbCategory.value = category;
   dbSearchQuery.value = "";
-  const categoryOptions = dbCategoryDefinitions.find((definition) => definition.key === category)?.optionValues ?? [];
+  const categoryOptions = dbCategories.value.find((definition) => definition.key === category)?.options.map((option) => option.value) ?? [];
   const nextSelection = databaseSelectionForCategory(selectedType.value, categoryOptions);
   if (nextSelection && nextSelection !== selectedType.value) onDbTypeChange(nextSelection);
 }
@@ -3163,7 +3171,6 @@ const tlsCapableDatabaseTypes = new Set<DatabaseType>([
   "meilisearch",
   "hbase",
   "qdrant",
-  "chirondb",
   "milvus",
   "weaviate",
   "chromadb",
@@ -3174,7 +3181,7 @@ const tlsCapableDatabaseTypes = new Set<DatabaseType>([
 ]);
 const supportsTlsToggle = computed(() => tlsCapableDatabaseTypes.has(form.value.db_type));
 const supportsCaCertificatePath = computed(() => form.value.db_type === "clickhouse" || form.value.db_type === "victoriametrics");
-const supportsGenericUrlParams = computed(() => form.value.db_type !== "chirondb" && form.value.db_type !== "manticoresearch" && form.value.db_type !== "hbase");
+const supportsGenericUrlParams = computed(() => form.value.db_type !== "manticoresearch" && form.value.db_type !== "hbase");
 const showGenericUrlParamsHint = computed(() => form.value.db_type === "mysql" || form.value.db_type === "doris" || form.value.db_type === "starrocks");
 const bareMysqlProfiles = new Set(["doris", "selectdb", "oceanbase"]);
 const supportsMysqlTlsOptions = computed(() => form.value.db_type === "starrocks" || (form.value.db_type === "mysql" && !bareMysqlProfiles.has(selectedType.value)));
@@ -3324,22 +3331,22 @@ const canUseTransportLayers = computed(() => {
 const sqliteSshOnlyTransport = computed(() => form.value.db_type === "sqlite");
 const sqliteUsesSsh = computed(() => form.value.db_type === "sqlite" && connectionUsesSsh(form.value));
 const sqliteWorkerPlacement = computed({
-  get: () => getUrlParam(form.value.url_params, "chiron_horizon_sqlite_worker") || "session",
+  get: () => getUrlParam(form.value.url_params, "dbx_sqlite_worker") || "session",
   set: (value: string) => {
     const next = value === "session" ? "" : value;
-    form.value.url_params = setUrlParam(form.value.url_params, "chiron_horizon_sqlite_worker", next);
-    if (value !== "preplaced" && !getUrlParam(form.value.url_params, "chiron_horizon_sqlite_worker_path")) {
+    form.value.url_params = setUrlParam(form.value.url_params, "dbx_sqlite_worker", next);
+    if (value !== "preplaced" && !getUrlParam(form.value.url_params, "dbx_sqlite_worker_path")) {
       return;
     }
     if (value === "session") {
-      form.value.url_params = setUrlParam(form.value.url_params, "chiron_horizon_sqlite_worker_path", "");
+      form.value.url_params = setUrlParam(form.value.url_params, "dbx_sqlite_worker_path", "");
     }
   },
 });
 const sqliteWorkerPath = computed({
-  get: () => getUrlParam(form.value.url_params, "chiron_horizon_sqlite_worker_path"),
+  get: () => getUrlParam(form.value.url_params, "dbx_sqlite_worker_path"),
   set: (value: string) => {
-    form.value.url_params = setUrlParam(form.value.url_params, "chiron_horizon_sqlite_worker_path", value);
+    form.value.url_params = setUrlParam(form.value.url_params, "dbx_sqlite_worker_path", value);
   },
 });
 const sqliteWorkerPlacementOptions = [
@@ -3574,6 +3581,32 @@ const pluginActionStatusMessage = computed(() => {
   if (!pluginActionStatus.value) return "";
   return pluginActionStatus.value.ok ? pluginActionStatus.value.message : translateBackendError(t, pluginActionStatus.value.message);
 });
+const agentInstallPercent = computed(() => driverInstallProgressPercent(agentInstallProgress.value));
+const agentInstallProgressLabel = computed(() => {
+  const progress = agentInstallProgress.value;
+  if (agentInstallError.value) return t("connection.driverInstall.statusFailed");
+  if (!agentInstallRunning.value) return t("connection.driverInstall.statusWaiting");
+  if (!progress) return t("connection.driverInstall.statusPreparing");
+  if (progress.step === "jre-extract") return t("connection.driverInstall.statusExtractingJre");
+  const label = progress.step === "jre" ? t("connection.driverInstall.stepJre") : progress.step === "driver" ? t("connection.driverInstall.stepDriver") : progress.step || t("connection.driverInstall.stepDefault");
+  if (!progress.total) return `${label}...`;
+  return `${label} ${formatInstallSize(progress.downloaded ?? 0)} / ${formatInstallSize(progress.total)} (${agentInstallPercent.value ?? 0}%)`;
+});
+const canCloseAgentInstallDialog = computed(() => !agentInstallRunning.value || !!agentInstallError.value);
+const sqlServerDriverMode = computed<"auto" | "legacy">(() => (sqlServerUsesLegacyCompatibility(form.value) ? "legacy" : "auto"));
+const shouldUseWideConnectionDialog = computed(
+  () => dialogStep.value === "config" && (canChooseVisibleDatabases.value || canChooseVisibleNacosNamespaces.value || (canChooseVisibleSchemas.value && !visibleFilterUsesSchemas.value) || (selectedPluginProvider.value?.contribution.fields.length ?? 0) >= 6),
+);
+const connectionDialogContentClass = computed(() => {
+  if (dialogStep.value === "select") return "connection-dialog-content--picker sm:h-[720px] sm:max-w-[880px]";
+  const widthClass = shouldUseWideConnectionDialog.value ? "connection-dialog-content--wide sm:max-w-[660px]" : "connection-dialog-content--standard sm:max-w-[560px]";
+  const scrollableAdvancedNacos = form.value.db_type === "nacos" && configTab.value === "advanced";
+  return `${widthClass} connection-dialog-content--config${scrollableAdvancedNacos ? " connection-dialog-content--scrollable" : ""}`;
+});
+const connectionLabelClass = "justify-self-start text-left";
+const connectionLabelSmallClass = `${connectionLabelClass} text-xs`;
+const connectionLabelTopClass = `${connectionLabelClass} mt-2`;
+const connectionLabelSmallPaddedClass = `${connectionLabelClass} pt-2 text-xs`;
 
 function pluginFieldValue(field: PluginFormField): PluginFormFieldValue {
   if (field.binding === "name") return form.value.name;
@@ -3583,6 +3616,19 @@ function pluginFieldValue(field: PluginFormField): PluginFormFieldValue {
 function pluginFieldHasValue(field: PluginFormField): boolean {
   const value = pluginFieldValue(field);
   return typeof value === "string" ? value.trim().length > 0 : value !== undefined;
+}
+
+function pluginFieldValueByKey(key: string): PluginFormFieldValue {
+  const field = selectedPluginProvider.value?.contribution.fields.find((candidate) => candidate.key === key);
+  return field ? pluginFieldValue(field) : undefined;
+}
+
+function pluginFieldVisible(field: PluginFormField): boolean {
+  return pluginFieldIsVisible(field, pluginFieldValueByKey, (key) => selectedPluginProvider.value?.contribution.fields.find((candidate) => candidate.key === key));
+}
+
+function pluginFieldRequired(field: PluginFormField): boolean {
+  return pluginFieldIsRequired(field, pluginFieldValueByKey);
 }
 
 function pluginActionLabel(action: PluginConnectionAction): string {
@@ -3634,34 +3680,11 @@ function applyPluginActionFieldValues(values: Record<string, PluginFormFieldValu
   }
   pluginFormValues.value = nextValues;
 }
-const agentInstallPercent = computed(() => driverInstallProgressPercent(agentInstallProgress.value));
-const agentInstallProgressLabel = computed(() => {
-  const progress = agentInstallProgress.value;
-  if (agentInstallError.value) return t("connection.driverInstall.statusFailed");
-  if (!agentInstallRunning.value) return t("connection.driverInstall.statusWaiting");
-  if (!progress) return t("connection.driverInstall.statusPreparing");
-  if (progress.step === "jre-extract") return t("connection.driverInstall.statusExtractingJre");
-  const label = progress.step === "jre" ? t("connection.driverInstall.stepJre") : progress.step === "driver" ? t("connection.driverInstall.stepDriver") : progress.step || t("connection.driverInstall.stepDefault");
-  if (!progress.total) return `${label}...`;
-  return `${label} ${formatInstallSize(progress.downloaded ?? 0)} / ${formatInstallSize(progress.total)} (${agentInstallPercent.value ?? 0}%)`;
-});
-const canCloseAgentInstallDialog = computed(() => !agentInstallRunning.value || !!agentInstallError.value);
-const sqlServerDriverMode = computed<"auto" | "legacy">(() => (sqlServerUsesLegacyCompatibility(form.value) ? "legacy" : "auto"));
-const shouldUseWideConnectionDialog = computed(() => dialogStep.value === "config" && (canChooseVisibleDatabases.value || canChooseVisibleNacosNamespaces.value || (canChooseVisibleSchemas.value && !visibleFilterUsesSchemas.value)));
-const connectionDialogContentClass = computed(() => {
-  if (dialogStep.value === "select") return "connection-dialog-content--picker sm:h-[720px] sm:max-w-[880px]";
-  const widthClass = shouldUseWideConnectionDialog.value ? "connection-dialog-content--wide sm:max-w-[660px]" : "connection-dialog-content--standard sm:max-w-[560px]";
-  const scrollableAdvancedNacos = form.value.db_type === "nacos" && configTab.value === "advanced";
-  return `${widthClass} connection-dialog-content--config${scrollableAdvancedNacos ? " connection-dialog-content--scrollable" : ""}`;
-});
-const connectionLabelClass = "justify-self-start text-left";
-const connectionLabelSmallClass = `${connectionLabelClass} text-xs`;
-const connectionLabelTopClass = `${connectionLabelClass} mt-2`;
-const connectionLabelSmallPaddedClass = `${connectionLabelClass} pt-2 text-xs`;
+
 const hasRequiredConnectionTarget = computed(() => {
   if (isPluginConnection.value) {
-    const provider = selectedPluginProvider.value?.contribution;
-    return !!provider && provider.fields.every((field) => !field.required || pluginFieldHasValue(field));
+    const entry = selectedPluginProvider.value;
+    return !!entry && entry.contribution.fields.every((field) => !pluginFieldVisible(field) || !pluginFieldRequired(field) || pluginFieldHasValue(field));
   }
   if (form.value.db_type === "mq") {
     if (mqSystemKind.value === "kafka") return mqKafkaConnectionSource.value === "zookeeper" ? !!mqKafkaZooKeeperServers.value.trim() : !!mqKafkaBootstrapServers.value.trim();
@@ -4062,11 +4085,12 @@ function connectionConfigForSshTunnelTest(id: string): ConnectionConfig {
 }
 
 function connectionConfigForSubmit(id: string, generatedName = "", validatePluginRequired = true): ConnectionConfig {
+  let config: LegacyConnectionConfig;
   if (isPluginConnection.value) {
     const entry = selectedPluginProvider.value;
     if (!entry) throw new Error(pluginLoadError.value || t("connection.pluginProviderUnavailable"));
     if (validatePluginRequired) {
-      const missingField = entry.contribution.fields.find((field) => field.required && !pluginFieldHasValue(field));
+      const missingField = entry.contribution.fields.find((field) => pluginFieldVisible(field) && pluginFieldRequired(field) && !pluginFieldHasValue(field));
       if (missingField) throw new Error(t("connection.pluginRequiredField", { field: missingField.label }));
     }
     const values = { ...pluginFormValues.value };
@@ -4074,10 +4098,24 @@ function connectionConfigForSubmit(id: string, generatedName = "", validatePlugi
       if (field.binding === "name") values[field.key] = form.value.name;
     }
     const existing = props.editConfig?.db_type === "plugin" && props.editConfig.plugin_id === entry.plugin.manifest.id && props.editConfig.plugin_connection_provider === entry.contribution.id ? props.editConfig : undefined;
-    const config = buildPluginConnectionConfig(entry.plugin.manifest.id, entry.contribution, values, existing);
-    return { ...formValueForSubmit(), ...config, id, name: form.value.name.trim() || generatedName.trim() || config.name, note: form.value.note?.trim() || undefined };
+    config = buildPluginConnectionConfig(entry.plugin.manifest.id, entry.contribution, values, existing) as LegacyConnectionConfig;
+    config.id = id;
+    config.name = form.value.name.trim() || config.name;
+    config.note = form.value.note;
+    config.color = form.value.color;
+    config.transport_layers = form.value.transport_layers || [];
+    config.connect_timeout_secs = form.value.connect_timeout_secs;
+    config.query_timeout_secs = form.value.query_timeout_secs;
+    config.idle_timeout_secs = form.value.idle_timeout_secs;
+    config.keepalive_interval_secs = form.value.keepalive_interval_secs;
+    config.read_only = form.value.read_only;
+    config.save_password = form.value.save_password;
+    // 生产保护只拦截 SQL/数据编辑路径，插件连接走不到；表单已隐藏该区块，提交时清掉历史残留标志。
+    config.is_production = false;
+    config.production_databases = [];
+  } else {
+    config = { ...formValueForSubmit(), id } as LegacyConnectionConfig;
   }
-  const config = { ...formValueForSubmit(), id } as LegacyConnectionConfig;
   config.database_info = undefined;
   config.database = normalizeStoredConnectionDatabase(config.db_type, config.database);
   config.note = config.note?.trim() || undefined;
@@ -4131,7 +4169,7 @@ function connectionConfigForSubmit(id: string, generatedName = "", validatePlugi
     config.database = alias;
     config.connection_string = buildOracleTnsConnectionString(alias, tnsAdmin);
   } else if (config.db_type === "oracle" && parseOracleTnsConnectionString(config.connection_string)) {
-    // Only clear Chiron Horizon-generated TNS URLs when switching modes; preserve custom
+    // Only clear DBX-generated TNS URLs when switching modes; preserve custom
     // service, SID, and descriptor JDBC strings exactly as before.
     config.connection_string = undefined;
   }
@@ -4287,6 +4325,9 @@ function connectionConfigForSubmit(id: string, generatedName = "", validatePlugi
     setGaussdbTargetServerType(config, targetServerType);
     setGaussdbCountQueryDop(config, countQueryDop);
   } else if (config.db_type !== "plugin" && !isDoltDriverProfile(config.driver_profile)) {
+    // Plugin connections keep `external_config`: the manifest-driven form
+    // fields land there via buildPluginConnectionConfig. Only the built-in
+    // drivers without an external-config payload get wiped here.
     config.external_config = undefined;
   }
   if (config.db_type === "mongodb" && !mongoUseUrl.value) {
@@ -4369,6 +4410,13 @@ function connectionConfigForSubmit(id: string, generatedName = "", validatePlugi
     const scanSize = Number(config.redis_scan_page_size);
     config.redis_scan_page_size = Number.isFinite(scanSize) && scanSize >= REDIS_SCAN_PAGE_SIZE_MIN && scanSize <= REDIS_SCAN_PAGE_SIZE_MAX ? Math.round(scanSize) : REDIS_SCAN_PAGE_SIZE_DEFAULT;
     {
+      // A Redis database is a numeric index; dirty values (e.g. redis-cli flags
+      // pasted into the field) are stored as the index the backend connects with.
+      const database = normalizeRedisDatabaseValue(config.database);
+      config.database = database;
+      form.value.database = database || "";
+    }
+    {
       const templates = normalizeRedisKeyTemplates(redisKeyTemplatesText.value);
       config.redis_key_templates = templates.length > 0 ? templates : undefined;
       form.value.redis_key_templates = templates;
@@ -4383,12 +4431,6 @@ function connectionConfigForSubmit(id: string, generatedName = "", validatePlugi
       config.port = firstEndpoint.port;
     }
     config.database = undefined;
-    config.ca_cert_path = config.ca_cert_path?.trim() || "";
-    config.client_cert_path = config.client_cert_path?.trim() || "";
-    config.client_key_path = config.client_key_path?.trim() || "";
-    if ((config.client_cert_path && !config.client_key_path) || (!config.client_cert_path && config.client_key_path)) {
-      throw new Error(t("connection.etcdClientCertPairRequired"));
-    }
   }
   if (config.db_type === "etcd") {
     config.etcd_endpoints = normalizeEndpointLines(config.etcd_endpoints || "");
@@ -4403,12 +4445,37 @@ function connectionConfigForSubmit(id: string, generatedName = "", validatePlugi
     if ((config.client_cert_path && !config.client_key_path) || (!config.client_cert_path && config.client_key_path)) {
       throw new Error(t("connection.etcdClientCertPairRequired"));
     }
-  } else if (form.value.db_type !== "consul" && config.db_type !== "zookeeper") {
+  } else if (config.db_type === "zookeeper") {
+    config.etcd_endpoints = undefined;
+    config.client_cert_path = config.client_cert_path?.trim() || "";
+    config.client_key_path = config.client_key_path?.trim() || "";
+    if ((config.client_cert_path && !config.client_key_path) || (!config.client_cert_path && config.client_key_path)) {
+      throw new Error(t("connection.etcdClientCertPairRequired"));
+    }
+  } else if (form.value.db_type !== "consul" && config.db_type !== "elasticsearch" && config.db_type !== "easysearch") {
     config.etcd_endpoints = undefined;
     config.client_cert_path = undefined;
     config.client_key_path = undefined;
   }
-  if (config.db_type !== "mysql" && config.db_type !== "clickhouse" && config.db_type !== "etcd" && config.db_type !== "consul" && config.db_type !== "starrocks" && config.db_type !== "mongodb" && config.db_type !== "victoriametrics" && config.db_type !== "zookeeper") {
+  if (config.db_type === "elasticsearch" || config.db_type === "easysearch") {
+    config.client_cert_path = config.client_cert_path?.trim() || "";
+    config.client_key_path = config.client_key_path?.trim() || "";
+    if ((config.client_cert_path && !config.client_key_path) || (!config.client_cert_path && config.client_key_path)) {
+      throw new Error(t("connection.etcdClientCertPairRequired"));
+    }
+  }
+  if (
+    config.db_type !== "mysql" &&
+    config.db_type !== "clickhouse" &&
+    config.db_type !== "etcd" &&
+    config.db_type !== "consul" &&
+    config.db_type !== "starrocks" &&
+    config.db_type !== "mongodb" &&
+    config.db_type !== "victoriametrics" &&
+    config.db_type !== "zookeeper" &&
+    config.db_type !== "elasticsearch" &&
+    config.db_type !== "easysearch"
+  ) {
     config.ca_cert_path = undefined;
   } else {
     config.ca_cert_path = config.ca_cert_path?.trim() || "";
@@ -4519,6 +4586,8 @@ function connectionConfigForSubmit(id: string, generatedName = "", validatePlugi
   if (!config.show_system_schemas) config.show_system_schemas = undefined;
   if (config.visible_schemas && Object.keys(config.visible_schemas).length === 0) config.visible_schemas = undefined;
   if (config.agent_java_options && config.agent_java_options.length === 0) config.agent_java_options = undefined;
+  // Pasted credentials may carry invisible characters that trim() keeps (#9043).
+  sanitizeConnectionCredentials(config);
   return config as ConnectionConfig;
 }
 
@@ -4734,6 +4803,7 @@ function resetTestState() {
   isTesting.value = false;
   isTestingSshTunnel.value = false;
   testResult.value = null;
+  pluginActionStatus.value = null;
   clearTestedConnectionInfo();
   showConnectionErrorDialog.value = false;
   connectionErrorRawDetail.value = "";
@@ -5272,7 +5342,8 @@ function resetForm(options: { preservePickerState?: boolean } = {}) {
   editGlobalQueryTimeoutSecs.value = settingsStore.editorSettings.globalQueryTimeoutSecs;
   selectedTransportLayerId.value = null;
   draggedTransportLayerId.value = null;
-  selectedType.value = "chirondb";
+  selectedType.value = "mysql";
+  pluginFormValues.value = {};
   customDriverName.value = "";
   mongoUseUrl.value = false;
   resetMqFields();
@@ -5289,7 +5360,7 @@ function resetForm(options: { preservePickerState?: boolean } = {}) {
   if (!options.preservePickerState) {
     dialogStep.value = "select";
     dbSearchQuery.value = "";
-    selectedDbCategory.value = "graph_ai";
+    selectedDbCategory.value = "sql";
     configTab.value = "connection";
   }
   resetVisibleDatabaseDraftState();
@@ -5408,6 +5479,19 @@ watch(
       resetForm();
       if (props.prefillConfig) applyConnectionPrefill(props.prefillConfig);
     }
+    void loadInstalledPlugins().then(() => {
+      if (!open.value) return;
+      if (props.editConfig?.db_type === "plugin" && props.editConfig.plugin_id && props.editConfig.plugin_connection_provider) {
+        const entry = pluginProviderEntry(props.editConfig.plugin_id, props.editConfig.plugin_connection_provider);
+        if (entry) {
+          selectedType.value = pluginConnectionProviderOptionValue(props.editConfig.plugin_id, props.editConfig.plugin_connection_provider);
+          selectedDbCategory.value = "plugins";
+          pluginFormValues.value = pluginConnectionFormValues(entry.contribution, props.editConfig);
+        }
+      } else if (!props.prefillConfig) {
+        applyRequestedPluginProvider(props.pluginProvider);
+      }
+    });
     if (!props.prefillConfig?.oneTime) {
       void loadJdbcDrivers();
       void loadAgentDrivers();
@@ -5696,83 +5780,74 @@ async function persistConnectionNoteVisibilityDraft() {
   await persistConnectionNoteVisibilityDraftState(connectionNoteVisibilityDraft, settingsStore.editorSettings.sidebarShowConnectionNotes, (value) => settingsStore.updateEditorSettingsAndPersist({ sidebarShowConnectionNotes: value }));
 }
 
-async function save(options: { connectAfterSave?: boolean; closeOnSuccess?: boolean } = {}) {
-  if (!ensureConnectionHostResolvedFromUrl()) return;
-  if (isSaving.value) return;
+function startSavedConnection(config: ConnectionConfig) {
+  emit("connectStarted", config.name);
+  void store
+    .connect(config)
+    .then(() => {
+      emit("connectSucceeded", config.name);
+    })
+    .catch((e: any) => {
+      const message = String(e?.message || e);
+      if (message.includes(CONNECTION_ATTEMPT_CANCELLED_MESSAGE)) return;
+      // Keep failed one-time connections available for retry and error inspection.
+      // They are still removed by connectionStore.disconnect after a successful session.
+      emit("connectFailed", appendConnectionErrorHints(config, mongodbAuthFailureHint(message), t));
+    });
+}
+
+async function save(options: SaveConnectionOptions = {}): Promise<boolean> {
+  if (!ensureConnectionHostResolvedFromUrl()) return false;
+  if (isSaving.value) return false;
   if (!hasNacosNamespaceScopeForSave()) {
     testResult.value = null;
     await openVisibleNacosNamespacesPicker();
-    return;
+    return false;
   }
-  const connectAfterSave = options.connectAfterSave ?? (!editingId.value && form.value.db_type !== "jdbc");
+  const wasEditing = !!editingId.value;
+  const connectAfterSave = options.connectAfterSave ?? (!wasEditing && !isJdbcConnection.value);
   const closeOnSuccess = options.closeOnSuccess ?? true;
   const databaseInfoForSave = visibleTestDatabaseInfo.value ?? visibleSavedDatabaseInfo.value;
   isSaving.value = true;
   let connectionSaved = false;
   try {
+    let savedConfig: ConnectionConfig;
     if (editingId.value) {
       const updated = withSavedDatabaseInfo(connectionConfigForSubmit(editingId.value), databaseInfoForSave);
       await ensureRequiredAgentDriverInstalled(updated);
       await ensureRequiredGaussdbMJdbcRuntime(updated);
       await persistGlobalTimeoutDrafts();
       await store.updateConnection(updated);
+      savedConfig = updated;
       connectionSaved = true;
       await persistConnectionNoteVisibilityDraft();
-      store.stopEditing();
-      if (connectAfterSave) {
-        if (closeOnSuccess) {
-          open.value = false;
-          await nextTick();
-        }
-        emit("connectStarted", updated.name);
-        void store
-          .connect(updated)
-          .then(() => {
-            emit("connectSucceeded", updated.name);
-          })
-          .catch((e: any) => {
-            const message = String(e?.message || e);
-            if (message.includes(CONNECTION_ATTEMPT_CANCELLED_MESSAGE)) return;
-            emit("connectFailed", appendConnectionErrorHints(updated, mongodbAuthFailureHint(message), t));
-          });
-        return;
-      }
     } else {
       const config = withSavedDatabaseInfo(connectionConfigForSubmit(draftTestConnectionId.value), databaseInfoForSave);
       await ensureRequiredAgentDriverInstalled(config);
       await ensureRequiredGaussdbMJdbcRuntime(config);
       await persistGlobalTimeoutDrafts();
       await store.addConnection(config, selectedConnectionGroupId.value);
+      savedConfig = config;
       connectionSaved = true;
       await persistConnectionNoteVisibilityDraft();
       draftTestConnectionId.value = uuid();
-      if (!connectAfterSave) {
-        if (closeOnSuccess) open.value = false;
-        return;
-      }
-      if (closeOnSuccess) open.value = false;
-      await nextTick();
-      emit("connectStarted", config.name);
-      void store
-        .connect(config)
-        .then(() => {
-          emit("connectSucceeded", config.name);
-        })
-        .catch((e: any) => {
-          const message = String(e?.message || e);
-          if (message.includes(CONNECTION_ATTEMPT_CANCELLED_MESSAGE)) return;
-          // Keep failed one-time connections available for retry and error inspection.
-          // They are still removed by connectionStore.disconnect after a successful session.
-          emit("connectFailed", appendConnectionErrorHints(config, mongodbAuthFailureHint(message), t));
-        });
-      return;
     }
-    if (closeOnSuccess) open.value = false;
+    if (closeOnSuccess) {
+      if (wasEditing) store.stopEditing();
+      open.value = false;
+      await nextTick();
+    } else if (!wasEditing) {
+      editingId.value = savedConfig.id;
+      store.startEditing(savedConfig.id);
+    }
+    if (connectAfterSave && savedConfig.db_type !== "jdbc") startSavedConnection(savedConfig);
+    return true;
   } catch (e: any) {
     const cause = mongodbAuthFailureHint(String(e?.message || e));
     const message = connectionSaved ? t("connection.savedSettingsFailed", { message: cause }) : cause;
     testResult.value = { ok: false, message };
     showConnectionError(message);
+    return false;
   } finally {
     isSaving.value = false;
   }
@@ -6164,10 +6239,6 @@ onUnmounted(() => {
 });
 
 function openExternalUrl(url: string) {
-  if (url.includes("distribution-disabled.invalid")) {
-    window.alert("This Chiron Horizon service is not available in 0.1.0.");
-    return;
-  }
   if (isTauriRuntime()) {
     import("@tauri-apps/plugin-shell").then(({ open }) => open(url));
   } else {
@@ -6215,7 +6286,7 @@ function openExternalUrl(url: string) {
               </div>
               <div class="connection-db-picker-search relative w-full sm:w-64">
                 <Search class="absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                <Input v-model="dbSearchQuery" v-connection-dialog-auto-focus class="h-9 pl-8" :placeholder="t('connection.searchDatabasePlaceholder')" />
+                <Input data-connection-db-search v-model="dbSearchQuery" v-connection-dialog-auto-focus class="h-9 pl-8" :placeholder="t('connection.searchDatabasePlaceholder')" />
               </div>
             </div>
             <Button data-jdbc-connection-entry type="button" variant="outline" class="h-9 shrink-0 gap-2" @click="goToConnectionStep('jdbc')">
@@ -6252,7 +6323,7 @@ function openExternalUrl(url: string) {
                     type="button"
                     :title="opt.label"
                     class="connection-db-picker-option group flex min-h-24 flex-col items-center justify-center gap-2 rounded-[4px] border bg-background/70 p-3 text-center transition hover:border-primary/40 hover:bg-muted/40 hover:shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                    :class="isPickerOptionSelected(opt.value) ? 'chiron-horizon-tile-selected shadow-sm' : 'border-border'"
+                    :class="isPickerOptionSelected(opt.value) ? 'dbx-tile-selected shadow-sm' : 'border-border'"
                     :aria-pressed="isPickerOptionSelected(opt.value)"
                     @click="onDbTypeChange(opt.value)"
                     @dblclick="goToConnectionStep(opt.value)"
@@ -6261,7 +6332,7 @@ function openExternalUrl(url: string) {
                       <PluginIcon v-if="opt.plugin" :plugin-id="opt.pluginId || ''" :icon="opt.pluginIcon" class="h-6 w-6" />
                       <DatabaseIcon v-else :db-type="iconTypeMap[opt.value] || opt.value" class="h-6 w-6" />
                     </span>
-                    <span class="flex min-h-8 max-w-full flex-col items-center justify-center gap-1">
+                    <span class="flex min-h-8 max-w-full items-center justify-center">
                       <span class="line-clamp-2 text-sm leading-4 font-medium">{{ opt.label }}</span>
                     </span>
                   </button>
@@ -6273,7 +6344,7 @@ function openExternalUrl(url: string) {
                     :key="opt.value"
                     type="button"
                     class="connection-db-picker-option flex items-center gap-3 rounded-[4px] border bg-background px-3 py-2 text-left transition hover:border-primary/40 hover:bg-muted/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                    :class="isPickerOptionSelected(opt.value) ? 'chiron-horizon-tile-selected' : 'border-border'"
+                    :class="isPickerOptionSelected(opt.value) ? 'dbx-tile-selected' : 'border-border'"
                     :aria-pressed="isPickerOptionSelected(opt.value)"
                     @click="onDbTypeChange(opt.value)"
                     @dblclick="goToConnectionStep(opt.value)"
@@ -6429,7 +6500,15 @@ function openExternalUrl(url: string) {
                 </div>
 
                 <template v-if="isPluginConnection">
-                  <PluginConnectionFields v-if="selectedPluginProvider" :model-value="pluginFormValues" :contribution="selectedPluginProvider.contribution" :hidden-bindings="['name']" layout="connection-dialog" @update:model-value="updatePluginFormValues" />
+                  <PluginConnectionFields
+                    v-if="selectedPluginProvider"
+                    :model-value="pluginFormValues"
+                    :contribution="selectedPluginProvider.contribution"
+                    :hidden-bindings="['name']"
+                    layout="connection-dialog"
+                    :plugin-id="selectedPluginProvider.plugin.manifest.id"
+                    @update:model-value="updatePluginFormValues"
+                  />
                   <div v-else class="col-span-full rounded-lg border border-destructive/40 bg-destructive/5 p-4 text-sm text-destructive">
                     {{ pluginLoadError || t("connection.pluginProviderUnavailable") }}
                   </div>
@@ -6623,7 +6702,7 @@ function openExternalUrl(url: string) {
                             <FolderOpen class="h-3.5 w-3.5" />
                             {{ t("toolbar.driverManager") }}
                           </Button>
-                          <Button type="button" variant="outline" size="sm" @click="openExternalUrl(activeJdbcProductProfile?.docsUrl || 'https://distribution-disabled.invalid')">
+                          <Button type="button" variant="outline" size="sm" @click="openExternalUrl(activeJdbcProductProfile?.docsUrl || 'https://dbxio.com')">
                             <ExternalLink class="h-3.5 w-3.5" />
                             {{ activeJdbcProductProfile ? t(activeJdbcProductProfile.docsLabelKey) : t("connection.jdbcDocs") }}
                           </Button>
@@ -7885,13 +7964,13 @@ function openExternalUrl(url: string) {
                       <Input v-model="form.informix_server" class="col-span-3" placeholder="ol_informix1170" />
                     </div>
 
-                    <div v-if="form.db_type !== 'chirondb' && form.db_type !== 'meilisearch' && form.db_type !== 'spanner'" class="grid grid-cols-4 items-center gap-4">
+                    <div v-if="form.db_type !== 'meilisearch' && form.db_type !== 'spanner'" class="grid grid-cols-4 items-center gap-4">
                       <Label :class="connectionLabelClass">{{ t("connection.user") }}</Label>
                       <Input v-model="form.username" class="col-span-3" />
                     </div>
 
                     <div v-if="form.db_type !== 'spanner'" class="grid grid-cols-4 items-center gap-4">
-                      <Label :class="connectionLabelClass">{{ form.db_type === "chirondb" ? t("chiron.apiKey") : form.db_type === "meilisearch" ? t("connection.mqAuthApiKey") : t("connection.password") }}</Label>
+                      <Label :class="connectionLabelClass">{{ form.db_type === "meilisearch" ? t("connection.mqAuthApiKey") : t("connection.password") }}</Label>
                       <PasswordInput v-model="form.password" class="col-span-3" />
                     </div>
 
@@ -7899,8 +7978,8 @@ function openExternalUrl(url: string) {
                       <span />
                       <div class="col-span-3 flex items-center gap-1.5 text-sm">
                         <label class="flex items-center gap-2">
-                          <input v-model="form.save_password" type="checkbox" class="h-4 w-4 rounded border-border accent-primary" :aria-label="t(form.db_type === 'chirondb' ? 'chiron.saveApiKey' : 'connection.savePassword')" />
-                          <span class="whitespace-nowrap">{{ t(form.db_type === "chirondb" ? "chiron.saveApiKey" : "connection.savePassword") }}</span>
+                          <input v-model="form.save_password" type="checkbox" class="h-4 w-4 rounded border-border accent-primary" :aria-label="t('connection.savePassword')" />
+                          <span class="whitespace-nowrap">{{ t("connection.savePassword") }}</span>
                         </label>
                         <HelpTooltip :label="t('connection.savePassword')">
                           {{ form.save_password ? t("connection.savePasswordHint") : t("connection.savePasswordSessionHint") }}
@@ -7908,7 +7987,7 @@ function openExternalUrl(url: string) {
                       </div>
                     </div>
 
-                    <div v-if="form.db_type !== 'chirondb' && form.db_type !== 'hbase' && form.db_type !== 'meilisearch' && form.db_type !== 'spanner'" class="grid grid-cols-4 items-center gap-4">
+                    <div v-if="form.db_type !== 'hbase' && form.db_type !== 'meilisearch' && form.db_type !== 'spanner'" class="grid grid-cols-4 items-center gap-4">
                       <Label :class="connectionLabelClass">{{ databaseLabel }}</Label>
                       <Input v-model="form.database" class="col-span-3" :placeholder="databasePlaceholder" />
                     </div>
@@ -8163,7 +8242,7 @@ function openExternalUrl(url: string) {
                               <FolderOpen class="h-3.5 w-3.5" />
                               {{ t("toolbar.driverManager") }}
                             </Button>
-                            <Button v-if="form.db_type !== 'dameng'" type="button" variant="outline" size="sm" @click="openExternalUrl('https://distribution-disabled.invalid')">
+                            <Button v-if="form.db_type !== 'dameng'" type="button" variant="outline" size="sm" @click="openExternalUrl('https://dbxio.com')">
                               <ExternalLink class="h-3.5 w-3.5" />
                               {{ t("connection.jdbcDocs") }}
                             </Button>
@@ -8349,7 +8428,7 @@ function openExternalUrl(url: string) {
                   </label>
                 </div>
 
-                <template v-if="form.db_type === 'etcd' || form.db_type === 'consul' || form.db_type === 'zookeeper'">
+                <template v-if="form.db_type === 'etcd' || form.db_type === 'consul' || form.db_type === 'zookeeper' || form.db_type === 'elasticsearch' || form.db_type === 'easysearch'">
                   <div class="grid grid-cols-4 items-start gap-4">
                     <Label :class="connectionLabelSmallPaddedClass">
                       <span class="inline-flex items-center justify-end gap-1">
@@ -8403,7 +8482,7 @@ function openExternalUrl(url: string) {
                         </Tooltip>
                       </div>
                       <p class="text-[11px] leading-4 text-muted-foreground">
-                        {{ t("connection.clientCertHint") }}
+                        {{ t("connection.etcdClientCertHint") }}
                       </p>
                     </div>
                   </div>
@@ -8949,7 +9028,7 @@ function openExternalUrl(url: string) {
                     </p>
                   </div>
                 </div>
-                <div class="grid grid-cols-4 items-start gap-4 rounded-[6px] border border-red-500/25 bg-red-500/[0.035] px-3 py-2.5">
+                <div v-if="!isPluginConnection" class="grid grid-cols-4 items-start gap-4 rounded-[6px] border border-red-500/25 bg-red-500/[0.035] px-3 py-2.5">
                   <Label :class="[connectionLabelSmallClass, 'pt-0.5 text-red-700 dark:text-red-300']">
                     <span class="inline-flex items-center justify-end gap-1"><ShieldAlert class="h-3.5 w-3.5" />PROD</span>
                   </Label>
@@ -9227,7 +9306,7 @@ function openExternalUrl(url: string) {
                   <template v-else-if="selectedHttpTunnelLayer && !selectedLayerProfileId">
                     <div class="grid grid-cols-4 items-center gap-4">
                       <Label :class="connectionLabelSmallClass">{{ t("connection.httpTunnelUrl") }}</Label>
-                      <Input v-model="selectedHttpTunnelLayer.url" class="col-span-3" placeholder="https://chiron-horizon.example.com/chiron_horizon_tunnel.php" :disabled="selectedHttpTunnelLayer.enabled === false" />
+                      <Input v-model="selectedHttpTunnelLayer.url" class="col-span-3" placeholder="https://dbx.example.com/dbx_tunnel.php" :disabled="selectedHttpTunnelLayer.enabled === false" />
                     </div>
                     <div class="grid grid-cols-4 items-center gap-4">
                       <Label :class="connectionLabelSmallClass">{{ t("connection.httpTunnelToken") }}</Label>
@@ -9300,7 +9379,7 @@ function openExternalUrl(url: string) {
             <Button variant="outline" class="shrink-0" :disabled="isTesting || isTestingSshTunnel || isSaving" @click="testConnection">
               {{ isTesting ? t("connection.testing") : t("connection.test") }}
             </Button>
-            <Button class="shrink-0" @click="save" :disabled="isSaving || isTestingSshTunnel || !hasRequiredConnectionTarget">
+            <Button class="shrink-0" @click="save()" :disabled="isSaving || isTestingSshTunnel || !hasRequiredConnectionTarget">
               {{ isSaving ? t("common.loading") : editingId || isJdbcConnection ? t("connection.save") : t("connection.saveAndConnect") }}
             </Button>
           </template>
@@ -9635,7 +9714,7 @@ function openExternalUrl(url: string) {
 .connection-dialog-content {
   display: flex;
   flex-direction: column;
-  max-height: calc(var(--chiron-horizon-viewport-height) - 2rem);
+  max-height: calc(var(--dbx-viewport-height) - 2rem);
 }
 
 .connection-dialog-content--config {
@@ -9643,7 +9722,7 @@ function openExternalUrl(url: string) {
 }
 
 .connection-dialog-content--scrollable {
-  height: min(720px, calc(var(--chiron-horizon-viewport-height) - 2rem));
+  height: min(720px, calc(var(--dbx-viewport-height) - 2rem));
 }
 
 .connection-dialog-content--config .connection-form-body {
@@ -9661,7 +9740,7 @@ function openExternalUrl(url: string) {
 @media (max-height: 720px) {
   .connection-dialog-content--config {
     /* A definite flex height lets tab bodies shrink and scroll above the fixed footer. */
-    height: calc(var(--chiron-horizon-viewport-height) - 2rem);
+    height: calc(var(--dbx-viewport-height) - 2rem);
   }
 }
 
@@ -9712,7 +9791,7 @@ html.chiron-horizon-legacy-webview.dark .connection-transport-layer-option--sele
 }
 
 .connection-config-step :is([data-slot="input"], [data-slot="select-trigger"], [data-slot="tabs-list"], [data-slot="tabs-trigger"], textarea) {
-  border-radius: var(--chiron-horizon-radius-fixed-4, 4px);
+  border-radius: var(--dbx-radius-fixed-4, 4px);
 }
 
 .connection-dialog-content[data-wide="true"] .grid.grid-cols-4 {

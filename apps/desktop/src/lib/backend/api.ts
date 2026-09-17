@@ -89,6 +89,7 @@ export const removePluginRepository = forward("removePluginRepository");
 export const fetchPluginMarketplaceCatalogs = forward("fetchPluginMarketplaceCatalogs");
 export const installMarketplacePlugin = forward("installMarketplacePlugin");
 export const installPluginPackage = forward("installPluginPackage");
+export const installPluginPackageFromUrl = forward("installPluginPackageFromUrl");
 export const rollbackPlugin = forward("rollbackPlugin");
 export const uninstallPlugin = forward("uninstallPlugin");
 export const activatePlugin = forward("activatePlugin");
@@ -408,6 +409,7 @@ export const setAiGlobalCustomInstructions = forward("setAiGlobalCustomInstructi
 // System
 export const listSystemFonts = forward("listSystemFonts");
 export const listSshConfigHosts = forward("listSshConfigHosts");
+export const listLocalSshKeys = forward("listLocalSshKeys");
 
 // SQL File Execution
 export const previewSqlFile = forward("previewSqlFile");
@@ -420,6 +422,7 @@ export const pendingOpenSqlFiles = forward("pendingOpenSqlFiles");
 export const pendingOpenDbFiles = forward("pendingOpenDbFiles");
 export const pendingOpenConnectionLinks = forward("pendingOpenConnectionLinks");
 export const pendingOpenAiConfigLinks = forward("pendingOpenAiConfigLinks");
+export const pendingOpenPluginInstallLinks = forward("pendingOpenPluginInstallLinks");
 export const readExternalSqlFile = forward("readExternalSqlFile");
 export const readExternalSqlFileSnapshot = forward("readExternalSqlFileSnapshot");
 export const inspectExternalSqlFile = forward("inspectExternalSqlFile");
@@ -494,6 +497,13 @@ export const cancelMongodbImport = forward("cancelMongodbImport");
 export const releaseMongodbImportSource = forward("releaseMongodbImportSource");
 export const exportMongodbQuery = forward("exportMongodbQuery");
 export const cancelMongodbExport = forward("cancelMongodbExport");
+export const inspectMongodbDatabaseDump = forward("inspectMongodbDatabaseDump");
+export const prepareMongodbRestoreSource = forward("prepareMongodbRestoreSource");
+export const releaseMongodbRestoreSource = forward("releaseMongodbRestoreSource");
+export const dumpMongodbDatabase = forward("dumpMongodbDatabase");
+export const restoreMongodbDatabase = forward("restoreMongodbDatabase");
+export const cancelMongodbDatabaseDump = forward("cancelMongodbDatabaseDump");
+export type { MongoDumpFormat, MongoDumpSourceInput, MongoDumpCatalog, MongoDumpCollection, MongoRestoreSourcePreview, MongoDatabaseDumpRequest, MongoDatabaseRestoreRequest, MongoDatabaseDumpProgress } from "./mongodbDumpTypes";
 
 // Database Export
 export const beginDatabaseBackupSnapshot = forward("beginDatabaseBackupSnapshot");
@@ -814,6 +824,7 @@ export const mongoInsertDocuments = forward("mongoInsertDocuments");
 export const documentUpdateDocument = forward("documentUpdateDocument");
 export const mongoUpdateDocument = forward("mongoUpdateDocument");
 export const mongoUpdateDocuments = forward("mongoUpdateDocuments");
+export const mongoReplaceDocument = forward("mongoReplaceDocument");
 export const documentDeleteDocument = forward("documentDeleteDocument");
 export const documentSaveMeilisearchBatch = forward("documentSaveMeilisearchBatch");
 export const meilisearchSearchDocuments = forward("meilisearchSearchDocuments");
@@ -1033,6 +1044,8 @@ export type {
   TableImportProgress,
   MongoImportFormat,
   MongoImportTypeMode,
+  MongoImportInferredType,
+  MongoImportColumn,
   MongoImportIssue,
   MongoImportParseOptions,
   MongoImportPreviewRequest,

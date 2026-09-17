@@ -14,7 +14,7 @@ import { normalizeResultPageSize } from "@/lib/dataGrid/paginationPageSize";
 import { DEFAULT_QUERY_RESULT_MAX_ROWS, normalizeQueryResultMaxRows } from "@/lib/dataGrid/queryResultRowLimit";
 import { normalizeExternalSqlEditorMaxMb } from "@/lib/sql/sqlFileOpen";
 import { DEFAULT_QUERY_TIMEOUT_SECS, normalizeConnectTimeoutSecs, normalizeQueryTimeoutSecs } from "@/lib/connection/timeoutLimits";
-import { needsTabNavigationHistoryShortcutMigration, normalizeShortcutSettings, type ShortcutSettings } from "@/lib/editor/shortcutRegistry";
+import { needsTabNavigationHistoryShortcutMigration, normalizeShortcutSettings, isReservedShortcut, type ShortcutSettings } from "@/lib/editor/shortcutRegistry";
 import type { SavedSqlOpenTargetMode } from "@/lib/savedSql/savedSqlExecutionTarget";
 import type { ConnectionListSortMode } from "@/lib/sidebar/connectionListSort";
 import { type ColumnNameCopySeparator } from "@/lib/dataGrid/dataGridColumnNameCopy";
@@ -769,6 +769,8 @@ export interface EditorSettings {
   executeMode: "all" | "current";
   executeModeDefaultVersion: number;
   executeAllOnBlankLine: boolean;
+  /** Whether DBX blocks Redis commands classified as high risk. */
+  blockDangerousRedisCommands: boolean;
   globalConnectTimeoutSecs: number;
   connectTimeoutInheritConnectionIds: string[];
   globalQueryTimeoutSecs: number;
@@ -874,6 +876,7 @@ export interface EditorSettings {
   generateSqlQuoteIdentifiers: boolean;
   formatSqlOnSqlFileSave: boolean;
   updateNotificationsEnabled: boolean;
+  autoDownloadUpdates: boolean;
   sidebarHiddenTablePrefixes: string[];
   sidebarCopyTableNameSeparator: ColumnNameCopySeparator;
   sidebarCopyTableNameIncludeSchema: boolean;
@@ -1010,6 +1013,7 @@ export const DEFAULT_EDITOR_SETTINGS: EditorSettings = {
   executeMode: "current",
   executeModeDefaultVersion: EXECUTE_MODE_CURRENT_DEFAULT_VERSION,
   executeAllOnBlankLine: false,
+  blockDangerousRedisCommands: true,
   globalConnectTimeoutSecs: 10,
   connectTimeoutInheritConnectionIds: [],
   globalQueryTimeoutSecs: DEFAULT_QUERY_TIMEOUT_SECS,
@@ -1114,6 +1118,7 @@ export const DEFAULT_EDITOR_SETTINGS: EditorSettings = {
   generateSqlQuoteIdentifiers: true,
   formatSqlOnSqlFileSave: false,
   updateNotificationsEnabled: true,
+  autoDownloadUpdates: false,
   sidebarHiddenTablePrefixes: [],
   sidebarCopyTableNameSeparator: "comma",
   sidebarCopyTableNameIncludeSchema: false,
@@ -1369,10 +1374,15 @@ function normalizeSqlShortcuts(value: unknown, existing?: SqlShortcutAction[]): 
     if (!item || typeof item !== "object" || typeof item.id !== "string" || !item.id || typeof item.label !== "string" || !item.label || typeof item.shortcut !== "string" || typeof item.sql !== "string") {
       continue;
     }
+    const shortcut = item.shortcut.trim();
+    // SQL 快捷键走 createQueryEditorSqlShortcutDomHandler：匹配后 preventDefault，
+    // 与普通动作一样会重新劫持 macOS 的 ⌘H。此处直接丢弃保留组合——SQL 快捷键
+    // 没有“平台默认值”这一概念（它是用户自定义模板的专属触发键），清空即视为未绑定。
+    const normalizedShortcut = isReservedShortcut(shortcut) ? "" : shortcut;
     valid.push({
       id: item.id,
       label: item.label,
-      shortcut: item.shortcut.trim(),
+      shortcut: normalizedShortcut,
       sql: item.sql,
       enabled: item.enabled !== false,
     });
@@ -1465,6 +1475,7 @@ export function normalizeEditorSettings(settings: Partial<EditorSettings>, exist
     executeMode: hasCurrentExecuteModeDefault && (settings.executeMode === "all" || settings.executeMode === "current") ? settings.executeMode : DEFAULT_EDITOR_SETTINGS.executeMode,
     executeModeDefaultVersion,
     executeAllOnBlankLine: settings.executeAllOnBlankLine === true,
+    blockDangerousRedisCommands: typeof settings.blockDangerousRedisCommands === "boolean" ? settings.blockDangerousRedisCommands : DEFAULT_EDITOR_SETTINGS.blockDangerousRedisCommands,
     globalConnectTimeoutSecs: normalizeGlobalConnectTimeoutSecs(settings.globalConnectTimeoutSecs),
     connectTimeoutInheritConnectionIds: Array.isArray(settings.connectTimeoutInheritConnectionIds) ? [...new Set(settings.connectTimeoutInheritConnectionIds.filter((id): id is string => typeof id === "string" && id.trim().length > 0).map((id) => id.trim()))] : [],
     globalQueryTimeoutSecs: normalizeGlobalQueryTimeoutSecs(settings.globalQueryTimeoutSecs ?? legacyTimeoutSettings.queryTimeoutSecs),
@@ -1604,6 +1615,7 @@ export function normalizeEditorSettings(settings: Partial<EditorSettings>, exist
     generateSqlQuoteIdentifiers: typeof settings.generateSqlQuoteIdentifiers === "boolean" ? settings.generateSqlQuoteIdentifiers : DEFAULT_EDITOR_SETTINGS.generateSqlQuoteIdentifiers,
     formatSqlOnSqlFileSave: settings.formatSqlOnSqlFileSave === true,
     updateNotificationsEnabled: settings.updateNotificationsEnabled ?? DEFAULT_EDITOR_SETTINGS.updateNotificationsEnabled,
+    autoDownloadUpdates: settings.autoDownloadUpdates === true,
     sidebarHiddenTablePrefixes: normalizeSidebarHiddenTablePrefixes(settings.sidebarHiddenTablePrefixes),
     sidebarCopyTableNameSeparator: normalizeSidebarCopyTableNameSeparator(settings.sidebarCopyTableNameSeparator),
     sidebarCopyTableNameIncludeSchema: settings.sidebarCopyTableNameIncludeSchema === true,
@@ -2215,6 +2227,7 @@ export const useSettingsStore = defineStore("settings", () => {
     }
     if (partial.executeMode !== undefined) editorSettings.value.executeMode = partial.executeMode;
     if (partial.executeAllOnBlankLine !== undefined) editorSettings.value.executeAllOnBlankLine = partial.executeAllOnBlankLine === true;
+    if (partial.blockDangerousRedisCommands !== undefined) editorSettings.value.blockDangerousRedisCommands = partial.blockDangerousRedisCommands === true;
     if (partial.globalConnectTimeoutSecs !== undefined) editorSettings.value.globalConnectTimeoutSecs = normalizeGlobalConnectTimeoutSecs(partial.globalConnectTimeoutSecs);
     if (partial.connectTimeoutInheritConnectionIds !== undefined) {
       editorSettings.value.connectTimeoutInheritConnectionIds = [...new Set(partial.connectTimeoutInheritConnectionIds.filter((id): id is string => typeof id === "string" && id.trim().length > 0).map((id) => id.trim()))];
@@ -2332,6 +2345,7 @@ export const useSettingsStore = defineStore("settings", () => {
     if (partial.generateSqlQuoteIdentifiers !== undefined) editorSettings.value.generateSqlQuoteIdentifiers = partial.generateSqlQuoteIdentifiers === true;
     if (partial.formatSqlOnSqlFileSave !== undefined) editorSettings.value.formatSqlOnSqlFileSave = partial.formatSqlOnSqlFileSave === true;
     if (partial.updateNotificationsEnabled !== undefined) editorSettings.value.updateNotificationsEnabled = partial.updateNotificationsEnabled;
+    if (partial.autoDownloadUpdates !== undefined) editorSettings.value.autoDownloadUpdates = partial.autoDownloadUpdates === true;
     if (partial.sidebarHiddenTablePrefixes !== undefined) editorSettings.value.sidebarHiddenTablePrefixes = normalizeSidebarHiddenTablePrefixes(partial.sidebarHiddenTablePrefixes);
     if (partial.sidebarCopyTableNameSeparator !== undefined) editorSettings.value.sidebarCopyTableNameSeparator = normalizeSidebarCopyTableNameSeparator(partial.sidebarCopyTableNameSeparator);
     if (partial.sidebarCopyTableNameIncludeSchema !== undefined) editorSettings.value.sidebarCopyTableNameIncludeSchema = partial.sidebarCopyTableNameIncludeSchema === true;

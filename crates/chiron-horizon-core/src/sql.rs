@@ -61,6 +61,13 @@ pub struct SqlFileRequest {
     pub continue_on_error: bool,
     #[serde(default)]
     pub selected_tables: Option<Vec<crate::sql_file_import::SqlFileTable>>,
+    #[serde(default)]
+    pub part_cooldown_ms: u64,
+    /// Temporarily disable MySQL `FOREIGN_KEY_CHECKS` for this import and
+    /// restore them on completion, error, or cancellation. Only applies to
+    /// MySQL-compatible connections that reuse one pinned session.
+    #[serde(default)]
+    pub skip_relational_constraints: bool,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -73,6 +80,10 @@ pub struct SqlFilePreview {
     pub can_execute_without_selected_database: bool,
     #[serde(default)]
     pub establishes_database_context: bool,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub package_file_paths: Option<Vec<String>>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub package_part_count: Option<usize>,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
@@ -244,6 +255,26 @@ pub struct SqlParsingOptions {
 impl SqlParsingOptions {
     pub fn for_database_type(db_type: DatabaseType) -> Self {
         Self::from_profile(SqlDialectProfile::for_database_type(db_type))
+    }
+
+    pub fn for_database_type_and_compatibility(db_type: DatabaseType, compatibility_mode: Option<&str>) -> Self {
+        if db_type == DatabaseType::OpenGauss {
+            return match compatibility_mode.map(str::trim) {
+                // openGauss stores package specs/bodies as PL/SQL regardless of
+                // mode, and A mode is the only mode where the catalog reports
+                // them as packages. Any mode other than A keeps the PostgreSQL
+                // statement splitter.
+                Some(mode) if mode.eq_ignore_ascii_case("A") => Self::from_profile(SqlDialectProfile::gaussdb()),
+                Some(_) => Self::for_database_type(db_type),
+                // Unknown mode: the compatibility probe failed or the pool was
+                // unavailable. Falling back to the plain PostgreSQL profile would
+                // split an A-mode package body on its inner semicolons into
+                // fragments that the caller may then execute individually, so the
+                // conservative PL/SQL-capable profile is used instead.
+                None => Self::from_profile(SqlDialectProfile::gaussdb()),
+            };
+        }
+        Self::for_database_type(db_type)
     }
 
     pub fn mysql_compatible() -> Self {
@@ -677,6 +708,14 @@ pub fn split_sql_statements_for_database(sql: &str, db_type: DatabaseType) -> Ve
     sql_execution_plan_for_database(sql, db_type).statements
 }
 
+pub fn split_sql_statements_for_database_with_compatibility(
+    sql: &str,
+    db_type: DatabaseType,
+    compatibility_mode: Option<&str>,
+) -> Vec<String> {
+    sql_execution_plan_for_database_with_compatibility(sql, db_type, compatibility_mode).statements
+}
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct SqlExecutionPlan {
     pub statements: Vec<String>,
@@ -684,7 +723,21 @@ pub struct SqlExecutionPlan {
 }
 
 pub fn sql_execution_plan_for_database(sql: &str, db_type: DatabaseType) -> SqlExecutionPlan {
-    let options = SqlParsingOptions::for_database_type(db_type);
+    sql_execution_plan_with_options(sql, SqlParsingOptions::for_database_type(db_type))
+}
+
+pub fn sql_execution_plan_for_database_with_compatibility(
+    sql: &str,
+    db_type: DatabaseType,
+    compatibility_mode: Option<&str>,
+) -> SqlExecutionPlan {
+    sql_execution_plan_with_options(
+        sql,
+        SqlParsingOptions::for_database_type_and_compatibility(db_type, compatibility_mode),
+    )
+}
+
+fn sql_execution_plan_with_options(sql: &str, options: SqlParsingOptions) -> SqlExecutionPlan {
     if !options.profile.supports_psql_control_commands {
         return SqlExecutionPlan { statements: split_sql_statements_with_options(sql, options), stop_on_error: false };
     }
@@ -1218,7 +1271,9 @@ fn find_sqlserver_statement_at_cursor(sql: &str, cursor_pos: usize) -> String {
 
     for (idx, batch) in batches.iter().enumerate() {
         if cursor >= batch.start && cursor <= batch.end {
-            if profile.keeps_sqlserver_module_batch_at_cursor && starts_with_sqlserver_module_ddl(&batch.text) {
+            if starts_with_sqlserver_control_flow_batch(&batch.text)
+                || (profile.keeps_sqlserver_module_batch_at_cursor && starts_with_sqlserver_module_ddl(&batch.text))
+            {
                 return batch.text.clone();
             }
             let relative_cursor = sql[..cursor].encode_utf16().count() - sql[..batch.start].encode_utf16().count();
@@ -1227,7 +1282,9 @@ fn find_sqlserver_statement_at_cursor(sql: &str, cursor_pos: usize) -> String {
 
         if cursor < batch.start {
             if let Some(prev) = idx.checked_sub(1).and_then(|prev_idx| batches.get(prev_idx)) {
-                if profile.keeps_sqlserver_module_batch_at_cursor && starts_with_sqlserver_module_ddl(&prev.text) {
+                if starts_with_sqlserver_control_flow_batch(&prev.text)
+                    || (profile.keeps_sqlserver_module_batch_at_cursor && starts_with_sqlserver_module_ddl(&prev.text))
+                {
                     return prev.text.clone();
                 }
                 let relative_cursor = prev.text.encode_utf16().count();
@@ -1242,6 +1299,14 @@ fn find_sqlserver_statement_at_cursor(sql: &str, cursor_pos: usize) -> String {
     }
 
     batches.last().map(|batch| batch.text.clone()).unwrap_or_else(|| sql.trim().to_string())
+}
+
+fn starts_with_sqlserver_control_flow_batch(sql: &str) -> bool {
+    let tokens = first_sql_tokens(sql, 128);
+    tokens.first().is_some_and(|token| token.eq_ignore_ascii_case("IF"))
+        && tokens.iter().any(|token| token.eq_ignore_ascii_case("ELSE"))
+        && tokens.iter().any(|token| token.eq_ignore_ascii_case("BEGIN"))
+        && tokens.iter().any(|token| token.eq_ignore_ascii_case("END"))
 }
 
 fn starts_with_sqlserver_module_ddl(sql: &str) -> bool {
@@ -4343,6 +4408,23 @@ SELECT 1;";
     }
 
     #[test]
+    fn opengauss_a_mode_split_keeps_create_package_together() {
+        let sql = "CREATE OR REPLACE PACKAGE pkg_utils AS\n    FUNCTION get_version RETURN VARCHAR2;\n    PROCEDURE log_message(msg VARCHAR2);\nEND pkg_utils;\n/\nSELECT 1;";
+
+        assert_eq!(
+            super::split_sql_statements_for_database_with_compatibility(sql, DatabaseType::OpenGauss, Some("A")),
+            vec![
+                "CREATE OR REPLACE PACKAGE pkg_utils AS\n    FUNCTION get_version RETURN VARCHAR2;\n    PROCEDURE log_message(msg VARCHAR2);\nEND pkg_utils;",
+                "SELECT 1"
+            ]
+        );
+        assert_ne!(
+            super::split_sql_statements_for_database_with_compatibility(sql, DatabaseType::OpenGauss, Some("PG")),
+            super::split_sql_statements_for_database_with_compatibility(sql, DatabaseType::OpenGauss, Some("A"))
+        );
+    }
+
+    #[test]
     fn xugu_split_keeps_create_package_body_together() {
         let sql = "\
 CREATE OR REPLACE PACKAGE BODY chiron_horizon_pkg AS
@@ -4702,6 +4784,24 @@ END";
             super::find_statement_at_cursor_for_database(sql, cursor, DatabaseType::SqlServer),
             "ALTER PROC dbo.usp_demo\nAS\nBEGIN\n  UPDATE dbo.users SET name = name;\nEND"
         );
+    }
+
+    #[test]
+    fn sqlserver_current_statement_keeps_if_else_control_flow_batch() {
+        let sql = "\
+IF EXISTS (SELECT 1 FROM ::fn_listextendedproperty('MS_Description','USER','dbo','TABLE','Categories','COLUMN','CategoryID'))
+BEGIN
+  EXEC sp_updateextendedproperty @name=N'MS_Description', @value=N'test', @level0type=N'USER', @level0name=N'dbo', @level1type=N'TABLE', @level1name=N'Categories', @level2type=N'COLUMN', @level2name=N'CategoryID'
+END
+ELSE
+BEGIN
+  EXEC sp_addextendedproperty @name=N'MS_Description', @value=N'test', @level0type=N'USER', @level0name=N'dbo', @level1type=N'TABLE', @level1name=N'Categories', @level2type=N'COLUMN', @level2name=N'CategoryID'
+END";
+        let update_cursor = sql[..sql.find("sp_updateextendedproperty").unwrap()].encode_utf16().count();
+        let add_cursor = sql[..sql.find("sp_addextendedproperty").unwrap()].encode_utf16().count();
+
+        assert_eq!(super::find_statement_at_cursor_for_database(sql, update_cursor, DatabaseType::SqlServer), sql);
+        assert_eq!(super::find_statement_at_cursor_for_database(sql, add_cursor, DatabaseType::SqlServer), sql);
     }
 
     #[test]

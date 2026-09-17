@@ -13,16 +13,19 @@ import {
   ChevronUp,
   CircleHelp,
   Cloud,
+  Code,
   Copy,
   Download,
   ExternalLink,
   Eye,
   Filter,
+  Globe,
   GripVertical,
   Loader2,
   Moon,
   PackageSearch,
   Palette,
+  PanelLeft,
   Pencil,
   Plus,
   RefreshCw,
@@ -32,6 +35,7 @@ import {
   Sun,
   Star,
   SunMoon,
+  Table,
   Terminal,
   Trash2,
   Upload,
@@ -120,7 +124,6 @@ import { importClipboardApiKeyAfterConfirmation, type AiConfigDeepLinkDraft } fr
 import { clearDebugLogs as clearStoredDebugLogs, downloadDebugLogs, getDebugLogBundleText } from "@/lib/backend/debugLog";
 import {
   aiTestConnection,
-  aiResolveEndpoint,
   checkMcpServerStatus,
   installMcpServer,
   uninstallMcpServer,
@@ -168,7 +171,8 @@ import {
   type WebDavConfig,
 } from "@/lib/backend/api";
 import { eventToModifierOnlyShortcut, eventToShortcut } from "@/lib/editor/keyboardShortcuts";
-import { SHORTCUT_DEFINITIONS, findShortcutConflict, normalizeShortcutSettings, type ShortcutActionId } from "@/lib/editor/shortcutRegistry";
+import { SHORTCUT_DEFINITIONS, countShortcutConflictPairs, findCrossScopeShortcutConflicts, findShortcutConflict, isReservedShortcut, normalizeShortcutSettings, type ShortcutActionId, type ShortcutDefinition, type ShortcutScope } from "@/lib/editor/shortcutRegistry";
+import LightTooltip from "@/components/ui/LightTooltip.vue";
 import { formatShortcutDisplay } from "@/lib/editor/shortcutDisplay";
 import { COLUMN_NAME_COPY_SEPARATOR_LABELS, COLUMN_NAME_COPY_SEPARATOR_OPTIONS, isColumnNameCopySeparator, type ColumnNameCopySeparator } from "@/lib/dataGrid/dataGridColumnNameCopy";
 import { normalizeSidebarHiddenTablePrefixes } from "@/lib/sidebar/sidebarTableNameDisplay";
@@ -182,7 +186,20 @@ import { currentExecutableStatementRange, type SqlTextRange } from "@/lib/sql/sq
 import { executableStatementRangeCacheForDoc, executableStatementRangeStartingAt, type ExecutableStatementRangeCache } from "@/lib/sql/executableStatementRangeCache";
 import { EMPTY_TABLE_COLUMN_TEMPLATE_DATA_TYPE, parseTableColumnTemplateFields, TABLE_COLUMN_TEMPLATE_DATABASE_TYPES, tableColumnTemplateRowsToSettings } from "@/lib/table/tableColumnTemplates";
 import { DEFAULT_SQL_VARIABLE_SYNTAX_TOGGLES, normalizeSqlVariableSyntaxOverrides, SQL_VARIABLE_SYNTAX_DATABASE_TYPES, SQL_VARIABLE_SYNTAX_KEYS, SQL_VARIABLE_SYNTAX_TOKENS, type SqlVariableSyntaxOverrides, type SqlVariableSyntaxToggles } from "@/lib/sql/sqlVariableSyntax";
-import { buildMcpCherryStudioConfig, buildMcpCodexConfig, buildMcpDeepSeekHarnessConfig, buildMcpJsonConfig, buildMcpOpenCodeConfig, buildMcpPiConfig, buildMcpQoderConfig, buildMcpTraeConfig, buildMcpVsCodeConfig, mcpWebBackendUrl, type McpLaunchConfig } from "@/lib/mcp/mcpConfigTemplates";
+import {
+  buildMcpCherryStudioConfig,
+  buildMcpCodexConfig,
+  buildMcpDeepSeekHarnessConfig,
+  buildMcpJsonConfig,
+  buildMcpOpenCodeConfig,
+  buildMcpPiConfig,
+  buildMcpQoderConfig,
+  buildMcpTraeConfig,
+  buildMcpVsCodeConfig,
+  buildMcpWorkBuddyConfig,
+  mcpWebBackendUrl,
+  type McpLaunchConfig,
+} from "@/lib/mcp/mcpConfigTemplates";
 import { beginMcpStatusRequest, mcpUpdateAvailability } from "@/lib/mcp/mcpUpdateStatus";
 import { isMcpPolicyMutationBlocked, MCP_CAPABILITY_ROWS, MCP_EXECUTION_MODE_COLUMNS, MCP_TOOL_OPTIONS, mcpExecutionModeFromPolicy, mcpPolicyFieldsForExecutionMode, toggleMcpAllowedToolName, type McpExecutionMode } from "@/lib/mcp/mcpPolicySelection";
 import { isMacOS, isWindows } from "@/lib/backend/platform";
@@ -240,6 +257,7 @@ import { DEFAULT_DATA_GRID_FONT_FAMILY, DEFAULT_UI_FONT_FAMILY, normalizeCustomF
 import { buildFontFamilyOptions, displayFontFamily, isPresetFontFamily, loadSystemFontNames } from "@/lib/app/fontFamilyOptions";
 import { buildAppSupportInfoRows, formatAppSupportInfoForClipboard, type AppSupportInfoLabels } from "@/lib/app/supportInfo";
 import { useUiFontFamilyPreview } from "@/composables/useUiFontFamilyPreview";
+import { useMeasuredWidth } from "@/composables/useMeasuredWidth";
 import { DateTimePatterns, normalizeSupportedDateTimePattern } from "@/lib/dataGrid/columnFormatter";
 import { MAX_RESULT_PAGE_SIZE, MIN_RESULT_PAGE_SIZE } from "@/lib/dataGrid/paginationPageSize";
 import { MAX_QUERY_RESULT_MAX_ROWS } from "@/lib/dataGrid/queryResultRowLimit";
@@ -359,10 +377,10 @@ const isSettingsPage = computed(() => props.variant === "page");
 const settingsVisible = computed(() => isSettingsPage.value || props.open === true);
 const settingsRootComponent = computed(() => (isSettingsPage.value ? "div" : Dialog));
 const settingsRootProps = computed(() => (isSettingsPage.value ? {} : { open: props.open === true }));
-const settingsRootClass = computed(() => (isSettingsPage.value ? "settings-shell h-full min-h-0 overflow-hidden bg-background" : ""));
+const settingsRootClass = computed(() => (isSettingsPage.value ? "h-full min-h-0 overflow-hidden bg-background" : ""));
 const settingsContentComponent = computed(() => (isSettingsPage.value ? "div" : DialogContent));
 const settingsContentClass = computed(() =>
-  isSettingsPage.value ? "flex h-full min-h-0 flex-col gap-4 overflow-hidden bg-background p-4" : "settings-shell h-[min(660px,calc(var(--chiron-horizon-viewport-height)-80px))] !max-w-[min(920px,calc(100vw-32px))] grid-rows-[auto_minmax(0,1fr)] gap-3 p-4 sm:!max-w-[min(920px,calc(100vw-48px))]",
+  isSettingsPage.value ? "flex h-full min-h-0 flex-col gap-4 overflow-hidden bg-background p-4" : "h-[min(660px,calc(var(--dbx-viewport-height)-80px))] !max-w-[min(920px,calc(100vw-32px))] grid-rows-[auto_minmax(0,1fr)] gap-3 p-4 sm:!max-w-[min(920px,calc(100vw-48px))]",
 );
 const settingsTitleComponent = computed(() => (isSettingsPage.value ? "h2" : DialogTitle));
 
@@ -641,6 +659,7 @@ const editFormatSqlOnSqlFileSave = ref(settingsStore.editorSettings.formatSqlOnS
 const editShowTableDdlHoverPreview = ref(settingsStore.editorSettings.showTableDdlHoverPreview);
 const editClickTableNavigationTarget = ref<ClickTableNavigationTarget>(settingsStore.editorSettings.clickTableNavigationTarget);
 const editUpdateNotificationsEnabled = ref(settingsStore.editorSettings.updateNotificationsEnabled);
+const editAutoDownloadUpdates = ref(settingsStore.editorSettings.autoDownloadUpdates);
 const editSidebarHiddenTablePrefixes = ref(settingsStore.editorSettings.sidebarHiddenTablePrefixes.join("\n"));
 const editSidebarCopyTableNameSeparator = ref<ColumnNameCopySeparator>(settingsStore.editorSettings.sidebarCopyTableNameSeparator);
 const editSidebarCopyTableNameIncludeSchema = ref(settingsStore.editorSettings.sidebarCopyTableNameIncludeSchema);
@@ -798,6 +817,7 @@ function currentEditorSettingsDraft(): EditorSettingsDraft {
     formatSqlOnSqlFileSave: editFormatSqlOnSqlFileSave.value,
     showTableDdlHoverPreview: editShowTableDdlHoverPreview.value,
     updateNotificationsEnabled: editUpdateNotificationsEnabled.value,
+    autoDownloadUpdates: editAutoDownloadUpdates.value,
     sidebarObjectInfoMode: editSidebarObjectInfoMode.value,
     sidebarAllowHorizontalScroll: editSidebarAllowHorizontalScroll.value,
     sidebarShowTooltips: editSidebarShowTooltips.value,
@@ -827,6 +847,23 @@ function currentEditorSettingsDraft(): EditorSettingsDraft {
 
 const editEditorSettingsBase = ref<EditorSettingsDraft>(editorSettingsDraftFromSettings(settingsStore.editorSettings));
 const hasEditorDraftChanges = computed(() => editorSettingsDraftChanged(currentEditorSettingsDraft(), editEditorSettingsBase.value));
+
+// Defaults can also be changed from the result-grid menu while this dialog is
+// open. Refresh untouched draft fields so both entry points stay consistent,
+// without overwriting an edit the user is actively making here.
+watch(
+  () => [settingsStore.editorSettings.pageSize, settingsStore.editorSettings.tableOpenPageSize] as const,
+  ([pageSize, tableOpenPageSize]) => {
+    if (editPageSize.value === editEditorSettingsBase.value.pageSize) {
+      editPageSize.value = pageSize;
+      editEditorSettingsBase.value.pageSize = pageSize;
+    }
+    if (editTableOpenPageSize.value === editEditorSettingsBase.value.tableOpenPageSize) {
+      editTableOpenPageSize.value = tableOpenPageSize;
+      editEditorSettingsBase.value.tableOpenPageSize = tableOpenPageSize;
+    }
+  },
+);
 
 // --- Background image draft state ---
 function cloneBackgroundImageDraft(settings: BackgroundImageSettings): BackgroundImageSettings {
@@ -877,7 +914,7 @@ async function pickBackgroundImage() {
   } catch (error) {
     // Surface every failure (missing command in a stale binary, fs scope, copy
     // errors): Tauri rejections are plain strings, so String() keeps the detail.
-    console.error("[chiron-horizon] background image selection failed", error);
+    console.error("[dbx] background image selection failed", error);
     toast(`${t("settings.backgroundImageSaveFailed")}: ${error instanceof Error ? error.message : String(error)}`, 6000);
   }
 }
@@ -1132,6 +1169,13 @@ function onSqlShortcutBindingKeydown(id: string, event: KeyboardEvent) {
   }
   const shortcut = eventToShortcut(event);
   if (!shortcut) return;
+  // macOS 上 ⌘H/⌥⌘H 属于系统 Hide 快捷键（见 MACOS_RESERVED_SHORTCUTS），
+  // 若允许记录并持久化，配置层仍会 preventDefault 并重新劫持它们，因此输入时直接拒绝。
+  if (isReservedShortcut(shortcut)) {
+    toast(t("settings.shortcutReserved"), 3000);
+    editingSqlShortcutInputId.value = null;
+    return;
+  }
   sqlShortcutForm.value = { ...sqlShortcutForm.value, shortcut };
   editingSqlShortcutInputId.value = null;
 }
@@ -1299,6 +1343,7 @@ function syncEditorSettingsDraftFromStore() {
   editShowTableDdlHoverPreview.value = settingsStore.editorSettings.showTableDdlHoverPreview;
   editClickTableNavigationTarget.value = settingsStore.editorSettings.clickTableNavigationTarget;
   editUpdateNotificationsEnabled.value = settingsStore.editorSettings.updateNotificationsEnabled;
+  editAutoDownloadUpdates.value = settingsStore.editorSettings.autoDownloadUpdates;
   editSidebarHiddenTablePrefixes.value = settingsStore.editorSettings.sidebarHiddenTablePrefixes.join("\n");
   editSidebarCopyTableNameSeparator.value = settingsStore.editorSettings.sidebarCopyTableNameSeparator;
   editSidebarCopyTableNameIncludeSchema.value = settingsStore.editorSettings.sidebarCopyTableNameIncludeSchema;
@@ -1414,6 +1459,7 @@ const editorSettingsDraftRefs: EditorSettingsDraftRefMap = {
   formatSqlOnSqlFileSave: editFormatSqlOnSqlFileSave,
   showTableDdlHoverPreview: editShowTableDdlHoverPreview,
   updateNotificationsEnabled: editUpdateNotificationsEnabled,
+  autoDownloadUpdates: editAutoDownloadUpdates,
   sidebarObjectInfoMode: editSidebarObjectInfoMode,
   sidebarAllowHorizontalScroll: editSidebarAllowHorizontalScroll,
   sidebarShowTooltips: editSidebarShowTooltips,
@@ -1507,12 +1553,24 @@ watch(
   { deep: true },
 );
 
-const shortcutConflicts = computed(() =>
-  SHORTCUT_DEFINITIONS.flatMap((definition) => {
+// 行 → 同作用域冲突对象（必顶阻断）。保留 map 形态是为了能算“重复对数”：
+// 行级列表会把同一对重复计两次（双向各一次），而摘要文案说的是“几组重复”。
+const shortcutConflictMap = computed(() => {
+  const conflicts: Partial<Record<ShortcutActionId, ShortcutActionId>> = {};
+  for (const definition of SHORTCUT_DEFINITIONS) {
     const conflict = findShortcutConflict(definition.id, editShortcuts.value[definition.id], editShortcuts.value);
-    return conflict ? [definition.id] : [];
-  }),
-);
+    if (conflict) conflicts[definition.id] = conflict;
+  }
+  return conflicts;
+});
+const shortcutConflicts = computed(() => Object.keys(shortcutConflictMap.value) as ShortcutActionId[]);
+// 行 → 跨作用域同键对象（**仅提示**，不进应用门禁）。不同作用域共用组合是
+// 有意的设计（find / focusSearch 默认都是 Mod+F，运行时按焦点路由），所以这里
+// 只用于展示；normalizeShortcutSettings 的占用判定依旧只看同作用域。
+const crossScopeShortcutConflicts = computed(() => findCrossScopeShortcutConflicts(editShortcuts.value));
+const crossScopeShortcutConflictIds = computed(() => Object.keys(crossScopeShortcutConflicts.value) as ShortcutActionId[]);
+const shortcutConflictPairCount = computed(() => countShortcutConflictPairs(shortcutConflictMap.value));
+const crossScopeShortcutPairCount = computed(() => countShortcutConflictPairs(crossScopeShortcutConflicts.value));
 const sqlShortcutConflicts = computed(() => findSqlShortcutConflicts(editSqlShortcuts.value, editShortcuts.value));
 const hasSqlShortcutConflicts = computed(() => sqlShortcutConflicts.value.length > 0);
 const shortcutSearchQuery = ref("");
@@ -1545,11 +1603,103 @@ const filteredShortcutDefinitions = computed(() => {
   const query = shortcutSearchQuery.value.trim().toLowerCase();
   if (!query) return SHORTCUT_DEFINITIONS;
   return SHORTCUT_DEFINITIONS.filter((definition) => {
-    const scope = t(`settings.shortcutScope${definition.scope[0].toUpperCase()}${definition.scope.slice(1)}`);
+    const scope = t(shortcutScopeLabelKey(definition.scope));
     const shortcut = formatShortcutPill(editShortcuts.value[definition.id]);
     return [definition.id, t(definition.labelKey), scope, shortcut].some((value) => value.toLowerCase().includes(query));
   });
 });
+
+// 二级归类：快捷键页签按作用域分组展示。顺序即运行时优先级——越外层先响应，
+// 用户读到的顺序与事件实际分发顺序一致。
+const SHORTCUT_SCOPE_ORDER: readonly ShortcutScope[] = ["global", "editor", "grid", "search", "sidebar"];
+
+function shortcutScopeLabelKey(scope: ShortcutScope): string {
+  return `settings.shortcutScope${scope[0].toUpperCase()}${scope.slice(1)}`;
+}
+
+function shortcutScopeHintKey(scope: ShortcutScope): string {
+  return `settings.shortcutScopeHint${scope[0].toUpperCase()}${scope.slice(1)}`;
+}
+
+function shortcutScopeIcon(scope: ShortcutScope) {
+  switch (scope) {
+    case "global":
+      return Globe;
+    case "editor":
+      return Code;
+    case "grid":
+      return Table;
+    case "search":
+      return Search;
+    default:
+      return PanelLeft;
+  }
+}
+
+interface ShortcutScopeGroup {
+  scope: ShortcutScope;
+  label: string;
+  hint: string;
+  definitions: ShortcutDefinition[];
+  unboundCount: number;
+  conflictCount: number;
+  crossScopeCount: number;
+}
+
+// 计数一律基于“当前可见行”（受搜索过滤影响）：组头是它下方那份列表的摘要，
+// 拿全局总数会导致搜索时组头数目与实际行数对不上。
+const shortcutScopeGroups = computed<ShortcutScopeGroup[]>(() =>
+  SHORTCUT_SCOPE_ORDER.map((scope) => {
+    const definitions = filteredShortcutDefinitions.value.filter((definition) => definition.scope === scope);
+    return {
+      scope,
+      label: t(shortcutScopeLabelKey(scope)),
+      hint: t(shortcutScopeHintKey(scope)),
+      definitions,
+      unboundCount: definitions.filter((definition) => !editShortcuts.value[definition.id]).length,
+      conflictCount: definitions.filter((definition) => shortcutConflictMap.value[definition.id]).length,
+      crossScopeCount: definitions.filter((definition) => (crossScopeShortcutConflicts.value[definition.id] ?? []).length > 0).length,
+    };
+  }).filter((group) => group.definitions.length > 0),
+);
+
+function isShortcutModified(definition: ShortcutDefinition): boolean {
+  return editShortcuts.value[definition.id] !== definition.defaultShortcut;
+}
+
+function shortcutDefinitionById(actionId: ShortcutActionId): ShortcutDefinition | undefined {
+  return SHORTCUT_DEFINITIONS.find((definition) => definition.id === actionId);
+}
+
+// 同作用域冲突的浮层文案：说清“与谁重复”与“为什么必须改”。
+function shortcutConflictTooltipText(definition: ShortcutDefinition): string {
+  const partnerId = shortcutConflictMap.value[definition.id];
+  const partner = partnerId ? shortcutDefinitionById(partnerId) : undefined;
+  if (!partner) return "";
+  return t("settings.shortcutConflictTooltip", { label: t(partner.labelKey), scope: t(shortcutScopeLabelKey(partner.scope)) });
+}
+
+// 跨作用域同键的浮层文案：列全对方动作及其作用域，并说明“无需处理”。
+function shortcutCrossScopeTooltipText(definition: ShortcutDefinition): string {
+  const others = crossScopeShortcutConflicts.value[definition.id] ?? [];
+  const targets = others
+    .map((actionId) => shortcutDefinitionById(actionId))
+    .filter((partner): partner is ShortcutDefinition => !!partner)
+    .map((partner) => `${t(shortcutScopeLabelKey(partner.scope))} · ${t(partner.labelKey)}`)
+    .join(t("settings.shortcutCrossScopeTooltipSeparator"));
+  if (!targets) return "";
+  return t("settings.shortcutCrossScopeTooltip", { targets });
+}
+
+function shortcutHasCrossScopeConflict(definition: ShortcutDefinition): boolean {
+  return (crossScopeShortcutConflicts.value[definition.id] ?? []).length > 0;
+}
+
+// 行级浮层的唯一入口：优先讲阻断性冲突（同作用域），其次才是跨作用域提示。
+// 返回空串时 LightTooltip 不展示（hasContent 为假），无需额外开关。
+function shortcutConflictHintText(definition: ShortcutDefinition): string {
+  return shortcutConflictTooltipText(definition) || shortcutCrossScopeTooltipText(definition);
+}
 const hasShortcutConflicts = computed(() => shortcutConflicts.value.length > 0);
 const shortcutsChanged = computed(() => JSON.stringify(editShortcuts.value) !== JSON.stringify(editEditorSettingsBase.value.shortcuts));
 const sqlShortcutsChanged = computed(() => JSON.stringify(editSqlShortcuts.value) !== JSON.stringify(editEditorSettingsBase.value.sqlShortcuts));
@@ -1645,7 +1795,7 @@ async function applySettingsAndClose() {
   }
 }
 
-async function restartChironHorizonForDuckDbIsolation() {
+async function restartDbxForDuckDbIsolation() {
   if (duckDbRestarting.value || hasApplyBlocker.value || isWeb) return;
   duckDbRestarting.value = true;
   try {
@@ -1653,13 +1803,18 @@ async function restartChironHorizonForDuckDbIsolation() {
     const { relaunch } = await import("@tauri-apps/plugin-process");
     await relaunch();
   } catch (e: any) {
-    toast(t("settings.restartChironHorizonFailed", { error: e?.message || String(e) }), 5000);
+    toast(t("settings.restartDbxFailed", { error: e?.message || String(e) }), 5000);
   } finally {
     duckDbRestarting.value = false;
   }
 }
 
 function resetDefaultsForTab(tab: SettingsCategory) {
+  // Restoring defaults exits any in-progress shortcut capture so the affected
+  // rows return to their initial (non-editing) state instead of staying stuck
+  // in edit mode (#9066). Cleared unconditionally because the edit state can
+  // leak across tab switches (shortcuts/formatter tabs share the table).
+  editingShortcutId.value = null;
   if (tab === "editor") {
     editFontFamily.value = DEFAULT_EDITOR_SETTINGS.fontFamily;
     editFontSize.value = DEFAULT_EDITOR_SETTINGS.fontSize;
@@ -1729,7 +1884,6 @@ function resetDefaultsForTab(tab: SettingsCategory) {
     editGenerateSqlQuoteIdentifiers.value = DEFAULT_EDITOR_SETTINGS.generateSqlQuoteIdentifiers;
     editFormatSqlOnSqlFileSave.value = DEFAULT_EDITOR_SETTINGS.formatSqlOnSqlFileSave;
     editClickTableNavigationTarget.value = DEFAULT_EDITOR_SETTINGS.clickTableNavigationTarget;
-    editUpdateNotificationsEnabled.value = DEFAULT_EDITOR_SETTINGS.updateNotificationsEnabled;
     editSidebarObjectInfoMode.value = DEFAULT_EDITOR_SETTINGS.sidebarObjectInfoMode;
     editSidebarAllowHorizontalScroll.value = DEFAULT_EDITOR_SETTINGS.sidebarAllowHorizontalScroll;
     editSidebarShowTooltips.value = DEFAULT_EDITOR_SETTINGS.sidebarShowTooltips;
@@ -1784,10 +1938,15 @@ function resetDefaultsForTab(tab: SettingsCategory) {
     editSnippets.value = DEFAULT_SQL_SNIPPETS.map((s) => ({ ...s }));
   } else if (tab === "about") {
     editUpdateDownloadSource.value = DEFAULT_EDITOR_SETTINGS.updateDownloadSource;
+    editUpdateNotificationsEnabled.value = DEFAULT_EDITOR_SETTINGS.updateNotificationsEnabled;
+    editAutoDownloadUpdates.value = DEFAULT_EDITOR_SETTINGS.autoDownloadUpdates;
   }
 }
 
 function resetAllDefaults() {
+  // Same contract as resetDefaultsForTab: a full reset also exits any
+  // in-progress shortcut capture (#9066).
+  editingShortcutId.value = null;
   editFontFamily.value = DEFAULT_EDITOR_SETTINGS.fontFamily;
   editFontSize.value = DEFAULT_EDITOR_SETTINGS.fontSize;
   editTableFontFamily.value = DEFAULT_EDITOR_SETTINGS.tableFontFamily;
@@ -1876,6 +2035,7 @@ function resetAllDefaults() {
   editFormatSqlOnSqlFileSave.value = DEFAULT_EDITOR_SETTINGS.formatSqlOnSqlFileSave;
   editShowTableDdlHoverPreview.value = DEFAULT_EDITOR_SETTINGS.showTableDdlHoverPreview;
   editUpdateNotificationsEnabled.value = DEFAULT_EDITOR_SETTINGS.updateNotificationsEnabled;
+  editAutoDownloadUpdates.value = DEFAULT_EDITOR_SETTINGS.autoDownloadUpdates;
   editSidebarObjectInfoMode.value = DEFAULT_EDITOR_SETTINGS.sidebarObjectInfoMode;
   editSidebarAllowHorizontalScroll.value = DEFAULT_EDITOR_SETTINGS.sidebarAllowHorizontalScroll;
   editSidebarShowTooltips.value = DEFAULT_EDITOR_SETTINGS.sidebarShowTooltips;
@@ -2122,6 +2282,10 @@ function onUiScaleChange(value: unknown) {
   editUiScale.value = next;
 }
 
+function onUpdateDownloadSourceChange(v: any) {
+  if (v === "official" || v === "cnb") editUpdateDownloadSource.value = v;
+}
+
 function setSidebarObjectDisplay(value: "grouped" | "simple") {
   editSidebarObjectDisplay.value = value;
 }
@@ -2152,6 +2316,14 @@ function onShortcutKeydown(actionId: ShortcutActionId, event: KeyboardEvent) {
   const definition = SHORTCUT_DEFINITIONS.find((item) => item.id === actionId);
   const shortcut = definition?.inputKind === "modifier-only" ? eventToModifierOnlyShortcut(event) : eventToShortcut(event);
   if (!shortcut) return;
+  // macOS 上 ⌘H/⌥⌘H 由系统保留（Hide / Hide Others），配置层一旦绑定并在
+  // CodeMirror 中 preventDefault，AppKit 菜单的 key equivalent 就无法触发
+  // （#9068 的配置层复现），故此处输入时直接拒绝。
+  if (isReservedShortcut(shortcut)) {
+    toast(t("settings.shortcutReserved"), 3000);
+    editingShortcutId.value = null;
+    return;
+  }
   onShortcutChange(actionId, shortcut);
   editingShortcutId.value = null;
 }
@@ -2161,7 +2333,21 @@ function formatShortcutPill(shortcut: string): string {
 }
 
 const shortcutPressShortcutLabel = computed(() => t("settings.shortcutPressShortcut"));
-const shortcutPressShortcutInputWidth = computed(() => `${shortcutPressShortcutLabel.value.length + 2}em`);
+// #9144: `label.length + 2em` under-sizes CJK placeholders wherever the
+// environment's fallback font advances wider than 1em (user report: 15px/char
+// at a 13px font → the last glyph clipped mid-stroke). Measure a hidden mirror
+// span carrying the same box + typography classes as the capture inputs
+// instead; the char-count formula only survives as the pre-measurement
+// fallback. The +2px cushion absorbs sub-pixel rounding differences between
+// the mirror span and the real input.
+const shortcutPressShortcutInputWidth = ref(`${shortcutPressShortcutLabel.value.length + 2}em`);
+const shortcutPlaceholderMirrorRef = ref<HTMLElement | null>(null);
+const shortcutPlaceholderMirrorWidth = useMeasuredWidth(shortcutPlaceholderMirrorRef, 0, [shortcutPressShortcutLabel]);
+watch(shortcutPlaceholderMirrorWidth, (width) => {
+  if (width > 0) {
+    shortcutPressShortcutInputWidth.value = `${Math.ceil(width) + 2}px`;
+  }
+});
 
 function focusShortcutInput(actionId: ShortcutActionId) {
   editingShortcutId.value = actionId;
@@ -2446,10 +2632,6 @@ async function resetSettingsContentScroll() {
 }
 
 function openExternalUrl(url: string) {
-  if (url.includes("distribution-disabled.invalid")) {
-    window.alert("This Chiron Horizon service is not available in 0.1.0.");
-    return;
-  }
   if (isTauriRuntime()) {
     import("@tauri-apps/plugin-shell").then(({ open }) => open(url));
   } else {
@@ -2593,7 +2775,7 @@ async function exportDebugLogs() {
 }
 
 // ---------- MCP Server ----------
-type McpConfigTab = "claude" | "cursor" | "codebuddy" | "zcode" | "trae" | "vscode" | "windsurf" | "codex" | "deepseek-harness" | "opencode" | "pi" | "cherry-studio" | "qoder";
+type McpConfigTab = "claude" | "cursor" | "codebuddy" | "zcode" | "trae" | "vscode" | "windsurf" | "codex" | "deepseek-harness" | "opencode" | "pi" | "cherry-studio" | "qoder" | "workbuddy";
 type McpCopyKind = "install" | "uninstall" | "http-endpoint" | "http-token" | "http-config" | `${McpConfigTab}-config`;
 type McpTransportTab = "stdio" | "http";
 type McpManagementTab = "access" | "permissions";
@@ -2622,8 +2804,8 @@ const mcpHttpError = ref("");
 const mcpHttpAllowedHostsText = ref("");
 const mcpHttpAllowedOriginsText = ref("");
 const mcpHttpPersistedSettings = ref<McpHttpServerSettings | null>(null);
-const MCP_READONLY_STORAGE_KEY = "chiron-horizon-mcp-config-readonly";
-const MCP_SCOPE_CONNECTION_STORAGE_KEY = "chiron-horizon-mcp-config-scope-connection";
+const MCP_READONLY_STORAGE_KEY = "dbx-mcp-config-readonly";
+const MCP_SCOPE_CONNECTION_STORAGE_KEY = "dbx-mcp-config-scope-connection";
 const mcpPolicyLoading = ref(false);
 const mcpPolicySaving = ref(false);
 const mcpPolicyLoadError = ref("");
@@ -3133,14 +3315,14 @@ async function rotateMcpHttpToken() {
 const mcpLaunchConfig = computed<McpLaunchConfig | undefined>(() => {
   if (isWeb) {
     return {
-      command: "chiron-horizon-mcp-server",
+      command: "dbx-mcp-server",
       env: {
-        CHIRON_HORIZON_WEB_URL: mcpWebBackendUrl(window.location.origin, apiUrl("/api")),
-        CHIRON_HORIZON_WEB_PASSWORD: "your-web-login-password",
+        DBX_WEB_URL: mcpWebBackendUrl(window.location.origin, apiUrl("/api")),
+        DBX_WEB_PASSWORD: "your-web-login-password",
       },
     };
   }
-  const env = mcpStatus.value?.data_dir ? { CHIRON_HORIZON_DATA_DIR: mcpStatus.value.data_dir } : undefined;
+  const env = mcpStatus.value?.data_dir ? { DBX_DATA_DIR: mcpStatus.value.data_dir } : undefined;
   if (mcpStatus.value?.node_path && mcpStatus.value.script_path) {
     return {
       command: mcpStatus.value.node_path,
@@ -3151,7 +3333,7 @@ const mcpLaunchConfig = computed<McpLaunchConfig | undefined>(() => {
   if (mcpStatus.value?.bin_path) {
     return { command: mcpStatus.value.bin_path, env };
   }
-  return env ? { command: "chiron-horizon-mcp-server", env } : undefined;
+  return env ? { command: "dbx-mcp-server", env } : undefined;
 });
 
 const mcpJsonRecommendedConfig = computed(() => buildMcpJsonConfig(mcpLaunchConfig.value));
@@ -3177,6 +3359,7 @@ const mcpDeepSeekHarnessRecommendedConfig = computed(() => buildMcpDeepSeekHarne
 
 const mcpOpenCodeRecommendedConfig = computed(() => buildMcpOpenCodeConfig(mcpLaunchConfig.value));
 const mcpPiRecommendedConfig = computed(() => buildMcpPiConfig(mcpLaunchConfig.value));
+const mcpWorkBuddyRecommendedConfig = computed(() => buildMcpWorkBuddyConfig(mcpLaunchConfig.value));
 
 const mcpStatusTone = computed<"ok" | "warning" | "muted">(() => {
   if (!mcpStatus.value) return "muted";
@@ -3194,11 +3377,11 @@ const mcpStatusLabel = computed(() => {
 });
 
 const mcpCommand = computed(() => {
-  if (!mcpStatus.value) return "The npm MCP package is deferred for Chiron Horizon 0.1.0. Use the desktop MCP service or build the stdio server from this source tree.";
+  if (!mcpStatus.value) return "npm install -g @dbx-app/mcp-server@latest";
   return mcpStatus.value.installed ? mcpStatus.value.update_command : mcpStatus.value.install_command;
 });
 
-const mcpUninstallCommand = computed(() => mcpStatus.value?.uninstall_command || "npm uninstall -g @chiron-horizon/mcp-server");
+const mcpUninstallCommand = computed(() => mcpStatus.value?.uninstall_command || "npm uninstall -g @dbx-app/mcp-server");
 
 async function refreshMcpStatus() {
   if (mcpStatusLoading.value) return;
@@ -3207,9 +3390,9 @@ async function refreshMcpStatus() {
   const requestId = beginMcpStatusRequest();
   try {
     mcpStatus.value = await checkMcpServerStatus();
-    // Keep the toolbar badge synchronized without checking an external package registry.
+    // 通知工具栏徽章同步：携带已获取的 update_available，避免根组件重复查询 npm registry。
     window.dispatchEvent(
-      new CustomEvent("chiron-horizon-mcp-status-changed", {
+      new CustomEvent("dbx-mcp-status-changed", {
         detail: { updateAvailable: mcpUpdateAvailability(mcpStatus.value), requestId },
       }),
     );
@@ -3279,26 +3462,26 @@ async function uninstallMcp() {
 }
 
 // ---------- WebDAV Sync ----------
-const webdavEndpoint = ref(localStorage.getItem("chiron-horizon-webdav-endpoint") || "");
-const webdavUsername = ref(localStorage.getItem("chiron-horizon-webdav-username") || "");
+const webdavEndpoint = ref(localStorage.getItem("dbx-webdav-endpoint") || "");
+const webdavUsername = ref(localStorage.getItem("dbx-webdav-username") || "");
 const webdavPassword = ref("");
-const webdavRememberPassword = ref(localStorage.getItem("chiron-horizon-webdav-remember-password") === "true");
+const webdavRememberPassword = ref(localStorage.getItem("dbx-webdav-remember-password") === "true");
 const webdavHasSavedPassword = ref(false);
-const webdavRemotePath = ref(localStorage.getItem("chiron-horizon-webdav-remote-path") || DEFAULT_WEB_DAV_REMOTE_PATH);
+const webdavRemotePath = ref(localStorage.getItem("dbx-webdav-remote-path") || DEFAULT_WEB_DAV_REMOTE_PATH);
 const webdavSyncSecrets = ref(false);
 const webdavSecretsPassphrase = ref("");
 const webdavHasSavedSecretsPassphrase = ref(false);
-const webdavAutoUploadEnabled = ref(localStorage.getItem("chiron-horizon-webdav-auto-upload-enabled") === "true");
-const webdavAutoUploadIntervalMinutes = ref(Number(localStorage.getItem("chiron-horizon-webdav-auto-upload-interval-minutes") || String(DEFAULT_WEB_DAV_AUTO_UPLOAD_INTERVAL_MINUTES)));
+const webdavAutoUploadEnabled = ref(localStorage.getItem("dbx-webdav-auto-upload-enabled") === "true");
+const webdavAutoUploadIntervalMinutes = ref(Number(localStorage.getItem("dbx-webdav-auto-upload-interval-minutes") || String(DEFAULT_WEB_DAV_AUTO_UPLOAD_INTERVAL_MINUTES)));
 const webdavBusy = ref<"" | "test" | "upload" | "download">("");
 const webdavMessage = ref("");
 const webdavError = ref(false);
 const syncMethodTab = ref<"webdav" | "snippet">("webdav");
 
-const snippetProvider = ref<SnippetProvider>((localStorage.getItem("chiron-horizon-snippet-provider") as SnippetProvider) || "github");
+const snippetProvider = ref<SnippetProvider>((localStorage.getItem("dbx-snippet-provider") as SnippetProvider) || "github");
 const snippetId = ref("");
 const snippetToken = ref("");
-const snippetRememberToken = ref(localStorage.getItem(`chiron-horizon-snippet-remember-token-${snippetProvider.value}`) === "true");
+const snippetRememberToken = ref(localStorage.getItem(`dbx-snippet-remember-token-${snippetProvider.value}`) === "true");
 const snippetHasSavedToken = ref(false);
 const snippetPassphrase = ref("");
 const snippetSecretsPassphrase = ref("");
@@ -3351,10 +3534,10 @@ async function refreshSnippetSyncSettings(provider = snippetProvider.value) {
       snippetId.value = settings.snippetId;
       return;
     }
-    const legacyId = localStorage.getItem(`chiron-horizon-snippet-id-${provider}`)?.trim();
+    const legacyId = localStorage.getItem(`dbx-snippet-id-${provider}`)?.trim();
     if (legacyId) {
       await saveSnippetSyncId(provider, legacyId);
-      localStorage.removeItem(`chiron-horizon-snippet-id-${provider}`);
+      localStorage.removeItem(`dbx-snippet-id-${provider}`);
     }
     if (provider !== snippetProvider.value) return;
     snippetId.value = legacyId || "";
@@ -3390,14 +3573,14 @@ async function runSnippetAction(kind: "test" | "upload" | "download" | "migrate"
   snippetMessage.value = "";
   snippetError.value = false;
   try {
-    localStorage.setItem("chiron-horizon-snippet-provider", snippetProvider.value);
-    localStorage.setItem(`chiron-horizon-snippet-remember-token-${snippetProvider.value}`, String(snippetRememberToken.value));
+    localStorage.setItem("dbx-snippet-provider", snippetProvider.value);
+    localStorage.setItem(`dbx-snippet-remember-token-${snippetProvider.value}`, String(snippetRememberToken.value));
     if (persistCurrentSnippetId) await persistSnippetSyncId();
     await applySnippetTokenPreference();
     snippetMessage.value = await action();
   } catch (e: any) {
     snippetMessage.value = e?.message || String(e);
-    if (kind === "upload" && snippetMessage.value.includes("legacy unencrypted Chiron Horizon snapshot")) {
+    if (kind === "upload" && snippetMessage.value.includes("legacy unencrypted DBX snapshot")) {
       legacySnippetId.value = snippetId.value.trim();
     }
     snippetError.value = true;
@@ -3507,7 +3690,7 @@ function rememberWebDavFields() {
     enabled: webdavAutoUploadEnabled.value,
     intervalMinutes: webdavAutoUploadIntervalMinutes.value,
   });
-  window.dispatchEvent(new Event("chiron-horizon:webdav-auto-upload-config-changed"));
+  window.dispatchEvent(new Event("dbx:webdav-auto-upload-config-changed"));
 }
 
 function setWebDavResult(message: string, error = false) {
@@ -3767,16 +3950,16 @@ watch([webdavEndpoint, webdavUsername], () => {
   void refreshWebDavPasswordStatus();
 });
 watch(webdavRememberPassword, (val) => {
-  localStorage.setItem("chiron-horizon-webdav-remember-password", String(val));
+  localStorage.setItem("dbx-webdav-remember-password", String(val));
 });
 watch([webdavAutoUploadEnabled, webdavAutoUploadIntervalMinutes], () => {
   webdavAutoUploadIntervalMinutes.value = normalizedWebDavAutoUploadInterval(webdavAutoUploadIntervalMinutes.value);
   rememberWebDavFields();
 });
 watch(snippetProvider, (provider) => {
-  localStorage.setItem("chiron-horizon-snippet-provider", provider);
+  localStorage.setItem("dbx-snippet-provider", provider);
   snippetId.value = "";
-  snippetRememberToken.value = localStorage.getItem(`chiron-horizon-snippet-remember-token-${provider}`) === "true";
+  snippetRememberToken.value = localStorage.getItem(`dbx-snippet-remember-token-${provider}`) === "true";
   snippetToken.value = "";
   legacySnippetId.value = "";
   pendingLegacyCleanupId.value = "";
@@ -4019,8 +4202,8 @@ function globalInstructionsTooLong(): boolean {
   return promptTemplateCharacterCount(editGlobalInstructions.value) > GLOBAL_INSTRUCTIONS_MAX;
 }
 
-// Agent turn limit for Chiron Horizon's API-backed agent loop. CLI providers enforce their own limits.
-// Mirrors DEFAULT/MIN/MAX_MAX_AGENT_TURNS in crates/chiron-horizon-core/src/agent_loop.rs —
+// Agent turn limit for DBX's API-backed agent loop. CLI providers enforce their own limits.
+// Mirrors DEFAULT/MIN/MAX_MAX_AGENT_TURNS in crates/dbx-core/src/agent_loop.rs —
 // keep in sync; the backend clamp on save/load is the actual source of truth.
 const editMaxAgentTurns = ref<number | undefined>(undefined);
 const maxAgentTurnsSaving = ref(false);
@@ -4328,25 +4511,6 @@ const aiEndpointHint = computed(() => {
   }
   return "";
 });
-const aiResolvedEndpoint = ref("");
-watch([aiEditEndpoint, aiEditProvider, aiEditApiStyle, aiEditModel], async (_, __, onCleanup) => {
-  let stale = false;
-  onCleanup(() => {
-    stale = true;
-  });
-  if (aiIsCliProvider.value || !aiEditEndpoint.value.trim()) {
-    aiResolvedEndpoint.value = "";
-    return;
-  }
-  try {
-    // Pure backend URL resolution: never send draft keys just to preview a URL.
-    const config = { ...currentAiEditConfig(), apiKey: "", customHeaders: {} };
-    const endpoint = await aiResolveEndpoint(config);
-    if (!stale) aiResolvedEndpoint.value = endpoint;
-  } catch {
-    if (!stale) aiResolvedEndpoint.value = "Endpoint preview unavailable";
-  }
-});
 const aiSupportsApiStyle = computed(() => !aiIsCliProvider.value && (aiEditProvider.value === "openai" || aiEditProvider.value === "openai-compatible" || aiEditProvider.value === "custom"));
 const aiSupportsAnthropicApiStyle = computed(() => aiEditProvider.value === "custom");
 const aiCliMcpNeedsInstall = computed(() => aiIsCliProvider.value && (!mcpStatus.value || !mcpStatus.value.installed));
@@ -4423,7 +4587,7 @@ function cliEnvFromRows(rows = aiEditCliEnvRows.value): Record<string, string> {
   const result: Record<string, string> = {};
   for (const row of rows) {
     const key = row.key.trim();
-    if (!key || !/^[A-Za-z_][A-Za-z0-9_]*$/.test(key) || key.toUpperCase().startsWith("CHIRON_HORIZON_MCP_")) continue;
+    if (!key || !/^[A-Za-z_][A-Za-z0-9_]*$/.test(key) || key.toUpperCase().startsWith("DBX_MCP_")) continue;
     result[key] = row.value;
   }
   return result;
@@ -4434,7 +4598,7 @@ function cliEnvValidationError(): string {
     const key = row.key.trim();
     if (key && !/^[A-Za-z_][A-Za-z0-9_]*$/.test(key)) return t("ai.cliEnvInvalidName", { name: key });
     const upper = key.toUpperCase();
-    if (upper.startsWith("CHIRON_HORIZON_MCP_") || (aiIsPiAgentCli.value && upper.startsWith("CHIRON_HORIZON_PI_")) || (aiIsOpenCodeCli.value && OPENCODE_CONTROL_ENV.has(upper)) || (aiIsCursorCli.value && CURSOR_CONTROL_ENV.has(upper))) {
+    if (upper.startsWith("DBX_MCP_") || (aiIsPiAgentCli.value && upper.startsWith("DBX_PI_")) || (aiIsOpenCodeCli.value && OPENCODE_CONTROL_ENV.has(upper)) || (aiIsCursorCli.value && CURSOR_CONTROL_ENV.has(upper))) {
       return t("ai.cliEnvReservedName", { name: key });
     }
   }
@@ -4519,6 +4683,8 @@ function aiSelectProvider(presetId: string) {
   if (isWeb && CLI_AI_PROVIDERS.has(provider)) return;
   if (presetId === aiEditProviderPresetId.value) return;
 
+  syncAiEditState();
+
   // Apply new provider's preset defaults to edit state
   aiEditProviderPresetId.value = presetId;
   aiEditProvider.value = provider;
@@ -4548,6 +4714,7 @@ function aiEnterListMode() {
 }
 
 function aiEnterEditMode(configId?: string) {
+  syncAiEditState();
   aiConfigListMode.value = "edit";
   aiEditConfigId.value = configId || null;
 
@@ -5207,18 +5374,19 @@ onUnmounted(() => {
         </component>
       </DialogHeader>
 
-      <div class="settings-layout flex min-h-0 flex-1 flex-col gap-3 overflow-hidden lg:flex-row">
+      <div class="settings-layout flex min-h-0 flex-1 flex-col gap-3 overflow-visible lg:flex-row">
         <nav class="settingsCategoryNav settings-category-nav flex min-h-0 shrink-0 gap-1 overflow-x-auto border-b pb-3 lg:w-52 lg:flex-col lg:overflow-x-hidden lg:overflow-y-auto lg:border-b-0 lg:border-r lg:pb-0 lg:pr-3">
           <button v-for="category in settingsCategoryNav" :key="category.value" type="button" :class="settingsCategoryButton(category.value)" @click="onSettingsCategoryClick(category.value)">
             {{ category.label }}
           </button>
         </nav>
 
-        <div class="settings-body min-h-0 min-w-0 flex-1 overflow-hidden px-1 flex flex-col">
+        <div class="min-w-0 flex-1 overflow-visible pl-1 pr-0 flex flex-col">
           <div class="shrink-0 px-2 pt-1 pb-3">
             <div ref="settingsSearchInputContainerRef" class="relative">
               <Search class="pointer-events-none absolute top-1/2 left-4 z-10 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
               <Input
+                data-settings-global-search
                 v-model="settingsSearchQuery"
                 type="text"
                 autocomplete="off"
@@ -5283,9 +5451,9 @@ onUnmounted(() => {
               </div>
             </div>
           </div>
-          <div v-else ref="settingsContentScrollRef" class="min-h-0 flex-1 overflow-y-auto overflow-x-hidden px-1 pr-2">
-            <section v-if="activeSettingsTab === 'editor'" data-settings-search-id="editor" :class="['settings-form-section flex flex-col gap-5 py-2', settingsSearchTargetClass('editor')]">
-              <div class="settings-responsive-grid grid gap-4 md:grid-cols-[1fr_auto]">
+          <div v-else ref="settingsContentScrollRef" class="min-h-0 flex-1 overflow-y-auto overflow-x-hidden px-1 pr-6 -mr-4">
+            <section v-if="activeSettingsTab === 'editor'" data-settings-search-id="editor" :class="['flex flex-col gap-5 py-2', settingsSearchTargetClass('editor')]">
+              <div class="grid gap-4 md:grid-cols-[1fr_auto]">
                 <!-- Font Family -->
                 <div class="space-y-2 min-w-0">
                   <Label>{{ t("settings.fontFamily") }}</Label>
@@ -5364,7 +5532,7 @@ onUnmounted(() => {
                 </div>
               </div>
 
-              <div class="settings-responsive-grid grid grid-cols-2 gap-2 lg:grid-cols-4" data-editor-preview-controls>
+              <div class="grid grid-cols-2 gap-2 lg:grid-cols-4" data-editor-preview-controls>
                 <div class="settings-item flex min-w-0 items-center justify-between gap-2 rounded-md border bg-muted/20 px-2 py-1.5">
                   <div class="flex min-w-0 items-center gap-1">
                     <Label for="editor-show-statement-run-buttons" class="truncate text-xs">{{ t("settings.showStatementRunButtons") }}</Label>
@@ -5418,8 +5586,8 @@ onUnmounted(() => {
 
               <Separator />
 
-              <div class="settings-responsive-grid grid gap-4 md:grid-cols-2" data-editor-execution-settings>
-                <div class="settings-form-row settings-item flex items-center justify-between gap-4 rounded-md border bg-muted/20 px-3 py-2 md:col-span-2" data-editor-execute-mode>
+              <div class="grid gap-4 md:grid-cols-2" data-editor-execution-settings>
+                <div class="settings-item flex items-center justify-between gap-4 rounded-md border bg-muted/20 px-3 py-2 md:col-span-2" data-editor-execute-mode>
                   <div class="min-w-0 space-y-1">
                     <Label>{{ executeModeLabel }}</Label>
                     <p class="text-xs text-muted-foreground">
@@ -5437,7 +5605,7 @@ onUnmounted(() => {
                   </Select>
                 </div>
 
-                <div class="settings-form-row settings-item flex items-center justify-between gap-4 rounded-md border bg-muted/20 px-3 py-2" data-editor-default-transaction-mode>
+                <div class="settings-item flex items-center justify-between gap-4 rounded-md border bg-muted/20 px-3 py-2" data-editor-default-transaction-mode>
                   <div class="min-w-0 space-y-1">
                     <Label for="editor-default-transaction-mode">{{ t("settings.defaultTransactionMode") }}</Label>
                     <p class="text-xs text-muted-foreground">
@@ -5455,7 +5623,7 @@ onUnmounted(() => {
                   </Select>
                 </div>
 
-                <div class="settings-form-row settings-item flex items-center justify-between gap-4 rounded-md border bg-muted/20 px-3 py-2" :class="{ 'opacity-50': editExecuteMode !== 'current' }">
+                <div class="settings-item flex items-center justify-between gap-4 rounded-md border bg-muted/20 px-3 py-2" :class="{ 'opacity-50': editExecuteMode !== 'current' }">
                   <div class="space-y-1">
                     <Label for="editor-execute-all-on-blank-line">{{ t("settings.executeAllOnBlankLine") }}</Label>
                     <p class="text-xs text-muted-foreground">
@@ -5465,7 +5633,7 @@ onUnmounted(() => {
                   <Switch id="editor-execute-all-on-blank-line" v-model="editExecuteAllOnBlankLine" :disabled="editExecuteMode !== 'current'" class="mt-0.5" />
                 </div>
 
-                <div class="settings-form-row settings-item flex items-center justify-between gap-4 rounded-md border bg-muted/20 px-3 py-2">
+                <div class="settings-item flex items-center justify-between gap-4 rounded-md border bg-muted/20 px-3 py-2">
                   <div class="space-y-1">
                     <Label for="editor-show-execution-target-picker">{{ t("settings.showExecutionTargetPicker") }}</Label>
                     <p class="text-xs text-muted-foreground">
@@ -5475,7 +5643,7 @@ onUnmounted(() => {
                   <Switch id="editor-show-execution-target-picker" v-model="editShowExecutionTargetPicker" class="mt-0.5" />
                 </div>
 
-                <div class="settings-form-row settings-item flex items-center justify-between gap-4 rounded-md border bg-muted/20 px-3 py-2">
+                <div class="settings-item flex items-center justify-between gap-4 rounded-md border bg-muted/20 px-3 py-2">
                   <div class="space-y-1">
                     <Label for="editor-confirm-dangerous-sql">{{ t("settings.confirmDangerousSqlExecution") }}</Label>
                     <p class="text-xs text-muted-foreground">
@@ -5485,7 +5653,7 @@ onUnmounted(() => {
                   <Switch id="editor-confirm-dangerous-sql" v-model="editConfirmDangerousSqlExecution" class="mt-0.5" />
                 </div>
 
-                <div class="settings-form-row settings-item flex items-center justify-between gap-4 rounded-md border bg-muted/20 px-3 py-2">
+                <div class="settings-item flex items-center justify-between gap-4 rounded-md border bg-muted/20 px-3 py-2">
                   <div class="space-y-1">
                     <Label for="editor-continue-on-error">{{ t("settings.continueOnErrorOnBatch") }}</Label>
                     <p class="text-xs text-muted-foreground">
@@ -5498,8 +5666,8 @@ onUnmounted(() => {
 
               <Separator />
 
-              <div class="settings-responsive-grid grid gap-4 md:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]" data-editor-sql-completion-settings>
-                <div class="settings-form-row settings-item flex items-start justify-between gap-4 rounded-md border bg-muted/20 px-3 py-2" data-editor-completion-trigger-mode>
+              <div class="grid gap-4 md:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]" data-editor-sql-completion-settings>
+                <div class="settings-item flex items-start justify-between gap-4 rounded-md border bg-muted/20 px-3 py-2" data-editor-completion-trigger-mode>
                   <div class="min-w-0 space-y-1">
                     <Label>{{ t("settings.completionTriggerMode") }}</Label>
                     <p class="text-xs leading-tight text-muted-foreground">
@@ -5518,7 +5686,7 @@ onUnmounted(() => {
                   </Select>
                 </div>
 
-                <div class="settings-form-row settings-item flex items-center justify-between gap-4 rounded-md border bg-muted/20 px-3 py-2">
+                <div class="settings-item flex items-center justify-between gap-4 rounded-md border bg-muted/20 px-3 py-2">
                   <div class="space-y-1">
                     <Label for="editor-select-first-completion-on-open">{{ t("settings.selectFirstCompletionOnOpen") }}</Label>
                     <p class="text-xs text-muted-foreground">
@@ -5528,7 +5696,7 @@ onUnmounted(() => {
                   <Switch id="editor-select-first-completion-on-open" v-model="editSelectFirstCompletionOnOpen" class="mt-0.5" />
                 </div>
 
-                <div class="settings-form-row settings-item flex items-center justify-between gap-4 rounded-md border bg-muted/20 px-3 py-2">
+                <div class="settings-item flex items-center justify-between gap-4 rounded-md border bg-muted/20 px-3 py-2">
                   <div class="space-y-1">
                     <Label for="editor-auto-close-brackets">{{ t("settings.autoCloseBrackets") }}</Label>
                     <p class="text-xs text-muted-foreground">
@@ -5538,7 +5706,7 @@ onUnmounted(() => {
                   <Switch id="editor-auto-close-brackets" v-model="editAutoCloseBrackets" class="mt-0.5" />
                 </div>
 
-                <div class="settings-form-row settings-item flex items-center justify-between gap-4 rounded-md border bg-muted/20 px-3 py-2">
+                <div class="settings-item flex items-center justify-between gap-4 rounded-md border bg-muted/20 px-3 py-2">
                   <div class="space-y-1">
                     <Label for="editor-insert-space-after-completion">{{ t("settings.insertSpaceAfterCompletion") }}</Label>
                     <p class="text-xs text-muted-foreground">
@@ -5548,7 +5716,7 @@ onUnmounted(() => {
                   <Switch id="editor-insert-space-after-completion" v-model="editInsertSpaceAfterCompletion" class="mt-0.5" />
                 </div>
 
-                <div class="settings-form-row settings-item flex items-center justify-between gap-4 rounded-md border bg-muted/20 px-3 py-2">
+                <div class="settings-item flex items-center justify-between gap-4 rounded-md border bg-muted/20 px-3 py-2">
                   <div class="space-y-1">
                     <Label for="editor-sort-completion-columns-alphabetically">{{ t("settings.sortCompletionColumnsAlphabetically") }}</Label>
                     <p class="text-xs text-muted-foreground">
@@ -5558,7 +5726,7 @@ onUnmounted(() => {
                   <Switch id="editor-sort-completion-columns-alphabetically" v-model="editSortCompletionColumnsAlphabetically" class="mt-0.5" />
                 </div>
 
-                <div class="settings-form-row settings-item flex items-center justify-between gap-4 rounded-md border bg-muted/20 px-3 py-2">
+                <div class="settings-item flex items-center justify-between gap-4 rounded-md border bg-muted/20 px-3 py-2">
                   <div class="space-y-1">
                     <Label for="editor-auto-alias-tables">{{ t("settings.autoAliasTables") }}</Label>
                     <p class="text-xs text-muted-foreground">
@@ -5571,8 +5739,8 @@ onUnmounted(() => {
 
               <Separator />
 
-              <div class="settings-responsive-grid grid gap-4 md:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]" data-editor-other-settings>
-                <div class="settings-form-row settings-item flex items-center justify-between gap-4 rounded-md border bg-muted/20 px-3 py-2">
+              <div class="grid gap-4 md:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]" data-editor-other-settings>
+                <div class="settings-item flex items-center justify-between gap-4 rounded-md border bg-muted/20 px-3 py-2">
                   <div class="space-y-1">
                     <Label for="editor-show-insert-value-hints">{{ t("settings.showInsertValueHints") }}</Label>
                     <p class="text-xs text-muted-foreground">
@@ -5582,7 +5750,7 @@ onUnmounted(() => {
                   <Switch id="editor-show-insert-value-hints" v-model="editShowInsertValueHints" class="mt-0.5" />
                 </div>
 
-                <div class="settings-form-row settings-item flex items-center justify-between gap-4 rounded-md border bg-muted/20 px-3 py-2">
+                <div class="settings-item flex items-center justify-between gap-4 rounded-md border bg-muted/20 px-3 py-2">
                   <div class="space-y-1">
                     <Label for="editor-word-wrap">{{ t("settings.wordWrap") }}</Label>
                     <p class="text-xs text-muted-foreground">
@@ -5592,7 +5760,7 @@ onUnmounted(() => {
                   <Switch id="editor-word-wrap" v-model="editWordWrap" class="mt-0.5" />
                 </div>
 
-                <div class="settings-form-row settings-item flex items-center justify-between gap-4 rounded-md border bg-muted/20 px-3 py-2">
+                <div class="settings-item flex items-center justify-between gap-4 rounded-md border bg-muted/20 px-3 py-2">
                   <div class="space-y-1">
                     <Label for="editor-vim-mode">{{ t("settings.vimMode") }}</Label>
                     <p class="text-xs text-muted-foreground">
@@ -5602,7 +5770,7 @@ onUnmounted(() => {
                   <Switch id="editor-vim-mode" v-model="editVimModeEnabled" class="mt-0.5" />
                 </div>
 
-                <div class="settings-form-row settings-item flex items-center justify-between gap-4 rounded-md border bg-muted/20 px-3 py-2">
+                <div class="settings-item flex items-center justify-between gap-4 rounded-md border bg-muted/20 px-3 py-2">
                   <div class="space-y-1">
                     <Label for="regex-max-match-count">{{ t("settings.regexMaxMatchCount") }}</Label>
                     <p class="text-xs text-muted-foreground">{{ t("settings.regexMaxMatchCountDescription") }}</p>
@@ -5621,8 +5789,8 @@ onUnmounted(() => {
 
               <Separator />
 
-              <div class="settings-responsive-grid grid gap-3 md:grid-cols-2">
-                <div class="settings-form-row settings-item flex items-center justify-between gap-4 rounded-md border bg-muted/20 px-3 py-2 md:col-span-2">
+              <div class="grid gap-3 md:grid-cols-2">
+                <div class="settings-item flex items-center justify-between gap-4 rounded-md border bg-muted/20 px-3 py-2 md:col-span-2">
                   <div class="min-w-0 space-y-1">
                     <Label for="editor-saved-sql-open-target">{{ t("settings.savedSqlOpenTarget") }}</Label>
                     <p class="text-xs text-muted-foreground">
@@ -5641,7 +5809,7 @@ onUnmounted(() => {
                 </div>
 
                 <div class="settings-item rounded-md border bg-muted/20 p-3 md:col-span-2" data-editor-unsaved-sql-settings>
-                  <div class="settings-responsive-grid grid gap-4 md:grid-cols-2">
+                  <div class="grid gap-4 md:grid-cols-2">
                     <div class="flex min-w-0 items-start justify-between gap-4">
                       <div class="min-w-0 space-y-1">
                         <Label for="editor-confirm-unsaved-sql-close">{{ t("settings.confirmUnsavedSqlClose") }}</Label>
@@ -5677,7 +5845,7 @@ onUnmounted(() => {
                   </div>
                 </div>
 
-                <div class="settings-form-row settings-item flex items-center justify-between gap-4 rounded-md border bg-muted/20 px-3 py-2">
+                <div class="settings-item flex items-center justify-between gap-4 rounded-md border bg-muted/20 px-3 py-2">
                   <div class="space-y-1">
                     <Label for="generate-sql-include-database-name">{{ t("settings.generateSqlIncludeDatabaseName") }}</Label>
                     <p class="text-xs text-muted-foreground">
@@ -5687,7 +5855,7 @@ onUnmounted(() => {
                   <Switch id="generate-sql-include-database-name" v-model="editGenerateSqlIncludeDatabaseName" class="mt-0.5" />
                 </div>
 
-                <div class="settings-form-row settings-item flex items-center justify-between gap-4 rounded-md border bg-muted/20 px-3 py-2">
+                <div class="settings-item flex items-center justify-between gap-4 rounded-md border bg-muted/20 px-3 py-2">
                   <div class="space-y-1">
                     <Label for="generate-sql-quote-identifiers">{{ t("settings.generateSqlQuoteIdentifiers") }}</Label>
                     <p class="text-xs text-muted-foreground">
@@ -5697,7 +5865,7 @@ onUnmounted(() => {
                   <Switch id="generate-sql-quote-identifiers" v-model="editGenerateSqlQuoteIdentifiers" class="mt-0.5" />
                 </div>
 
-                <div class="settings-form-row settings-item flex items-center justify-between gap-4 rounded-md border bg-muted/20 px-3 py-2">
+                <div class="settings-item flex items-center justify-between gap-4 rounded-md border bg-muted/20 px-3 py-2">
                   <div class="space-y-1">
                     <Label for="format-sql-on-sql-file-save">{{ t("settings.formatSqlOnSqlFileSave") }}</Label>
                     <p class="text-xs text-muted-foreground">
@@ -5739,8 +5907,8 @@ onUnmounted(() => {
                     </Select>
                   </div>
                 </div>
-                <div class="settings-responsive-grid grid gap-3 md:grid-cols-2">
-                  <div v-for="key in SQL_VARIABLE_SYNTAX_KEYS" :key="key" class="settings-form-row settings-item flex items-center justify-between gap-4 rounded-md border bg-muted/20 px-3 py-2" :class="{ 'opacity-50': !editSqlVariableSubstitutionEnabled }">
+                <div class="grid gap-3 md:grid-cols-2">
+                  <div v-for="key in SQL_VARIABLE_SYNTAX_KEYS" :key="key" class="settings-item flex items-center justify-between gap-4 rounded-md border bg-muted/20 px-3 py-2" :class="{ 'opacity-50': !editSqlVariableSubstitutionEnabled }">
                     <div class="min-w-0 space-y-1">
                       <Label :for="`sql-var-syntax-${key}`" class="flex items-center gap-1.5">
                         <span class="font-mono text-xs text-primary">{{ SQL_VARIABLE_SYNTAX_TOKENS[key] }}</span>
@@ -5761,7 +5929,7 @@ onUnmounted(() => {
                 <div class="text-sm font-medium text-muted-foreground">
                   {{ t("settings.sqlFileSection") }}
                 </div>
-                <div class="settings-form-row settings-item flex items-center justify-between gap-4 rounded-md border bg-muted/20 px-3 py-2">
+                <div class="settings-item flex items-center justify-between gap-4 rounded-md border bg-muted/20 px-3 py-2">
                   <div class="space-y-1">
                     <Label for="external-sql-editor-max-mb">
                       {{ t("settings.externalSqlEditorMaxMb") }}
@@ -5784,7 +5952,7 @@ onUnmounted(() => {
               </div>
             </section>
 
-            <section v-else-if="activeSettingsTab === 'formatter'" data-settings-search-id="formatter" :class="['settings-form-section flex flex-col gap-5 py-2', settingsSearchTargetClass('formatter')]">
+            <section v-else-if="activeSettingsTab === 'formatter'" data-settings-search-id="formatter" :class="['flex flex-col gap-5 py-2', settingsSearchTargetClass('formatter')]">
               <div class="space-y-3 rounded-md border border-border/70 bg-muted/10 p-3">
                 <div class="text-sm font-medium">
                   {{ t("settings.sqlFormatterEditorShortcuts") }}
@@ -6057,16 +6225,7 @@ onUnmounted(() => {
                 <div class="settings-appearance-group min-w-0">
                   <Label>{{ t("settings.theme") }}</Label>
                   <div class="settings-appearance-button-row flex gap-2">
-                    <Button
-                      v-for="option in appThemeModeOptions"
-                      :key="option.value"
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      class="settings-choice-button h-8 gap-1.5 px-3"
-                      :class="themeMode === option.value ? 'chiron-horizon-choice-selected' : 'text-foreground'"
-                      @click="setThemeMode(option.value)"
-                    >
+                    <Button v-for="option in appThemeModeOptions" :key="option.value" type="button" variant="outline" size="sm" class="settings-choice-button h-8 gap-1.5 px-3" :class="themeMode === option.value ? 'dbx-choice-selected' : 'text-foreground'" @click="setThemeMode(option.value)">
                       <component :is="option.icon" class="h-3.5 w-3.5" />
                       {{ option.label }}
                     </Button>
@@ -6083,7 +6242,7 @@ onUnmounted(() => {
                       variant="outline"
                       size="sm"
                       class="settings-choice-button h-8 px-3"
-                      :class="cornerStyle === option.value ? 'chiron-horizon-choice-selected' : 'text-foreground'"
+                      :class="cornerStyle === option.value ? 'dbx-choice-selected' : 'text-foreground'"
                       :style="{ borderRadius: option.previewRadius }"
                       @click="setCornerStyle(option.value)"
                     >
@@ -6098,7 +6257,7 @@ onUnmounted(() => {
               <div class="settings-appearance-group">
                 <Label>{{ t("settings.appLayout") }}</Label>
                 <div class="settings-appearance-choice-grid">
-                  <Button type="button" variant="outline" class="settings-choice-card h-auto justify-start border p-3" :class="editAppLayout === 'separated' ? 'chiron-horizon-choice-selected' : ''" @click="setAppLayout('separated')">
+                  <Button type="button" variant="outline" class="settings-choice-card h-auto justify-start border p-3" :class="editAppLayout === 'separated' ? 'dbx-choice-selected' : ''" @click="setAppLayout('separated')">
                     <TooltipProvider>
                       <Tooltip>
                         <TooltipTrigger as-child>
@@ -6117,7 +6276,7 @@ onUnmounted(() => {
                       </Tooltip>
                     </TooltipProvider>
                   </Button>
-                  <Button type="button" variant="outline" class="settings-choice-card h-auto justify-start border p-3" :class="editAppLayout === 'classic' ? 'chiron-horizon-choice-selected' : ''" @click="setAppLayout('classic')">
+                  <Button type="button" variant="outline" class="settings-choice-card h-auto justify-start border p-3" :class="editAppLayout === 'classic' ? 'dbx-choice-selected' : ''" @click="setAppLayout('classic')">
                     <TooltipProvider>
                       <Tooltip>
                         <TooltipTrigger as-child>
@@ -6144,7 +6303,7 @@ onUnmounted(() => {
               <div class="settings-appearance-group">
                 <Label>{{ t("settings.tabLayout") }}</Label>
                 <div class="settings-appearance-choice-grid">
-                  <Button type="button" variant="outline" class="settings-choice-card h-auto min-w-0 justify-start overflow-hidden whitespace-normal border p-3" :class="editTabLayout === 'scroll' ? 'chiron-horizon-choice-selected' : ''" @click="setTabLayout('scroll')">
+                  <Button type="button" variant="outline" class="settings-choice-card h-auto min-w-0 justify-start overflow-hidden whitespace-normal border p-3" :class="editTabLayout === 'scroll' ? 'dbx-choice-selected' : ''" @click="setTabLayout('scroll')">
                     <div class="w-full min-w-0 text-left">
                       <div class="text-sm font-medium">
                         {{ t("settings.tabLayoutScroll") }}
@@ -6154,7 +6313,7 @@ onUnmounted(() => {
                       </div>
                     </div>
                   </Button>
-                  <Button type="button" variant="outline" class="settings-choice-card h-auto min-w-0 justify-start overflow-hidden whitespace-normal border p-3" :class="editTabLayout === 'wrap' ? 'chiron-horizon-choice-selected' : ''" @click="setTabLayout('wrap')">
+                  <Button type="button" variant="outline" class="settings-choice-card h-auto min-w-0 justify-start overflow-hidden whitespace-normal border p-3" :class="editTabLayout === 'wrap' ? 'dbx-choice-selected' : ''" @click="setTabLayout('wrap')">
                     <div class="w-full min-w-0 text-left">
                       <div class="text-sm font-medium">
                         {{ t("settings.tabLayoutWrap") }}
@@ -6231,22 +6390,12 @@ onUnmounted(() => {
                 <Switch id="quit-on-close" v-model="editQuitOnClose" />
               </div>
 
-              <div class="settings-item flex items-center justify-between gap-4 rounded-md border bg-muted/20 px-3 py-2">
-                <div class="space-y-1">
-                  <Label for="update-notifications-enabled">{{ t("settings.updateNotificationsEnabled") }}</Label>
-                  <p class="text-xs text-muted-foreground">
-                    {{ t("settings.updateNotificationsEnabledDescription") }}
-                  </p>
-                </div>
-                <Switch id="update-notifications-enabled" :model-value="false" disabled />
-              </div>
-
               <div class="settings-appearance-group" data-icon-theme-settings>
                 <Label>{{ t("settings.iconTheme") }}</Label>
                 <div class="settings-appearance-choice-grid settings-icon-theme-grid">
-                  <Button type="button" variant="outline" class="settings-choice-card h-auto min-w-0 justify-start overflow-hidden whitespace-normal border p-3" :class="editIconTheme === 'default' ? 'chiron-horizon-choice-selected' : ''" @click="setIconTheme('default')">
+                  <Button type="button" variant="outline" class="settings-choice-card h-auto min-w-0 justify-start overflow-hidden whitespace-normal border p-3" :class="editIconTheme === 'default' ? 'dbx-choice-selected' : ''" @click="setIconTheme('default')">
                     <div class="flex w-full min-w-0 items-center gap-3 text-left">
-                      <img :src="webPath('/logo.png')" alt="Chiron Horizon" class="h-12 w-12 shrink-0 object-contain" />
+                      <img :src="webPath('/icon-preview-default.png')" alt="DBX" class="h-12 w-12 shrink-0" />
                       <div class="min-w-0 text-left">
                         <div class="text-sm font-medium">
                           {{ t("settings.iconThemeDefault") }}
@@ -6257,9 +6406,9 @@ onUnmounted(() => {
                       </div>
                     </div>
                   </Button>
-                  <Button type="button" variant="outline" class="settings-choice-card h-auto min-w-0 justify-start overflow-hidden whitespace-normal border p-3" :class="editIconTheme === 'black' ? 'chiron-horizon-choice-selected' : ''" @click="setIconTheme('black')">
+                  <Button type="button" variant="outline" class="settings-choice-card h-auto min-w-0 justify-start overflow-hidden whitespace-normal border p-3" :class="editIconTheme === 'black' ? 'dbx-choice-selected' : ''" @click="setIconTheme('black')">
                     <div class="flex w-full min-w-0 items-center gap-3 text-left">
-                      <img :src="webPath('/logo-black.png')" alt="Chiron Horizon" class="h-12 w-12 shrink-0 object-contain" />
+                      <img :src="webPath('/icon-preview-black.png')" alt="DBX" class="h-12 w-12 shrink-0" />
                       <div class="min-w-0 text-left">
                         <div class="text-sm font-medium">
                           {{ t("settings.iconThemeBlack") }}
@@ -6349,11 +6498,11 @@ onUnmounted(() => {
               </div>
             </section>
 
-            <section v-else-if="activeSettingsTab === 'navigation'" data-settings-search-id="navigation" :class="['settings-form-section flex flex-col gap-5 py-2', settingsSearchTargetClass('navigation')]">
+            <section v-else-if="activeSettingsTab === 'navigation'" data-settings-search-id="navigation" :class="['flex flex-col gap-5 py-2', settingsSearchTargetClass('navigation')]">
               <div class="space-y-2">
                 <Label>{{ t("settings.sidebarActivation") }}</Label>
-                <div class="settings-responsive-grid grid grid-cols-2 gap-2">
-                  <Button type="button" variant="outline" class="settings-choice-card h-auto min-w-0 whitespace-normal justify-start border p-3" :class="editSidebarActivation === 'single' ? 'chiron-horizon-choice-selected' : ''" @click="setSidebarActivation('single')">
+                <div class="grid grid-cols-2 gap-2">
+                  <Button type="button" variant="outline" class="h-auto justify-start border p-3" :class="editSidebarActivation === 'single' ? 'dbx-choice-selected' : ''" @click="setSidebarActivation('single')">
                     <div class="text-left">
                       <div class="text-sm font-medium">
                         {{ t("settings.sidebarActivationSingle") }}
@@ -6363,7 +6512,7 @@ onUnmounted(() => {
                       </div>
                     </div>
                   </Button>
-                  <Button type="button" variant="outline" class="settings-choice-card h-auto min-w-0 whitespace-normal justify-start border p-3" :class="editSidebarActivation === 'double' ? 'chiron-horizon-choice-selected' : ''" @click="setSidebarActivation('double')">
+                  <Button type="button" variant="outline" class="h-auto justify-start border p-3" :class="editSidebarActivation === 'double' ? 'dbx-choice-selected' : ''" @click="setSidebarActivation('double')">
                     <div class="text-left">
                       <div class="text-sm font-medium">
                         {{ t("settings.sidebarActivationDouble") }}
@@ -6375,7 +6524,7 @@ onUnmounted(() => {
                   </Button>
                 </div>
               </div>
-              <div class="settings-form-row settings-item flex items-center justify-between gap-4 rounded-md border bg-muted/20 px-3 py-2">
+              <div class="settings-item flex items-center justify-between gap-4 rounded-md border bg-muted/20 px-3 py-2">
                 <div class="flex items-center gap-2">
                   <Label for="sidebar-browse-objects-on-database-activation">{{ t("settings.sidebarBrowseObjectsOnDatabaseActivation") }}</Label>
                   <HelpTooltip :label="t('settings.sidebarBrowseObjectsOnDatabaseActivation')">
@@ -6391,14 +6540,8 @@ onUnmounted(() => {
                     {{ t("settings.reuseDataTabDescription") }}
                   </HelpTooltip>
                 </div>
-                <div class="settings-responsive-grid grid grid-cols-1 gap-2 sm:grid-cols-3">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    class="settings-choice-card h-auto min-w-0 items-start justify-start overflow-hidden whitespace-normal border p-3"
-                    :class="editDataTabReuseMode === 'always-new' ? 'chiron-horizon-choice-selected' : ''"
-                    @click="editDataTabReuseMode = 'always-new'"
-                  >
+                <div class="grid grid-cols-1 gap-2 sm:grid-cols-3">
+                  <Button type="button" variant="outline" class="settings-choice-card h-auto min-w-0 items-start justify-start overflow-hidden whitespace-normal border p-3" :class="editDataTabReuseMode === 'always-new' ? 'dbx-choice-selected' : ''" @click="editDataTabReuseMode = 'always-new'">
                     <div class="w-full min-w-0 text-left">
                       <div class="flex min-w-0 items-center gap-2">
                         <div class="min-w-0 break-words text-sm font-medium">{{ t("settings.dataTabReuseAlwaysNew") }}</div>
@@ -6415,13 +6558,7 @@ onUnmounted(() => {
                       </div>
                     </div>
                   </Button>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    class="settings-choice-card h-auto min-w-0 items-start justify-start overflow-hidden whitespace-normal border p-3"
-                    :class="editDataTabReuseMode === 'same-table' ? 'chiron-horizon-choice-selected' : ''"
-                    @click="editDataTabReuseMode = 'same-table'"
-                  >
+                  <Button type="button" variant="outline" class="settings-choice-card h-auto min-w-0 items-start justify-start overflow-hidden whitespace-normal border p-3" :class="editDataTabReuseMode === 'same-table' ? 'dbx-choice-selected' : ''" @click="editDataTabReuseMode = 'same-table'">
                     <div class="w-full min-w-0 text-left">
                       <div class="flex min-w-0 items-center gap-2">
                         <div class="min-w-0 break-words text-sm font-medium">{{ t("settings.dataTabReuseSameTable") }}</div>
@@ -6438,13 +6575,7 @@ onUnmounted(() => {
                       </div>
                     </div>
                   </Button>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    class="settings-choice-card h-auto min-w-0 items-start justify-start overflow-hidden whitespace-normal border p-3"
-                    :class="editDataTabReuseMode === 'active-tab' ? 'chiron-horizon-choice-selected' : ''"
-                    @click="editDataTabReuseMode = 'active-tab'"
-                  >
+                  <Button type="button" variant="outline" class="settings-choice-card h-auto min-w-0 items-start justify-start overflow-hidden whitespace-normal border p-3" :class="editDataTabReuseMode === 'active-tab' ? 'dbx-choice-selected' : ''" @click="editDataTabReuseMode = 'active-tab'">
                     <div class="w-full min-w-0 text-left">
                       <div class="flex min-w-0 items-center gap-2">
                         <div class="min-w-0 break-words text-sm font-medium">{{ t("settings.dataTabReuseActiveTab") }}</div>
@@ -6463,7 +6594,7 @@ onUnmounted(() => {
                   </Button>
                 </div>
               </div>
-              <div class="settings-form-row settings-item flex items-center justify-between gap-4 rounded-md border bg-muted/20 px-3 py-2">
+              <div class="settings-item flex items-center justify-between gap-4 rounded-md border bg-muted/20 px-3 py-2">
                 <div class="flex items-center gap-2">
                   <Label for="open-data-tabs-next-to-active">{{ t("settings.openDataTabsNextToActive") }}</Label>
                   <HelpTooltip :label="t('settings.openDataTabsNextToActive')">
@@ -6474,8 +6605,8 @@ onUnmounted(() => {
               </div>
               <div class="space-y-2">
                 <Label>{{ t("settings.sidebarObjectDisplay") }}</Label>
-                <div class="settings-responsive-grid grid grid-cols-2 gap-2">
-                  <Button type="button" variant="outline" class="settings-choice-card h-auto min-w-0 whitespace-normal justify-start border p-3" :class="editSidebarObjectDisplay === 'grouped' ? 'chiron-horizon-choice-selected' : ''" @click="setSidebarObjectDisplay('grouped')">
+                <div class="grid grid-cols-2 gap-2">
+                  <Button type="button" variant="outline" class="h-auto justify-start border p-3" :class="editSidebarObjectDisplay === 'grouped' ? 'dbx-choice-selected' : ''" @click="setSidebarObjectDisplay('grouped')">
                     <div class="text-left">
                       <div class="flex items-center gap-2">
                         <div class="text-sm font-medium">
@@ -6494,7 +6625,7 @@ onUnmounted(() => {
                       </div>
                     </div>
                   </Button>
-                  <Button type="button" variant="outline" class="settings-choice-card h-auto min-w-0 whitespace-normal justify-start border p-3" :class="editSidebarObjectDisplay === 'simple' ? 'chiron-horizon-choice-selected' : ''" @click="setSidebarObjectDisplay('simple')">
+                  <Button type="button" variant="outline" class="h-auto justify-start border p-3" :class="editSidebarObjectDisplay === 'simple' ? 'dbx-choice-selected' : ''" @click="setSidebarObjectDisplay('simple')">
                     <div class="text-left">
                       <div class="flex items-center gap-2">
                         <div class="text-sm font-medium">
@@ -6522,8 +6653,8 @@ onUnmounted(() => {
                     {{ t("settings.routineSourceOpenModeQueryTabDescription") }}
                   </HelpTooltip>
                 </div>
-                <div class="settings-responsive-grid grid grid-cols-2 gap-2">
-                  <Button type="button" variant="outline" class="settings-choice-card h-auto min-w-0 justify-start overflow-hidden whitespace-normal border p-3" :class="editRoutineSourceOpenMode === 'query-tab' ? 'chiron-horizon-choice-selected' : ''" @click="setRoutineSourceOpenMode('query-tab')">
+                <div class="grid grid-cols-2 gap-2">
+                  <Button type="button" variant="outline" class="settings-choice-card h-auto min-w-0 justify-start overflow-hidden whitespace-normal border p-3" :class="editRoutineSourceOpenMode === 'query-tab' ? 'dbx-choice-selected' : ''" @click="setRoutineSourceOpenMode('query-tab')">
                     <div class="w-full min-w-0 text-left">
                       <div class="text-sm font-medium">{{ t("settings.routineSourceOpenModeQueryTab") }}</div>
                       <div class="break-words whitespace-normal text-xs text-muted-foreground">
@@ -6531,7 +6662,7 @@ onUnmounted(() => {
                       </div>
                     </div>
                   </Button>
-                  <Button type="button" variant="outline" class="settings-choice-card h-auto min-w-0 justify-start overflow-hidden whitespace-normal border p-3" :class="editRoutineSourceOpenMode === 'dialog' ? 'chiron-horizon-choice-selected' : ''" @click="setRoutineSourceOpenMode('dialog')">
+                  <Button type="button" variant="outline" class="settings-choice-card h-auto min-w-0 justify-start overflow-hidden whitespace-normal border p-3" :class="editRoutineSourceOpenMode === 'dialog' ? 'dbx-choice-selected' : ''" @click="setRoutineSourceOpenMode('dialog')">
                     <div class="w-full min-w-0 text-left">
                       <div class="text-sm font-medium">{{ t("settings.routineSourceOpenModeDialog") }}</div>
                       <div class="break-words whitespace-normal text-xs text-muted-foreground">
@@ -6541,8 +6672,8 @@ onUnmounted(() => {
                   </Button>
                 </div>
               </div>
-              <div class="settings-responsive-grid grid gap-3 md:grid-cols-2">
-                <div class="settings-form-row settings-item flex items-center justify-between gap-4 rounded-md border bg-muted/20 px-3 py-2">
+              <div class="grid gap-3 md:grid-cols-2">
+                <div class="settings-item flex items-center justify-between gap-4 rounded-md border bg-muted/20 px-3 py-2">
                   <div class="space-y-1">
                     <Label for="editor-click-table-navigation-ddl">{{ t("settings.clickTableNavigationTarget") }}</Label>
                     <p class="text-xs text-muted-foreground">
@@ -6552,7 +6683,7 @@ onUnmounted(() => {
                   <Switch id="editor-click-table-navigation-ddl" :model-value="editClickTableNavigationTarget === 'ddl'" @update:model-value="editClickTableNavigationTarget = $event ? 'ddl' : 'data'" class="mt-0.5" />
                 </div>
 
-                <div class="settings-form-row settings-item flex items-center justify-between gap-4 rounded-md border bg-muted/20 px-3 py-2">
+                <div class="settings-item flex items-center justify-between gap-4 rounded-md border bg-muted/20 px-3 py-2">
                   <div class="space-y-1">
                     <Label for="editor-prefill-new-query">{{ t("settings.prefillNewQueryWithSelect") }}</Label>
                     <p class="text-xs text-muted-foreground">
@@ -6562,7 +6693,7 @@ onUnmounted(() => {
                   <Switch id="editor-prefill-new-query" v-model="editPrefillNewQueryWithSelect" class="mt-0.5" />
                 </div>
               </div>
-              <div class="settings-form-row settings-item flex items-center justify-between gap-4 rounded-md border bg-muted/20 px-3 py-2">
+              <div class="settings-item flex items-center justify-between gap-4 rounded-md border bg-muted/20 px-3 py-2">
                 <div class="flex items-center gap-2">
                   <Label for="sidebar-table-search-enabled">{{ t("settings.sidebarTableSearchEnabled") }}</Label>
                   <HelpTooltip :label="t('settings.sidebarTableSearchEnabled')">
@@ -6571,7 +6702,7 @@ onUnmounted(() => {
                 </div>
                 <Switch id="sidebar-table-search-enabled" v-model="editSidebarTableSearchEnabled" />
               </div>
-              <div class="settings-form-row settings-item flex items-center justify-between gap-4 rounded-md border bg-muted/20 px-3 py-2">
+              <div class="settings-item flex items-center justify-between gap-4 rounded-md border bg-muted/20 px-3 py-2">
                 <div class="flex items-center gap-2">
                   <Label for="auto-select-active-sidebar-node">{{ t("settings.autoSelectActiveSidebarNode") }}</Label>
                   <HelpTooltip :label="t('settings.autoSelectActiveSidebarNode')">
@@ -6646,7 +6777,7 @@ onUnmounted(() => {
                   </SelectContent>
                 </Select>
               </div>
-              <div class="settings-form-row settings-item flex items-center justify-between gap-4 rounded-md border bg-muted/20 px-3 py-2">
+              <div class="settings-item flex items-center justify-between gap-4 rounded-md border bg-muted/20 px-3 py-2">
                 <div class="flex items-center gap-2">
                   <Label for="sidebar-allow-horizontal-scroll">
                     {{ t("settings.sidebarAllowHorizontalScroll") }}
@@ -6657,7 +6788,7 @@ onUnmounted(() => {
                 </div>
                 <Switch id="sidebar-allow-horizontal-scroll" v-model="editSidebarAllowHorizontalScroll" />
               </div>
-              <div class="settings-form-row settings-item flex items-center justify-between gap-4 rounded-md border bg-muted/20 px-3 py-2">
+              <div class="settings-item flex items-center justify-between gap-4 rounded-md border bg-muted/20 px-3 py-2">
                 <div class="flex items-center gap-2">
                   <Label for="sidebar-show-tooltips">
                     {{ t("settings.sidebarShowTooltips") }}
@@ -6668,7 +6799,7 @@ onUnmounted(() => {
                 </div>
                 <Switch id="sidebar-show-tooltips" v-model="editSidebarShowTooltips" />
               </div>
-              <div class="settings-form-row settings-item flex items-center justify-between gap-4 rounded-md border bg-muted/20 px-3 py-2">
+              <div class="settings-item flex items-center justify-between gap-4 rounded-md border bg-muted/20 px-3 py-2">
                 <div class="space-y-1">
                   <Label for="sidebar-indent">{{ t("settings.sidebarIndent") }}</Label>
                   <p class="text-xs text-muted-foreground">
@@ -6691,7 +6822,7 @@ onUnmounted(() => {
                   "
                 />
               </div>
-              <div class="settings-form-row settings-item flex items-center justify-between gap-4 rounded-md border bg-muted/20 px-3 py-2">
+              <div class="settings-item flex items-center justify-between gap-4 rounded-md border bg-muted/20 px-3 py-2">
                 <div class="space-y-1">
                   <Label for="sidebar-font-size">{{ t("settings.sidebarFontSize") }}</Label>
                   <p class="text-xs text-muted-foreground">
@@ -6726,7 +6857,7 @@ onUnmounted(() => {
                   {{ t("settings.sidebarHiddenTablePrefixesDescription") }}
                 </p>
               </div>
-              <div class="settings-form-row settings-item flex items-center justify-between gap-4 rounded-md border bg-muted/20 px-3 py-2">
+              <div class="settings-item flex items-center justify-between gap-4 rounded-md border bg-muted/20 px-3 py-2">
                 <div class="space-y-1">
                   <Label for="sidebar-copy-table-name-separator">{{ t("settings.sidebarCopyTableNameSeparator") }}</Label>
                   <p class="text-xs text-muted-foreground">
@@ -6751,7 +6882,7 @@ onUnmounted(() => {
                   </SelectContent>
                 </Select>
               </div>
-              <div class="settings-form-row settings-item flex items-center justify-between gap-4 rounded-md border bg-muted/20 px-3 py-2">
+              <div class="settings-item flex items-center justify-between gap-4 rounded-md border bg-muted/20 px-3 py-2">
                 <div class="space-y-1">
                   <Label for="sidebar-copy-table-name-include-schema">{{ t("settings.sidebarCopyTableNameIncludeSchema") }}</Label>
                   <p class="text-xs text-muted-foreground">
@@ -6760,7 +6891,7 @@ onUnmounted(() => {
                 </div>
                 <Switch id="sidebar-copy-table-name-include-schema" v-model="editSidebarCopyTableNameIncludeSchema" class="mt-0.5" />
               </div>
-              <div class="settings-form-row settings-item flex items-center justify-between gap-4 rounded-md border bg-muted/20 px-3 py-2">
+              <div class="settings-item flex items-center justify-between gap-4 rounded-md border bg-muted/20 px-3 py-2">
                 <div class="space-y-1">
                   <Label for="sidebar-table-page-size">{{ t("settings.sidebarTablePageSize") }}</Label>
                   <p class="text-xs text-muted-foreground">
@@ -6786,7 +6917,7 @@ onUnmounted(() => {
             </section>
 
             <!-- Data Tab -->
-            <section v-else-if="activeSettingsTab === 'data'" data-settings-search-id="data" :class="['settings-form-section flex flex-col gap-5 py-2', settingsSearchTargetClass('data')]">
+            <section v-else-if="activeSettingsTab === 'data'" data-settings-search-id="data" :class="['flex flex-col gap-5 py-2', settingsSearchTargetClass('data')]">
               <div data-settings-search-id="data-grid-filter-view" :class="['overflow-hidden rounded-md border bg-muted/20', settingsSearchTargetClass('data-grid-filter-view')]">
                 <div class="space-y-3 p-3">
                   <div class="flex items-start justify-between gap-4">
@@ -6813,12 +6944,12 @@ onUnmounted(() => {
                     </Button>
                   </div>
 
-                  <div class="settings-responsive-grid grid grid-cols-3 gap-2" data-data-grid-filter-view-options>
+                  <div class="grid grid-cols-3 gap-2" data-data-grid-filter-view-options>
                     <Button
                       type="button"
                       variant="outline"
                       class="settings-choice-card h-10 min-w-0 justify-start overflow-hidden whitespace-normal border px-3"
-                      :class="editDataGridFilterEditorView === 'quick' ? 'chiron-horizon-choice-selected' : ''"
+                      :class="editDataGridFilterEditorView === 'quick' ? 'dbx-choice-selected' : ''"
                       :aria-pressed="editDataGridFilterEditorView === 'quick'"
                       @click="editDataGridFilterEditorView = 'quick'"
                     >
@@ -6828,7 +6959,7 @@ onUnmounted(() => {
                       type="button"
                       variant="outline"
                       class="settings-choice-card h-10 min-w-0 justify-start overflow-hidden whitespace-normal border px-3"
-                      :class="editDataGridFilterEditorView === 'conditions' ? 'chiron-horizon-choice-selected' : ''"
+                      :class="editDataGridFilterEditorView === 'conditions' ? 'dbx-choice-selected' : ''"
                       :aria-pressed="editDataGridFilterEditorView === 'conditions'"
                       @click="editDataGridFilterEditorView = 'conditions'"
                     >
@@ -6838,14 +6969,14 @@ onUnmounted(() => {
                       type="button"
                       variant="outline"
                       class="settings-choice-card h-10 min-w-0 justify-start overflow-hidden whitespace-normal border px-3"
-                      :class="editDataGridFilterEditorView === 'text' ? 'chiron-horizon-choice-selected' : ''"
+                      :class="editDataGridFilterEditorView === 'text' ? 'dbx-choice-selected' : ''"
                       :aria-pressed="editDataGridFilterEditorView === 'text'"
                       @click="editDataGridFilterEditorView = 'text'"
                     >
                       <span class="truncate">{{ t("grid.filterTextView") }}</span>
                     </Button>
                   </div>
-                  <div v-if="editDataGridFilterEditorView !== 'quick'" class="settings-form-row settings-item flex items-center justify-between gap-4 rounded-md border bg-background px-3 py-2">
+                  <div v-if="editDataGridFilterEditorView !== 'quick'" class="settings-item flex items-center justify-between gap-4 rounded-md border bg-background px-3 py-2">
                     <div class="space-y-1">
                       <Label for="data-grid-keep-filter-editor-expanded">{{ t("settings.dataGridKeepFilterEditorExpanded") }}</Label>
                       <p class="text-xs text-muted-foreground">{{ t("settings.dataGridKeepFilterEditorExpandedDescription") }}</p>
@@ -6877,7 +7008,7 @@ onUnmounted(() => {
                         <span>{{ t("grid.filter") }}</span>
                         <Trash2 class="h-3.5 w-3.5 text-muted-foreground" />
                       </div>
-                      <div class="settings-responsive-grid grid grid-cols-[minmax(0,1fr)_72px_minmax(0,1fr)] gap-1.5 text-[11px]">
+                      <div class="grid grid-cols-[minmax(0,1fr)_72px_minmax(0,1fr)] gap-1.5 text-[11px]">
                         <span class="truncate rounded border px-2 py-1">status</span>
                         <span class="truncate rounded border px-2 py-1">=</span>
                         <span class="truncate rounded border px-2 py-1">ACTIVE</span>
@@ -6887,7 +7018,7 @@ onUnmounted(() => {
 
                   <div v-else-if="editDataGridFilterEditorView === 'conditions'" class="flex h-[104px] flex-col bg-muted/5" data-data-grid-filter-preview-conditions>
                     <div class="flex-1 p-2">
-                      <div class="settings-responsive-grid grid grid-cols-[18px_minmax(0,1fr)_92px_minmax(0,1.2fr)_24px] items-center gap-1.5 text-[11px]">
+                      <div class="grid grid-cols-[18px_minmax(0,1fr)_92px_minmax(0,1.2fr)_24px] items-center gap-1.5 text-[11px]">
                         <GripVertical class="h-3.5 w-3.5 text-muted-foreground" />
                         <span class="truncate rounded border bg-background px-2 py-1">status</span>
                         <span class="truncate rounded border bg-background px-2 py-1">=</span>
@@ -6904,7 +7035,7 @@ onUnmounted(() => {
 
                   <div v-else class="flex h-[104px] flex-col bg-muted/5" data-data-grid-filter-preview-text>
                     <div class="flex-1 px-2 py-1.5 text-[11px]">
-                      <div class="settings-responsive-grid grid min-h-7 grid-cols-[18px_18px_minmax(0,1fr)_72px_minmax(0,1.2fr)_36px] items-center gap-1 border-b border-border/45">
+                      <div class="grid min-h-7 grid-cols-[18px_18px_minmax(0,1fr)_72px_minmax(0,1.2fr)_36px] items-center gap-1 border-b border-border/45">
                         <GripVertical class="h-3.5 w-3.5 text-muted-foreground" />
                         <span class="flex h-3.5 w-3.5 items-center justify-center border border-primary bg-primary/10 text-primary"><Check class="h-3 w-3" /></span>
                         <span class="truncate px-1">status</span>
@@ -6943,7 +7074,7 @@ onUnmounted(() => {
                     </Button>
                   </div>
                 </div>
-                <div class="settings-form-row settings-item flex items-center justify-between gap-4 rounded-md border bg-muted/20 px-3 py-2">
+                <div class="settings-item flex items-center justify-between gap-4 rounded-md border bg-muted/20 px-3 py-2">
                   <div class="space-y-1">
                     <Label for="table-open-page-size">
                       {{ t("settings.tableOpenPageSize") }}
@@ -6954,7 +7085,7 @@ onUnmounted(() => {
                   </div>
                   <Input id="table-open-page-size" type="number" inputmode="numeric" class="h-7 w-24 px-2 text-left text-xs tabular-nums" :min="MIN_RESULT_PAGE_SIZE" :max="MAX_RESULT_PAGE_SIZE" :model-value="editTableOpenPageSize" @update:model-value="updateTableOpenPageSizeDraft" />
                 </div>
-                <div class="settings-form-row settings-item flex items-center justify-between gap-4 rounded-md border bg-muted/20 px-3 py-2">
+                <div class="settings-item flex items-center justify-between gap-4 rounded-md border bg-muted/20 px-3 py-2">
                   <div class="space-y-1">
                     <Label for="query-page-size">
                       {{ t("settings.queryPageSize") }}
@@ -6997,7 +7128,7 @@ onUnmounted(() => {
                     </SelectContent>
                   </Select>
                 </div>
-                <div class="settings-form-row settings-item flex items-center justify-between gap-4 rounded-md border bg-muted/20 px-3 py-2">
+                <div class="settings-item flex items-center justify-between gap-4 rounded-md border bg-muted/20 px-3 py-2">
                   <div class="space-y-1">
                     <Label for="query-result-max-rows-enabled">
                       {{ t("settings.queryResultMaxRows") }}
@@ -7022,7 +7153,7 @@ onUnmounted(() => {
                     <Switch id="query-result-max-rows-enabled" v-model="editQueryResultMaxRowsEnabled" :aria-label="t('settings.queryResultMaxRowsEnabled')" />
                   </div>
                 </div>
-                <div class="settings-form-row settings-item flex items-center justify-between gap-4 rounded-md border bg-muted/20 px-3 py-2">
+                <div class="settings-item flex items-center justify-between gap-4 rounded-md border bg-muted/20 px-3 py-2">
                   <div class="space-y-1">
                     <Label for="infinite-scroll">
                       {{ t("settings.infiniteScroll") }}
@@ -7033,7 +7164,7 @@ onUnmounted(() => {
                   </div>
                   <Switch id="infinite-scroll" v-model="editInfiniteScroll" />
                 </div>
-                <div class="settings-form-row settings-item flex items-center justify-between gap-4 rounded-md border bg-muted/20 px-3 py-2">
+                <div class="settings-item flex items-center justify-between gap-4 rounded-md border bg-muted/20 px-3 py-2">
                   <div class="space-y-1">
                     <Label for="auto-calculate-total-rows">
                       {{ t("settings.autoCalculateTotalRows") }}
@@ -7044,7 +7175,7 @@ onUnmounted(() => {
                   </div>
                   <Switch id="auto-calculate-total-rows" v-model="editAutoCalculateTotalRows" />
                 </div>
-                <div class="settings-form-row settings-item flex items-center justify-between gap-4 rounded-md border bg-muted/20 px-3 py-2">
+                <div class="settings-item flex items-center justify-between gap-4 rounded-md border bg-muted/20 px-3 py-2">
                   <div class="space-y-1">
                     <Label for="show-column-comments-in-header">
                       {{ t("settings.showColumnCommentsInHeader") }}
@@ -7055,7 +7186,7 @@ onUnmounted(() => {
                   </div>
                   <Switch id="show-column-comments-in-header" v-model="editShowColumnCommentsInHeader" />
                 </div>
-                <div class="settings-form-row settings-item flex items-center justify-between gap-4 rounded-md border bg-muted/20 px-3 py-2">
+                <div class="settings-item flex items-center justify-between gap-4 rounded-md border bg-muted/20 px-3 py-2">
                   <div class="space-y-1">
                     <Label for="show-column-types-in-header">
                       {{ t("settings.showColumnTypesInHeader") }}
@@ -7066,7 +7197,7 @@ onUnmounted(() => {
                   </div>
                   <Switch id="show-column-types-in-header" v-model="editShowColumnTypesInHeader" />
                 </div>
-                <div class="settings-form-row settings-item flex items-center justify-between gap-4 rounded-md border bg-muted/20 px-3 py-2">
+                <div class="settings-item flex items-center justify-between gap-4 rounded-md border bg-muted/20 px-3 py-2">
                   <div class="space-y-1">
                     <Label for="data-grid-show-transpose-field-metadata">
                       {{ t("settings.dataGridShowTransposeFieldMetadata") }}
@@ -7077,7 +7208,7 @@ onUnmounted(() => {
                   </div>
                   <Switch id="data-grid-show-transpose-field-metadata" v-model="editDataGridShowTransposeFieldMetadata" />
                 </div>
-                <div class="settings-form-row settings-item flex items-center justify-between gap-4 rounded-md border bg-muted/20 px-3 py-2">
+                <div class="settings-item flex items-center justify-between gap-4 rounded-md border bg-muted/20 px-3 py-2">
                   <div class="space-y-1">
                     <Label for="colorize-data-grid-cell-types">
                       {{ t("settings.colorizeDataGridCellTypes") }}
@@ -7088,7 +7219,7 @@ onUnmounted(() => {
                   </div>
                   <Switch id="colorize-data-grid-cell-types" v-model="editColorizeDataGridCellTypes" />
                 </div>
-                <div class="settings-form-row settings-item flex items-center justify-between gap-4 rounded-md border bg-muted/20 px-3 py-2">
+                <div class="settings-item flex items-center justify-between gap-4 rounded-md border bg-muted/20 px-3 py-2">
                   <div class="space-y-1">
                     <Label for="show-index-indicators-in-header">
                       {{ t("settings.showIndexIndicatorsInHeader") }}
@@ -7099,7 +7230,7 @@ onUnmounted(() => {
                   </div>
                   <Switch id="show-index-indicators-in-header" v-model="editShowIndexIndicatorsInHeader" />
                 </div>
-                <div class="settings-form-row settings-item flex items-center justify-between gap-4 rounded-md border bg-muted/20 px-3 py-2">
+                <div class="settings-item flex items-center justify-between gap-4 rounded-md border bg-muted/20 px-3 py-2">
                   <div class="space-y-1">
                     <Label for="compact-column-header-actions">
                       {{ t("settings.compactColumnHeaderActions") }}
@@ -7110,7 +7241,7 @@ onUnmounted(() => {
                   </div>
                   <Switch id="compact-column-header-actions" v-model="editCompactColumnHeaderActions" />
                 </div>
-                <div class="settings-form-row settings-item flex items-center justify-between gap-4 rounded-md border bg-muted/20 px-3 py-2">
+                <div class="settings-item flex items-center justify-between gap-4 rounded-md border bg-muted/20 px-3 py-2">
                   <div class="space-y-1">
                     <Label for="data-grid-quick-entry">
                       {{ t("settings.dataGridQuickEntry") }}
@@ -7121,7 +7252,7 @@ onUnmounted(() => {
                   </div>
                   <Switch id="data-grid-quick-entry" v-model="editDataGridQuickEntry" />
                 </div>
-                <div class="settings-form-row settings-item flex items-center justify-between gap-4 rounded-md border bg-muted/20 px-3 py-2">
+                <div class="settings-item flex items-center justify-between gap-4 rounded-md border bg-muted/20 px-3 py-2">
                   <div class="space-y-1">
                     <Label for="data-grid-auto-transpose-single-row">
                       {{ t("settings.dataGridAutoTransposeSingleRow") }}
@@ -7132,7 +7263,7 @@ onUnmounted(() => {
                   </div>
                   <Switch id="data-grid-auto-transpose-single-row" v-model="editDataGridAutoTransposeSingleRow" />
                 </div>
-                <div class="settings-form-row settings-item flex items-center justify-between gap-4 rounded-md border bg-muted/20 px-3 py-2">
+                <div class="settings-item flex items-center justify-between gap-4 rounded-md border bg-muted/20 px-3 py-2">
                   <div class="space-y-1">
                     <Label for="data-grid-cell-detail-button-visible">
                       {{ t("settings.dataGridCellDetailButtonVisible") }}
@@ -7143,7 +7274,7 @@ onUnmounted(() => {
                   </div>
                   <Switch id="data-grid-cell-detail-button-visible" v-model="editDataGridCellDetailButtonVisible" />
                 </div>
-                <div class="settings-form-row settings-item flex items-center justify-between gap-4 rounded-md border bg-muted/20 px-3 py-2">
+                <div class="settings-item flex items-center justify-between gap-4 rounded-md border bg-muted/20 px-3 py-2">
                   <div class="space-y-1">
                     <Label for="data-grid-crosshair-highlight">
                       {{ t("settings.dataGridCrosshairHighlight") }}
@@ -7154,14 +7285,14 @@ onUnmounted(() => {
                   </div>
                   <Switch id="data-grid-crosshair-highlight" v-model="editDataGridCrosshairHighlight" />
                 </div>
-                <div class="settings-form-row settings-item flex items-center justify-between gap-4 rounded-md border bg-muted/20 px-3 py-2">
+                <div class="settings-item flex items-center justify-between gap-4 rounded-md border bg-muted/20 px-3 py-2">
                   <div class="space-y-1">
                     <Label for="data-grid-show-whitespace">{{ t("settings.dataGridShowWhitespace") }}</Label>
                     <p class="text-xs text-muted-foreground">{{ t("settings.dataGridShowWhitespaceDescription") }}</p>
                   </div>
                   <Switch id="data-grid-show-whitespace" v-model="editDataGridShowWhitespace" />
                 </div>
-                <div class="settings-form-row settings-item flex items-center justify-between gap-4 rounded-md border bg-muted/20 px-3 py-2">
+                <div class="settings-item flex items-center justify-between gap-4 rounded-md border bg-muted/20 px-3 py-2">
                   <div class="space-y-1">
                     <Label for="flattening-multi-line">
                       {{ t("settings.flatteningMultiLineText") }}
@@ -7213,10 +7344,10 @@ onUnmounted(() => {
                       <p class="text-xs font-medium text-amber-600 dark:text-amber-400">
                         {{ t("settings.duckDbWorkerProcessIsolationRestartRequired") }}
                       </p>
-                      <Button type="button" variant="outline" size="sm" class="h-7 gap-1.5 px-2 text-xs" :disabled="duckDbRestarting || hasApplyBlocker" @click="restartChironHorizonForDuckDbIsolation">
+                      <Button type="button" variant="outline" size="sm" class="h-7 gap-1.5 px-2 text-xs" :disabled="duckDbRestarting || hasApplyBlocker" @click="restartDbxForDuckDbIsolation">
                         <Loader2 v-if="duckDbRestarting" class="size-3.5 animate-spin" />
                         <RefreshCw v-else class="size-3.5" />
-                        {{ t("settings.restartChironHorizon") }}
+                        {{ t("settings.restartDbx") }}
                       </Button>
                     </div>
                   </div>
@@ -7301,7 +7432,7 @@ onUnmounted(() => {
                   <textarea
                     id="redis-key-templates-input"
                     v-model="editRedisKeyTemplates"
-                    class="chiron-horizon-editor-font-family min-h-24 w-full rounded-md border border-input bg-background px-3 py-2 text-xs outline-none transition-colors placeholder:text-muted-foreground focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring"
+                    class="dbx-editor-font-family min-h-24 w-full rounded-md border border-input bg-background px-3 py-2 text-xs outline-none transition-colors placeholder:text-muted-foreground focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring"
                     :placeholder="t('settings.redisKeyTemplatesPlaceholder')"
                     spellcheck="false"
                   />
@@ -7383,7 +7514,7 @@ onUnmounted(() => {
                 <div class="text-sm font-medium text-muted-foreground">
                   {{ t("settings.sqlFileSection") }}
                 </div>
-                <div class="settings-form-row settings-item flex items-center justify-between gap-4 rounded-md border bg-muted/20 px-3 py-2" :class="{ 'settings-item-disabled': !webSqlFileUploadMaxMbLoaded || webSqlFileUploadMaxMbLoading }">
+                <div class="settings-item flex items-center justify-between gap-4 rounded-md border bg-muted/20 px-3 py-2" :class="{ 'settings-item-disabled': !webSqlFileUploadMaxMbLoaded || webSqlFileUploadMaxMbLoading }">
                   <div class="space-y-1">
                     <Label for="web-sql-file-upload-max-mb">
                       {{ t("settings.webSqlFileUploadMaxMb") }}
@@ -7417,7 +7548,7 @@ onUnmounted(() => {
                 <div class="text-sm font-medium text-muted-foreground">
                   {{ t("settings.performanceSection") }}
                 </div>
-                <div class="settings-form-row settings-item flex items-center justify-between gap-4 rounded-md border bg-muted/20 px-3 py-2">
+                <div class="settings-item flex items-center justify-between gap-4 rounded-md border bg-muted/20 px-3 py-2">
                   <div class="min-w-0 space-y-1">
                     <Label for="metadata-cache-memory-limit">{{ t("settings.metadataCacheMemoryLimit") }}</Label>
                     <p class="text-xs text-muted-foreground">
@@ -7438,14 +7569,14 @@ onUnmounted(() => {
                   {{ t("settings.tableStructureSection") }}
                 </div>
                 <div ref="tableColumnTemplateSectionRef" data-settings-search-id="table-column-templates" :class="['settings-item space-y-2 rounded-md border bg-muted/20 px-3 py-2', settingsSearchTargetClass('table-column-templates')]">
-                  <div class="settings-table-template-header grid gap-3">
+                  <div class="flex items-start justify-between gap-3">
                     <div class="space-y-1">
                       <Label>{{ t("settings.tableColumnTemplateFields") }}</Label>
                       <p class="text-xs text-muted-foreground">
                         {{ t("settings.tableColumnTemplateFieldsDescription") }}
                       </p>
                     </div>
-                    <div class="flex min-w-0 flex-wrap items-center gap-2">
+                    <div class="flex items-center gap-2">
                       <Select v-model="editTableColumnTemplateDatabaseType">
                         <SelectTrigger class="h-8 w-44 px-2 text-xs">
                           <SelectValue />
@@ -7541,81 +7672,131 @@ onUnmounted(() => {
             </section>
 
             <section v-else-if="activeSettingsTab === 'shortcuts'" data-settings-search-id="shortcuts" :class="['flex flex-col gap-2 py-2', settingsSearchTargetClass('shortcuts')]">
-              <div class="relative">
-                <Search class="pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                <Input v-model="shortcutSearchQuery" autocomplete="off" :placeholder="t('settings.shortcutSearchPlaceholder')" class="h-9 pl-9 text-sm" />
+              <div class="flex items-center gap-2">
+                <div class="relative min-w-0 flex-1">
+                  <Search class="pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                  <Input v-model="shortcutSearchQuery" autocomplete="off" :placeholder="t('settings.shortcutSearchPlaceholder')" class="h-9 pl-9 text-sm" />
+                </div>
+                <!-- 冲突摘只需计数，明细进浮层：不再用整条横幅占掉列表高度。 -->
+                <LightTooltip v-if="shortcutConflicts.length > 0" :text="t('settings.shortcutConflictSummaryTooltip', { count: shortcutConflicts.length, pairs: shortcutConflictPairCount })">
+                  <span class="inline-flex h-9 shrink-0 cursor-help items-center gap-1.5 rounded-md border border-destructive/25 bg-destructive/10 px-2 text-[11.5px] font-medium tabular-nums text-destructive">
+                    <span class="size-1.5 rounded-full bg-current" aria-hidden="true" />
+                    {{ t("settings.shortcutConflictBadge", { count: shortcutConflicts.length }) }}
+                  </span>
+                </LightTooltip>
+                <LightTooltip v-if="crossScopeShortcutConflictIds.length > 0" :text="t('settings.shortcutCrossScopeSummaryTooltip', { count: crossScopeShortcutConflictIds.length, pairs: crossScopeShortcutPairCount })">
+                  <span class="inline-flex h-9 shrink-0 cursor-help items-center gap-1.5 rounded-md border border-warning/30 bg-warning/10 px-2 text-[11.5px] font-medium tabular-nums text-warning">
+                    <span class="size-1.5 rounded-full bg-current" aria-hidden="true" />
+                    {{ t("settings.shortcutCrossScopeBadge", { count: crossScopeShortcutConflictIds.length }) }}
+                  </span>
+                </LightTooltip>
               </div>
-              <div class="overflow-hidden rounded-md border border-border/70 bg-background">
-                <div v-if="filteredShortcutDefinitions.length === 0" class="px-3 py-8 text-center text-sm text-muted-foreground">
-                  {{ t("settings.shortcutSearchNoResults") }}
-                </div>
-                <div v-for="definition in filteredShortcutDefinitions" :key="definition.id" class="settings-shortcut-row group -mt-px grid gap-2 border-t border-border/70 px-3 py-2 transition-colors first:mt-0 first:border-t-0 hover:bg-muted/40 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center">
-                  <div class="settings-shortcut-label min-w-0">
-                    <div class="flex min-w-0 items-center gap-2">
-                      <Label class="min-w-0 truncate leading-none">{{ t(definition.labelKey) }}</Label>
-                      <Badge variant="outline" class="h-5 shrink-0 rounded-md border-border/60 px-1.5 text-[11px] font-normal text-muted-foreground">
-                        {{ t(`settings.shortcutScope${definition.scope[0].toUpperCase()}${definition.scope.slice(1)}`) }}
-                      </Badge>
+
+              <div v-if="filteredShortcutDefinitions.length === 0" class="rounded-md border border-border/70 px-3 py-8 text-center text-sm text-muted-foreground">
+                {{ t("settings.shortcutSearchNoResults") }}
+              </div>
+
+              <!-- 二级归类：按作用域分组，组头吸顶。顺序即运行时优先级（越外层越先响应）。
+                   分组容器刻意不用 overflow-hidden —— 它会成为嵌套滚动容器，使组头吸顶失效；
+                   圆角改由组头（上）与末行（下）分别承担。 -->
+              <div v-else class="flex flex-col gap-2">
+                <section v-for="group in shortcutScopeGroups" :key="group.scope" class="rounded-md border border-border/70 bg-background">
+                  <header class="sticky top-0 z-10 flex items-center gap-2 rounded-t-md border-b border-border/70 bg-popover px-3 py-2">
+                    <component :is="shortcutScopeIcon(group.scope)" class="h-3.5 w-3.5 shrink-0 text-muted-foreground" aria-hidden="true" />
+                    <h3 class="shrink-0 text-[13px] leading-none font-semibold">{{ group.label }}</h3>
+                    <span class="shrink-0 rounded-sm border border-border/80 px-1 font-mono text-[10px] leading-4 text-muted-foreground/75">{{ group.scope }}</span>
+                    <span class="shrink-0 text-[11px] tabular-nums text-muted-foreground">{{ t("settings.shortcutGroupCount", { count: group.definitions.length }) }}</span>
+                    <LightTooltip v-if="group.unboundCount > 0" :text="t('settings.shortcutGroupUnboundTooltip')">
+                      <span class="shrink-0 cursor-help text-[11px] tabular-nums text-muted-foreground/70">
+                        {{ t("settings.shortcutGroupUnbound", { count: group.unboundCount }) }}
+                      </span>
+                    </LightTooltip>
+                    <LightTooltip v-if="group.conflictCount > 0" :text="t('settings.shortcutConflictSummaryTooltip', { count: group.conflictCount, pairs: shortcutConflictPairCount })">
+                      <span class="inline-flex shrink-0 cursor-help items-center gap-1 text-[11px] font-medium tabular-nums text-destructive"> <span class="size-[5px] rounded-full bg-current" aria-hidden="true" />{{ group.conflictCount }} </span>
+                    </LightTooltip>
+                    <LightTooltip v-if="group.crossScopeCount > 0" :text="t('settings.shortcutCrossScopeSummaryTooltip', { count: group.crossScopeCount, pairs: crossScopeShortcutPairCount })">
+                      <span class="inline-flex shrink-0 cursor-help items-center gap-1 text-[11px] font-medium tabular-nums text-warning"> <span class="size-[5px] rounded-full bg-current" aria-hidden="true" />{{ group.crossScopeCount }} </span>
+                    </LightTooltip>
+                    <span class="ml-auto hidden truncate text-[11px] text-muted-foreground xl:block">{{ group.hint }}</span>
+                  </header>
+                  <div
+                    v-for="(definition, index) in group.definitions"
+                    :key="definition.id"
+                    class="settings-shortcut-row group grid gap-2 border-t border-border/70 px-3 py-2 transition-colors hover:bg-muted/40 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center"
+                    :class="index === group.definitions.length - 1 ? 'rounded-b-md' : ''"
+                    :data-conflict="shortcutConflictMap[definition.id] ? 'true' : undefined"
+                    :data-cross-scope="shortcutHasCrossScopeConflict(definition) ? 'true' : undefined"
+                  >
+                    <div class="settings-shortcut-label min-w-0">
+                      <div class="flex min-w-0 items-center gap-2">
+                        <Label class="min-w-0 truncate leading-none">{{ t(definition.labelKey) }}</Label>
+                        <!-- scope 已由分组标题承载，行内不再重复散章 -->
+                        <LightTooltip v-if="isShortcutModified(definition)" :text="t('settings.shortcutModifiedTagTooltip')">
+                          <span class="shrink-0 cursor-help rounded-sm border border-border/90 px-1 text-[10px] leading-4 text-muted-foreground">
+                            {{ t("settings.shortcutModifiedTag") }}
+                          </span>
+                        </LightTooltip>
+                      </div>
+                    </div>
+                    <div class="settings-shortcut-actions min-w-0 text-right">
+                      <div class="settings-shortcut-controls flex items-center justify-end gap-1.5">
+                        <!-- 冲突解释改为悬停才出现：默认只留胶囊颜色这一条定位线索。 -->
+                        <LightTooltip side="left" :disabled="editingShortcutId === definition.id" :text="shortcutConflictHintText(definition)" content-class="max-w-[320px]">
+                          <input
+                            :data-shortcut-input="definition.id"
+                            :value="editingShortcutId === definition.id ? '' : formatShortcutPill(editShortcuts[definition.id])"
+                            :style="{
+                              width: editingShortcutId === definition.id ? shortcutPressShortcutInputWidth : `${Math.max(4, formatShortcutPill(editShortcuts[definition.id]).length + 3)}ch`,
+                            }"
+                            readonly
+                            :aria-invalid="shortcutConflicts.includes(definition.id)"
+                            :placeholder="t('settings.shortcutPressShortcut')"
+                            class="settings-shortcut-pill h-7 w-auto min-w-12 max-w-64 shrink-0 cursor-default rounded-[6px] border border-transparent bg-muted px-2.5 text-center font-mono text-[13px] font-semibold text-foreground/75 shadow-inner outline-none selection:bg-transparent placeholder:text-muted-foreground aria-invalid:border-destructive/55 aria-invalid:text-destructive"
+                            :class="editingShortcutId === definition.id ? 'max-w-64 cursor-text border-border/80 bg-background text-left text-foreground shadow-none focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/35' : ''"
+                            @keydown="(event: KeyboardEvent) => onShortcutKeydown(definition.id, event)"
+                          />
+                        </LightTooltip>
+                        <Button
+                          v-if="editingShortcutId !== definition.id"
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          class="settings-shortcut-action-button settings-shortcut-action-button--fix h-7 w-7 shrink-0 text-muted-foreground opacity-0 transition-opacity hover:text-foreground focus-visible:opacity-100 group-hover:opacity-100"
+                          :aria-label="t('settings.shortcutPressShortcut')"
+                          @click="focusShortcutInput(definition.id)"
+                        >
+                          <Pencil class="h-4 w-4" />
+                        </Button>
+                        <Button v-else type="button" variant="ghost" size="sm" class="h-7 shrink-0 px-2 text-sm font-medium text-muted-foreground hover:text-foreground" @click="cancelShortcutEdit">
+                          {{ t("settings.cancel") }}
+                        </Button>
+                        <Button
+                          v-if="editingShortcutId !== definition.id"
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          class="settings-shortcut-action-button settings-shortcut-action-button--fix h-7 w-7 shrink-0 text-muted-foreground opacity-0 transition-opacity hover:text-foreground focus-visible:opacity-100 group-hover:opacity-100"
+                          :aria-label="t('settings.reset')"
+                          @click="resetShortcut(definition.id)"
+                        >
+                          <RotateCcw class="h-4 w-4" />
+                        </Button>
+                        <Button
+                          v-if="editingShortcutId !== definition.id && editShortcuts[definition.id]"
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          class="settings-shortcut-action-button h-7 w-7 shrink-0 text-muted-foreground opacity-0 transition-opacity hover:text-destructive focus-visible:opacity-100 group-hover:opacity-100"
+                          :aria-label="t('settings.shortcutClear')"
+                          @click="clearShortcut(definition.id)"
+                        >
+                          <X class="h-4 w-4" />
+                        </Button>
+                        <span v-else-if="editingShortcutId !== definition.id" class="h-7 w-7 shrink-0" aria-hidden="true" />
+                      </div>
                     </div>
                   </div>
-                  <div class="settings-shortcut-actions min-w-0 space-y-1 text-right">
-                    <div class="settings-shortcut-controls flex items-center justify-end gap-1.5">
-                      <input
-                        :data-shortcut-input="definition.id"
-                        :value="editingShortcutId === definition.id ? '' : formatShortcutPill(editShortcuts[definition.id])"
-                        :style="{
-                          width: editingShortcutId === definition.id ? shortcutPressShortcutInputWidth : `${Math.max(4, formatShortcutPill(editShortcuts[definition.id]).length + 3)}ch`,
-                        }"
-                        readonly
-                        :aria-invalid="shortcutConflicts.includes(definition.id)"
-                        :placeholder="t('settings.shortcutPressShortcut')"
-                        class="h-7 w-auto min-w-12 max-w-64 shrink-0 cursor-default rounded-[6px] border border-transparent bg-muted px-2.5 text-center font-mono text-[13px] font-semibold text-foreground/75 shadow-inner outline-none selection:bg-transparent placeholder:text-muted-foreground aria-invalid:border-destructive/70 aria-invalid:text-destructive aria-invalid:ring-destructive/20"
-                        :class="editingShortcutId === definition.id ? 'max-w-64 cursor-text border-border/80 bg-background text-left text-foreground shadow-none focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/35' : ''"
-                        @keydown="(event: KeyboardEvent) => onShortcutKeydown(definition.id, event)"
-                      />
-                      <Button
-                        v-if="editingShortcutId !== definition.id"
-                        type="button"
-                        variant="ghost"
-                        size="icon"
-                        class="settings-shortcut-action-button h-7 w-7 shrink-0 text-muted-foreground opacity-0 transition-opacity hover:text-foreground focus-visible:opacity-100 group-hover:opacity-100"
-                        :aria-label="t('settings.shortcutPressShortcut')"
-                        @click="focusShortcutInput(definition.id)"
-                      >
-                        <Pencil class="h-4 w-4" />
-                      </Button>
-                      <Button v-else type="button" variant="ghost" size="sm" class="h-7 shrink-0 px-2 text-sm font-medium text-muted-foreground hover:text-foreground" @click="cancelShortcutEdit">
-                        {{ t("settings.cancel") }}
-                      </Button>
-                      <Button
-                        v-if="editingShortcutId !== definition.id"
-                        type="button"
-                        variant="ghost"
-                        size="icon"
-                        class="settings-shortcut-action-button h-7 w-7 shrink-0 text-muted-foreground opacity-0 transition-opacity hover:text-foreground focus-visible:opacity-100 group-hover:opacity-100"
-                        :aria-label="t('settings.reset')"
-                        @click="resetShortcut(definition.id)"
-                      >
-                        <RotateCcw class="h-4 w-4" />
-                      </Button>
-                      <Button
-                        v-if="editingShortcutId !== definition.id && editShortcuts[definition.id]"
-                        type="button"
-                        variant="ghost"
-                        size="icon"
-                        class="settings-shortcut-action-button h-7 w-7 shrink-0 text-muted-foreground opacity-0 transition-opacity hover:text-destructive focus-visible:opacity-100 group-hover:opacity-100"
-                        :aria-label="t('settings.shortcutClear')"
-                        @click="clearShortcut(definition.id)"
-                      >
-                        <X class="h-4 w-4" />
-                      </Button>
-                      <span v-else-if="editingShortcutId !== definition.id" class="h-7 w-7 shrink-0" aria-hidden="true" />
-                    </div>
-                    <p v-if="shortcutConflicts.includes(definition.id)" class="text-xs text-destructive">
-                      {{ t("settings.shortcutConflict") }}
-                    </p>
-                  </div>
-                </div>
+                </section>
               </div>
 
               <div class="mt-6 border-t border-border/70 pt-6" data-settings-search-id="sql-shortcuts">
@@ -7875,7 +8056,7 @@ LIMIT 100;</pre
                         <Cloud class="h-4 w-4 text-muted-foreground" />
                         {{ t("settings.syncSnippetTitle") }}
                       </div>
-                      <Button type="button" variant="ghost" size="sm" class="h-7 px-2 text-xs" @click="openExternalUrl(`https://distribution-disabled.invalid/${currentLocale() === 'zh-CN' ? 'cn' : 'en'}/docs/cloud-sync`)">
+                      <Button type="button" variant="ghost" size="sm" class="h-7 px-2 text-xs" @click="openExternalUrl(`https://dbxio.com/${currentLocale() === 'zh-CN' ? 'cn' : 'en'}/docs/cloud-sync`)">
                         <ExternalLink class="mr-1 h-3 w-3" />
                         {{ t("settings.syncSnippetGuide") }}
                       </Button>
@@ -8026,7 +8207,7 @@ LIMIT 100;</pre
             </section>
 
             <!-- AI Settings Tab -->
-            <section v-else-if="activeSettingsTab === 'ai'" data-settings-search-id="ai" :class="['settings-ai-section flex flex-col gap-5 py-2', settingsSearchTargetClass('ai')]">
+            <section v-else-if="activeSettingsTab === 'ai'" data-settings-search-id="ai" :class="['flex flex-col gap-5 py-2', settingsSearchTargetClass('ai')]">
               <!-- Config List View -->
               <div v-if="aiConfigListMode === 'list'" class="space-y-4">
                 <div class="flex items-center justify-between">
@@ -8446,12 +8627,8 @@ LIMIT 100;</pre
                 <!-- API Key -->
                 <div v-if="!aiIsCliProvider" class="grid grid-cols-3 items-center gap-3">
                   <Label class="text-right text-xs">{{ aiCredentialLabel }}</Label>
-                  <div class="col-span-2 flex min-w-0 flex-wrap items-center gap-2">
-                    <template v-if="aiEditApiKey.startsWith('chiron-horizon-ai-secret:v1:')">
-                      <span class="text-xs text-muted-foreground">Credential configured (kept unchanged)</span>
-                      <Button size="sm" variant="outline" @click="aiEditApiKey = ''">Replace / remove</Button>
-                    </template>
-                    <PasswordInput v-else v-model="aiEditApiKey" autocomplete="off" class="min-w-0 flex-1" inputClass="h-8 text-xs" :placeholder="aiCredentialPlaceholder" />
+                  <div class="col-span-2 flex min-w-0 items-center gap-2">
+                    <PasswordInput v-model="aiEditApiKey" autocomplete="off" class="min-w-0 flex-1" inputClass="h-8 text-xs" :placeholder="aiCredentialPlaceholder" />
                     <Button v-if="selectedAiPartnerPreset" type="button" variant="outline" size="sm" class="h-8 shrink-0 gap-1.5 px-3 text-xs" :title="t('ai.getApiKey')" :aria-label="t('ai.getApiKey')" @click="openExternalUrl(selectedAiPartnerPreset.apiKeyUrl)">
                       {{ t("ai.getApiKey") }}
                       <ExternalLink class="h-3.5 w-3.5" />
@@ -8464,8 +8641,6 @@ LIMIT 100;</pre
                   <Label class="pt-2 text-right text-xs">Endpoint</Label>
                   <div class="col-span-2 space-y-1.5">
                     <Input v-model="aiEditEndpoint" :placeholder="aiEndpointPlaceholder" autocomplete="off" class="h-8 text-xs" />
-                    <p v-if="aiResolvedEndpoint" class="break-all text-[11px] text-muted-foreground">Resolved request URL: {{ aiResolvedEndpoint }}</p>
-                    <p class="text-[11px] text-muted-foreground">Saved keys and header values stay encrypted in this profile. Keep the configured value, replace it, or leave it empty and save to remove it. Save endpoint changes before testing stored credentials.</p>
                     <p v-if="aiEndpointHint" class="text-[11px] text-muted-foreground">
                       {{ aiEndpointHint }}
                     </p>
@@ -8479,8 +8654,7 @@ LIMIT 100;</pre
                     <div class="space-y-1.5">
                       <div v-for="row in aiEditCustomHeaderRows" :key="row.id" class="grid grid-cols-[minmax(0,0.9fr)_minmax(0,1.3fr)_2rem] gap-2">
                         <Input v-model="row.name" autocomplete="off" class="h-8 font-mono text-xs" :placeholder="t('ai.customHeadersNamePlaceholder')" />
-                        <Button v-if="row.value.startsWith('chiron-horizon-ai-secret:v1:')" size="sm" variant="outline" @click="row.value = ''">Saved value · replace</Button>
-                        <PasswordInput v-else v-model="row.value" autocomplete="off" class="min-w-0" inputClass="h-8 font-mono text-xs" :placeholder="t('ai.customHeadersValuePlaceholder')" />
+                        <PasswordInput v-model="row.value" autocomplete="off" class="min-w-0" inputClass="h-8 font-mono text-xs" :placeholder="t('ai.customHeadersValuePlaceholder')" />
                         <Button type="button" variant="ghost" size="icon" class="h-8 w-8" :title="t('common.remove')" :aria-label="t('common.remove')" @click="removeAiCustomHeaderRow(row.id)">
                           <X class="h-3.5 w-3.5" />
                         </Button>
@@ -8549,7 +8723,7 @@ LIMIT 100;</pre
                       variant="outline"
                       class="h-8 flex-1 text-xs"
                       :class="{
-                        'chiron-horizon-choice-selected': aiEditApiStyle === 'completions',
+                        'dbx-choice-selected': aiEditApiStyle === 'completions',
                       }"
                       @click="aiSelectApiStyle('completions')"
                       >/chat/completions</Button
@@ -8559,7 +8733,7 @@ LIMIT 100;</pre
                       variant="outline"
                       class="h-8 flex-1 text-xs"
                       :class="{
-                        'chiron-horizon-choice-selected': aiEditApiStyle === 'responses',
+                        'dbx-choice-selected': aiEditApiStyle === 'responses',
                       }"
                       @click="aiSelectApiStyle('responses')"
                       >/responses</Button
@@ -8570,7 +8744,7 @@ LIMIT 100;</pre
                       variant="outline"
                       class="h-8 flex-1 text-xs"
                       :class="{
-                        'chiron-horizon-choice-selected': aiEditApiStyle === 'anthropic-messages',
+                        'dbx-choice-selected': aiEditApiStyle === 'anthropic-messages',
                       }"
                       @click="aiSelectApiStyle('anthropic-messages')"
                       >/messages</Button
@@ -8998,7 +9172,7 @@ LIMIT 100;</pre
                               :tabindex="mcpExecutionMode === mode ? 0 : -1"
                               variant="outline"
                               class="settings-choice-card h-10 justify-center"
-                              :class="mcpExecutionMode === mode ? 'chiron-horizon-choice-selected' : ''"
+                              :class="mcpExecutionMode === mode ? 'dbx-choice-selected' : ''"
                               @click="onMcpExecutionModeChange(mode)"
                               @keydown="onMcpExecutionModeKeydown($event, mode)"
                             >
@@ -9132,6 +9306,7 @@ LIMIT 100;</pre
                         <TabsTrigger value="pi" class="settings-mcp-config-tab h-7 flex-none shrink-0 px-2.5">Pi</TabsTrigger>
                         <TabsTrigger value="cherry-studio" class="settings-mcp-config-tab h-7 flex-none shrink-0 px-2.5">Cherry Studio</TabsTrigger>
                         <TabsTrigger value="qoder" class="settings-mcp-config-tab h-7 flex-none shrink-0 px-2.5">Qoder</TabsTrigger>
+                        <TabsTrigger value="workbuddy" class="settings-mcp-config-tab h-7 flex-none shrink-0 px-2.5">WorkBuddy</TabsTrigger>
                       </TabsList>
 
                       <TabsContent value="claude" class="m-0">
@@ -9323,6 +9498,21 @@ LIMIT 100;</pre
                           </div>
                         </div>
                       </TabsContent>
+
+                      <TabsContent value="workbuddy" class="m-0">
+                        <div class="space-y-2">
+                          <div class="rounded-md border bg-muted/20 px-3 py-2 text-xs text-muted-foreground">
+                            {{ t("settings.mcpWorkBuddyConfigPath") }}
+                          </div>
+                          <div class="relative rounded-md border bg-background p-3">
+                            <pre class="overflow-x-auto whitespace-pre text-xs leading-relaxed"><code>{{ mcpWorkBuddyRecommendedConfig }}</code></pre>
+                            <Button type="button" variant="outline" size="icon" class="absolute right-2 top-2 h-7 w-7" :title="t('common.copy')" @click="copyMcpText('workbuddy-config', mcpWorkBuddyRecommendedConfig)">
+                              <CheckCircle2 v-if="mcpCopied === 'workbuddy-config'" class="h-3.5 w-3.5 text-green-500" />
+                              <Copy v-else class="h-3.5 w-3.5" />
+                            </Button>
+                          </div>
+                        </div>
+                      </TabsContent>
                     </Tabs>
                   </div>
 
@@ -9358,13 +9548,6 @@ LIMIT 100;</pre
             </section>
 
             <section v-else-if="activeSettingsTab === 'about'" data-settings-search-id="about" :class="['flex flex-col gap-5 py-2', settingsSearchTargetClass('about')]">
-              <div class="flex items-center gap-3 rounded-lg border bg-card p-4">
-                <AppLogo class="h-12 w-12 shrink-0" />
-                <div>
-                  <h3 class="font-semibold">{{ t("app.name") }}</h3>
-                  <p class="text-sm text-muted-foreground">Chiron Horizon. Version 0.1.0 is an unreleased development build. Original licenses and attribution are preserved.</p>
-                </div>
-              </div>
               <div class="rounded-lg border p-4">
                 <div class="settings-about-section-header flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                   <div class="min-w-0 space-y-1">
@@ -9444,23 +9627,117 @@ LIMIT 100;</pre
                 </div>
               </div>
 
-              <div class="rounded-lg border p-4 text-sm text-muted-foreground">Automatic updates and driver downloads are unavailable in Chiron Horizon 0.1.0. Use locally supplied builds and packages.</div>
+              <div class="settings-item flex flex-col gap-4 rounded-lg border p-4">
+                <div class="flex items-center justify-between gap-4">
+                  <div class="min-w-0 space-y-1">
+                    <Label for="update-notifications-enabled">{{ t("settings.updateNotificationsEnabled") }}</Label>
+                    <p class="text-sm text-muted-foreground">
+                      {{ t("settings.updateNotificationsEnabledDescription") }}
+                    </p>
+                  </div>
+                  <Switch id="update-notifications-enabled" v-model="editUpdateNotificationsEnabled" />
+                </div>
+                <div class="flex items-center justify-between gap-4">
+                  <div class="min-w-0 space-y-1">
+                    <Label for="auto-download-updates">{{ t("settings.autoDownloadUpdates") }}</Label>
+                    <p class="text-sm text-muted-foreground">
+                      {{ t("settings.autoDownloadUpdatesDescription") }}
+                    </p>
+                  </div>
+                  <Switch id="auto-download-updates" v-model="editAutoDownloadUpdates" />
+                </div>
+                <div class="flex flex-col gap-3 border-t border-border/60 pt-4 sm:flex-row sm:items-center sm:justify-between">
+                  <div class="min-w-0 space-y-1">
+                    <Label>{{ t("settings.updateDownloadSource") }}</Label>
+                    <p class="text-sm text-muted-foreground">
+                      {{ t("settings.updateDownloadSourceDescription") }}
+                    </p>
+                  </div>
+                  <Select :model-value="editUpdateDownloadSource" @update:model-value="onUpdateDownloadSourceChange">
+                    <SelectTrigger class="h-9 w-full sm:w-[180px]">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="official">{{ t("settings.updateDownloadSourceOfficial") }}</SelectItem>
+                      <SelectItem value="cnb">{{ t("settings.updateDownloadSourceCnb") }}</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
 
               <ChangelogPanel :checking-updates="props.checkingUpdates" @check-updates="emit('check-updates')" />
 
-              <div class="settings-about-links grid gap-3">
-                <section class="min-w-0 rounded-lg border p-4" aria-label="Discord · Coming Soon">
-                  <h3 class="text-sm font-medium">Discord</h3>
-                  <p class="mt-2 text-sm text-muted-foreground">Coming Soon</p>
-                </section>
-                <button type="button" class="min-w-0 rounded-lg border p-4 text-left transition-colors hover:bg-muted/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring" @click="openExternalUrl('https://github.com/Gaussian-id/Gauss-Horizon')">
-                  <span class="flex items-center gap-2 text-sm font-medium">GitHub<ExternalLink class="ml-auto h-3.5 w-3.5 shrink-0 text-muted-foreground" /></span>
-                  <span class="mt-2 block break-all text-sm text-primary">github.com/Gaussian-id/Gauss-Horizon</span>
+              <div class="grid gap-3 sm:grid-cols-3">
+                <button type="button" class="rounded-lg border p-4 text-left transition-colors hover:bg-muted/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring" @click="openExternalUrl('https://qm.qq.com/cgi-bin/qm/qr?k=&group_code=1087880322')">
+                  <div class="flex items-center gap-2 text-sm font-medium">
+                    <img
+                      src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIGhlaWdodD0iODYiIHdpZHRoPSI4NiIgdmlld0JveD0iMCAwIDEyMCAxNDUiPjxwYXRoIGZpbGw9IiNmYWFiMDciIGQ9Ik02MC41MDMgMTQyLjIzN2MtMTIuNTMzIDAtMjQuMDM4LTQuMTk1LTMxLjQ0NS0xMC40Ni0zLjc2MiAxLjEyNC04LjU3NCAyLjkzMi0xMS42MSA1LjE3NS0yLjYgMS45MTgtMi4yNzUgMy44NzQtMS44MDcgNC42NjMgMi4wNTYgMy40NyAzNS4yNzMgMi4yMTYgNDQuODYyIDEuMTM2em0wIDBjMTIuNTM1IDAgMjQuMDM5LTQuMTk1IDMxLjQ0Ny0xMC40NiAzLjc2IDEuMTI0IDguNTczIDIuOTMyIDExLjYxIDUuMTc1IDIuNTk4IDEuOTE4IDIuMjc0IDMuODc0IDEuODA1IDQuNjYzLTIuMDU2IDMuNDctMzUuMjcyIDIuMjE2LTQ0Ljg2MiAxLjEzNnptMCAwIi8+PHBhdGggZD0iTTYwLjU3NiA2Ny4xMTljMjAuNjk4LS4xNCAzNy4yODYtNC4xNDcgNDIuOTA3LTUuNjgzIDEuMzQtLjM2NyAyLjA1Ni0xLjAyNCAyLjA1Ni0xLjAyNC4wMDUtLjE4OS4wODUtMy4zNy4wODUtNS4wMUMxMDUuNjI0IDI3Ljc2OCA5Mi41OC4wMDEgNjAuNSAwIDI4LjQyLjAwMSAxNS4zNzUgMjcuNzY5IDE1LjM3NSA1NS40MDFjMCAxLjY0Mi4wOCA0LjgyMi4wODYgNS4wMSAwIDAgLjU4My42MTUgMS42NS45MTMgNS4xOSAxLjQ0NCAyMi4wOSA1LjY1IDQzLjMxMiA1Ljc5NXptNTYuMjQ1IDIzLjAyYy0xLjI4My00LjEyOS0zLjAzNC04Ljk0NC00LjgwOC0xMy41NjggMCAwLTEuMDItLjEyNi0xLjUzNy4wMjMtMTUuOTEzIDQuNjIzLTM1LjIwMiA3LjU3LTQ5LjkgNy4zOTJoLS4xNTNjLTE0LjYxNi4xNzUtMzMuNzc0LTIuNzM3LTQ5LjYzNC03LjMxNS0uNjA2LS4xNzUtMS44MDItLjEtMS44MDItLjEtMS43NzQgNC42MjQtMy41MjUgOS40NC00LjgwOCAxMy41NjgtNi4xMTkgMTkuNjktNC4xMzYgMjcuODM4LTIuNjI3IDI4LjAyIDMuMjM5LjM5MiAxMi42MDYtMTQuODIxIDEyLjYwNi0xNC44MjEgMCAxNS40NTkgMTMuOTU3IDM5LjE5NSA0NS45MTggMzkuNDEzaC44NDhjMzEuOTYtLjIxOCA0NS45MTctMjMuOTU0IDQ1LjkxNy0zOS40MTMgMCAwIDkuMzY4IDE1LjIxMyAxMi42MDcgMTQuODIyIDEuNTA4LS4xODMgMy40OTEtOC4zMzItMi42MjctMjguMDIxIi8+PHBhdGggZmlsbD0iI2ZmZiIgZD0iTTQ5LjA4NSA0MC44MjRjLTQuMzUyLjE5Ny04LjA3LTQuNzYtOC4zMDQtMTEuMDYzLS4yMzYtNi4zMDUgMy4wOTgtMTEuNTc2IDcuNDUtMTEuNzczIDQuMzQ3LS4xOTUgOC4wNjQgNC43NiA4LjMgMTEuMDY1LjIzOCA2LjMwNi0zLjA5NyAxMS41NzctNy40NDYgMTEuNzcxbTMxLjEzMy0xMS4wNjNjLS4yMzMgNi4zMDItMy45NTEgMTEuMjYtOC4zMDMgMTEuMDYzLTQuMzUtLjE5NS03LjY4NC01LjQ2NS03LjQ0Ni0xMS43Ny4yMzYtNi4zMDUgMy45NTItMTEuMjYgOC4zLTExLjA2NiA0LjM1Mi4xOTcgNy42ODYgNS40NjggNy40NDkgMTEuNzczIi8+PHBhdGggZmlsbD0iI2ZhYWIwNyIgZD0iTTg3Ljk1MiA0OS43MjVDODYuNzkgNDcuMTUgNzUuMDc3IDQ0LjI4IDYwLjU3OCA0NC4yOGgtLjE1NmMtMTQuNSAwLTI2LjIxMiAyLjg3LTI3LjM3NSA1LjQ0NmEuODYzLjg2MyAwIDAwLS4wODUuMzY3Ljg4Ljg4IDAgMDAuMTYuNDk2Yy45OCAxLjQyNyAxMy45ODUgOC40ODcgMjcuMyA4LjQ4N2guMTU2YzEzLjMxNCAwIDI2LjMxOS03LjA1OCAyNy4yOTktOC40ODdhLjg3My44NzMgMCAwMC4xNi0uNDk4Ljg1Ni44NTYgMCAwMC0uMDg1LS4zNjUiLz48cGF0aCBkPSJNNTQuNDM0IDI5Ljg1NGMuMTk5IDIuNDktMS4xNjcgNC43MDItMy4wNDYgNC45NDMtMS44ODMuMjQyLTMuNTY4LTEuNTgtMy43NjgtNC4wNy0uMTk3LTIuNDkyIDEuMTY3LTQuNzA0IDMuMDQzLTQuOTQ0IDEuODg2LS4yNDQgMy41NzQgMS41OCAzLjc3MSA0LjA3bTExLjk1Ni44MzNjLjM4NS0uNjg5IDMuMDA0LTQuMzEyIDguNDI3LTIuOTkzIDEuNDI1LjM0NyAyLjA4NC44NTcgMi4yMjMgMS4wNTcuMjA1LjI5Ni4yNjIuNzE4LjA1MyAxLjI4Ni0uNDEyIDEuMTI2LTEuMjYzIDEuMDk1LTEuNzM0Ljg3NS0uMzA1LS4xNDItNC4wODItMi42Ni03LjU2MiAxLjA5Ny0uMjQuMjU3LS42NjguMzQ2LTEuMDczLjA0LS40MDctLjMwOC0uNTc0LS45My0uMzM0LTEuMzYyIi8+PHBhdGggZmlsbD0iI2ZmZiIgZD0iTTYwLjU3NiA4My4wOGgtLjE1M2MtOS45OTYuMTItMjIuMTE2LTEuMjA0LTMzLjg1NC0zLjUxOC0xLjAwNCA1LjgxOC0xLjYxIDEzLjEzMi0xLjA5IDIxLjg1MyAxLjMxNiAyMi4wNDMgMTQuNDA3IDM1LjkgMzQuNjE0IDM2LjFoLjgyYzIwLjIwOC0uMiAzMy4yOTgtMTQuMDU3IDM0LjYxNi0zNi4xLjUyLTguNzIzLS4wODctMTYuMDM1LTEuMDkyLTIxLjg1NC0xMS43MzkgMi4zMTUtMjMuODYyIDMuNjQtMzMuODYgMy41MTgiLz48cGF0aCBmaWxsPSIjZWIxOTIzIiBkPSJNMzIuMTAyIDgxLjIzNXYyMS42OTNzOS45MzcgMi4wMDQgMTkuODkzLjYxNlY4My41MzVjLTYuMzA3LS4zNTctMTMuMTA5LTEuMTUyLTE5Ljg5My0yLjMiLz48cGF0aCBmaWxsPSIjZWIxOTIzIiBkPSJNMTA1LjUzOSA2MC40MTJzLTE5LjMzIDYuMTAyLTQ0Ljk2MyA2LjI3NWgtLjE1M2MtMjUuNTkxLS4xNzItNDQuODk2LTYuMjU1LTQ0Ljk2Mi02LjI3NUw4Ljk4NyA3Ni41N2MxNi4xOTMgNC44ODIgMzYuMjYxIDguMDI4IDUxLjQzNiA3Ljg0NWguMTUzYzE1LjE3NS4xODMgMzUuMjQyLTIuOTYzIDUxLjQzNy03Ljg0NXptMCAwIi8+PC9zdmc+"
+                      alt="QQ"
+                      class="h-7 w-7 rounded-md bg-white p-1"
+                    />
+                    {{ t("settings.qqGroup") }}
+                    <ExternalLink class="ml-auto h-3.5 w-3.5 text-muted-foreground" />
+                  </div>
+                  <div class="mt-1 font-mono text-base">1087880322</div>
                 </button>
-                <section class="min-w-0 rounded-lg border p-4" aria-label="Project documentation · Coming Soon">
-                  <h3 class="text-sm font-medium">Project documentation</h3>
-                  <p class="mt-2 text-sm text-muted-foreground">Coming Soon</p>
-                </section>
+                <button type="button" class="rounded-lg border p-4 text-left transition-colors hover:bg-muted/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring" @click="openExternalUrl('https://discord.gg/W7NyVDRt6a')">
+                  <div class="flex items-center gap-2 text-sm font-medium">
+                    <img src="https://cdn.simpleicons.org/discord/5865F2" alt="Discord" class="h-7 w-7 rounded-md bg-white p-1" />
+                    Discord
+                    <ExternalLink class="ml-auto h-3.5 w-3.5 text-muted-foreground" />
+                  </div>
+                  <div class="mt-1 text-sm text-primary">discord.gg/W7NyVDRt6a</div>
+                </button>
+                <button type="button" class="rounded-lg border p-4 text-left transition-colors hover:bg-muted/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring" @click="openExternalUrl('https://docs.qq.com/doc/DVVhMY0h1ekJqc0tz')">
+                  <div class="flex items-center gap-2 text-sm font-medium">
+                    <span class="flex h-7 w-7 items-center justify-center rounded-md bg-[#07C160] text-white">
+                      <svg class="h-4 w-4" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                        <path
+                          d="M9.5 4C5.36 4 2 6.69 2 10c0 1.89 1.08 3.56 2.78 4.66l-.7 2.1 2.46-1.23c.87.27 1.8.42 2.78.42.24 0 .48-.01.71-.03A5.93 5.93 0 0 1 10 14c0-3.31 3.13-6 7-6 .34 0 .67.03 1 .07C17.27 5.56 13.72 4 9.5 4Zm-3 4.5a1 1 0 1 1 0-2 1 1 0 0 1 0 2Zm5 0a1 1 0 1 1 0-2 1 1 0 0 1 0 2ZM22 14c0-2.76-2.69-5-6-5s-6 2.24-6 5 2.69 5 6 5c.73 0 1.43-.11 2.09-.3l1.72.86-.49-1.46C20.94 17.07 22 15.64 22 14Zm-7.5-.5a.75.75 0 1 1 0-1.5.75.75 0 0 1 0 1.5Zm4 0a.75.75 0 1 1 0-1.5.75.75 0 0 1 0 1.5Z"
+                        />
+                      </svg>
+                    </span>
+                    {{ t("settings.wechatGroup") }}
+                    <ExternalLink class="ml-auto h-3.5 w-3.5 text-muted-foreground" />
+                  </div>
+                  <div class="mt-1 text-sm text-primary">
+                    {{ t("settings.wechatGroupInvite") }}
+                  </div>
+                </button>
+                <button
+                  type="button"
+                  class="rounded-lg border p-4 text-left transition-colors hover:bg-muted/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                  @click="openExternalUrl('https://applink.feishu.cn/client/chat/chatter/add_by_link?link_token=30cvb14f-a9b1-4b12-adb6-2ff6d476a227')"
+                >
+                  <div class="flex items-center gap-2 text-sm font-medium">
+                    <span class="flex h-7 w-7 items-center justify-center rounded-md bg-[#3370FF] text-white">
+                      <svg class="h-4 w-4" viewBox="164 204 762 617" fill="currentColor" aria-hidden="true">
+                        <path
+                          d="M559.915 530.453c-46.507-111.786-194.56-248.469-262.806-302.826h333.782c47.146 16.298 87.616 134.677 101.973 191.808-35.499 31.21-119.787 97.109-172.95 111.018zM632.021 452.992c-45.184 60.48-133.546 121.963-172.053 145.13l-2.88 24.278 235.947 63.637c32.213-25.962 103.061-87.296 128.96-124.928 4.394-6.378 68.992-135.914 79.402-151.552-18.24-11.306-42.56-18.261-104.277-21.738-82.56-4.331-116.437 20.864-165.099 65.173zM187.883 712.917V393.515C397.568 599.808 558.315 642.688 641.045 653.76c124.459 5.419 154.667-73.045 181.142-93.099-97.024 153.174-224.64 235.734-384.747 235.734-128.107 0-219.755-55.659-249.557-83.478z"
+                        />
+                      </svg>
+                    </span>
+                    {{ t("settings.feishuGroup") }}
+                    <ExternalLink class="ml-auto h-3.5 w-3.5 text-muted-foreground" />
+                  </div>
+                  <div class="mt-1 text-sm text-primary">applink.feishu.cn</div>
+                </button>
+                <button type="button" class="rounded-lg border p-4 text-left transition-colors hover:bg-muted/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring" @click="openExternalUrl('https://github.com/t8y2/dbx')">
+                  <div class="flex items-center gap-2 text-sm font-medium">
+                    <img src="https://cdn.simpleicons.org/github/181717" alt="GitHub" class="h-7 w-7 rounded-md bg-white p-1" />
+                    {{ t("settings.openSource") }}
+                    <ExternalLink class="ml-auto h-3.5 w-3.5 text-muted-foreground" />
+                  </div>
+                  <div class="mt-1 text-sm text-primary">github.com/t8y2/dbx</div>
+                </button>
+                <button type="button" class="rounded-lg border p-4 text-left transition-colors hover:bg-muted/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring" @click="openExternalUrl('https://dbxio.com')">
+                  <div class="flex items-center gap-2 text-sm font-medium">
+                    <AppLogo class="h-7 w-7" />
+                    {{ t("settings.officialDocs") }}
+                    <ExternalLink class="ml-auto h-3.5 w-3.5 text-muted-foreground" />
+                  </div>
+                  <div class="mt-1 text-sm text-primary">dbxio.com</div>
+                </button>
               </div>
             </section>
           </div>
@@ -9469,6 +9746,11 @@ LIMIT 100;</pre
             <Button variant="outline" @click="resetDefaultsForTab(activeSettingsTab as SettingsCategory)">
               {{ t("settings.resetDefaults") }}
             </Button>
+            <!-- 行内冲突说明收进浮层后，“应用为何被禁用”需要一处常驻解释。 -->
+            <span v-if="hasBlockingShortcutConflicts" class="inline-flex items-center gap-1.5 text-xs text-destructive">
+              <AlertTriangle class="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+              {{ t("settings.shortcutConflictBlocksApply", { count: shortcutConflicts.length, pairs: shortcutConflictPairCount }) }}
+            </span>
             <div class="flex-1" />
             <Button variant="outline" @click="closeSettings">
               {{ t("common.close") }}
@@ -9536,7 +9818,7 @@ LIMIT 100;</pre
               <RefreshCw v-else class="mr-1 h-3 w-3" />
               {{ t("settings.mcpRefresh") }}
             </Button>
-            <Button variant="outline" @click="openExternalUrl('https://distribution-disabled.invalid/cn/docs/mcp')">
+            <Button variant="outline" @click="openExternalUrl('https://dbxio.com/cn/docs/mcp')">
               <ExternalLink class="mr-1 h-3 w-3" />
               {{ t("settings.mcpGuide") }}
             </Button>
@@ -9705,120 +9987,18 @@ LIMIT 100;</pre
       :confirm-label="t('common.delete')"
       @confirm="templateDeleteConfirm && confirmDeleteTemplate(templateDeleteConfirm)"
     />
+
+    <!-- Hidden mirror of the shortcut-capture placeholder: measured to size
+         the capture inputs (#9144). Carries the same box + typography classes
+         as those inputs (font-mono text-[13px] font-semibold px-2.5 border) so
+         its border-box width is exactly what they need, including font-fallback
+         advances and letter-spacing that char-count arithmetic cannot predict. -->
+    <span ref="shortcutPlaceholderMirrorRef" aria-hidden="true" class="invisible pointer-events-none absolute top-0 left-0 h-0 max-w-64 overflow-hidden whitespace-pre rounded-[6px] border px-2.5 font-mono text-[13px] font-semibold">{{ shortcutPressShortcutLabel }}</span>
   </component>
 </template>
 
 <style>
-.settings-shell {
-  container: settings-shell / inline-size;
-}
-.settings-body {
-  container: settings-body / inline-size;
-}
-.settings-layout {
-  flex-direction: column !important;
-}
-.settings-category-nav {
-  width: auto !important;
-  flex-direction: row !important;
-  overflow-x: auto !important;
-  overflow-y: hidden !important;
-  border-right: 0 !important;
-  border-bottom: 1px solid var(--border) !important;
-  padding-right: 0 !important;
-  padding-bottom: 0.75rem !important;
-}
-.settings-category-button {
-  width: auto !important;
-}
-
-.settings-form-section .settings-responsive-grid {
-  grid-template-columns: repeat(auto-fit, minmax(min(100%, 24rem), 1fr));
-}
-.settings-responsive-grid > .md\:col-span-2 {
-  grid-column: 1 / -1;
-}
-.settings-form-section .settings-form-row {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 11rem);
-  align-items: start;
-  gap: 0.75rem 1.25rem;
-}
-.settings-form-row > *,
-.settings-form-section .settings-choice-card > * {
-  min-width: 0;
-}
-.settings-form-row > :last-child {
-  justify-self: end;
-  max-width: 100%;
-}
-.settings-form-section label {
-  white-space: normal;
-  line-height: 1.4;
-}
-.settings-form-section p {
-  overflow-wrap: anywhere;
-  line-height: 1.5;
-}
-.settings-form-section .settings-choice-card {
-  height: auto;
-  white-space: normal;
-  overflow-wrap: anywhere;
-}
-.settings-about-links {
-  grid-template-columns: repeat(auto-fit, minmax(min(100%, 16rem), 1fr));
-}
-.settings-table-template-header {
-  grid-template-columns: minmax(0, 1fr) auto;
-  align-items: start;
-}
-.settings-ai-section .grid-cols-3 {
-  grid-template-columns: minmax(7rem, 1fr) minmax(0, 2fr);
-}
-.settings-ai-section .grid-cols-3 > .col-span-2 {
-  grid-column: 2;
-  min-width: 0;
-}
-.settings-ai-section button {
-  max-width: 100%;
-}
-
-@container settings-body (max-width: 42rem) {
-  .settings-table-template-header {
-    grid-template-columns: minmax(0, 1fr);
-  }
-  .settings-form-section .settings-shortcut-row {
-    grid-template-columns: minmax(0, 1fr) !important;
-  }
-  .settings-form-section .settings-shortcut-actions {
-    justify-self: start !important;
-    text-align: left !important;
-  }
-  .settings-form-section .settings-shortcut-controls {
-    justify-content: flex-start !important;
-    flex-wrap: wrap;
-  }
-  .settings-ai-section .grid-cols-3 {
-    grid-template-columns: minmax(0, 1fr);
-  }
-  .settings-ai-section .grid-cols-3 > .col-span-2 {
-    grid-column: 1;
-  }
-  .settings-ai-section .grid-cols-3 > label {
-    text-align: left;
-    padding-top: 0;
-  }
-}
-@container settings-body (max-width: 32rem) {
-  .settings-form-section .settings-form-row {
-    grid-template-columns: minmax(0, 1fr);
-  }
-  .settings-form-row > :last-child {
-    justify-self: start;
-  }
-}
-
-@container settings-shell (min-width: 56rem) {
+@media (min-width: 1024px) {
   .settings-layout {
     flex-direction: row !important;
   }
@@ -9945,6 +10125,28 @@ LIMIT 100;</pre
 
 .settings-mcp-config-tabs:hover::-webkit-scrollbar-thumb {
   background: color-mix(in oklab, var(--muted-foreground) 38%, transparent);
+}
+
+/*
+ * 快捷键页签的分组与冲突呈现。
+ *
+ * 跨作用域同键只给一条细琥珀边作为定位线索（不做光晕）：不同作用域共用组合是
+ * 有意的设计（find / focusSearch 默认都是 Mod+F），把它渲染成错误会让用户去改
+ * 本来无需处理的键；光晕留给悬停，避免十几行同时发光。
+ *
+ * 写在这里而不是用 Tailwind 的 border-warning/45，是因为基类里的
+ * border-transparent 与它同为单类选择器，谁生效取决于样式表顺序而不是 class
+ * 书写顺序；aria-invalid 那条能工作是因为变体在生成顺序上排在基类之后。
+ * `:not([aria-invalid="true"])` 保证阻断性冲突（红）优先于提示（琥珀）。
+ */
+.settings-shortcut-row[data-cross-scope="true"] .settings-shortcut-pill:not([aria-invalid="true"]) {
+  border-color: color-mix(in srgb, var(--warning) 45%, transparent);
+}
+
+/* 阻断性冲突行常显“改键 / 恢复默认”两个修复入口；清除按钮与普通行一致随悬停出现，
+   不在有问题的行上堆叠常驻控件。 */
+.settings-shortcut-row[data-conflict="true"] .settings-shortcut-action-button--fix {
+  opacity: 1;
 }
 
 html.chiron-horizon-legacy-webview .settings-shortcut-row:hover .settings-shortcut-action-button,

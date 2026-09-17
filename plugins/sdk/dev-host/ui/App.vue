@@ -93,11 +93,37 @@ const themes = () => ({
     ? {
         "--color-background": "#18181b",
         "--color-foreground": "#f4f4f5",
+        "--color-card": "#1b1b1f",
+        "--color-card-foreground": "#f4f4f5",
         "--color-muted": "#27272a",
+        "--color-muted-foreground": "#a1a1aa",
         "--color-border": "#3f3f46",
+        "--color-input": "#3f3f46",
+        "--color-ring": "#71717a",
         "--color-primary": "#60a5fa",
+        "--color-primary-foreground": "#18181b",
+        "--color-destructive": "#f3625f",
+        "--color-destructive-foreground": "#18181b",
+        "--radius-md": "6px",
+        "--radius-lg": "8px",
       }
-    : { "--color-background": "#ffffff", "--color-foreground": "#27272a", "--color-muted": "#f4f4f5", "--color-border": "#e4e4e7", "--color-primary": "#2563eb" },
+    : {
+        "--color-background": "#ffffff",
+        "--color-foreground": "#27272a",
+        "--color-card": "#ffffff",
+        "--color-card-foreground": "#27272a",
+        "--color-muted": "#f4f4f5",
+        "--color-muted-foreground": "#71717a",
+        "--color-border": "#e4e4e7",
+        "--color-input": "#e4e4e7",
+        "--color-ring": "#93c5fd",
+        "--color-primary": "#2563eb",
+        "--color-primary-foreground": "#ffffff",
+        "--color-destructive": "#e7000b",
+        "--color-destructive-foreground": "#ffffff",
+        "--radius-md": "6px",
+        "--radius-lg": "8px",
+      },
 });
 function post(frame, message) {
   const snapshot = hostMessage(frame.channel, message);
@@ -231,7 +257,9 @@ function removeFrames(connectionId) {
 }
 async function closeFrame(frame) {
   await run(async () => {
-    if (!(await ask("关闭此页面？未保存修改将丢失；最后一个关联页面关闭后会断开连接。"))) return;
+    // Closing a debug page is cheap — the plugin UI is stateless and rebuilds
+    // on reopen — so it closes immediately instead of behind a modal that
+    // locks the whole shell until answered.
     connections.value = (await api("frames/close", { id: frame.id })).connections;
     windows.delete(frame.id);
     frames.value = frames.value.filter((f) => f.id !== frame.id);
@@ -278,6 +306,22 @@ async function onMessage(event) {
   }
   if (m.type !== "request") return;
   const channel = f.channel;
+  // The sandboxed plugin iframe cannot write the clipboard; the debug page is
+  // a normal top-level document, so it performs the copy like the DBX host.
+  if (m.method === "host.copy") {
+    const text = m.params?.text;
+    if (typeof text !== "string" || !text) {
+      post(f, { type: "response", id: m.id, error: { message: "host.copy requires text" } });
+      return;
+    }
+    if (text.length > 2 * 1024 * 1024) {
+      post(f, { type: "response", id: m.id, error: { message: "Plugin copy payload exceeds 2097152 characters" } });
+      return;
+    }
+    const ok = await copyTextToClipboard(text);
+    post(f, ok ? { type: "response", id: m.id, result: { success: true } } : { type: "response", id: m.id, error: { message: "Host clipboard is unavailable" } });
+    return;
+  }
   try {
     const result = await api("bridge", { frameId: f.id, channel, method: m.method, params: m.params });
     if (f.channel !== channel || !windows.has(f.id)) return;
@@ -288,6 +332,29 @@ async function onMessage(event) {
   } catch (e) {
     if (f.channel === channel) post(f, { type: "response", id: m.id, error: { message: e.message, code: e.code, data: e.data } });
   }
+}
+async function copyTextToClipboard(text) {
+  try {
+    await navigator.clipboard.writeText(text);
+    return true;
+  } catch {
+    // Fall through to the legacy path for engines without the async API.
+  }
+  const helper = document.createElement("textarea");
+  helper.value = text;
+  helper.setAttribute("readonly", "");
+  helper.style.position = "fixed";
+  helper.style.opacity = "0";
+  document.body.appendChild(helper);
+  helper.select();
+  let ok = false;
+  try {
+    ok = document.execCommand("copy");
+  } catch {
+    ok = false;
+  }
+  helper.remove();
+  return ok;
 }
 onMounted(async () => {
   window.addEventListener("message", onMessage);
@@ -389,7 +456,19 @@ onBeforeUnmount(() => {
           </div>
         </div>
         <div class="relative min-h-0 flex-1">
-          <iframe v-for="f in frames" v-show="active === f.id" :key="f.id" :ref="(el) => (el ? windows.set(f.id, el) : windows.delete(f.id))" :srcdoc="f.html" sandbox="allow-scripts" referrerpolicy="no-referrer" :title="frameName(f)" class="absolute inset-0" @load="init(f)" />
+          <iframe
+            v-for="f in frames"
+            v-show="active === f.id"
+            :key="f.id"
+            :ref="(el) => (el ? windows.set(f.id, el) : windows.delete(f.id))"
+            :srcdoc="f.html"
+            sandbox="allow-scripts"
+            allow="clipboard-write"
+            referrerpolicy="no-referrer"
+            :title="frameName(f)"
+            class="absolute inset-0"
+            @load="init(f)"
+          />
           <div v-if="!frames.length" class="grid h-full place-items-center text-sm text-base-content/50">
             <div class="flex items-center gap-2"><Settings2 :size="18" />{{ t("尚未打开工作台") }}</div>
           </div>

@@ -17,6 +17,7 @@ pub mod jdbc;
 pub mod layout;
 pub mod mcp_policy;
 pub mod mongo;
+pub mod mongodb_dump;
 pub mod mongodb_import_export;
 #[cfg(feature = "mq-admin")]
 pub mod mq;
@@ -43,3 +44,6 @@ pub mod tunnel_profiles;
 pub mod update;
 pub mod vector;
 pub mod zookeeper;
+
+#[cfg(test)]
+mod object_cache_tests;

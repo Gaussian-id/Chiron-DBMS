@@ -84,4 +84,4 @@ export const DATABASE_TYPES = [
   "plugin",
 ] as const;
 
-export type DatabaseType = (typeof DATABASE_TYPES)[number];
+export type DatabaseType = (typeof DATABASE_TYPES)[number] | "plugin";

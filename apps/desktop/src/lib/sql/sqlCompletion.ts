@@ -456,6 +456,44 @@ const MANTICORESEARCH_SQL_KEYWORDS = ["FACET", "MATCH", "SHOW", "SHOW META", "SH
 
 const SQLITE_SQL_KEYWORDS = ["AUTOINCREMENT", "INTEGER", "BLOB", "BOOLEAN", "WITHOUT ROWID", "VACUUM", "PRAGMA", "JSON_EXTRACT", "JSON_SET", "STRFTIME"];
 
+// DuckDB extends the common SQL grammar with analytical clauses, relation
+// reshaping statements, and a few shorthand forms. Keep these scoped to
+// DuckDB so database-specific completion does not leak into other dialects.
+const DUCKDB_SQL_KEYWORDS = [
+  "ASOF",
+  "ANTI",
+  "COLUMNS",
+  "COPY",
+  "DESCRIBE",
+  "EXCLUDE",
+  "EXPORT",
+  "FILTER",
+  "GROUP BY ALL",
+  "IMPORT",
+  "LATERAL",
+  "LIST",
+  "MAP",
+  "PIVOT",
+  "PIVOT_LONGER",
+  "PIVOT_WIDER",
+  "POSITIONAL",
+  "QUALIFY",
+  "READ_CSV",
+  "READ_JSON",
+  "READ_PARQUET",
+  "REPLACE",
+  "SAMPLE",
+  "SEMI",
+  "SHOW",
+  "STRUCT",
+  "SUMMARIZE",
+  "TABLESAMPLE",
+  "UNION BY NAME",
+  "UNPIVOT",
+  "USING SAMPLE",
+  "WINDOW",
+];
+
 const SQLSERVER_SQL_KEYWORDS = [
   "TOP",
   "IDENTITY",
@@ -585,7 +623,7 @@ const DATABASE_SQL_KEYWORDS: Partial<Record<DatabaseType, string[]>> = {
   oracle: ORACLE_SQL_KEYWORDS,
   "oceanbase-oracle": ORACLE_SQL_KEYWORDS,
   manticoresearch: MANTICORESEARCH_SQL_KEYWORDS,
-  duckdb: ["COMMENT"],
+  duckdb: ["COMMENT", ...DUCKDB_SQL_KEYWORDS],
   clickhouse: ["COMMENT"],
   doris: ["COMMENT", "MATERIALIZED", "MATERIALIZED VIEW", "DISTRIBUTED BY HASH", "DUPLICATE KEY", "AGGREGATE KEY", "UNIQUE KEY", "PRIMARY KEY", "PROPERTIES", "PARTITION BY", "BUCKETS", "LATERAL VIEW", "EXPLODE", "ARRAY", "MAP", "STRUCT", "BITMAP", "HLL"],
   starrocks: ["COMMENT", "MATERIALIZED", "MATERIALIZED VIEW", "DISTRIBUTED BY HASH", "DUPLICATE KEY", "PROPERTIES", "PARTITION BY", "BUCKETS", "LATERAL VIEW"],
@@ -1395,6 +1433,8 @@ export interface SqlCompletionContext {
   deleteTarget?: { table: string; schema?: string };
   oracleTableFunctionContext?: boolean;
   autoAliasTableCompletions: boolean;
+  /** The table position being completed is a DML target, where a generated alias can be rejected by the server. */
+  tableCompletionTargetAliasUnsafe?: boolean;
   tableAliasAfterCursor?: boolean;
   openingParenAfterCursor: boolean;
   contextKind: SqlCompletionContextKind;
@@ -1622,13 +1662,14 @@ class SqlCompletionProvider {
     }
 
     const emptyTableNameCompletion = !context.prefix && (context.suggestTables || context.exclusiveTableSuggestions);
-    if (!pendingJoinKeyword && !emptyTableNameCompletion && !context.tableAliasAfterCursor && context.referencedTables.length > 0 && !context.suggestColumns && !context.insertTable) {
+    if (!pendingJoinKeyword && !emptyTableNameCompletion && !context.tableAliasAfterCursor && context.referencedTables.length > 0 && !context.suggestColumns && !context.insertTable && supportsTableAliases(this.databaseType)) {
       this.items.push(...buildAliasItems(context, this.databaseType, this.input.keywordCase));
     }
 
     if (!context.exclusiveColumnSuggestions && context.suggestTables) {
-      this.items.push(...buildForeignKeyRelatedTableItems(context, completionTables, this.input.foreignKeysByTable, this.dialect, !!this.input.autoAliasTables && context.autoAliasTableCompletions, this.databaseType, this.input.keywordCase, this.input.currentSchema));
-      this.items.push(...buildTableItems(context, completionTables, this.dialect, !!this.input.autoAliasTables && context.autoAliasTableCompletions, context.referencedTables, this.databaseType, this.input.currentSchema, this.input.keywordCase));
+      const autoAliasTables = !!this.input.autoAliasTables && context.autoAliasTableCompletions && !context.tableCompletionTargetAliasUnsafe && supportsTableAliases(this.databaseType);
+      this.items.push(...buildForeignKeyRelatedTableItems(context, completionTables, this.input.foreignKeysByTable, this.dialect, autoAliasTables, this.databaseType, this.input.keywordCase, this.input.currentSchema));
+      this.items.push(...buildTableItems(context, completionTables, this.dialect, autoAliasTables, context.referencedTables, this.databaseType, this.input.currentSchema, this.input.keywordCase));
       if (this.databaseType === "clickhouse") {
         this.items.push(...buildClickHouseFunctionItems(context.prefix, context.openingParenAfterCursor, "table"));
       }
@@ -1676,16 +1717,22 @@ export function shouldAutoOpenSqlCompletion(sql: string, cursor: number, options
   if (isSqlCompletionSuppressedContext(sql, cursor, options)) return false;
   const previousChar = sql[cursor - 1];
   if (!previousChar) return false;
-  if (/\bon\s+$/i.test(sql.slice(0, cursor))) return true;
-  if (isAfterJoinModifierContext(sql.slice(0, cursor), options.databaseType)) return true;
-  if (/\bcall\s+(?:[A-Za-z_][\w$]*\.)?$/i.test(sql.slice(0, cursor))) return true;
+  // Statement-bounded prefix: every probe below is anchored at the cursor and
+  // only looks back within the current statement. Slicing the whole prefix (and
+  // the literal-masking scans inside the modifier/expression helpers) made each
+  // completion trigger O(document) on large scripts.
+  const statementSpan = sqlCompletionStatementSpan(sql, cursor, options);
+  const beforeCursor = sql.slice(statementSpan.start, cursor);
+  if (/\bon\s+$/i.test(beforeCursor)) return true;
+  if (isAfterJoinModifierContext(beforeCursor, options.databaseType)) return true;
+  if (/\bcall\s+(?:[A-Za-z_][\w$]*\.)?$/i.test(beforeCursor)) return true;
   const context = getSqlCompletionContext(sql, cursor, options);
   if (previousChar === "(" && (context.insertTable || context.preferredValueKeywords?.length)) return true;
   if (/[,;()[\]]/.test(previousChar)) return false;
   if (context.exclusiveTableSuggestions || context.exclusiveRoutineSuggestions || context.suggestTables) {
     return true;
   }
-  if (context.exclusiveColumnSuggestions || shouldAutoOpenColumnCompletion(context, sql, cursor, options.databaseType)) return true;
+  if (context.exclusiveColumnSuggestions || shouldAutoOpenColumnCompletion(context, beforeCursor, beforeCursor.length, options.databaseType)) return true;
   return /[A-Za-z_$@.]/.test(previousChar);
 }
 
@@ -2109,9 +2156,9 @@ export function getSqlCompletionResultValidFor(sql: string, cursor: number): Reg
   return undefined;
 }
 
-export function getSqlFunctionSignatureHelp(sql: string, cursor: number, databaseType?: DatabaseType, driverProfile?: string): SqlFunctionSignatureHelp | null {
+export function getSqlFunctionSignatureHelp(sql: string, cursor: number, databaseType?: DatabaseType, driverProfile?: string, options?: { truncatedPrefix?: boolean }): SqlFunctionSignatureHelp | null {
   const beforeCursor = sql.slice(0, cursor);
-  const call = findActiveFunctionCall(beforeCursor);
+  const call = findActiveFunctionCall(beforeCursor, options?.truncatedPrefix === true);
   if (!call) return null;
 
   const observedParameter = countTopLevelCommas(call.groupText);
@@ -5239,6 +5286,12 @@ function isOracleLikeDatabase(databaseType?: DatabaseType): boolean {
   return databaseType === "oracle" || databaseType === "oceanbase-oracle";
 }
 
+// CQL has no table alias syntax, so Cassandra must never receive `table AS alias`
+// or standalone alias suggestions.
+function supportsTableAliases(databaseType?: DatabaseType): boolean {
+  return databaseType !== "cassandra";
+}
+
 function buildJoinModifierKeywordItems(prefix: string, keywordCase?: SqlKeywordCase): SqlCompletionItem[] {
   if (!prefix) return [];
   return JOIN_MODIFIER_KEYWORD_PHRASES.filter((keyword) => matchesPrefix(keyword, prefix)).map((keyword) => {
@@ -5472,8 +5525,8 @@ interface ActiveFunctionCall {
   groupText: string;
 }
 
-function findActiveFunctionCall(sqlBeforeCursor: string): ActiveFunctionCall | null {
-  const activeOpenParen = findActiveFunctionOpenParen(sqlBeforeCursor);
+function findActiveFunctionCall(sqlBeforeCursor: string, truncatedPrefix = false): ActiveFunctionCall | null {
+  const activeOpenParen = findActiveFunctionOpenParen(sqlBeforeCursor, truncatedPrefix);
   if (activeOpenParen == null) return null;
 
   const beforeActiveGroup = sqlBeforeCursor.slice(0, activeOpenParen).trimEnd();
@@ -5522,12 +5575,23 @@ function findMatchingOpenParen(text: string, closeParenIndex: number): number | 
   return null;
 }
 
-function findActiveFunctionOpenParen(sqlBeforeCursor: string): number | null {
+/**
+ * Backward signature scans stop after this many characters: no human-authored
+ * argument group is worth a longer scan, and generated SQL can embed
+ * megabyte-long value lists inside a single call.
+ */
+const SQL_SIGNATURE_SCAN_LIMIT_CHARS = 100_000;
+
+function findActiveFunctionOpenParen(sqlBeforeCursor: string, truncatedPrefix = false): number | null {
   let depth = 0;
   let inSingleQuote = false;
   let inDoubleQuote = false;
+  // With a truncated window the scan must not trust index 0: an "unmatched"
+  // open paren sitting exactly on the window edge may have its match before
+  // the window, which would fabricate a signature tooltip.
+  const floorIndex = Math.max(truncatedPrefix ? 1 : 0, sqlBeforeCursor.length - SQL_SIGNATURE_SCAN_LIMIT_CHARS);
 
-  for (let i = sqlBeforeCursor.length - 1; i >= 0; i--) {
+  for (let i = sqlBeforeCursor.length - 1; i >= floorIndex; i--) {
     const ch = sqlBeforeCursor[i];
     if (ch === "'" && !inDoubleQuote) {
       inSingleQuote = !inSingleQuote;

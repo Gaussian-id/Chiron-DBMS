@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { executionCandidateForMode } from "@/lib/sql/sqlExecutionTarget";
-import { buildExecutionCandidates, currentExecutableStatementRange, executableStatementRanges, fullSqlRange, hasMultipleExecutionTargets, splitSqlStatementRanges, statementRangeAtCursor, supportsExecutionTargetPicker } from "@/lib/sql/sqlStatementRanges";
+import { buildExecutionCandidates, currentExecutableStatementRange, executableStatementRanges, fullSqlRange, hasMultipleExecutionTargets, splitSqlStatementRanges, statementRangeAtCursor, stripMysqlClientDisplayCommand, supportsExecutionTargetPicker } from "@/lib/sql/sqlStatementRanges";
 
 function indexOf(sql: string, needle: string, occurrence = 1): number {
   let from = 0;
@@ -180,6 +180,36 @@ END;
 SELECT 1 AS after_procedure;
 SELECT 2 AS final_statement;`;
 
+const gaussDbMergeWithRecursiveUsing = `MERGE INTO TP_PIM_USER_RES a
+USING (
+  SELECT * FROM (
+    WITH RECURSIVE src AS (
+      SELECT userid, rptcode, appcde
+      FROM sjbase.ta_sys_rpt_aduser
+      WHERE appcde IN ('OSS', '1104')
+    ),
+    grp_oss AS (
+      SELECT s.userid, r.grp_id FROM src s
+      JOIN SJOSSRPT.TP_OSS_CORE_RPT r ON r.code = s.rptcode
+      WHERE s.appcde = 'OSS'
+      UNION ALL
+      SELECT t.userid, p.grp_id FROM grp_oss t
+      JOIN SJOSSRPT.TP_OSS_CORE_GRP c ON c.grp_id = t.grp_id
+      JOIN SJOSSRPT.TP_OSS_CORE_GRP p ON p.grp_id = c.up_grpid
+    )
+    SELECT DISTINCT u.userid, 'RES_OSS_RPT' AS restyp_code, u.res_id, u.appcde
+    FROM (
+      SELECT s.userid, s.rptcode AS res_id, s.appcde FROM src s
+      UNION
+      SELECT g.userid, g.grp_id AS res_id, 'OSS' AS appcde FROM grp_oss g
+    ) u
+  ) t
+) b
+ON (a.user_id = b.userid AND a.restyp_code = b.restyp_code AND a.res_id = b.res_id AND a.appcde = b.appcde)
+WHEN NOT MATCHED THEN
+  INSERT (user_id, restyp_code, res_id, appcde)
+  VALUES (b.userid, b.restyp_code, b.res_id, b.appcde);`;
+
 const xuguProgrammableObjectFixtures = [
   `CREATE OR REPLACE PROCEDURE chiron_horizon_xugu_procedure AS
   v_value INTEGER;
@@ -347,6 +377,25 @@ BEGIN
 END;
 SELECT 3 FROM DUMMY;`;
 
+describe("stripMysqlClientDisplayCommand", () => {
+  it("removes a trailing MySQL CLI vertical-output command", () => {
+    expect(stripMysqlClientDisplayCommand("SHOW CREATE FUNCTION fun_grade \\G")).toBe("SHOW CREATE FUNCTION fun_grade");
+    expect(stripMysqlClientDisplayCommand("SHOW CREATE FUNCTION fun_grade \\G;")).toBe("SHOW CREATE FUNCTION fun_grade;");
+    expect(stripMysqlClientDisplayCommand("SELECT 1\\G\n")).toBe("SELECT 1\n");
+  });
+
+  it("removes the lowercase terminator and a command following the semicolon", () => {
+    expect(stripMysqlClientDisplayCommand("SHOW STATUS \\g")).toBe("SHOW STATUS");
+    expect(stripMysqlClientDisplayCommand("SELECT 1; \\G")).toBe("SELECT 1;");
+  });
+
+  it("does not rewrite ordinary SQL or a command inside a line comment", () => {
+    expect(stripMysqlClientDisplayCommand("SELECT '\\G'")).toBe("SELECT '\\G'");
+    expect(stripMysqlClientDisplayCommand("SELECT 1 -- keep \\G")).toBe("SELECT 1 -- keep \\G");
+    expect(stripMysqlClientDisplayCommand("SELECT 1 # keep \\G")).toBe("SELECT 1 # keep \\G");
+  });
+});
+
 describe("splitSqlStatementRanges", () => {
   it("splits multiple top-level statements", () => {
     const sql = "SELECT 1;\nSELECT 2;\nSELECT 3;";
@@ -438,6 +487,22 @@ describe("splitSqlStatementRanges", () => {
   it("ignores semicolons in hash line comments", () => {
     const sql = "SELECT 1 # a; b\n;\nSELECT 2";
     expect(rangeSqlTexts(splitSqlStatementRanges(sql))).toEqual(["SELECT 1", "SELECT 2"]);
+  });
+
+  it("preserves hash characters in Oracle identifiers", () => {
+    const sql = "select a.FILE_ID,a.BLOCK_ID,a.BLOCKS,b.NAME from dba_extents a,v$datafile b where a.FILE_ID=b.FILE#";
+    expect(rangeSqlTexts(splitSqlStatementRanges(sql, "oracle"))).toEqual([sql]);
+  });
+
+  it("preserves hash characters in Oracle-family identifiers", () => {
+    const sql = "select 1 from dba_extents where FILE_ID = b.FILE#";
+    expect(rangeSqlTexts(splitSqlStatementRanges(sql, "dameng"))).toEqual([sql]);
+    expect(rangeSqlTexts(splitSqlStatementRanges(sql, "oceanbase-oracle"))).toEqual([sql]);
+  });
+
+  it("keeps hash line comments scoped to MySQL", () => {
+    const sql = "SELECT 1 # comment;\n;\nSELECT 2";
+    expect(rangeSqlTexts(splitSqlStatementRanges(sql, "mysql"))).toEqual(["SELECT 1", "SELECT 2"]);
   });
 
   it("keeps SQL Server temporary table names instead of treating them as hash comments", () => {
@@ -614,6 +679,27 @@ END pkg_utils_without_replace;`;
     expect(rangeSqlTexts(splitSqlStatementRanges(`${packageSpec}\n/\nSELECT 1;`, "xugu"))).toEqual([packageSpec, "SELECT 1"]);
     expect(rangeSqlTexts(splitSqlStatementRanges(`${forcePackageSpec}\nSELECT 1;`, "xugu"))).toEqual([forcePackageSpec, "SELECT 1"]);
     expect(rangeSqlTexts(splitSqlStatementRanges(`${packageSpecWithoutReplace}\nSELECT 1;`, "xugu"))).toEqual([packageSpecWithoutReplace, "SELECT 1"]);
+  });
+
+  it("keeps openGauss packages together while compatibility metadata is unknown", () => {
+    const packageSpec = `CREATE OR REPLACE PACKAGE pkg_utils AS
+  FUNCTION get_version RETURN VARCHAR2;
+  PROCEDURE log_message(msg VARCHAR2);
+END pkg_utils;`;
+    const script = `${packageSpec}\n/\nSELECT 1;`;
+
+    expect(rangeSqlTexts(splitSqlStatementRanges(script, "opengauss"))).toEqual([packageSpec, "SELECT 1"]);
+  });
+
+  it("splits openGauss A-mode packages without changing PG mode", () => {
+    const packageSpec = `CREATE OR REPLACE PACKAGE pkg_utils AS
+  FUNCTION get_version RETURN VARCHAR2;
+  PROCEDURE log_message(msg VARCHAR2);
+END pkg_utils;`;
+    const script = `${packageSpec}\n/\nSELECT 1;`;
+
+    expect(rangeSqlTexts(splitSqlStatementRanges(script, "opengauss", { compatibilityMode: "A" }))).toEqual([packageSpec, "SELECT 1"]);
+    expect(rangeSqlTexts(splitSqlStatementRanges(script, "opengauss", { compatibilityMode: "PG" }))).not.toEqual([packageSpec, "SELECT 1"]);
   });
 
   it("splits a declaration-only Oracle package body before following DML", () => {
@@ -1367,6 +1453,12 @@ FROM orders;`;
     expect(statementRangeAtCursor(gaussDbIssue4573Script, indexOf(gaussDbIssue4573Script, "count(*)"), "gaussdb")?.sql.trim()).toBe(expected);
   });
 
+  it("keeps a GaussDB MERGE with a recursive USING query together", () => {
+    for (const needle of ["MERGE INTO", "WITH RECURSIVE", "WHEN NOT MATCHED", "VALUES (b.userid)"]) {
+      expect(statementRangeAtCursor(gaussDbMergeWithRecursiveUsing, indexOf(gaussDbMergeWithRecursiveUsing, needle), "gaussdb")?.sql.trim()).toBe(gaussDbMergeWithRecursiveUsing.slice(0, -1));
+    }
+  });
+
   it("returns the full SAP HANA DO block for cursors inside nested statements", () => {
     const range = statementRangeAtCursor(sapHanaDoBlockFixture, indexOf(sapHanaDoBlockFixture, "Result"), "saphana");
 
@@ -1774,6 +1866,24 @@ WHERE t2.product_name = '12345'
     const candidates = buildExecutionCandidates(sql, indexOf(sql, "KILL"), "sqlserver");
 
     expect(candidateSummaries(candidates)).toEqual(["cursor:KILL 580", `all:${sql}`]);
+  });
+
+  it("keeps SQL Server IF/ELSE control-flow batches as one execution range", () => {
+    const sql = [
+      "IF EXISTS (SELECT 1 FROM ::fn_listextendedproperty('MS_Description','USER','dbo','TABLE','Categories','COLUMN','CategoryID'))",
+      "BEGIN",
+      "    EXEC sp_updateextendedproperty @name=N'MS_Description', @value=N'test', @level0type=N'USER', @level0name=N'dbo', @level1type=N'TABLE', @level1name=N'Categories', @level2type=N'COLUMN', @level2name=N'CategoryID'",
+      "END",
+      "ELSE",
+      "BEGIN",
+      "    EXEC sp_addextendedproperty @name=N'MS_Description', @value=N'test', @level0type=N'USER', @level0name=N'dbo', @level1type=N'TABLE', @level1name=N'Categories', @level2type=N'COLUMN', @level2name=N'CategoryID'",
+      "END",
+    ].join("\n");
+    const ranges = executableStatementRanges(sql, "sqlserver");
+    const candidates = buildExecutionCandidates(sql, indexOf(sql, "sp_addextendedproperty"), "sqlserver");
+
+    expect(rangeSqlTexts(ranges)).toEqual([sql]);
+    expect(candidateSummaries(candidates)).toEqual([`all:${sql}`]);
   });
 });
 

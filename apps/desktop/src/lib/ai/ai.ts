@@ -100,6 +100,8 @@ export interface AiContext {
   connectionName: string;
   databaseType: DatabaseType;
   database: string;
+  /** Databases selected for this run; omitted by older callers. */
+  selectedDatabases?: string[];
   /** Schema selected for metadata loading and agent tool execution. */
   schema?: string;
   currentSql: string;
@@ -130,6 +132,8 @@ export interface AiRequestInput {
   confirmedConnectionId?: string;
   confirmedDatabase?: string;
   confirmedSchema?: string;
+  /** Stable per-conversation key forwarded to the Responses API. */
+  promptCacheKey?: string;
 }
 
 export interface AiNamespaceSelection {
@@ -192,6 +196,7 @@ export async function runAiAction(input: AiRequestInput, history?: api.AiMessage
     messages,
     taskContract,
     maxTokens,
+    promptCacheKey: input.promptCacheKey,
   });
 }
 
@@ -207,6 +212,7 @@ export async function runAiStream(input: AiRequestInput, history: api.AiMessage[
       messages,
       taskContract,
       maxTokens,
+      promptCacheKey: input.promptCacheKey,
     },
     (chunk) => {
       if (!chunk.done) {
@@ -221,7 +227,8 @@ export async function runAgentStream(input: AiRequestInput, history: api.AiMessa
   const { messages, systemPrompt, taskContract, maxTokens } = buildAgentRequest(input, history, custom);
   const sid = sessionId || uuid();
 
-  return api.aiAgentStream(
+  const selectedDatabases = input.context.selectedDatabases;
+  const args = [
     sid,
     {
       config: input.config,
@@ -229,6 +236,7 @@ export async function runAgentStream(input: AiRequestInput, history: api.AiMessa
       messages,
       taskContract,
       maxTokens,
+      promptCacheKey: input.promptCacheKey,
     },
     input.context.connectionId,
     input.context.database,
@@ -241,7 +249,11 @@ export async function runAgentStream(input: AiRequestInput, history: api.AiMessa
     input.confirmedConnectionId,
     input.confirmedDatabase,
     input.confirmedSchema,
-  );
+  ] as const;
+  if (selectedDatabases?.length) {
+    return api.aiAgentStream(...args, undefined, selectedDatabases);
+  }
+  return api.aiAgentStream(...args);
 }
 
 export function buildUserPrompt(action: AiAction, context: AiContext, instruction: string, isZh: boolean): string {
@@ -319,6 +331,11 @@ export function buildSystemPrompt(action: AiAction, context: AiContext, mode: Ai
     `Database type: ${context.databaseType}`,
     `Connection: ${context.connectionName}`,
     `Database: ${context.database}`,
+    context.selectedDatabases?.length
+      ? isZh
+        ? `已选择数据库：${JSON.stringify(context.selectedDatabases)}。请在元数据工具中通过 database 参数分别检查这些数据库。跨库 JOIN 需要数据库引擎支持：MySQL 使用 database.table，SQL Server 使用 database.schema.table；PostgreSQL 不能直接连接不同数据库，除非已配置联邦查询。MCP 授权仍然生效，选择数据库不会绕过授权限制。`
+        : `Selected databases: ${JSON.stringify(context.selectedDatabases)}. Use the database parameter on metadata tools to inspect each selected database. Cross-database joins require engine support: MySQL uses database.table, SQL Server uses database.schema.table; PostgreSQL cannot directly join separate databases without an existing federation setup. MCP authorization still applies; selecting databases does not override it.`
+      : "",
     context.schema ? `Selected schema: ${context.schema}` : "",
     schemaCoverageLine(context, isZh),
     "",

@@ -14,6 +14,7 @@ pub struct CliAgentRunOptions {
     pub connection_id: String,
     pub connection_name: String,
     pub database: String,
+    pub selected_databases: Vec<String>,
     pub schema: Option<String>,
     pub agent_mode: bool,
     pub allow_writes: bool,
@@ -63,32 +64,40 @@ pub fn toml_string_array(values: &[&str]) -> String {
 }
 
 pub fn chiron_horizon_mcp_enabled_tools(agent_mode: bool) -> Vec<&'static str> {
-    let mut tools = vec![
-        "chiron_horizon_list_connections",
-        "chiron_horizon_list_tables",
-        "chiron_horizon_describe_table",
-        "chiron_horizon_get_schema_context",
-    ];
+    let mut tools = vec!["dbx_list_connections", "dbx_list_tables", "dbx_describe_table", "dbx_get_schema_context"];
     if agent_mode {
-        tools.push("chiron_horizon_execute_query");
-        tools.push("chiron_horizon_execute_redis_command");
+        tools.push("dbx_execute_query");
+        tools.push("dbx_execute_redis_command");
     }
     tools
 }
 
 pub fn chiron_horizon_mcp_scope_env(options: &CliAgentRunOptions) -> Vec<(&'static str, String)> {
+    let mut databases: Vec<&str> = Vec::new();
+    for database in &options.selected_databases {
+        let database = database.trim();
+        if !database.is_empty() && !databases.contains(&database) {
+            databases.push(database);
+        }
+    }
+    let multiple_databases = databases.len() > 1;
+    // An empty value explicitly clears inherited/configured single-database
+    // bounds. MCP's persisted connection/database policy still applies.
+    let database_scope = if multiple_databases { "" } else { databases.first().copied().unwrap_or(&options.database) };
     let mut env = vec![
-        ("CHIRON_HORIZON_MCP_ALLOW_WRITES", if options.allow_writes { "1" } else { "0" }.to_string()),
-        ("CHIRON_HORIZON_MCP_ALLOW_DANGEROUS_SQL", if options.allow_dangerous { "1" } else { "0" }.to_string()),
-        ("CHIRON_HORIZON_MCP_SCOPE_CONNECTION_ID", options.connection_id.clone()),
-        ("CHIRON_HORIZON_MCP_SCOPE_CONNECTION_NAME", options.connection_name.clone()),
-        ("CHIRON_HORIZON_MCP_SCOPE_DATABASE", options.database.clone()),
+        ("DBX_MCP_ALLOW_WRITES", if options.allow_writes { "1" } else { "0" }.to_string()),
+        ("DBX_MCP_ALLOW_DANGEROUS_SQL", if options.allow_dangerous { "1" } else { "0" }.to_string()),
+        ("DBX_MCP_SCOPE_CONNECTION_ID", options.connection_id.clone()),
+        ("DBX_MCP_SCOPE_CONNECTION_NAME", options.connection_name.clone()),
+        ("DBX_MCP_SCOPE_DATABASE", database_scope.to_string()),
     ];
-    if let Some(schema) = options.schema.as_deref().filter(|schema| !schema.trim().is_empty()) {
-        env.push(("CHIRON_HORIZON_MCP_SCOPE_SCHEMA", schema.to_string()));
+    if multiple_databases {
+        env.push(("DBX_MCP_SCOPE_SCHEMA", String::new()));
+    } else if let Some(schema) = options.schema.as_deref().filter(|schema| !schema.trim().is_empty()) {
+        env.push(("DBX_MCP_SCOPE_SCHEMA", schema.to_string()));
     }
     if let Some(ref sql) = options.confirmed_write_sql {
-        env.push(("CHIRON_HORIZON_MCP_CONFIRMED_WRITE_SQL", sql.clone()));
+        env.push(("DBX_MCP_CONFIRMED_WRITE_SQL", sql.clone()));
     }
     env
 }
@@ -98,11 +107,42 @@ mod scope_env_tests {
     use super::*;
 
     #[test]
+    fn database_selection_controls_runtime_bounds_without_changing_write_permissions() {
+        for (selection, expected_database, expected_schema) in [
+            (vec![], "db_a", "public"),
+            (vec!["db_b"], "db_b", "public"),
+            (vec!["db_a", "db_b"], "", ""),
+            (vec![" db_a ", "db_a", " "], "db_a", "public"),
+        ] {
+            let options = CliAgentRunOptions {
+                connection_id: "conn-1".into(),
+                connection_name: "Test".into(),
+                database: "db_a".into(),
+                selected_databases: selection.into_iter().map(str::to_string).collect(),
+                schema: Some("public".into()),
+                agent_mode: true,
+                allow_writes: false,
+                allow_dangerous: false,
+                confirmed_write_sql: None,
+                mcp_server_command: None,
+            };
+            let env: std::collections::HashMap<_, _> = chiron_horizon_mcp_scope_env(&options).into_iter().collect();
+            assert_eq!(env["DBX_MCP_SCOPE_DATABASE"], expected_database);
+            assert_eq!(env["DBX_MCP_SCOPE_SCHEMA"], expected_schema);
+            assert_eq!(env["DBX_MCP_SCOPE_CONNECTION_ID"], "conn-1");
+            assert_eq!(env["DBX_MCP_ALLOW_WRITES"], "0");
+            assert_eq!(env["DBX_MCP_ALLOW_DANGEROUS_SQL"], "0");
+            assert!(!env.contains_key("DBX_MCP_CONFIRMED_WRITE_SQL"));
+        }
+    }
+
+    #[test]
     fn confirmed_write_sql_is_passed_to_the_scoped_mcp_subprocess() {
         let options = CliAgentRunOptions {
             connection_id: "dameng-1".to_string(),
             connection_name: "Dameng".to_string(),
             database: "APPDB".to_string(),
+            selected_databases: Vec::new(),
             schema: Some("REPORTING".to_string()),
             agent_mode: true,
             allow_writes: true,
@@ -112,13 +152,11 @@ mod scope_env_tests {
         };
 
         let env = chiron_horizon_mcp_scope_env(&options);
-        assert!(
-            env.contains(&("CHIRON_HORIZON_MCP_CONFIRMED_WRITE_SQL", "DELETE FROM sessions WHERE id = 7".to_string()))
-        );
-        assert!(env.contains(&("CHIRON_HORIZON_MCP_ALLOW_WRITES", "1".to_string())));
-        assert!(env.contains(&("CHIRON_HORIZON_MCP_ALLOW_DANGEROUS_SQL", "1".to_string())));
-        assert!(env.contains(&("CHIRON_HORIZON_MCP_SCOPE_DATABASE", "APPDB".to_string())));
-        assert!(env.contains(&("CHIRON_HORIZON_MCP_SCOPE_SCHEMA", "REPORTING".to_string())));
+        assert!(env.contains(&("DBX_MCP_CONFIRMED_WRITE_SQL", "DELETE FROM sessions WHERE id = 7".to_string())));
+        assert!(env.contains(&("DBX_MCP_ALLOW_WRITES", "1".to_string())));
+        assert!(env.contains(&("DBX_MCP_ALLOW_DANGEROUS_SQL", "1".to_string())));
+        assert!(env.contains(&("DBX_MCP_SCOPE_DATABASE", "APPDB".to_string())));
+        assert!(env.contains(&("DBX_MCP_SCOPE_SCHEMA", "REPORTING".to_string())));
     }
 }
 
@@ -136,15 +174,14 @@ pub fn build_cli_agent_prompt(
     allow_write_sql: bool,
 ) -> String {
     let database_access = if allow_write_sql {
-        "The user explicitly confirmed the proposed database change. Chiron Horizon MCP tools may execute write and DDL SQL for this run only."
+        "The user explicitly confirmed the proposed database change. DBX MCP tools may execute write and DDL SQL for this run only."
     } else {
-        "Use the Chiron Horizon MCP tools when you need live database schema or read-only query results."
+        "Use the DBX MCP tools when you need live database schema or read-only query results."
     };
     let mut sections = vec![
-        format!("You are running inside Chiron Horizon Desktop as the {provider_label} CLI provider."),
+        format!("You are running inside DBX Desktop as the {provider_label} CLI provider."),
         database_access.to_string(),
-        "Do not modify files or run shell commands. The Chiron Horizon MCP server is the only intended tool surface."
-            .to_string(),
+        "Do not modify files or run shell commands. The DBX MCP server is the only intended tool surface.".to_string(),
         String::new(),
         "## System instructions".to_string(),
         system_prompt.to_string(),
@@ -1203,7 +1240,7 @@ mod grok_streaming_json_tests {
     #[test]
     fn parses_tool_call_lifecycle() {
         let start = parse_cli_jsonl_event(
-            r#"{"type":"tool_call","toolCallId":"call_1","toolName":"chiron_horizon__chiron_horizon_list_tables","status":"in_progress","rawInput":{"schema":"public"}}"#,
+            r#"{"type":"tool_call","toolCallId":"call_1","toolName":"dbx__dbx_list_tables","status":"in_progress","rawInput":{"schema":"public"}}"#,
             CliAgentJsonlDialect::GrokStreamingJson,
         )
         .unwrap();
@@ -1211,12 +1248,12 @@ mod grok_streaming_json_tests {
             &start[0],
             AgentEvent::ToolCallStart { tool_call_id, tool_name, args }
                 if tool_call_id == "call_1"
-                    && tool_name == "chiron_horizon__chiron_horizon_list_tables"
+                    && tool_name == "dbx__dbx_list_tables"
                     && args.get("schema").and_then(Value::as_str) == Some("public")
         ));
 
         let end = parse_cli_jsonl_event(
-            r#"{"type":"tool_call_update","toolCallId":"call_1","toolName":"chiron_horizon__chiron_horizon_list_tables","status":"completed","rawOutput":{"tables":["users"]}}"#,
+            r#"{"type":"tool_call_update","toolCallId":"call_1","toolName":"dbx__dbx_list_tables","status":"completed","rawOutput":{"tables":["users"]}}"#,
             CliAgentJsonlDialect::GrokStreamingJson,
         )
         .unwrap();
@@ -1276,10 +1313,10 @@ mod tests {
                 program: "sh".to_string(),
                 args: vec![
                     "-c".to_string(),
-                    "printf '%s\n' \"{\\\"type\\\":\\\"item.completed\\\",\\\"item\\\":{\\\"type\\\":\\\"agent_message\\\",\\\"text\\\":\\\"$CHIRON_HORIZON_TEST_ENV\\\"}}\" \"{\\\"type\\\":\\\"turn.completed\\\"}\"".to_string(),
+                    "printf '%s\n' \"{\\\"type\\\":\\\"item.completed\\\",\\\"item\\\":{\\\"type\\\":\\\"agent_message\\\",\\\"text\\\":\\\"$DBX_TEST_ENV\\\"}}\" \"{\\\"type\\\":\\\"turn.completed\\\"}\"".to_string(),
                 ],
             },
-            env: vec![("CHIRON_HORIZON_TEST_ENV".to_string(), "from-env".to_string())],
+            env: vec![("DBX_TEST_ENV".to_string(), "from-env".to_string())],
             env_remove: Vec::new(),
             current_dir: None,
             stdin: None,
@@ -1521,7 +1558,7 @@ mod tests {
     #[tokio::test]
     async fn jsonl_error_kills_and_waits_for_child() {
         let pid_file = std::env::temp_dir().join(format!(
-            "chiron-horizon-cli-agent-error-{}-{}",
+            "dbx-cli-agent-error-{}-{}",
             std::process::id(),
             SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_nanos()
         ));
@@ -1555,7 +1592,7 @@ mod tests {
     #[tokio::test]
     async fn jsonl_cancellation_kills_and_waits_for_child() {
         let pid_file = std::env::temp_dir().join(format!(
-            "chiron-horizon-cli-agent-cancel-{}-{}",
+            "dbx-cli-agent-cancel-{}-{}",
             std::process::id(),
             SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_nanos()
         ));
@@ -1603,7 +1640,7 @@ mod tests {
         // the run returns promptly with the cancel error. No AgentEnd may be
         // emitted on the cancel path.
         let pid_file = std::env::temp_dir().join(format!(
-            "chiron-horizon-cli-agent-eof-cancel-{}-{}",
+            "dbx-cli-agent-eof-cancel-{}-{}",
             std::process::id(),
             SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_nanos()
         ));
