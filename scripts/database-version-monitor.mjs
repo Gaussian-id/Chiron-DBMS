@@ -32,6 +32,9 @@ export function validateRegistry(registry) {
     if (!target?.id || seen.has(target.id)) throw new Error(`Target id must be unique: '${target?.id ?? ''}'.`);
     seen.add(target.id);
     parseVersion(target.currentVersion);
+    if (typeof target.versionPrefix !== 'string' || !/^\d+(?:\.\d+)*\.$/.test(target.versionPrefix) || !target.currentVersion.startsWith(target.versionPrefix)) {
+      throw new Error(`Target '${target.id}' must declare a versionPrefix containing its currentVersion.`);
+    }
     if (!['docker-hub-image', 'crates-io-package'].includes(target.kind)) throw new Error(`Unsupported source kind for ${target.id}.`);
     if (!target.source || typeof target.source !== 'object') throw new Error(`Missing source for ${target.id}.`);
     if (!target.testSuite) throw new Error(`Missing test suite for ${target.id}.`);
@@ -62,27 +65,27 @@ async function fetchJson(url, fetchImpl = fetch) {
   }
 }
 
-export function newestDockerHubVersion(payload) {
-  const versions = (payload?.results ?? []).map((tag) => tag?.name).filter((tag) => SEMVER.test(tag));
-  if (versions.length === 0) throw new Error('Docker Hub response does not contain a stable numeric tag.');
+export function newestDockerHubVersion(payload, versionPrefix) {
+  const versions = (payload?.results ?? []).map((tag) => tag?.name).filter((tag) => SEMVER.test(tag) && tag.startsWith(versionPrefix));
+  if (versions.length === 0) return null;
   return versions.reduce((latest, version) => compareVersions(version, latest) > 0 ? version : latest);
 }
 
-export function newestCratesVersion(payload) {
+export function newestCratesVersion(payload, versionPrefix) {
   const version = payload?.crate?.newest_version;
   parseVersion(version);
-  return version;
+  return version.startsWith(versionPrefix) ? version : null;
 }
 
 export async function resolveLatestVersion(target, fetchImpl = fetch) {
   if (target.kind === 'docker-hub-image') {
     const repository = encodeURIComponent(target.source.repository).replace('%2F', '/');
     const payload = await fetchJson(`https://hub.docker.com/v2/namespaces/${repository.split('/')[0]}/repositories/${repository.split('/')[1]}/tags?page_size=100&ordering=last_updated`, fetchImpl);
-    return newestDockerHubVersion(payload);
+    return newestDockerHubVersion(payload, target.versionPrefix);
   }
   if (target.kind === 'crates-io-package') {
     const payload = await fetchJson(`https://crates.io/api/v1/crates/${encodeURIComponent(target.source.crate)}`, fetchImpl);
-    return newestCratesVersion(payload);
+    return newestCratesVersion(payload, target.versionPrefix);
   }
   throw new Error(`Unsupported source kind '${target.kind}'.`);
 }
@@ -93,7 +96,7 @@ export async function findUpdate(registry, targetId, fetchImpl = fetch) {
   const proposals = [];
   for (const target of targets) {
     const latestVersion = await resolveLatestVersion(target, fetchImpl);
-    if (compareVersions(latestVersion, target.currentVersion) > 0) {
+    if (latestVersion && compareVersions(latestVersion, target.currentVersion) > 0) {
       proposals.push({ id: target.id, kind: target.kind, currentVersion: target.currentVersion, latestVersion, testSuite: target.testSuite });
     }
   }
