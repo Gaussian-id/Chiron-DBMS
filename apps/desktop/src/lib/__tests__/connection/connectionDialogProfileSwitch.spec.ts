@@ -2,6 +2,7 @@ import { readFileSync } from "node:fs";
 import { parse } from "vue/compiler-sfc";
 import ts from "typescript";
 import { describe, expect, it } from "vitest";
+import { CONNECTION_PROFILES } from "@/types/generated/connectionProfiles";
 
 const dialogSource = readFileSync(new URL("../../../components/connection/ConnectionDialog.vue", import.meta.url), "utf8");
 const parsedDialog = parse(dialogSource, { filename: "ConnectionDialog.vue" });
@@ -28,7 +29,7 @@ function profileSwitchHarness(selectedProfile: string, editing = false) {
   const form: ProfileDraft = {
     port: 15432,
     username: "draft-user",
-    url_params: "sslmode=require&application_name=dbx",
+    url_params: "sslmode=require&application_name=chiron-horizon",
     agent_java_options: ["-Xms256m", "-Xmx1g"],
   };
   const editingId: { value: string | null } = { value: editing ? "connection-1" : null };
@@ -133,6 +134,13 @@ function igniteProfileSwitchHarness(selectedProfile: "ignite" | "ignite3") {
 }
 
 describe("ConnectionDialog database profile switching", () => {
+  it.each(Object.keys(CONNECTION_PROFILES))("allows selecting the %s profile", (profile) => {
+    const harness = profileSwitchHarness("unselected");
+    harness.selectProfile(profile);
+    expect(harness.selectedType.value).toBe(profile);
+    expect(harness.events).toContain(`apply:${profile}:false`);
+  });
+
   it.each([
     ["mysql", ""],
     ["custom_mysql", "Draft custom_mysql"],

@@ -29,11 +29,11 @@ function blobFromText(value: string) {
 }
 
 test("keeps JSON-like strings as raw text in Redis member details", () => {
-  const detail = formatRedisMemberDetail('{"id":1,"name":"Ada","tags":["dbx","redis"]}');
+  const detail = formatRedisMemberDetail('{"id":1,"name":"Ada","tags":["chiron-horizon","redis"]}');
 
   assert.equal(detail.format, "text");
-  assert.equal(detail.rawText, '{"id":1,"name":"Ada","tags":["dbx","redis"]}');
-  assert.equal(detail.text, '{"id":1,"name":"Ada","tags":["dbx","redis"]}');
+  assert.equal(detail.rawText, '{"id":1,"name":"Ada","tags":["chiron-horizon","redis"]}');
+  assert.equal(detail.text, '{"id":1,"name":"Ada","tags":["chiron-horizon","redis"]}');
 });
 
 test("keeps plain Redis member strings unchanged", () => {

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import * as langSql from "@codemirror/lang-sql";
-import { createDbxCodeMirrorSqlDialect, postgresKeywordSyntaxTerms, sqlServerBuiltinSyntaxTerms } from "@/lib/editor/codemirrorSqlDialect";
+import { createChironHorizonCodeMirrorSqlDialect, postgresKeywordSyntaxTerms, sqlServerBuiltinSyntaxTerms } from "@/lib/editor/codemirrorSqlDialect";
 import type { DatabaseType } from "@/types/database";
 
 function nodeNameAt(dialect: langSql.SQLDialect, statement: string, word: string): string | undefined {
@@ -27,8 +27,8 @@ describe("codemirrorSqlDialect", () => {
   });
 
   it("highlights common functions dropped from Postgres/MySQL keyword lists as builtins", () => {
-    const postgresBuiltins = new Set(createDbxCodeMirrorSqlDialect(langSql, "postgres", "postgres").spec.builtin?.split(/\s+/));
-    const mysqlBuiltins = new Set(createDbxCodeMirrorSqlDialect(langSql, "mysql", "mysql").spec.builtin?.split(/\s+/));
+    const postgresBuiltins = new Set(createChironHorizonCodeMirrorSqlDialect(langSql, "postgres", "postgres").spec.builtin?.split(/\s+/));
+    const mysqlBuiltins = new Set(createChironHorizonCodeMirrorSqlDialect(langSql, "mysql", "mysql").spec.builtin?.split(/\s+/));
 
     expect(postgresBuiltins.has("count")).toBe(true);
     expect(postgresBuiltins.has("to_char")).toBe(true);
@@ -37,8 +37,8 @@ describe("codemirrorSqlDialect", () => {
   });
 
   it("adds Dolt routines to highlighting without changing standard MySQL", () => {
-    const doltBuiltins = new Set(createDbxCodeMirrorSqlDialect(langSql, "mysql", "mysql", "dolt").spec.builtin?.split(/\s+/));
-    const mysqlBuiltins = new Set(createDbxCodeMirrorSqlDialect(langSql, "mysql", "mysql", "mysql").spec.builtin?.split(/\s+/));
+    const doltBuiltins = new Set(createChironHorizonCodeMirrorSqlDialect(langSql, "mysql", "mysql", "dolt").spec.builtin?.split(/\s+/));
+    const mysqlBuiltins = new Set(createChironHorizonCodeMirrorSqlDialect(langSql, "mysql", "mysql", "mysql").spec.builtin?.split(/\s+/));
 
     expect(doltBuiltins.has("dolt_branch")).toBe(true);
     expect(doltBuiltins.has("dolt_merge")).toBe(true);
@@ -57,7 +57,7 @@ describe("codemirrorSqlDialect", () => {
   });
 
   it("tokenizes SET as a keyword for SQL Server statements", () => {
-    const dialect = createDbxCodeMirrorSqlDialect(langSql, "sqlserver", "sqlserver");
+    const dialect = createChironHorizonCodeMirrorSqlDialect(langSql, "sqlserver", "sqlserver");
     const statements = ["UPDATE users SET name = 'Alice' WHERE id = 1", "SET NOCOUNT ON", "SET @total = 5"];
 
     for (const statement of statements) {
@@ -69,7 +69,7 @@ describe("codemirrorSqlDialect", () => {
   });
 
   it("tokenizes T-SQL temp table names instead of erroring on the hash (#8267)", () => {
-    const dialect = createDbxCodeMirrorSqlDialect(langSql, "sqlserver", "sqlserver");
+    const dialect = createChironHorizonCodeMirrorSqlDialect(langSql, "sqlserver", "sqlserver");
     const statement = "select * into #GH_GHMXK from ##global_temp where b.jssjh = @sjh";
 
     // `#`/`##` prefixes used to fall through to a parser error token, leaving
@@ -82,7 +82,7 @@ describe("codemirrorSqlDialect", () => {
     expect(nodeNameAt(dialect, statement, "into")).toBe("Keyword");
 
     // MySQL keeps interpreting `#` as a line comment — its dialect is untouched.
-    const mysql = createDbxCodeMirrorSqlDialect(langSql, "mysql", "mysql");
+    const mysql = createChironHorizonCodeMirrorSqlDialect(langSql, "mysql", "mysql");
     expect(nodeNameAt(mysql, "SELECT a FROM t -- x\nWHERE b = 1", "WHERE")).toBe("Keyword");
   });
 
@@ -90,7 +90,7 @@ describe("codemirrorSqlDialect", () => {
     const databaseTypes: DatabaseType[] = ["oracle", "dameng", "yashandb", "oscar", "oceanbase-oracle"];
 
     for (const databaseType of databaseTypes) {
-      expect(createDbxCodeMirrorSqlDialect(langSql, "mysql", databaseType).spec.doubleQuotedStrings, databaseType).toBe(false);
+      expect(createChironHorizonCodeMirrorSqlDialect(langSql, "mysql", databaseType).spec.doubleQuotedStrings, databaseType).toBe(false);
     }
   });
 
@@ -100,7 +100,7 @@ describe("codemirrorSqlDialect", () => {
     // identifiers — exactly the highlighting the #8123 report shows.
     const reporterStatement = "select di.MR_ADM\nfrom SQLUser.DHCMRInfo di\nwhere di.MR_BAH = 1942487\n  and di.MR_RYRQ >= '2023-01-01'";
     for (const databaseType of ["iris", "jdbc", "h2", "db2", "hive"] as DatabaseType[]) {
-      const dialect = createDbxCodeMirrorSqlDialect(langSql, "mysql", databaseType);
+      const dialect = createChironHorizonCodeMirrorSqlDialect(langSql, "mysql", databaseType);
       for (const keyword of ["select", "from", "where", "and"]) {
         expect(nodeNameAt(dialect, reporterStatement, keyword), `${databaseType}:${keyword}`).toBe("Keyword");
       }
@@ -108,25 +108,25 @@ describe("codemirrorSqlDialect", () => {
 
     // Standard-SQL types gain a vocabulary too, while ClickHouse keeps its
     // pre-existing standard-vocabulary treatment unchanged.
-    expect(createDbxCodeMirrorSqlDialect(langSql, "mysql", "iris").spec.types).toBe("array binary bit boolean char character clob date decimal double float int integer interval large national nchar nclob numeric object precision real smallint time timestamp varchar varying");
-    const clickhouseDialect = createDbxCodeMirrorSqlDialect(langSql, "mysql", "clickhouse");
+    expect(createChironHorizonCodeMirrorSqlDialect(langSql, "mysql", "iris").spec.types).toBe("array binary bit boolean char character clob date decimal double float int integer interval large national nchar nclob numeric object precision real smallint time timestamp varchar varying");
+    const clickhouseDialect = createChironHorizonCodeMirrorSqlDialect(langSql, "mysql", "clickhouse");
     expect(nodeNameAt(clickhouseDialect, "SELECT x FROM t WHERE y > 1", "WHERE")).toBe("Keyword");
   });
 
   it("enables backslashEscapes for MySQL-family dialects and ClickHouse while keeping it disabled for standard dialects", () => {
     const backslashEscapesTypes: DatabaseType[] = ["mysql", "doris", "starrocks", "manticoresearch", "goldendb", "gbase", "clickhouse", "hive", "spark", "impala", "argo", "databend"];
     for (const databaseType of backslashEscapesTypes) {
-      expect(createDbxCodeMirrorSqlDialect(langSql, "mysql", databaseType).spec.backslashEscapes, databaseType).toBe(true);
+      expect(createChironHorizonCodeMirrorSqlDialect(langSql, "mysql", databaseType).spec.backslashEscapes, databaseType).toBe(true);
     }
 
     const standardTypes: DatabaseType[] = ["postgres", "sqlserver", "sqlite", "oracle", "dameng"];
     for (const databaseType of standardTypes) {
-      expect(createDbxCodeMirrorSqlDialect(langSql, "mysql", databaseType).spec.backslashEscapes, databaseType).toBeUndefined();
+      expect(createChironHorizonCodeMirrorSqlDialect(langSql, "mysql", databaseType).spec.backslashEscapes, databaseType).toBeUndefined();
     }
   });
 
   it("correctly tokenizes string literals containing escaped quotes in MySQL statements without corrupting trailing code", () => {
-    const dialect = createDbxCodeMirrorSqlDialect(langSql, "mysql", "mysql");
+    const dialect = createChironHorizonCodeMirrorSqlDialect(langSql, "mysql", "mysql");
     const statement = ["SELECT CONCAT('\\'', sl.id) id, sl.settlement_price_tax '本次结算金额含税',", "CASE sc.`type`", "    WHEN 0 THEN '物资'", "    WHEN 1 THEN '设备'", "    ELSE ''", "END AS '合同类型'"].join("\n");
 
     expect(nodeNameAt(dialect, statement, "'\\''")).toBe("String");

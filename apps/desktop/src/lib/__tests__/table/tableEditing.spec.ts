@@ -1,8 +1,8 @@
 import { describe, expect, it } from "vitest";
 import {
-  DBX_NEO4J_ELEMENT_ID_COLUMN,
-  DBX_ROWID_COLUMN,
-  DBX_TDENGINE_TBNAME_COLUMN,
+  CHIRON_HORIZON_NEO4J_ELEMENT_ID_COLUMN,
+  CHIRON_HORIZON_ROWID_COLUMN,
+  CHIRON_HORIZON_TDENGINE_TBNAME_COLUMN,
   canInsertTableRows,
   canDeleteExistingTdengineRows,
   canEditExistingTableRows,
@@ -44,23 +44,23 @@ describe("tableEditing", () => {
   it("synthesizes ROWID only for Oracle-compatible base tables", () => {
     expect(editablePrimaryKeys("oracle", [column("ID"), column("NAME")])).toEqual([]);
     expect(editablePrimaryKeys("oracle", [column("ID"), column("NAME")], "VIEW")).toEqual([]);
-    expect(editablePrimaryKeys("oracle", [column("ID"), column("NAME")], "TABLE")).toEqual([DBX_ROWID_COLUMN]);
-    expect(editablePrimaryKeys("oceanbase-oracle", [column("ID"), column("NAME")], "TABLE")).toEqual([DBX_ROWID_COLUMN]);
+    expect(editablePrimaryKeys("oracle", [column("ID"), column("NAME")], "TABLE")).toEqual([CHIRON_HORIZON_ROWID_COLUMN]);
+    expect(editablePrimaryKeys("oceanbase-oracle", [column("ID"), column("NAME")], "TABLE")).toEqual([CHIRON_HORIZON_ROWID_COLUMN]);
     expect(editablePrimaryKeys("oceanbase-oracle", [column("ID", true), column("NAME")], "TABLE")).toEqual(["ID"]);
   });
 
   it("uses Xugu ROWID for ordinary, partitioned, and temporary tables but not views", () => {
     const columns = [column("ID"), column("VALUE")];
-    expect(editablePrimaryKeys("xugu", columns, "TABLE")).toEqual([DBX_ROWID_COLUMN]);
-    expect(editablePrimaryKeys("xugu", columns, "PARTITIONED TABLE")).toEqual([DBX_ROWID_COLUMN]);
-    expect(editablePrimaryKeys("xugu", columns, "TEMPORARY TABLE")).toEqual([DBX_ROWID_COLUMN]);
+    expect(editablePrimaryKeys("xugu", columns, "TABLE")).toEqual([CHIRON_HORIZON_ROWID_COLUMN]);
+    expect(editablePrimaryKeys("xugu", columns, "PARTITIONED TABLE")).toEqual([CHIRON_HORIZON_ROWID_COLUMN]);
+    expect(editablePrimaryKeys("xugu", columns, "TEMPORARY TABLE")).toEqual([CHIRON_HORIZON_ROWID_COLUMN]);
     expect(editablePrimaryKeys("xugu", columns, "VIEW")).toEqual([]);
-    expect(usesSyntheticRowIdKey("xugu", [DBX_ROWID_COLUMN], "TABLE")).toBe(true);
-    expect(usesSyntheticRowIdKey("xugu", [DBX_ROWID_COLUMN], "PARTITIONED TABLE")).toBe(true);
-    expect(usesSyntheticRowIdKey("xugu", [DBX_ROWID_COLUMN], "TEMPORARY TABLE")).toBe(true);
-    expect(usesSyntheticRowIdKey("xugu", [DBX_ROWID_COLUMN], "VIEW")).toBe(false);
-    expect(isTableDataEditable("xugu", [DBX_ROWID_COLUMN], "TABLE")).toBe(true);
-    expect(isTableDataEditable("xugu", [DBX_ROWID_COLUMN], "VIEW")).toBe(false);
+    expect(usesSyntheticRowIdKey("xugu", [CHIRON_HORIZON_ROWID_COLUMN], "TABLE")).toBe(true);
+    expect(usesSyntheticRowIdKey("xugu", [CHIRON_HORIZON_ROWID_COLUMN], "PARTITIONED TABLE")).toBe(true);
+    expect(usesSyntheticRowIdKey("xugu", [CHIRON_HORIZON_ROWID_COLUMN], "TEMPORARY TABLE")).toBe(true);
+    expect(usesSyntheticRowIdKey("xugu", [CHIRON_HORIZON_ROWID_COLUMN], "VIEW")).toBe(false);
+    expect(isTableDataEditable("xugu", [CHIRON_HORIZON_ROWID_COLUMN], "TABLE")).toBe(true);
+    expect(isTableDataEditable("xugu", [CHIRON_HORIZON_ROWID_COLUMN], "VIEW")).toBe(false);
     expect(canInsertTableRows("xugu")).toBe(true);
   });
 
@@ -73,7 +73,7 @@ describe("tableEditing", () => {
   });
 
   it("treats view data tabs as readonly", () => {
-    expect(isTableDataEditable("oracle", [DBX_ROWID_COLUMN], "VIEW")).toBe(false);
+    expect(isTableDataEditable("oracle", [CHIRON_HORIZON_ROWID_COLUMN], "VIEW")).toBe(false);
   });
 
   it("keeps Impala table data readonly", () => {
@@ -83,13 +83,13 @@ describe("tableEditing", () => {
   });
 
   it("does not include Oracle ROWID for view data tabs", () => {
-    expect(usesSyntheticRowIdKey("oracle", [DBX_ROWID_COLUMN])).toBe(true);
-    expect(shouldIncludeSyntheticRowId("oracle", [DBX_ROWID_COLUMN])).toBe(false);
-    expect(shouldIncludeSyntheticRowId("oracle", [DBX_ROWID_COLUMN], "TABLE")).toBe(true);
-    expect(usesSyntheticRowIdKey("oracle", [DBX_ROWID_COLUMN], "VIEW")).toBe(false);
-    expect(usesSyntheticRowIdKey("oracle", [DBX_ROWID_COLUMN], "MATERIALIZED_VIEW")).toBe(false);
-    expect(usesSyntheticRowIdKey("oceanbase-oracle", [DBX_ROWID_COLUMN], "TABLE")).toBe(true);
-    expect(usesSyntheticRowIdKey("oceanbase-oracle", [DBX_ROWID_COLUMN], "VIEW")).toBe(false);
+    expect(usesSyntheticRowIdKey("oracle", [CHIRON_HORIZON_ROWID_COLUMN])).toBe(true);
+    expect(shouldIncludeSyntheticRowId("oracle", [CHIRON_HORIZON_ROWID_COLUMN])).toBe(false);
+    expect(shouldIncludeSyntheticRowId("oracle", [CHIRON_HORIZON_ROWID_COLUMN], "TABLE")).toBe(true);
+    expect(usesSyntheticRowIdKey("oracle", [CHIRON_HORIZON_ROWID_COLUMN], "VIEW")).toBe(false);
+    expect(usesSyntheticRowIdKey("oracle", [CHIRON_HORIZON_ROWID_COLUMN], "MATERIALIZED_VIEW")).toBe(false);
+    expect(usesSyntheticRowIdKey("oceanbase-oracle", [CHIRON_HORIZON_ROWID_COLUMN], "TABLE")).toBe(true);
+    expect(usesSyntheticRowIdKey("oceanbase-oracle", [CHIRON_HORIZON_ROWID_COLUMN], "VIEW")).toBe(false);
   });
 
   it("allows keyless row predicates only for databases that support them", () => {
@@ -111,9 +111,9 @@ describe("tableEditing", () => {
 
     expect(editableRowIdentifierColumns(databaseType, columns, [index(["ORI_OFFER_ID"]), primaryIndex], "TABLE")).toEqual(["OFFER_RELA_ID"]);
     expect(editableRowIdentifierColumns(databaseType, columns, [index(["ORI_OFFER_ID"])], "TABLE")).toEqual(["ORI_OFFER_ID"]);
-    expect(editableRowIdentifierColumns(databaseType, columns, [index(["ORI_OFFER_ID"], false)], "TABLE")).toEqual([DBX_ROWID_COLUMN]);
-    expect(editableRowIdentifierColumns(databaseType, columns, [index(["ORI_OFFER_ID"], true, "ORI_OFFER_ID IS NOT NULL")], "TABLE")).toEqual([DBX_ROWID_COLUMN]);
-    expect(editableRowIdentifierColumns(databaseType, columns, [], "TABLE")).toEqual([DBX_ROWID_COLUMN]);
+    expect(editableRowIdentifierColumns(databaseType, columns, [index(["ORI_OFFER_ID"], false)], "TABLE")).toEqual([CHIRON_HORIZON_ROWID_COLUMN]);
+    expect(editableRowIdentifierColumns(databaseType, columns, [index(["ORI_OFFER_ID"], true, "ORI_OFFER_ID IS NOT NULL")], "TABLE")).toEqual([CHIRON_HORIZON_ROWID_COLUMN]);
+    expect(editableRowIdentifierColumns(databaseType, columns, [], "TABLE")).toEqual([CHIRON_HORIZON_ROWID_COLUMN]);
   });
 
   it("keeps synthetic row identifiers scoped to their existing fallbacks", () => {
@@ -121,7 +121,7 @@ describe("tableEditing", () => {
 
     expect(editableRowIdentifierColumns("oracle", columns, [], "VIEW")).toEqual([]);
     expect(editableRowIdentifierColumns("oracle", columns, [], "MATERIALIZED_VIEW")).toEqual([]);
-    expect(editableRowIdentifierColumns("neo4j", columns, [index(["ID"])], "TABLE")).toEqual([DBX_NEO4J_ELEMENT_ID_COLUMN]);
+    expect(editableRowIdentifierColumns("neo4j", columns, [index(["ID"])], "TABLE")).toEqual([CHIRON_HORIZON_NEO4J_ELEMENT_ID_COLUMN]);
   });
 
   it("allows ClickHouse table editing when row identifiers are available", () => {
@@ -134,7 +134,7 @@ describe("tableEditing", () => {
 
   it("uses tbname only when editing TDengine stable rows", () => {
     const columns = [column("ts", true), column("seq", true), column("voltage")];
-    expect(editablePrimaryKeys("tdengine", columns, "STABLE")).toEqual([DBX_TDENGINE_TBNAME_COLUMN, "ts", "seq"]);
+    expect(editablePrimaryKeys("tdengine", columns, "STABLE")).toEqual([CHIRON_HORIZON_TDENGINE_TBNAME_COLUMN, "ts", "seq"]);
     expect(editablePrimaryKeys("tdengine", columns, "TABLE")).toEqual(["ts", "seq"]);
     expect(canEditExistingTableRows("tdengine", undefined, ["ts", "seq"])).toBe(true);
     expect(canEditExistingTableRows("tdengine", undefined, [])).toBe(false);
@@ -142,7 +142,7 @@ describe("tableEditing", () => {
   });
 
   it("requires every TDengine row identifier in editable results", () => {
-    const stableKeys = [DBX_TDENGINE_TBNAME_COLUMN, "ts", "seq"];
+    const stableKeys = [CHIRON_HORIZON_TDENGINE_TBNAME_COLUMN, "ts", "seq"];
     expect(hasCompleteTdengineRowIdentity("tdengine", stableKeys, ["tbname", "ts", "seq", "voltage"])).toBe(true);
     expect(hasCompleteTdengineRowIdentity("tdengine", stableKeys, ["tbname", "ts", "voltage"])).toBe(false);
     expect(hasCompleteTdengineRowIdentity("tdengine", ["ts", "seq"], ["ts", "seq", "voltage"])).toBe(true);
@@ -151,9 +151,9 @@ describe("tableEditing", () => {
 
   it("disables existing-row deletion for TDengine composite keys", () => {
     expect(canDeleteExistingTdengineRows("tdengine", ["ts"])).toBe(true);
-    expect(canDeleteExistingTdengineRows("tdengine", [DBX_TDENGINE_TBNAME_COLUMN, "ts"])).toBe(true);
+    expect(canDeleteExistingTdengineRows("tdengine", [CHIRON_HORIZON_TDENGINE_TBNAME_COLUMN, "ts"])).toBe(true);
     expect(canDeleteExistingTdengineRows("tdengine", ["ts", "seq"])).toBe(false);
-    expect(canDeleteExistingTdengineRows("tdengine", [DBX_TDENGINE_TBNAME_COLUMN, "ts", "seq"])).toBe(false);
+    expect(canDeleteExistingTdengineRows("tdengine", [CHIRON_HORIZON_TDENGINE_TBNAME_COLUMN, "ts", "seq"])).toBe(false);
     expect(canDeleteExistingTdengineRows("postgres", ["id", "tenant_id"])).toBe(true);
   });
 

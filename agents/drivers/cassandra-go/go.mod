@@ -1,4 +1,4 @@
-module github.com/t8y2/dbx/agents/drivers/cassandra-go
+module github.com/Gaussian-id/Gauss-Horizon/agents/drivers/cassandra-go
 
 go 1.22
 

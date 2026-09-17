@@ -80,7 +80,7 @@ describe("custom basemap configuration", () => {
 
   it("restores legacy session data with a fallback name", () => {
     const target = storage();
-    target.setItem("dbx-layer-preview-custom-basemap", JSON.stringify({ url: "https://tiles.example/{z}/{x}/{y}.png", overlayUrl: "", attribution: "Tiles", maxZoom: 18 }));
+    target.setItem("chiron-horizon-layer-preview-custom-basemap", JSON.stringify({ url: "https://tiles.example/{z}/{x}/{y}.png", overlayUrl: "", attribution: "Tiles", maxZoom: 18 }));
     expect(loadCustomBasemapConfig(target)?.name).toBe("Custom basemap");
   });
 });

@@ -39,7 +39,7 @@ pub(crate) fn format_support_info_for_clipboard() -> String {
     let operating_system = format_operating_system(&info);
 
     [
-        format!("DBX Version: {}", normalize_app_version(&info.app_version)),
+        format!("Chiron Horizon Version: {}", normalize_app_version(&info.app_version)),
         "Runtime: Desktop".to_string(),
         format!("Operating System: {}", unknown_if_empty(&operating_system)),
         format!("Architecture: {}", unknown_if_empty(&info.arch)),
@@ -142,7 +142,7 @@ fn platform_product_version() -> Option<String> {
 
 #[cfg(any(target_os = "macos", target_os = "windows"))]
 fn command_first_line(command: &str, args: &[&str]) -> Option<String> {
-    let mut process = dbx_core::process::new_std_command(command);
+    let mut process = chiron_horizon_core::process::new_std_command(command);
     process.args(args);
     let output = process.output().ok()?;
     if !output.status.success() {
@@ -212,14 +212,14 @@ mod tests {
     fn formats_native_about_support_info_compactly() {
         let text = format_support_info_for_native_about();
         assert!(text.contains("Desktop"));
-        assert!(!text.contains("DBX Version:"));
+        assert!(!text.contains("Chiron Horizon Version:"));
         assert!(!text.contains('\n'));
     }
 
     #[test]
     fn formats_clipboard_support_info_with_labels() {
         let text = format_support_info_for_clipboard();
-        assert!(text.contains("DBX Version:"));
+        assert!(text.contains("Chiron Horizon Version:"));
         assert!(text.contains("Runtime:"));
         assert!(text.contains("Operating System:"));
         assert!(text.contains("Architecture:"));

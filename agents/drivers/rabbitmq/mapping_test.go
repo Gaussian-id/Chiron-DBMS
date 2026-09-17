@@ -49,7 +49,7 @@ func TestExchangeAndBindingMappings(t *testing.T) {
 
 func TestConnectionAndChannelMappings(t *testing.T) {
 	connection := clientConnectionInfoFromJSON(mustObject(t, `{
-      "name":"127.0.0.1:1 -> 127.0.0.1:5672","user":"dbx","peer_host":"127.0.0.1","peer_port":1234,
+      "name":"127.0.0.1:1 -> 127.0.0.1:5672","user":"chiron-horizon","peer_host":"127.0.0.1","peer_port":1234,
       "state":"running","channels":2,"recv_oct_details":{"rate":12.5},"send_oct_details":{"rate":8.25},"connected_at":1700000000000
     }`))
 	if connection["recvRate"] != 12.5 || connection["sendRate"] != 8.25 || connection["connectedAt"] != int64(1700000000000) {
@@ -81,7 +81,7 @@ func TestUserPermissionPolicyMappings(t *testing.T) {
 	if user["name"] != "admin" || len(user["tags"].([]string)) != 2 {
 		t.Fatalf("unexpected user %#v", user)
 	}
-	permission := permissionInfoFromJSON(mustObject(t, `{"user":"dbx","vhost":"/","configure":".*","write":"^orders","read":".*"}`))
+	permission := permissionInfoFromJSON(mustObject(t, `{"user":"chiron-horizon","vhost":"/","configure":".*","write":"^orders","read":".*"}`))
 	if permission["write"] != "^orders" || permission["vhost"] != "/" {
 		t.Fatalf("unexpected permission %#v", permission)
 	}

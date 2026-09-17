@@ -31,7 +31,7 @@ func generateCertificate(t *testing.T, dir string, ca *x509.Certificate, caKey *
 	}
 	template := &x509.Certificate{
 		SerialNumber:          big.NewInt(time.Now().UnixNano()),
-		Subject:               pkix.Name{CommonName: "dbx-test"},
+		Subject:               pkix.Name{CommonName: "chiron-horizon-test"},
 		NotBefore:             time.Now().Add(-time.Hour),
 		NotAfter:              time.Now().Add(time.Hour),
 		KeyUsage:              x509.KeyUsageDigitalSignature | x509.KeyUsageCertSign,

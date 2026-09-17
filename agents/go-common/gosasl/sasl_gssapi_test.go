@@ -100,7 +100,7 @@ func installFakeGSSAPIBackendWithOptions(t *testing.T, factory func(GSSAPIOption
 
 func newNegotiatedGSSAPIClient(t *testing.T, qop string, serverQOP byte, backend *fakeGSSAPIBackend) (*Client, *GSSAPIMechanism) {
 	t.Helper()
-	t.Setenv("DBX_KRB5_QOP", qop)
+	t.Setenv("CHIRON_HORIZON_KRB5_QOP", qop)
 	installFakeGSSAPIBackend(t, backend)
 	backend.establishAfter = 1
 	backend.integrity = true
@@ -120,8 +120,8 @@ func newNegotiatedGSSAPIClient(t *testing.T, qop string, serverQOP byte, backend
 }
 
 func TestGSSAPIMechanismNegotiatesMultipleContextTokens(t *testing.T) {
-	t.Setenv("DBX_KRB5_QOP", "auth-int")
-	t.Setenv("DBX_KRB5_AUTHORIZATION_ID", "proxy-user")
+	t.Setenv("CHIRON_HORIZON_KRB5_QOP", "auth-int")
+	t.Setenv("CHIRON_HORIZON_KRB5_AUTHORIZATION_ID", "proxy-user")
 	backend := &fakeGSSAPIBackend{
 		establishAfter:         2,
 		integrity:              true,
@@ -237,7 +237,7 @@ func TestGSSAPIMechanismPrefersStrongestAvailableQOP(t *testing.T) {
 }
 
 func TestGSSAPIMechanismRejectsUnavailableRequestedQOP(t *testing.T) {
-	t.Setenv("DBX_KRB5_QOP", AUTH_CONF)
+	t.Setenv("CHIRON_HORIZON_KRB5_QOP", AUTH_CONF)
 	backend := &fakeGSSAPIBackend{
 		establishAfter:         1,
 		integrity:              true,
@@ -272,7 +272,7 @@ func TestGSSAPIMechanismRejectsInvalidSecurityLayer(t *testing.T) {
 	}
 	for _, testCase := range testCases {
 		t.Run(testCase.name, func(t *testing.T) {
-			t.Setenv("DBX_KRB5_QOP", AUTH)
+			t.Setenv("CHIRON_HORIZON_KRB5_QOP", AUTH)
 			backend := &fakeGSSAPIBackend{
 				establishAfter:         1,
 				integrity:              testCase.integrity,
@@ -295,7 +295,7 @@ func TestGSSAPIMechanismRejectsInvalidSecurityLayer(t *testing.T) {
 }
 
 func TestGSSAPIMechanismConfigurationAndDisposal(t *testing.T) {
-	t.Setenv("DBX_KRB5_QOP", "invalid")
+	t.Setenv("CHIRON_HORIZON_KRB5_QOP", "invalid")
 	backend := &fakeGSSAPIBackend{}
 	installFakeGSSAPIBackend(t, backend)
 	if _, err := NewGSSAPIMechanism("hive"); err == nil {
@@ -305,7 +305,7 @@ func TestGSSAPIMechanismConfigurationAndDisposal(t *testing.T) {
 		t.Fatal("backend should be disposed after constructor failure")
 	}
 
-	t.Setenv("DBX_KRB5_QOP", AUTH)
+	t.Setenv("CHIRON_HORIZON_KRB5_QOP", AUTH)
 	backend = &fakeGSSAPIBackend{establishAfter: 1, integrity: true, securityLayerChallenge: []byte{1, 0, 0, 0}}
 	gssapiBackendFactory = func() (gssapiBackend, error) { return backend, nil }
 	mechanism, err := NewGSSAPIMechanism("hive")
@@ -331,9 +331,9 @@ func TestGSSAPIMechanismBackendFactoryError(t *testing.T) {
 }
 
 func TestGSSAPIMechanismWithOptionsUsesConnectionScopedSettings(t *testing.T) {
-	t.Setenv("DBX_KRB5_PRINCIPAL", "environment@EXAMPLE.COM")
-	t.Setenv("DBX_KRB5_QOP", AUTH)
-	t.Setenv("DBX_KRB5_AUTHORIZATION_ID", "environment-user")
+	t.Setenv("CHIRON_HORIZON_KRB5_PRINCIPAL", "environment@EXAMPLE.COM")
+	t.Setenv("CHIRON_HORIZON_KRB5_QOP", AUTH)
+	t.Setenv("CHIRON_HORIZON_KRB5_AUTHORIZATION_ID", "environment-user")
 	t.Setenv("SERVICE_HOST_QUALIFIED", "environment.example.com")
 
 	wantOptions := GSSAPIOptions{
@@ -395,7 +395,7 @@ func TestGSSAPIMechanismWithOptionsUsesConnectionScopedSettings(t *testing.T) {
 }
 
 func TestGSSAPIContextClientsKeepOptionsIsolated(t *testing.T) {
-	t.Setenv("DBX_KRB5_PRINCIPAL", "environment@EXAMPLE.COM")
+	t.Setenv("CHIRON_HORIZON_KRB5_PRINCIPAL", "environment@EXAMPLE.COM")
 	t.Setenv("SERVICE_HOST_QUALIFIED", "environment.example.com")
 
 	backends := []*fakeGSSAPIBackend{
@@ -504,9 +504,9 @@ func TestQualifiedServiceNameCanonicalizesHost(t *testing.T) {
 		return "hs2.example.com.", nil
 	}
 	t.Cleanup(func() { lookupCanonicalHostname = previousLookup })
-	t.Setenv("DBX_KRB5_CANONICALIZE_HOST", "true")
+	t.Setenv("CHIRON_HORIZON_KRB5_CANONICALIZE_HOST", "true")
 	t.Setenv("SERVICE_HOST_QUALIFIED", "")
-	t.Setenv("DBX_KRB5_SERVER_NAME", "")
+	t.Setenv("CHIRON_HORIZON_KRB5_SERVER_NAME", "")
 
 	if value := qualifiedServiceName("hive/_HOST@EXAMPLE.COM", "alias.example.com"); value != "hive/hs2.example.com@EXAMPLE.COM" {
 		t.Fatalf("unexpected canonical service name: %s", value)
@@ -514,9 +514,9 @@ func TestQualifiedServiceNameCanonicalizesHost(t *testing.T) {
 }
 
 func TestQualifiedServiceNameHonorsExplicitHost(t *testing.T) {
-	t.Setenv("DBX_KRB5_CANONICALIZE_HOST", "true")
+	t.Setenv("CHIRON_HORIZON_KRB5_CANONICALIZE_HOST", "true")
 	t.Setenv("SERVICE_HOST_QUALIFIED", "explicit.example.com")
-	t.Setenv("DBX_KRB5_SERVER_NAME", "")
+	t.Setenv("CHIRON_HORIZON_KRB5_SERVER_NAME", "")
 	if value := qualifiedServiceName("hive", "alias.example.com"); value != "hive/explicit.example.com" {
 		t.Fatalf("unexpected explicit service name: %s", value)
 	}

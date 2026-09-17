@@ -420,7 +420,7 @@ describe("QueryEditor completion Tab keymap", () => {
     expect(view.dispatch).not.toHaveBeenCalled();
   });
 
-  it("does not accept an open completion popup on Tab when the configured accept-completion shortcut is Enter (dbx#6236)", () => {
+  it("does not accept an open completion popup on Tab when the configured accept-completion shortcut is Enter (chiron-horizon#6236)", () => {
     const acceptCompletion = vi.fn(() => true);
     const nextSnippetField = vi.fn(() => true);
     const harness = createHarness({ completionStatus: () => "active", acceptCompletion, nextSnippetField, acceptCompletionShortcut: "Enter" });

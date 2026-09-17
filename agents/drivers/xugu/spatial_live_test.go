@@ -27,7 +27,7 @@ func TestLiveXuguSpatialQueryRegression(t *testing.T) {
 	s.currentDatabase = params.Database
 	defer s.disconnect()
 
-	const table = "DBX_SPATIAL_VALUE_LIVE_T"
+	const table = "CHIRON_HORIZON_SPATIAL_VALUE_LIVE_T"
 	_ = s.execWithReconnect("DROP TABLE IF EXISTS " + table)
 	defer func() { _ = s.execWithReconnect("DROP TABLE IF EXISTS " + table) }()
 
@@ -141,7 +141,7 @@ func TestLiveXuguSpatialReplay(t *testing.T) {
 	s.currentDatabase = params.Database
 	defer s.disconnect()
 
-	const table = "DBX_SPATIAL_REPLAY_LIVE_T"
+	const table = "CHIRON_HORIZON_SPATIAL_REPLAY_LIVE_T"
 	_ = s.execWithReconnect("DROP TABLE IF EXISTS " + table)
 	defer func() { _ = s.execWithReconnect("DROP TABLE IF EXISTS " + table) }()
 	for _, statement := range []string{

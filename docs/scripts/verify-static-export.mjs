@@ -86,13 +86,13 @@ for (const file of localizedHtmlFiles) {
 console.log(`Static export semantics verified for ${localizedHtmlFiles.length} localized pages.`);
 
 const sitemap = await readFile(join(outputDirectory, "sitemap.xml"), "utf8");
-for (const localizedHome of LANGUAGES.map((language) => `https://dbxio.com/${language}`)) {
+for (const localizedHome of LANGUAGES.map((language) => `https://distribution-disabled.invalid/${language}`)) {
   if (!sitemap.includes(`<loc>${localizedHome}</loc>`)) {
     throw new Error(`sitemap.xml is missing localized URL: ${localizedHome}`);
   }
 }
 
-for (const privateRoute of LANGUAGES.map((language) => `https://dbxio.com/${language}/issue`)) {
+for (const privateRoute of LANGUAGES.map((language) => `https://distribution-disabled.invalid/${language}/issue`)) {
   if (sitemap.includes(`<loc>${privateRoute}</loc>`)) {
     throw new Error(`sitemap.xml must not advertise direct-only route: ${privateRoute}`);
   }

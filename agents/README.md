@@ -1,18 +1,16 @@
-# DBX Agents
+# Chiron Horizon Agents
 
-English | [简体中文](README.zh-CN.md)
+Agent drivers for [Chiron Horizon](https://github.com/Gaussian-id/Gauss-Horizon) — database support via JDBC and native database drivers.
 
-Agent drivers for [DBX](https://github.com/t8y2/dbx) — database support via JDBC and native database drivers.
-
-Each agent runs as a standalone process and communicates with DBX via stdin/stdout JSON-RPC 2.0.
+Each agent runs as a standalone process and communicates with Chiron Horizon via stdin/stdout JSON-RPC 2.0.
 
 ## Supported Databases
 
 | Agent | Database | Driver |
 |-------|----------|-------------|
 | access | Microsoft Access | UCanAccess |
-| dameng | 达梦 DM8 | DM JDBC |
-| kingbase | 金仓KingbaseES | gokb Go native agent |
+| dameng | Dameng DM8 | DM JDBC |
+| kingbase | KingbaseES | gokb Go native agent |
 | vastbase | Vastbase | openGauss Go native agent |
 | uxdb | UXDB | UXDB JDBC |
 | goldendb | GoldenDB | MySQL Connector/J |
@@ -42,8 +40,8 @@ Each agent runs as a standalone process and communicates with DBX via stdin/stdo
 | ignite3 | Apache Ignite 3 | Ignite 3 JDBC thin (ignite-jdbc) |
 | sundb | SunDB | SunDB JDBC |
 | tdengine | TDengine 2.4+ | taos-connector-rust native WebSocket agent |
-| yashandb | 崖山 YashanDB | YashanDB JDBC |
-| xugu | 虚谷 XuguDB | XuguDB Go native agent |
+| yashandb | YashanDB | YashanDB JDBC |
+| xugu | XuguDB | XuguDB Go native agent |
 | iotdb | Apache IoTDB | Apache IoTDB Go Client native agent |
 | etcd | etcd 3.3 degraded, 3.4+ full (v3 API) | etcd client/v3 native Go agent |
 | etcd2 | etcd 2.0–2.3, 3.0–3.5 with --enable-v2 (v2 API) | etcd v2 HTTP/JSON native Go agent |
@@ -56,7 +54,7 @@ Each agent runs as a standalone process and communicates with DBX via stdin/stdo
 
 ## Multi-JRE Support
 
-Most Java agents target JRE 21. Native agents, such as `cassandra`, `duckdb`, `hive`, `iotdb`, `oracle`, `kingbase`, `tdengine`, `xugu`, `rabbitmq`, `rocketmq`, `zookeeper`, `etcd`, and `etcd2`, do not require a JRE. DBX downloads and manages the JRE 21 installation automatically for Java agents.
+Most Java agents target JRE 21. Native agents, such as `cassandra`, `duckdb`, `hive`, `iotdb`, `oracle`, `kingbase`, `tdengine`, `xugu`, `rabbitmq`, `rocketmq`, `zookeeper`, `etcd`, and `etcd2`, do not require a JRE. Chiron Horizon downloads and manages the JRE 21 installation automatically for Java agents.
 
 ## JDBC Connection Pooling
 
@@ -66,17 +64,17 @@ The default maximum is 8 physical connections per immutable connection identity,
 
 | System property | Environment variable | Default |
 |---|---|---:|
-| `dbx.agent.jdbc.pool.enabled` | `DBX_AGENT_JDBC_POOL_ENABLED` | `true` |
-| `dbx.agent.jdbc.pool.maximumPoolSize` | `DBX_AGENT_JDBC_POOL_MAXIMUM_POOL_SIZE` | `8` |
-| `dbx.agent.jdbc.pool.minimumIdle` | `DBX_AGENT_JDBC_POOL_MINIMUM_IDLE` | `0` |
-| `dbx.agent.jdbc.pool.connectionTimeoutMillis` | `DBX_AGENT_JDBC_POOL_CONNECTION_TIMEOUT_MILLIS` | `30000` |
-| `dbx.agent.jdbc.pool.validationTimeoutMillis` | `DBX_AGENT_JDBC_POOL_VALIDATION_TIMEOUT_MILLIS` | `5000` |
-| `dbx.agent.jdbc.pool.idleTimeoutMillis` | `DBX_AGENT_JDBC_POOL_IDLE_TIMEOUT_MILLIS` | `120000` |
-| `dbx.agent.jdbc.pool.maxLifetimeMillis` | `DBX_AGENT_JDBC_POOL_MAX_LIFETIME_MILLIS` | `1800000` |
-| `dbx.agent.jdbc.pool.retireMillis` | `DBX_AGENT_JDBC_POOL_RETIRE_MILLIS` | `300000` |
+| `chiron.horizon.agent.jdbc.pool.enabled` | `CHIRON_HORIZON_AGENT_JDBC_POOL_ENABLED` | `true` |
+| `chiron.horizon.agent.jdbc.pool.maximumPoolSize` | `CHIRON_HORIZON_AGENT_JDBC_POOL_MAXIMUM_POOL_SIZE` | `8` |
+| `chiron.horizon.agent.jdbc.pool.minimumIdle` | `CHIRON_HORIZON_AGENT_JDBC_POOL_MINIMUM_IDLE` | `0` |
+| `chiron.horizon.agent.jdbc.pool.connectionTimeoutMillis` | `CHIRON_HORIZON_AGENT_JDBC_POOL_CONNECTION_TIMEOUT_MILLIS` | `30000` |
+| `chiron.horizon.agent.jdbc.pool.validationTimeoutMillis` | `CHIRON_HORIZON_AGENT_JDBC_POOL_VALIDATION_TIMEOUT_MILLIS` | `5000` |
+| `chiron.horizon.agent.jdbc.pool.idleTimeoutMillis` | `CHIRON_HORIZON_AGENT_JDBC_POOL_IDLE_TIMEOUT_MILLIS` | `120000` |
+| `chiron.horizon.agent.jdbc.pool.maxLifetimeMillis` | `CHIRON_HORIZON_AGENT_JDBC_POOL_MAX_LIFETIME_MILLIS` | `1800000` |
+| `chiron.horizon.agent.jdbc.pool.retireMillis` | `CHIRON_HORIZON_AGENT_JDBC_POOL_RETIRE_MILLIS` | `300000` |
 
 HikariCP is shaded into each pooled Agent JAR. Existing installations already using the managed JRE 21 do not need to reinstall or replace the JRE.
-Set `DBX_AGENT_JDBC_POOL_ENABLED=false` for a runtime-level compatibility fallback to the previous one-connection-per-logical-session behavior.
+Set `CHIRON_HORIZON_AGENT_JDBC_POOL_ENABLED=false` for a runtime-level compatibility fallback to the previous one-connection-per-logical-session behavior.
 
 ## Choosing a Driver Language
 
@@ -108,19 +106,19 @@ Requires JDK 21 (Gradle toolchain auto-downloads if needed).
 
 Output JARs are in `drivers/{module}/build/libs/`. Native agents build from `drivers/cassandra-go`, `drivers/duckdb`, `drivers/hive-go`, `drivers/iotdb`, `drivers/oracle-go`, `drivers/kingbase-go`, `drivers/vastbase-go`, `drivers/tdengine`, `drivers/xugu`, `drivers/rabbitmq`, `drivers/rocketmq`, `drivers/zookeeper`, `drivers/etcd-go`, and `drivers/etcd2-go`.
 
-### Local DBX Runtime Test
+### Local Chiron Horizon Runtime Test
 
-When changing a Java agent under `agents/drivers/<db_type>/` or shared Java agent protocol code, rebuild the target agent and replace the runtime JAR used by the local DBX app:
+When changing a Java agent under `agents/drivers/<db_type>/` or shared Java agent protocol code, rebuild the target agent and replace the runtime JAR used by the local Chiron Horizon app:
 
 ```bash
 ./gradlew :<db_type>:shadowJar
-cp ~/.dbx/agents/drivers/<db_type>/agent.jar ~/.dbx/agents/drivers/<db_type>/agent.jar.bak
-cp agents/drivers/<db_type>/build/libs/*-all.jar ~/.dbx/agents/drivers/<db_type>/agent.jar
+cp ~/.chiron-horizon/agents/drivers/<db_type>/agent.jar ~/.chiron-horizon/agents/drivers/<db_type>/agent.jar.bak
+cp agents/drivers/<db_type>/build/libs/*-all.jar ~/.chiron-horizon/agents/drivers/<db_type>/agent.jar
 ```
 
-Restart DBX or disconnect and reconnect the database so the new agent process loads the replacement JAR.
+Restart Chiron Horizon or disconnect and reconnect the database so the new agent process loads the replacement JAR.
 
-Native agents such as `cassandra`, `hive`, `iotdb`, `oracle`, `kingbase`, `tdengine`, `xugu`, `rabbitmq`, `rocketmq`, `zookeeper`, `etcd`, and `etcd2` use an `agent` executable instead of `agent.jar`. TDengine builds `target/release/dbx-tdengine-driver` from `drivers/tdengine/Cargo.toml`.
+Native agents such as `cassandra`, `hive`, `iotdb`, `oracle`, `kingbase`, `tdengine`, `xugu`, `rabbitmq`, `rocketmq`, `zookeeper`, `etcd`, and `etcd2` use an `agent` executable instead of `agent.jar`. TDengine builds `target/release/chiron-horizon-tdengine-driver` from `drivers/tdengine/Cargo.toml`.
 
 ## Versioning
 
@@ -138,10 +136,10 @@ Agent module versions are tracked in [`versions.json`](versions.json).
 ## Architecture
 
 ```
-DBX Main Process (Rust/Tauri)
+Chiron Horizon Main Process (Rust/Tauri)
     │ stdin/stdout (JSON-RPC 2.0)
     ▼
-agent / java -jar dbx-agent-{type}.jar
+agent / java -jar chiron-horizon-agent-{type}.jar
     │
     ▼
 Native driver / JDBC → Database
@@ -149,4 +147,4 @@ Native driver / JDBC → Database
 
 ## License
 
-[AGPL-3.0](https://github.com/t8y2/dbx/blob/main/LICENSE)
+[AGPL-3.0](https://github.com/Gaussian-id/Gauss-Horizon/blob/main/LICENSE)

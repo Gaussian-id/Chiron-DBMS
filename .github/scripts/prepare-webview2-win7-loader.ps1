@@ -18,7 +18,7 @@ $webView2ComSysVersion = "0.38.2"
 $upstreamLoaderSha256 = "0659b741bde6348d4c4a6ec4ceb9af50e3d0048ed9cd3c8659bccbb61fde55ee"
 
 $repositoryRoot = (Resolve-Path (Join-Path $PSScriptRoot "../..")).Path
-$temporaryRoot = Join-Path ([System.IO.Path]::GetTempPath()) "dbx-win7-webview2-loader-$([Guid]::NewGuid())"
+$temporaryRoot = Join-Path ([System.IO.Path]::GetTempPath()) "chiron-horizon-win7-webview2-loader-$([Guid]::NewGuid())"
 $packagePath = Join-Path $temporaryRoot "Microsoft.Web.WebView2.$sdkVersion.nupkg"
 $extractedPath = Join-Path $temporaryRoot "extracted"
 
@@ -102,7 +102,7 @@ try {
     throw "Windows 7 WebView2 loader replacement failed: $installedLoaderSha256"
   }
 
-  $probeDirectory = Join-Path ([System.IO.Path]::GetTempPath()) "dbx-win7-webview2-loader-probe"
+  $probeDirectory = Join-Path ([System.IO.Path]::GetTempPath()) "chiron-horizon-win7-webview2-loader-probe"
   New-Item -ItemType Directory -Path $probeDirectory -Force | Out-Null
   $probeLoader = Join-Path $probeDirectory "WebView2Loader.dll"
   Copy-Item -LiteralPath $legacyLoaderDll -Destination $probeLoader -Force

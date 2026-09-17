@@ -151,7 +151,7 @@ async function runQuery() {
         const result = await mqQueryMessagesByKey(props.connectionId, topic, queryKey.value.trim(), begin, end, 64);
         queryMessages.value = parseRocketMqMessagesFromResult(result);
       } else {
-        const group = consumerGroup.value.trim() || "__dbx_rocketmq_dlq__";
+        const group = consumerGroup.value.trim() || "__chiron_horizon_rocketmq_dlq__";
         const peeked = await mqPeekMessages(props.connectionId, topic, group, 64);
         const messages = Array.isArray(peeked) ? peeked : peeked.messages;
         queryMessages.value = messages.map((msg) => rocketMqDisplayFromPeeked(msg, topic.topic));
@@ -616,7 +616,7 @@ watch(topicName, () => {
   width: 100%;
   padding: 7px 10px;
   border: 1px solid var(--color-border);
-  border-radius: var(--dbx-radius-fixed-6);
+  border-radius: var(--chiron-horizon-radius-fixed-6);
   background: var(--color-background);
   color: var(--color-text);
   font-size: 13px;
@@ -644,7 +644,7 @@ watch(topicName, () => {
 
 .panel-error {
   padding: 10px 14px;
-  border-radius: var(--dbx-radius-fixed-6);
+  border-radius: var(--chiron-horizon-radius-fixed-6);
   background: var(--color-error-bg);
   color: var(--color-error);
   font-size: 13px;
@@ -657,7 +657,7 @@ watch(topicName, () => {
 
 .results-table-wrap {
   border: 1px solid var(--color-border);
-  border-radius: var(--dbx-radius-fixed-6);
+  border-radius: var(--chiron-horizon-radius-fixed-6);
   overflow: auto;
 }
 
@@ -710,7 +710,7 @@ watch(topicName, () => {
   width: min(720px, calc(100vw - 32px));
   max-height: calc(100vh - 64px);
   overflow: auto;
-  border-radius: var(--dbx-radius-fixed-6);
+  border-radius: var(--chiron-horizon-radius-fixed-6);
   background: var(--color-background);
   box-shadow: 0 16px 48px rgba(0, 0, 0, 0.18);
   display: flex;
@@ -780,7 +780,7 @@ watch(topicName, () => {
 
 .panel-success {
   padding: 10px 14px;
-  border-radius: var(--dbx-radius-fixed-6);
+  border-radius: var(--chiron-horizon-radius-fixed-6);
   background: color-mix(in srgb, var(--color-primary) 12%, transparent);
   color: var(--color-primary);
   font-size: 13px;
@@ -792,7 +792,7 @@ watch(topicName, () => {
   max-height: 360px;
   overflow: auto;
   border: 1px solid var(--color-border);
-  border-radius: var(--dbx-radius-fixed-6);
+  border-radius: var(--chiron-horizon-radius-fixed-6);
   background: var(--color-background-secondary);
   color: var(--color-text);
   font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;

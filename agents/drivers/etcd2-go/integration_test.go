@@ -10,16 +10,16 @@ import (
 )
 
 // TestLiveEtcd2Agent exercises the v2 agent surface against a real etcd 2.x
-// server. Enable with DBX_ETCD2_LIVE=1; configure via DBX_ETCD2_ENDPOINTS,
-// DBX_ETCD2_USER, and DBX_ETCD2_PASSWORD (defaults match the server
+// server. Enable with CHIRON_HORIZON_ETCD2_LIVE=1; configure via CHIRON_HORIZON_ETCD2_ENDPOINTS,
+// CHIRON_HORIZON_ETCD2_USER, and CHIRON_HORIZON_ETCD2_PASSWORD (defaults match the server
 // deployment: root/123456).
 func TestLiveEtcd2Agent(t *testing.T) {
-	if os.Getenv("DBX_ETCD2_LIVE") != "1" {
-		t.Skip("set DBX_ETCD2_LIVE=1 to run the live etcd v2 agent test")
+	if os.Getenv("CHIRON_HORIZON_ETCD2_LIVE") != "1" {
+		t.Skip("set CHIRON_HORIZON_ETCD2_LIVE=1 to run the live etcd v2 agent test")
 	}
-	endpoints := envOrDefault("DBX_ETCD2_ENDPOINTS", "http://172.26.129.83:20041")
-	user := envOrDefault("DBX_ETCD2_USER", "root")
-	password := envOrDefault("DBX_ETCD2_PASSWORD", "123456")
+	endpoints := envOrDefault("CHIRON_HORIZON_ETCD2_ENDPOINTS", "http://172.26.129.83:20041")
+	user := envOrDefault("CHIRON_HORIZON_ETCD2_USER", "root")
+	password := envOrDefault("CHIRON_HORIZON_ETCD2_PASSWORD", "123456")
 
 	state := newEtcd2Session()
 	connectParams := map[string]json.RawMessage{
@@ -38,7 +38,7 @@ func TestLiveEtcd2Agent(t *testing.T) {
 		t.Fatalf("unexpected probe result: %#v", probe)
 	}
 
-	prefix := fmt.Sprintf("/dbx/live/%d/", time.Now().UnixNano())
+	prefix := fmt.Sprintf("/chiron-horizon/live/%d/", time.Now().UnixNano())
 
 	// --- KV basics -----------------------------------------------------
 	if _, err := state.put(paramsWith(map[string]json.RawMessage{
@@ -238,28 +238,28 @@ func TestLiveEtcd2Agent(t *testing.T) {
 	}
 
 	// --- auth ----------------------------------------------------------
-	userName := fmt.Sprintf("dbxlive%d", time.Now().UnixNano()%100000)
+	userName := fmt.Sprintf("chiron-horizonlive%d", time.Now().UnixNano()%100000)
 	// Idempotent pre-cleanup: an interrupted earlier run may have left the
 	// fixed-named role behind.
-	_, _ = state.authRoleDelete(paramsWith(map[string]json.RawMessage{"role": jsonString("dbx_live_role")}))
+	_, _ = state.authRoleDelete(paramsWith(map[string]json.RawMessage{"role": jsonString("chiron_horizon_live_role")}))
 	if _, err := state.authUserAdd(paramsWith(map[string]json.RawMessage{
 		"user":     jsonString(userName),
 		"password": jsonString("secret123"),
 	})); err != nil {
 		t.Fatalf("user add failed: %v", err)
 	}
-	if _, err := state.authRoleAdd(paramsWith(map[string]json.RawMessage{"role": jsonString("dbx_live_role")})); err != nil {
+	if _, err := state.authRoleAdd(paramsWith(map[string]json.RawMessage{"role": jsonString("chiron_horizon_live_role")})); err != nil {
 		t.Fatalf("role add failed: %v", err)
 	}
 	if _, err := state.authRolePermission(paramsWith(map[string]json.RawMessage{
-		"role":     jsonString("dbx_live_role"),
+		"role":     jsonString("chiron_horizon_live_role"),
 		"resource": jsonString("prefix"),
 		"key":      jsonString(prefix),
 		"access":   jsonString("READWRITE"),
 	}), true); err != nil {
 		t.Fatalf("role grant permission failed: %v", err)
 	}
-	roleDetail, err := state.authRoleGet(paramsWith(map[string]json.RawMessage{"role": jsonString("dbx_live_role")}))
+	roleDetail, err := state.authRoleGet(paramsWith(map[string]json.RawMessage{"role": jsonString("chiron_horizon_live_role")}))
 	if err != nil {
 		t.Fatalf("role get failed: %v", err)
 	}
@@ -269,7 +269,7 @@ func TestLiveEtcd2Agent(t *testing.T) {
 	}
 	if _, err := state.authUserGrantRevokeRole(paramsWith(map[string]json.RawMessage{
 		"user": jsonString(userName),
-		"role": jsonString("dbx_live_role"),
+		"role": jsonString("chiron_horizon_live_role"),
 	}), true); err != nil {
 		t.Fatalf("grant role failed: %v", err)
 	}
@@ -288,17 +288,17 @@ func TestLiveEtcd2Agent(t *testing.T) {
 		t.Fatalf("user list missing created user: %#v", users)
 	}
 	roles, err := state.authRoleList(paramsWith(map[string]json.RawMessage{}))
-	if err != nil || !containsAny(roles.(map[string]any)["roles"].([]string), "dbx_live_role") {
+	if err != nil || !containsAny(roles.(map[string]any)["roles"].([]string), "chiron_horizon_live_role") {
 		t.Fatalf("role list missing role: %#v %v", roles, err)
 	}
 	if _, err := state.authRolePermission(paramsWith(map[string]json.RawMessage{
-		"role":     jsonString("dbx_live_role"),
+		"role":     jsonString("chiron_horizon_live_role"),
 		"resource": jsonString("prefix"),
 		"key":      jsonString(prefix),
 	}), false); err != nil {
 		t.Fatalf("role revoke permission failed: %v", err)
 	}
-	afterRevoke, err := state.authRoleGet(paramsWith(map[string]json.RawMessage{"role": jsonString("dbx_live_role")}))
+	afterRevoke, err := state.authRoleGet(paramsWith(map[string]json.RawMessage{"role": jsonString("chiron_horizon_live_role")}))
 	if err != nil {
 		t.Fatalf("role get after revoke failed: %v", err)
 	}
@@ -307,7 +307,7 @@ func TestLiveEtcd2Agent(t *testing.T) {
 	}
 	if _, err := state.authUserGrantRevokeRole(paramsWith(map[string]json.RawMessage{
 		"user": jsonString(userName),
-		"role": jsonString("dbx_live_role"),
+		"role": jsonString("chiron_horizon_live_role"),
 	}), false); err != nil {
 		t.Fatalf("revoke role failed: %v", err)
 	}
@@ -320,7 +320,7 @@ func TestLiveEtcd2Agent(t *testing.T) {
 	if _, err := state.authUserDelete(paramsWith(map[string]json.RawMessage{"user": jsonString(userName)})); err != nil {
 		t.Fatalf("user delete failed: %v", err)
 	}
-	if _, err := state.authRoleDelete(paramsWith(map[string]json.RawMessage{"role": jsonString("dbx_live_role")})); err != nil {
+	if _, err := state.authRoleDelete(paramsWith(map[string]json.RawMessage{"role": jsonString("chiron_horizon_live_role")})); err != nil {
 		t.Fatalf("role delete failed: %v", err)
 	}
 
@@ -347,12 +347,12 @@ func TestLiveEtcd2Agent(t *testing.T) {
 }
 
 func TestLiveEtcd2ProtocolFlow(t *testing.T) {
-	if os.Getenv("DBX_ETCD2_LIVE") != "1" {
-		t.Skip("set DBX_ETCD2_LIVE=1 to run the live etcd v2 agent test")
+	if os.Getenv("CHIRON_HORIZON_ETCD2_LIVE") != "1" {
+		t.Skip("set CHIRON_HORIZON_ETCD2_LIVE=1 to run the live etcd v2 agent test")
 	}
-	endpoints := envOrDefault("DBX_ETCD2_ENDPOINTS", "http://172.26.129.83:20041")
-	user := envOrDefault("DBX_ETCD2_USER", "root")
-	password := envOrDefault("DBX_ETCD2_PASSWORD", "123456")
+	endpoints := envOrDefault("CHIRON_HORIZON_ETCD2_ENDPOINTS", "http://172.26.129.83:20041")
+	user := envOrDefault("CHIRON_HORIZON_ETCD2_USER", "root")
+	password := envOrDefault("CHIRON_HORIZON_ETCD2_PASSWORD", "123456")
 
 	server := newRuntimeServer()
 	connection := fmt.Sprintf(`{"etcd_endpoints":%q,"username":%q,"password":%q}`, endpoints, user, password)
@@ -366,12 +366,12 @@ func TestLiveEtcd2ProtocolFlow(t *testing.T) {
 	if opened.Error != nil {
 		t.Fatalf("open_session failed: %#v", opened)
 	}
-	putLine := fmt.Sprintf(`{"id":3,"method":"kv_put","params":{"agentSessionId":"s1","key":"/dbx:proto","value":{"encoding":"utf8","data":"flow"}}}`)
+	putLine := fmt.Sprintf(`{"id":3,"method":"kv_put","params":{"agentSessionId":"s1","key":"/chiron-horizon:proto","value":{"encoding":"utf8","data":"flow"}}}`)
 	put, _ := server.handleLine(putLine)
 	if put.Error != nil {
 		t.Fatalf("kv_put failed: %#v", put)
 	}
-	v3Only, _ := server.handleLine(`{"id":4,"method":"kv_history","params":{"agentSessionId":"s1","key":"/dbx:proto"}}`)
+	v3Only, _ := server.handleLine(`{"id":4,"method":"kv_history","params":{"agentSessionId":"s1","key":"/chiron-horizon:proto"}}`)
 	if v3Only.Error == nil || !strings.HasPrefix(v3Only.Error.Message, "ETCD_V2_UNSUPPORTED") {
 		t.Fatalf("expected ETCD_V2_UNSUPPORTED, got %#v", v3Only)
 	}

@@ -1,143 +1,39 @@
 ---
 title: Getting Started
-description: Install DBX, create your first connection, and understand the desktop, Docker, and source workflows.
+description: Install Chiron Horizon Desktop, create your first connection, and build from source.
 ---
 
-This guide gets you through three things:
+# Get Started
 
-1. Install DBX or start the Docker version
-2. Create and test your first database connection
-3. Run DBX from source when you want to contribute or debug locally
+Chiron Horizon 0.1.0 is distributed from [GitHub Releases](https://github.com/Gaussian-id/Gauss-Horizon/releases). Download the asset for your platform, compare its SHA-256 with `SHA256SUMS`, then install it locally. Application auto-update and npm distribution are not enabled in this release.
 
-## Choose An Install Method
+## Install the desktop application
 
-<Tabs groupId="platform" items={['macOS', 'Windows', 'Linux', 'Docker']}>
-  <Tab value="macOS">
-    Install with Homebrew:
+| Platform | Asset | Install |
+| --- | --- | --- |
+| macOS Apple Silicon | `Chiron-Horizon_0.1.0_macos-arm64.dmg` | Open the DMG and drag **Chiron Horizon** into Applications. |
+| macOS Intel | `Chiron-Horizon_0.1.0_macos-x64.dmg` | Open the DMG and drag **Chiron Horizon** into Applications. |
+| Windows 10/11 x64 | `Chiron-Horizon_0.1.0_windows-x64-setup.exe` | Run the NSIS installer. SmartScreen may require **More info → Run anyway**. |
+| Ubuntu 22.04+ x64 | `Chiron-Horizon_0.1.0_linux-x64.deb` | Run `sudo apt install ./Chiron-Horizon_0.1.0_linux-x64.deb`. |
+| Ubuntu 22.04+ x64 | `Chiron-Horizon_0.1.0_linux-x64.AppImage` | Run `chmod +x Chiron-Horizon_0.1.0_linux-x64.AppImage`, then open it. |
 
-    ```bash
-    brew install --cask dbx
-    ```
+The macOS bundles are ad-hoc signed for bundle integrity rather than notarized. Gatekeeper may require an explicit confirmation. The Windows installer is unsigned in 0.1.0, so SmartScreen confirmation is expected.
 
-    Update later with:
+## Verify the download
 
-    ```bash
-    brew upgrade --cask dbx
-    ```
+Download `SHA256SUMS` from the same release page and run the command for your platform:
 
-    You can also download a `.dmg` installer from [GitHub Releases](https://github.com/t8y2/dbx/releases).
+```bash
+# macOS or Linux
+sha256sum -c SHA256SUMS
+```
 
-  </Tab>
-  <Tab value="Windows">
-    Install with Scoop:
+```powershell
+# Windows PowerShell
+Get-FileHash .\Chiron-Horizon_0.1.0_windows-x64-setup.exe -Algorithm SHA256
+```
 
-    ```bash
-    scoop bucket add dbx https://github.com/t8y2/scoop-bucket
-    scoop install dbx
-    ```
-
-    Update later with:
-
-    ```bash
-    scoop update dbx
-    ```
-
-    You can also download a `.msi` installer from [GitHub Releases](https://github.com/t8y2/dbx/releases).
-
-  </Tab>
-  <Tab value="Linux">
-    Install with Flatpak from [FlatPark](https://flatpark.org/apps/com.dbxio.dbx/) (works on any distribution):
-
-    ```bash
-    flatpak remote-add --if-not-exists flatpark https://dl.flatpark.org/flatpark.flatpakrepo
-    flatpak install flatpark com.dbxio.dbx
-    ```
-
-    Update later with:
-
-    ```bash
-    flatpak update com.dbxio.dbx
-    ```
-
-    You can also download a package from [GitHub Releases](https://github.com/t8y2/dbx/releases):
-
-    | Format | Use Case |
-    |---|---|
-    | `.deb` | Debian, Ubuntu, and compatible distributions |
-    | `.rpm` | Fedora, CentOS, SUSE and compatible distributions |
-    | `.AppImage` | Portable Linux desktop usage |
-
-    For `.AppImage`, make the file executable before first run:
-
-    ```bash
-    chmod +x DBX*.AppImage
-    ```
-
-  </Tab>
-  <Tab value="Docker">
-    Docker is for self-hosting DBX on a server and opening it from a browser:
-
-    ```bash
-    docker run -d \
-      --pull=always \
-      --name dbx \
-      -p 4224:4224 \
-      -v dbx-data:/app/data \
-      t8y2/dbx:latest
-    ```
-
-    The `latest` tag pulls the current release. This uses the cross-platform `dbx-data` named volume. For faster pulls in China, use `docker.cnb.cool/dbxio.com/dbx:latest` instead.
-
-    ### Environment Variables
-
-    The Docker image supports the following startup variables. Set one with `-e NAME=value`; for example, production deployments should add `-e DBX_PASSWORD=your-password`:
-
-    | Variable | Default | Purpose |
-    | --- | --- | --- |
-    | `DBX_PASSWORD` | Not set | Web login password; recommended for production |
-    | `DBX_DISABLE_PASSWORD` | `false` | Set to `true` or `1` to disable login protection |
-    | `DBX_DATA_DIR` | `/app/data` | Persistent data directory |
-    | `DBX_PORT` | `4224` | Container listen port |
-    | `DBX_PUBLIC_BASE_PATH` | `/` | Deploy below a subpath, such as `/dbx` |
-
-    Then open `http://localhost:4224`.
-
-    `deploy/docker-compose.yml` builds the current checkout. To deploy a published image, use `deploy/docker-compose.release.yml`:
-
-    ```bash
-    docker compose -f deploy/docker-compose.release.yml up -d
-    ```
-
-    ```yaml
-    services:
-      dbx:
-        image: t8y2/dbx:latest
-        # For faster pulls in China, use the CNB image instead:
-        # image: docker.cnb.cool/dbxio.com/dbx:latest
-        pull_policy: always
-        ports:
-          - "4224:4224"
-        volumes:
-          - dbx-data:/app/data
-        restart: unless-stopped
-
-    volumes:
-      dbx-data:
-    ```
-
-  </Tab>
-</Tabs>
-
-## Desktop Or Docker
-
-| Mode | Best For | Storage | Important Boundary |
-| --- | --- | --- | --- |
-| Desktop | Daily local work, local database files, the complete workbench | Local app data directory | Supports the local SQL file tree/library, desktop deep links, and OS file integration |
-| Docker / Web | Self-hosting on a server and remote browser access | Docker volume or server data directory | Paths belong to the server; some local-file and desktop integrations are unavailable |
-
-Desktop and Web share most database workflows and the Rust core, but their local integrations are not identical. For SQLite, DuckDB, Access, external SQL files, or local directories, verify which machine owns the file; Docker normally requires mounting the directory into the container.
-
-<Callout type="info">MCP tools that open a table or display results in the desktop UI require DBX Desktop to be running. Query-only MCP tools can read the local DBX data directory directly or connect to a DBX Web/Docker backend.</Callout>
+The release also includes `agent-registry.json`, managed JRE 21 archives, individual Agent packages, and offline Agent bundles for databases that need an Agent. The application downloads Agent material only from the Chiron Horizon GitHub Release; it has no application updater or mirror fallback.
 
 ## Create Your First Connection
 
@@ -163,7 +59,7 @@ Desktop and Web share most database workflows and the Rust core, but their local
   <Step>
     ### Paste A URL When Available
 
-    DBX can parse common connection URLs for engines such as MySQL, PostgreSQL, Redis, MongoDB, ClickHouse, SQL Server, Oracle, Elasticsearch, Easysearch, Meilisearch, DM, GaussDB, openGauss, TDengine, and Access. Review the parsed fields before saving.
+    Chiron Horizon can parse common connection URLs for engines such as MySQL, PostgreSQL, Redis, MongoDB, ClickHouse, SQL Server, Oracle, Elasticsearch, Easysearch, Meilisearch, DM, GaussDB, openGauss, TDengine, and Access. Review the parsed fields before saving.
 
   </Step>
   <Step>
@@ -180,13 +76,13 @@ Desktop and Web share most database workflows and the Rust core, but their local
   </Step>
 </Steps>
 
-<Callout type="info">Connection passwords, SSH passwords, SSH key passphrases, and connection strings are stored separately from the regular connection JSON in DBX's local storage. Use [Config Export/Import](/en/docs/config-export) when you need to migrate encrypted connection settings.</Callout>
+<Callout type="info">Connection passwords, SSH passwords, SSH key passphrases, and connection strings are stored separately from the regular connection JSON in Chiron Horizon's local storage. Use [Config Export/Import](/en/docs/config-export) when you need to migrate encrypted connection settings.</Callout>
 
 ## Reduce Production Mistakes
 
 - Give production connections a distinct name such as `prod-orders`, and use colors, groups, and notes to describe their purpose.
-- For query-only access, combine a database read-only account with DBX **Read-only connection**.
-- Enable **Production protection** for the whole connection or selected databases; DBX requires a fresh explicit confirmation for writes.
+- For query-only access, combine a database read-only account with Chiron Horizon **Read-only connection**.
+- Enable **Production protection** for the whole connection or selected databases; Chiron Horizon requires a fresh explicit confirmation for writes.
 - When one server contains many databases or schemas, show only the objects you currently need.
 - Review generated SQL before applying edits, imports, transfers, SQL files, or schema sync operations.
 - Put MCP connections behind an allowlist and prefer Read only or Data read/write instead of enabling Full access by default.
@@ -219,7 +115,7 @@ See [Production and Write Safety](/en/docs/production-safety) for complete behav
 
 ## Run From Source
 
-Use source mode when contributing or debugging DBX locally.
+Use source mode when contributing or debugging Chiron Horizon locally.
 
 <Callout type="info">
   First-time contributors should follow [Build From Source and Contribute](/en/docs/contributing) for complete platform setup, forking, issue claiming, testing, and pull request steps.
@@ -244,7 +140,7 @@ Use source mode when contributing or debugging DBX locally.
     winget install StrawberryPerl.StrawberryPerl
     ```
 
-    DBX enables the `sqlite-sqlcipher` feature by default, which compiles SQLCipher and OpenSSL from source. Windows needs Perl to run the OpenSSL `Configure` script. Reopen your terminal after installing so `perl` is available on `PATH`.
+    Chiron Horizon enables the `sqlite-sqlcipher` feature by default, which compiles SQLCipher and OpenSSL from source. Windows needs Perl to run the OpenSSL `Configure` script. Reopen your terminal after installing so `perl` is available on `PATH`.
 
   </Tab>
 </Tabs>
@@ -252,8 +148,8 @@ Use source mode when contributing or debugging DBX locally.
 ### Start Development
 
 ```bash
-git clone https://github.com/t8y2/dbx.git
-cd dbx
+git clone https://github.com/Gaussian-id/Gauss-Horizon.git
+cd chiron-horizon
 make
 ```
 

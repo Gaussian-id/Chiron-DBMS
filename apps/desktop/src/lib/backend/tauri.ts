@@ -1069,7 +1069,7 @@ export interface AiChatMessage {
   mentions?: unknown[];
   reasoning?: string;
   kind?: "contextSummary" | "writeSqlConfirmation" | "productionWriteBlocked";
-  /** Set on the assistant message whose generation failed; persisted (mirrors dbx-core `AiChatMessage.failed`). */
+  /** Set on the assistant message whose generation failed; persisted (mirrors chiron-horizon-core `AiChatMessage.failed`). */
   failed?: boolean;
 }
 
@@ -1538,7 +1538,7 @@ export async function executeMulti(
       ...options,
     });
     if (diagnosticsEnabled) {
-      appendDebugLog("info", "[DBX][query-transport:tauri]", {
+      appendDebugLog("info", "[Chiron Horizon][query-transport:tauri]", {
         traceId: executionId?.slice(0, 8),
         totalMs: Math.round(performance.now() - startedAt),
         resultCount: results.length,
@@ -1549,7 +1549,7 @@ export async function executeMulti(
     return results;
   } catch (error) {
     if (diagnosticsEnabled) {
-      appendDebugLog("warn", "[DBX][query-transport:tauri:error]", {
+      appendDebugLog("warn", "[Chiron Horizon][query-transport:tauri:error]", {
         traceId: executionId?.slice(0, 8),
         totalMs: Math.round(performance.now() - startedAt),
       });
@@ -2287,7 +2287,7 @@ export async function installMarketplacePlugin(request: PluginMarketplaceInstall
 }
 
 export async function installPluginPackage(pathOrFile: string | File, allowUnsigned = false): Promise<PluginInstallResult> {
-  if (typeof pathOrFile !== "string") throw new Error("Desktop plugin installation requires a local .dbxp file path");
+  if (typeof pathOrFile !== "string") throw new Error("Desktop plugin installation requires a local .chiron-horizonp file path");
   return invoke("install_plugin_package", { path: pathOrFile, allowUnsigned });
 }
 
@@ -2364,8 +2364,8 @@ export async function readPluginUiAsset(pluginId: string, path: string): Promise
 }
 
 export async function subscribePluginEvents(onEvent: (event: PluginEvent) => void, onBinary?: (event: PluginBinaryEvent) => void): Promise<UnlistenFn> {
-  const unlistenEvent = await listen<PluginEvent>("dbx-plugin-event", (event) => onEvent(event.payload));
-  const unlistenBinary = await listen<PluginBinaryEvent>("dbx-plugin-binary", (event) => onBinary?.(event.payload));
+  const unlistenEvent = await listen<PluginEvent>("chiron-horizon-plugin-event", (event) => onEvent(event.payload));
+  const unlistenBinary = await listen<PluginBinaryEvent>("chiron-horizon-plugin-binary", (event) => onBinary?.(event.payload));
   return () => {
     unlistenEvent();
     unlistenBinary();

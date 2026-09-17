@@ -362,7 +362,7 @@ const settingsRootProps = computed(() => (isSettingsPage.value ? {} : { open: pr
 const settingsRootClass = computed(() => (isSettingsPage.value ? "settings-shell h-full min-h-0 overflow-hidden bg-background" : ""));
 const settingsContentComponent = computed(() => (isSettingsPage.value ? "div" : DialogContent));
 const settingsContentClass = computed(() =>
-  isSettingsPage.value ? "flex h-full min-h-0 flex-col gap-4 overflow-hidden bg-background p-4" : "settings-shell h-[min(660px,calc(var(--dbx-viewport-height)-80px))] !max-w-[min(920px,calc(100vw-32px))] grid-rows-[auto_minmax(0,1fr)] gap-3 p-4 sm:!max-w-[min(920px,calc(100vw-48px))]",
+  isSettingsPage.value ? "flex h-full min-h-0 flex-col gap-4 overflow-hidden bg-background p-4" : "settings-shell h-[min(660px,calc(var(--chiron-horizon-viewport-height)-80px))] !max-w-[min(920px,calc(100vw-32px))] grid-rows-[auto_minmax(0,1fr)] gap-3 p-4 sm:!max-w-[min(920px,calc(100vw-48px))]",
 );
 const settingsTitleComponent = computed(() => (isSettingsPage.value ? "h2" : DialogTitle));
 
@@ -877,7 +877,7 @@ async function pickBackgroundImage() {
   } catch (error) {
     // Surface every failure (missing command in a stale binary, fs scope, copy
     // errors): Tauri rejections are plain strings, so String() keeps the detail.
-    console.error("[dbx] background image selection failed", error);
+    console.error("[chiron-horizon] background image selection failed", error);
     toast(`${t("settings.backgroundImageSaveFailed")}: ${error instanceof Error ? error.message : String(error)}`, 6000);
   }
 }
@@ -1645,7 +1645,7 @@ async function applySettingsAndClose() {
   }
 }
 
-async function restartDbxForDuckDbIsolation() {
+async function restartChironHorizonForDuckDbIsolation() {
   if (duckDbRestarting.value || hasApplyBlocker.value || isWeb) return;
   duckDbRestarting.value = true;
   try {
@@ -1653,7 +1653,7 @@ async function restartDbxForDuckDbIsolation() {
     const { relaunch } = await import("@tauri-apps/plugin-process");
     await relaunch();
   } catch (e: any) {
-    toast(t("settings.restartDbxFailed", { error: e?.message || String(e) }), 5000);
+    toast(t("settings.restartChironHorizonFailed", { error: e?.message || String(e) }), 5000);
   } finally {
     duckDbRestarting.value = false;
   }
@@ -2122,10 +2122,6 @@ function onUiScaleChange(value: unknown) {
   editUiScale.value = next;
 }
 
-function onUpdateDownloadSourceChange(v: any) {
-  if (v === "official" || v === "cnb") editUpdateDownloadSource.value = v;
-}
-
 function setSidebarObjectDisplay(value: "grouped" | "simple") {
   editSidebarObjectDisplay.value = value;
 }
@@ -2450,6 +2446,10 @@ async function resetSettingsContentScroll() {
 }
 
 function openExternalUrl(url: string) {
+  if (url.includes("distribution-disabled.invalid")) {
+    window.alert("This Chiron Horizon service is not available in 0.1.0.");
+    return;
+  }
   if (isTauriRuntime()) {
     import("@tauri-apps/plugin-shell").then(({ open }) => open(url));
   } else {
@@ -2622,8 +2622,8 @@ const mcpHttpError = ref("");
 const mcpHttpAllowedHostsText = ref("");
 const mcpHttpAllowedOriginsText = ref("");
 const mcpHttpPersistedSettings = ref<McpHttpServerSettings | null>(null);
-const MCP_READONLY_STORAGE_KEY = "dbx-mcp-config-readonly";
-const MCP_SCOPE_CONNECTION_STORAGE_KEY = "dbx-mcp-config-scope-connection";
+const MCP_READONLY_STORAGE_KEY = "chiron-horizon-mcp-config-readonly";
+const MCP_SCOPE_CONNECTION_STORAGE_KEY = "chiron-horizon-mcp-config-scope-connection";
 const mcpPolicyLoading = ref(false);
 const mcpPolicySaving = ref(false);
 const mcpPolicyLoadError = ref("");
@@ -3133,14 +3133,14 @@ async function rotateMcpHttpToken() {
 const mcpLaunchConfig = computed<McpLaunchConfig | undefined>(() => {
   if (isWeb) {
     return {
-      command: "dbx-mcp-server",
+      command: "chiron-horizon-mcp-server",
       env: {
-        DBX_WEB_URL: mcpWebBackendUrl(window.location.origin, apiUrl("/api")),
-        DBX_WEB_PASSWORD: "your-web-login-password",
+        CHIRON_HORIZON_WEB_URL: mcpWebBackendUrl(window.location.origin, apiUrl("/api")),
+        CHIRON_HORIZON_WEB_PASSWORD: "your-web-login-password",
       },
     };
   }
-  const env = mcpStatus.value?.data_dir ? { DBX_DATA_DIR: mcpStatus.value.data_dir } : undefined;
+  const env = mcpStatus.value?.data_dir ? { CHIRON_HORIZON_DATA_DIR: mcpStatus.value.data_dir } : undefined;
   if (mcpStatus.value?.node_path && mcpStatus.value.script_path) {
     return {
       command: mcpStatus.value.node_path,
@@ -3151,7 +3151,7 @@ const mcpLaunchConfig = computed<McpLaunchConfig | undefined>(() => {
   if (mcpStatus.value?.bin_path) {
     return { command: mcpStatus.value.bin_path, env };
   }
-  return env ? { command: "dbx-mcp-server", env } : undefined;
+  return env ? { command: "chiron-horizon-mcp-server", env } : undefined;
 });
 
 const mcpJsonRecommendedConfig = computed(() => buildMcpJsonConfig(mcpLaunchConfig.value));
@@ -3194,11 +3194,11 @@ const mcpStatusLabel = computed(() => {
 });
 
 const mcpCommand = computed(() => {
-  if (!mcpStatus.value) return "npm install -g @dbx-app/mcp-server@latest";
+  if (!mcpStatus.value) return "The npm MCP package is deferred for Chiron Horizon 0.1.0. Use the desktop MCP service or build the stdio server from this source tree.";
   return mcpStatus.value.installed ? mcpStatus.value.update_command : mcpStatus.value.install_command;
 });
 
-const mcpUninstallCommand = computed(() => mcpStatus.value?.uninstall_command || "npm uninstall -g @dbx-app/mcp-server");
+const mcpUninstallCommand = computed(() => mcpStatus.value?.uninstall_command || "npm uninstall -g @chiron-horizon/mcp-server");
 
 async function refreshMcpStatus() {
   if (mcpStatusLoading.value) return;
@@ -3207,9 +3207,9 @@ async function refreshMcpStatus() {
   const requestId = beginMcpStatusRequest();
   try {
     mcpStatus.value = await checkMcpServerStatus();
-    // 通知工具栏徽章同步：携带已获取的 update_available，避免根组件重复查询 npm registry。
+    // Keep the toolbar badge synchronized without checking an external package registry.
     window.dispatchEvent(
-      new CustomEvent("dbx-mcp-status-changed", {
+      new CustomEvent("chiron-horizon-mcp-status-changed", {
         detail: { updateAvailable: mcpUpdateAvailability(mcpStatus.value), requestId },
       }),
     );
@@ -3279,26 +3279,26 @@ async function uninstallMcp() {
 }
 
 // ---------- WebDAV Sync ----------
-const webdavEndpoint = ref(localStorage.getItem("dbx-webdav-endpoint") || "");
-const webdavUsername = ref(localStorage.getItem("dbx-webdav-username") || "");
+const webdavEndpoint = ref(localStorage.getItem("chiron-horizon-webdav-endpoint") || "");
+const webdavUsername = ref(localStorage.getItem("chiron-horizon-webdav-username") || "");
 const webdavPassword = ref("");
-const webdavRememberPassword = ref(localStorage.getItem("dbx-webdav-remember-password") === "true");
+const webdavRememberPassword = ref(localStorage.getItem("chiron-horizon-webdav-remember-password") === "true");
 const webdavHasSavedPassword = ref(false);
-const webdavRemotePath = ref(localStorage.getItem("dbx-webdav-remote-path") || DEFAULT_WEB_DAV_REMOTE_PATH);
+const webdavRemotePath = ref(localStorage.getItem("chiron-horizon-webdav-remote-path") || DEFAULT_WEB_DAV_REMOTE_PATH);
 const webdavSyncSecrets = ref(false);
 const webdavSecretsPassphrase = ref("");
 const webdavHasSavedSecretsPassphrase = ref(false);
-const webdavAutoUploadEnabled = ref(localStorage.getItem("dbx-webdav-auto-upload-enabled") === "true");
-const webdavAutoUploadIntervalMinutes = ref(Number(localStorage.getItem("dbx-webdav-auto-upload-interval-minutes") || String(DEFAULT_WEB_DAV_AUTO_UPLOAD_INTERVAL_MINUTES)));
+const webdavAutoUploadEnabled = ref(localStorage.getItem("chiron-horizon-webdav-auto-upload-enabled") === "true");
+const webdavAutoUploadIntervalMinutes = ref(Number(localStorage.getItem("chiron-horizon-webdav-auto-upload-interval-minutes") || String(DEFAULT_WEB_DAV_AUTO_UPLOAD_INTERVAL_MINUTES)));
 const webdavBusy = ref<"" | "test" | "upload" | "download">("");
 const webdavMessage = ref("");
 const webdavError = ref(false);
 const syncMethodTab = ref<"webdav" | "snippet">("webdav");
 
-const snippetProvider = ref<SnippetProvider>((localStorage.getItem("dbx-snippet-provider") as SnippetProvider) || "github");
+const snippetProvider = ref<SnippetProvider>((localStorage.getItem("chiron-horizon-snippet-provider") as SnippetProvider) || "github");
 const snippetId = ref("");
 const snippetToken = ref("");
-const snippetRememberToken = ref(localStorage.getItem(`dbx-snippet-remember-token-${snippetProvider.value}`) === "true");
+const snippetRememberToken = ref(localStorage.getItem(`chiron-horizon-snippet-remember-token-${snippetProvider.value}`) === "true");
 const snippetHasSavedToken = ref(false);
 const snippetPassphrase = ref("");
 const snippetSecretsPassphrase = ref("");
@@ -3351,10 +3351,10 @@ async function refreshSnippetSyncSettings(provider = snippetProvider.value) {
       snippetId.value = settings.snippetId;
       return;
     }
-    const legacyId = localStorage.getItem(`dbx-snippet-id-${provider}`)?.trim();
+    const legacyId = localStorage.getItem(`chiron-horizon-snippet-id-${provider}`)?.trim();
     if (legacyId) {
       await saveSnippetSyncId(provider, legacyId);
-      localStorage.removeItem(`dbx-snippet-id-${provider}`);
+      localStorage.removeItem(`chiron-horizon-snippet-id-${provider}`);
     }
     if (provider !== snippetProvider.value) return;
     snippetId.value = legacyId || "";
@@ -3390,14 +3390,14 @@ async function runSnippetAction(kind: "test" | "upload" | "download" | "migrate"
   snippetMessage.value = "";
   snippetError.value = false;
   try {
-    localStorage.setItem("dbx-snippet-provider", snippetProvider.value);
-    localStorage.setItem(`dbx-snippet-remember-token-${snippetProvider.value}`, String(snippetRememberToken.value));
+    localStorage.setItem("chiron-horizon-snippet-provider", snippetProvider.value);
+    localStorage.setItem(`chiron-horizon-snippet-remember-token-${snippetProvider.value}`, String(snippetRememberToken.value));
     if (persistCurrentSnippetId) await persistSnippetSyncId();
     await applySnippetTokenPreference();
     snippetMessage.value = await action();
   } catch (e: any) {
     snippetMessage.value = e?.message || String(e);
-    if (kind === "upload" && snippetMessage.value.includes("legacy unencrypted DBX snapshot")) {
+    if (kind === "upload" && snippetMessage.value.includes("legacy unencrypted Chiron Horizon snapshot")) {
       legacySnippetId.value = snippetId.value.trim();
     }
     snippetError.value = true;
@@ -3507,7 +3507,7 @@ function rememberWebDavFields() {
     enabled: webdavAutoUploadEnabled.value,
     intervalMinutes: webdavAutoUploadIntervalMinutes.value,
   });
-  window.dispatchEvent(new Event("dbx:webdav-auto-upload-config-changed"));
+  window.dispatchEvent(new Event("chiron-horizon:webdav-auto-upload-config-changed"));
 }
 
 function setWebDavResult(message: string, error = false) {
@@ -3767,16 +3767,16 @@ watch([webdavEndpoint, webdavUsername], () => {
   void refreshWebDavPasswordStatus();
 });
 watch(webdavRememberPassword, (val) => {
-  localStorage.setItem("dbx-webdav-remember-password", String(val));
+  localStorage.setItem("chiron-horizon-webdav-remember-password", String(val));
 });
 watch([webdavAutoUploadEnabled, webdavAutoUploadIntervalMinutes], () => {
   webdavAutoUploadIntervalMinutes.value = normalizedWebDavAutoUploadInterval(webdavAutoUploadIntervalMinutes.value);
   rememberWebDavFields();
 });
 watch(snippetProvider, (provider) => {
-  localStorage.setItem("dbx-snippet-provider", provider);
+  localStorage.setItem("chiron-horizon-snippet-provider", provider);
   snippetId.value = "";
-  snippetRememberToken.value = localStorage.getItem(`dbx-snippet-remember-token-${provider}`) === "true";
+  snippetRememberToken.value = localStorage.getItem(`chiron-horizon-snippet-remember-token-${provider}`) === "true";
   snippetToken.value = "";
   legacySnippetId.value = "";
   pendingLegacyCleanupId.value = "";
@@ -4019,8 +4019,8 @@ function globalInstructionsTooLong(): boolean {
   return promptTemplateCharacterCount(editGlobalInstructions.value) > GLOBAL_INSTRUCTIONS_MAX;
 }
 
-// Agent turn limit for DBX's API-backed agent loop. CLI providers enforce their own limits.
-// Mirrors DEFAULT/MIN/MAX_MAX_AGENT_TURNS in crates/dbx-core/src/agent_loop.rs —
+// Agent turn limit for Chiron Horizon's API-backed agent loop. CLI providers enforce their own limits.
+// Mirrors DEFAULT/MIN/MAX_MAX_AGENT_TURNS in crates/chiron-horizon-core/src/agent_loop.rs —
 // keep in sync; the backend clamp on save/load is the actual source of truth.
 const editMaxAgentTurns = ref<number | undefined>(undefined);
 const maxAgentTurnsSaving = ref(false);
@@ -4423,7 +4423,7 @@ function cliEnvFromRows(rows = aiEditCliEnvRows.value): Record<string, string> {
   const result: Record<string, string> = {};
   for (const row of rows) {
     const key = row.key.trim();
-    if (!key || !/^[A-Za-z_][A-Za-z0-9_]*$/.test(key) || key.toUpperCase().startsWith("DBX_MCP_")) continue;
+    if (!key || !/^[A-Za-z_][A-Za-z0-9_]*$/.test(key) || key.toUpperCase().startsWith("CHIRON_HORIZON_MCP_")) continue;
     result[key] = row.value;
   }
   return result;
@@ -4434,7 +4434,7 @@ function cliEnvValidationError(): string {
     const key = row.key.trim();
     if (key && !/^[A-Za-z_][A-Za-z0-9_]*$/.test(key)) return t("ai.cliEnvInvalidName", { name: key });
     const upper = key.toUpperCase();
-    if (upper.startsWith("DBX_MCP_") || (aiIsPiAgentCli.value && upper.startsWith("DBX_PI_")) || (aiIsOpenCodeCli.value && OPENCODE_CONTROL_ENV.has(upper)) || (aiIsCursorCli.value && CURSOR_CONTROL_ENV.has(upper))) {
+    if (upper.startsWith("CHIRON_HORIZON_MCP_") || (aiIsPiAgentCli.value && upper.startsWith("CHIRON_HORIZON_PI_")) || (aiIsOpenCodeCli.value && OPENCODE_CONTROL_ENV.has(upper)) || (aiIsCursorCli.value && CURSOR_CONTROL_ENV.has(upper))) {
       return t("ai.cliEnvReservedName", { name: key });
     }
   }
@@ -6057,7 +6057,16 @@ onUnmounted(() => {
                 <div class="settings-appearance-group min-w-0">
                   <Label>{{ t("settings.theme") }}</Label>
                   <div class="settings-appearance-button-row flex gap-2">
-                    <Button v-for="option in appThemeModeOptions" :key="option.value" type="button" variant="outline" size="sm" class="settings-choice-button h-8 gap-1.5 px-3" :class="themeMode === option.value ? 'dbx-choice-selected' : 'text-foreground'" @click="setThemeMode(option.value)">
+                    <Button
+                      v-for="option in appThemeModeOptions"
+                      :key="option.value"
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      class="settings-choice-button h-8 gap-1.5 px-3"
+                      :class="themeMode === option.value ? 'chiron-horizon-choice-selected' : 'text-foreground'"
+                      @click="setThemeMode(option.value)"
+                    >
                       <component :is="option.icon" class="h-3.5 w-3.5" />
                       {{ option.label }}
                     </Button>
@@ -6074,7 +6083,7 @@ onUnmounted(() => {
                       variant="outline"
                       size="sm"
                       class="settings-choice-button h-8 px-3"
-                      :class="cornerStyle === option.value ? 'dbx-choice-selected' : 'text-foreground'"
+                      :class="cornerStyle === option.value ? 'chiron-horizon-choice-selected' : 'text-foreground'"
                       :style="{ borderRadius: option.previewRadius }"
                       @click="setCornerStyle(option.value)"
                     >
@@ -6089,7 +6098,7 @@ onUnmounted(() => {
               <div class="settings-appearance-group">
                 <Label>{{ t("settings.appLayout") }}</Label>
                 <div class="settings-appearance-choice-grid">
-                  <Button type="button" variant="outline" class="settings-choice-card h-auto justify-start border p-3" :class="editAppLayout === 'separated' ? 'dbx-choice-selected' : ''" @click="setAppLayout('separated')">
+                  <Button type="button" variant="outline" class="settings-choice-card h-auto justify-start border p-3" :class="editAppLayout === 'separated' ? 'chiron-horizon-choice-selected' : ''" @click="setAppLayout('separated')">
                     <TooltipProvider>
                       <Tooltip>
                         <TooltipTrigger as-child>
@@ -6108,7 +6117,7 @@ onUnmounted(() => {
                       </Tooltip>
                     </TooltipProvider>
                   </Button>
-                  <Button type="button" variant="outline" class="settings-choice-card h-auto justify-start border p-3" :class="editAppLayout === 'classic' ? 'dbx-choice-selected' : ''" @click="setAppLayout('classic')">
+                  <Button type="button" variant="outline" class="settings-choice-card h-auto justify-start border p-3" :class="editAppLayout === 'classic' ? 'chiron-horizon-choice-selected' : ''" @click="setAppLayout('classic')">
                     <TooltipProvider>
                       <Tooltip>
                         <TooltipTrigger as-child>
@@ -6135,7 +6144,7 @@ onUnmounted(() => {
               <div class="settings-appearance-group">
                 <Label>{{ t("settings.tabLayout") }}</Label>
                 <div class="settings-appearance-choice-grid">
-                  <Button type="button" variant="outline" class="settings-choice-card h-auto min-w-0 justify-start overflow-hidden whitespace-normal border p-3" :class="editTabLayout === 'scroll' ? 'dbx-choice-selected' : ''" @click="setTabLayout('scroll')">
+                  <Button type="button" variant="outline" class="settings-choice-card h-auto min-w-0 justify-start overflow-hidden whitespace-normal border p-3" :class="editTabLayout === 'scroll' ? 'chiron-horizon-choice-selected' : ''" @click="setTabLayout('scroll')">
                     <div class="w-full min-w-0 text-left">
                       <div class="text-sm font-medium">
                         {{ t("settings.tabLayoutScroll") }}
@@ -6145,7 +6154,7 @@ onUnmounted(() => {
                       </div>
                     </div>
                   </Button>
-                  <Button type="button" variant="outline" class="settings-choice-card h-auto min-w-0 justify-start overflow-hidden whitespace-normal border p-3" :class="editTabLayout === 'wrap' ? 'dbx-choice-selected' : ''" @click="setTabLayout('wrap')">
+                  <Button type="button" variant="outline" class="settings-choice-card h-auto min-w-0 justify-start overflow-hidden whitespace-normal border p-3" :class="editTabLayout === 'wrap' ? 'chiron-horizon-choice-selected' : ''" @click="setTabLayout('wrap')">
                     <div class="w-full min-w-0 text-left">
                       <div class="text-sm font-medium">
                         {{ t("settings.tabLayoutWrap") }}
@@ -6229,15 +6238,15 @@ onUnmounted(() => {
                     {{ t("settings.updateNotificationsEnabledDescription") }}
                   </p>
                 </div>
-                <Switch id="update-notifications-enabled" v-model="editUpdateNotificationsEnabled" />
+                <Switch id="update-notifications-enabled" :model-value="false" disabled />
               </div>
 
               <div class="settings-appearance-group" data-icon-theme-settings>
                 <Label>{{ t("settings.iconTheme") }}</Label>
                 <div class="settings-appearance-choice-grid settings-icon-theme-grid">
-                  <Button type="button" variant="outline" class="settings-choice-card h-auto min-w-0 justify-start overflow-hidden whitespace-normal border p-3" :class="editIconTheme === 'default' ? 'dbx-choice-selected' : ''" @click="setIconTheme('default')">
+                  <Button type="button" variant="outline" class="settings-choice-card h-auto min-w-0 justify-start overflow-hidden whitespace-normal border p-3" :class="editIconTheme === 'default' ? 'chiron-horizon-choice-selected' : ''" @click="setIconTheme('default')">
                     <div class="flex w-full min-w-0 items-center gap-3 text-left">
-                      <img :src="webPath('/logo.png')" alt="ChironDBM by Gaussian" class="h-12 w-12 shrink-0 object-contain" />
+                      <img :src="webPath('/logo.png')" alt="Chiron Horizon" class="h-12 w-12 shrink-0 object-contain" />
                       <div class="min-w-0 text-left">
                         <div class="text-sm font-medium">
                           {{ t("settings.iconThemeDefault") }}
@@ -6248,9 +6257,9 @@ onUnmounted(() => {
                       </div>
                     </div>
                   </Button>
-                  <Button type="button" variant="outline" class="settings-choice-card h-auto min-w-0 justify-start overflow-hidden whitespace-normal border p-3" :class="editIconTheme === 'black' ? 'dbx-choice-selected' : ''" @click="setIconTheme('black')">
+                  <Button type="button" variant="outline" class="settings-choice-card h-auto min-w-0 justify-start overflow-hidden whitespace-normal border p-3" :class="editIconTheme === 'black' ? 'chiron-horizon-choice-selected' : ''" @click="setIconTheme('black')">
                     <div class="flex w-full min-w-0 items-center gap-3 text-left">
-                      <img :src="webPath('/logo-black.png')" alt="ChironDBM by Gaussian" class="h-12 w-12 shrink-0 object-contain" />
+                      <img :src="webPath('/logo-black.png')" alt="Chiron Horizon" class="h-12 w-12 shrink-0 object-contain" />
                       <div class="min-w-0 text-left">
                         <div class="text-sm font-medium">
                           {{ t("settings.iconThemeBlack") }}
@@ -6344,7 +6353,7 @@ onUnmounted(() => {
               <div class="space-y-2">
                 <Label>{{ t("settings.sidebarActivation") }}</Label>
                 <div class="settings-responsive-grid grid grid-cols-2 gap-2">
-                  <Button type="button" variant="outline" class="settings-choice-card h-auto min-w-0 whitespace-normal justify-start border p-3" :class="editSidebarActivation === 'single' ? 'dbx-choice-selected' : ''" @click="setSidebarActivation('single')">
+                  <Button type="button" variant="outline" class="settings-choice-card h-auto min-w-0 whitespace-normal justify-start border p-3" :class="editSidebarActivation === 'single' ? 'chiron-horizon-choice-selected' : ''" @click="setSidebarActivation('single')">
                     <div class="text-left">
                       <div class="text-sm font-medium">
                         {{ t("settings.sidebarActivationSingle") }}
@@ -6354,7 +6363,7 @@ onUnmounted(() => {
                       </div>
                     </div>
                   </Button>
-                  <Button type="button" variant="outline" class="settings-choice-card h-auto min-w-0 whitespace-normal justify-start border p-3" :class="editSidebarActivation === 'double' ? 'dbx-choice-selected' : ''" @click="setSidebarActivation('double')">
+                  <Button type="button" variant="outline" class="settings-choice-card h-auto min-w-0 whitespace-normal justify-start border p-3" :class="editSidebarActivation === 'double' ? 'chiron-horizon-choice-selected' : ''" @click="setSidebarActivation('double')">
                     <div class="text-left">
                       <div class="text-sm font-medium">
                         {{ t("settings.sidebarActivationDouble") }}
@@ -6383,7 +6392,13 @@ onUnmounted(() => {
                   </HelpTooltip>
                 </div>
                 <div class="settings-responsive-grid grid grid-cols-1 gap-2 sm:grid-cols-3">
-                  <Button type="button" variant="outline" class="settings-choice-card h-auto min-w-0 items-start justify-start overflow-hidden whitespace-normal border p-3" :class="editDataTabReuseMode === 'always-new' ? 'dbx-choice-selected' : ''" @click="editDataTabReuseMode = 'always-new'">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    class="settings-choice-card h-auto min-w-0 items-start justify-start overflow-hidden whitespace-normal border p-3"
+                    :class="editDataTabReuseMode === 'always-new' ? 'chiron-horizon-choice-selected' : ''"
+                    @click="editDataTabReuseMode = 'always-new'"
+                  >
                     <div class="w-full min-w-0 text-left">
                       <div class="flex min-w-0 items-center gap-2">
                         <div class="min-w-0 break-words text-sm font-medium">{{ t("settings.dataTabReuseAlwaysNew") }}</div>
@@ -6400,7 +6415,13 @@ onUnmounted(() => {
                       </div>
                     </div>
                   </Button>
-                  <Button type="button" variant="outline" class="settings-choice-card h-auto min-w-0 items-start justify-start overflow-hidden whitespace-normal border p-3" :class="editDataTabReuseMode === 'same-table' ? 'dbx-choice-selected' : ''" @click="editDataTabReuseMode = 'same-table'">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    class="settings-choice-card h-auto min-w-0 items-start justify-start overflow-hidden whitespace-normal border p-3"
+                    :class="editDataTabReuseMode === 'same-table' ? 'chiron-horizon-choice-selected' : ''"
+                    @click="editDataTabReuseMode = 'same-table'"
+                  >
                     <div class="w-full min-w-0 text-left">
                       <div class="flex min-w-0 items-center gap-2">
                         <div class="min-w-0 break-words text-sm font-medium">{{ t("settings.dataTabReuseSameTable") }}</div>
@@ -6417,7 +6438,13 @@ onUnmounted(() => {
                       </div>
                     </div>
                   </Button>
-                  <Button type="button" variant="outline" class="settings-choice-card h-auto min-w-0 items-start justify-start overflow-hidden whitespace-normal border p-3" :class="editDataTabReuseMode === 'active-tab' ? 'dbx-choice-selected' : ''" @click="editDataTabReuseMode = 'active-tab'">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    class="settings-choice-card h-auto min-w-0 items-start justify-start overflow-hidden whitespace-normal border p-3"
+                    :class="editDataTabReuseMode === 'active-tab' ? 'chiron-horizon-choice-selected' : ''"
+                    @click="editDataTabReuseMode = 'active-tab'"
+                  >
                     <div class="w-full min-w-0 text-left">
                       <div class="flex min-w-0 items-center gap-2">
                         <div class="min-w-0 break-words text-sm font-medium">{{ t("settings.dataTabReuseActiveTab") }}</div>
@@ -6448,7 +6475,7 @@ onUnmounted(() => {
               <div class="space-y-2">
                 <Label>{{ t("settings.sidebarObjectDisplay") }}</Label>
                 <div class="settings-responsive-grid grid grid-cols-2 gap-2">
-                  <Button type="button" variant="outline" class="settings-choice-card h-auto min-w-0 whitespace-normal justify-start border p-3" :class="editSidebarObjectDisplay === 'grouped' ? 'dbx-choice-selected' : ''" @click="setSidebarObjectDisplay('grouped')">
+                  <Button type="button" variant="outline" class="settings-choice-card h-auto min-w-0 whitespace-normal justify-start border p-3" :class="editSidebarObjectDisplay === 'grouped' ? 'chiron-horizon-choice-selected' : ''" @click="setSidebarObjectDisplay('grouped')">
                     <div class="text-left">
                       <div class="flex items-center gap-2">
                         <div class="text-sm font-medium">
@@ -6467,7 +6494,7 @@ onUnmounted(() => {
                       </div>
                     </div>
                   </Button>
-                  <Button type="button" variant="outline" class="settings-choice-card h-auto min-w-0 whitespace-normal justify-start border p-3" :class="editSidebarObjectDisplay === 'simple' ? 'dbx-choice-selected' : ''" @click="setSidebarObjectDisplay('simple')">
+                  <Button type="button" variant="outline" class="settings-choice-card h-auto min-w-0 whitespace-normal justify-start border p-3" :class="editSidebarObjectDisplay === 'simple' ? 'chiron-horizon-choice-selected' : ''" @click="setSidebarObjectDisplay('simple')">
                     <div class="text-left">
                       <div class="flex items-center gap-2">
                         <div class="text-sm font-medium">
@@ -6496,7 +6523,7 @@ onUnmounted(() => {
                   </HelpTooltip>
                 </div>
                 <div class="settings-responsive-grid grid grid-cols-2 gap-2">
-                  <Button type="button" variant="outline" class="settings-choice-card h-auto min-w-0 justify-start overflow-hidden whitespace-normal border p-3" :class="editRoutineSourceOpenMode === 'query-tab' ? 'dbx-choice-selected' : ''" @click="setRoutineSourceOpenMode('query-tab')">
+                  <Button type="button" variant="outline" class="settings-choice-card h-auto min-w-0 justify-start overflow-hidden whitespace-normal border p-3" :class="editRoutineSourceOpenMode === 'query-tab' ? 'chiron-horizon-choice-selected' : ''" @click="setRoutineSourceOpenMode('query-tab')">
                     <div class="w-full min-w-0 text-left">
                       <div class="text-sm font-medium">{{ t("settings.routineSourceOpenModeQueryTab") }}</div>
                       <div class="break-words whitespace-normal text-xs text-muted-foreground">
@@ -6504,7 +6531,7 @@ onUnmounted(() => {
                       </div>
                     </div>
                   </Button>
-                  <Button type="button" variant="outline" class="settings-choice-card h-auto min-w-0 justify-start overflow-hidden whitespace-normal border p-3" :class="editRoutineSourceOpenMode === 'dialog' ? 'dbx-choice-selected' : ''" @click="setRoutineSourceOpenMode('dialog')">
+                  <Button type="button" variant="outline" class="settings-choice-card h-auto min-w-0 justify-start overflow-hidden whitespace-normal border p-3" :class="editRoutineSourceOpenMode === 'dialog' ? 'chiron-horizon-choice-selected' : ''" @click="setRoutineSourceOpenMode('dialog')">
                     <div class="w-full min-w-0 text-left">
                       <div class="text-sm font-medium">{{ t("settings.routineSourceOpenModeDialog") }}</div>
                       <div class="break-words whitespace-normal text-xs text-muted-foreground">
@@ -6791,7 +6818,7 @@ onUnmounted(() => {
                       type="button"
                       variant="outline"
                       class="settings-choice-card h-10 min-w-0 justify-start overflow-hidden whitespace-normal border px-3"
-                      :class="editDataGridFilterEditorView === 'quick' ? 'dbx-choice-selected' : ''"
+                      :class="editDataGridFilterEditorView === 'quick' ? 'chiron-horizon-choice-selected' : ''"
                       :aria-pressed="editDataGridFilterEditorView === 'quick'"
                       @click="editDataGridFilterEditorView = 'quick'"
                     >
@@ -6801,7 +6828,7 @@ onUnmounted(() => {
                       type="button"
                       variant="outline"
                       class="settings-choice-card h-10 min-w-0 justify-start overflow-hidden whitespace-normal border px-3"
-                      :class="editDataGridFilterEditorView === 'conditions' ? 'dbx-choice-selected' : ''"
+                      :class="editDataGridFilterEditorView === 'conditions' ? 'chiron-horizon-choice-selected' : ''"
                       :aria-pressed="editDataGridFilterEditorView === 'conditions'"
                       @click="editDataGridFilterEditorView = 'conditions'"
                     >
@@ -6811,7 +6838,7 @@ onUnmounted(() => {
                       type="button"
                       variant="outline"
                       class="settings-choice-card h-10 min-w-0 justify-start overflow-hidden whitespace-normal border px-3"
-                      :class="editDataGridFilterEditorView === 'text' ? 'dbx-choice-selected' : ''"
+                      :class="editDataGridFilterEditorView === 'text' ? 'chiron-horizon-choice-selected' : ''"
                       :aria-pressed="editDataGridFilterEditorView === 'text'"
                       @click="editDataGridFilterEditorView = 'text'"
                     >
@@ -7186,10 +7213,10 @@ onUnmounted(() => {
                       <p class="text-xs font-medium text-amber-600 dark:text-amber-400">
                         {{ t("settings.duckDbWorkerProcessIsolationRestartRequired") }}
                       </p>
-                      <Button type="button" variant="outline" size="sm" class="h-7 gap-1.5 px-2 text-xs" :disabled="duckDbRestarting || hasApplyBlocker" @click="restartDbxForDuckDbIsolation">
+                      <Button type="button" variant="outline" size="sm" class="h-7 gap-1.5 px-2 text-xs" :disabled="duckDbRestarting || hasApplyBlocker" @click="restartChironHorizonForDuckDbIsolation">
                         <Loader2 v-if="duckDbRestarting" class="size-3.5 animate-spin" />
                         <RefreshCw v-else class="size-3.5" />
-                        {{ t("settings.restartDbx") }}
+                        {{ t("settings.restartChironHorizon") }}
                       </Button>
                     </div>
                   </div>
@@ -7274,7 +7301,7 @@ onUnmounted(() => {
                   <textarea
                     id="redis-key-templates-input"
                     v-model="editRedisKeyTemplates"
-                    class="dbx-editor-font-family min-h-24 w-full rounded-md border border-input bg-background px-3 py-2 text-xs outline-none transition-colors placeholder:text-muted-foreground focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring"
+                    class="chiron-horizon-editor-font-family min-h-24 w-full rounded-md border border-input bg-background px-3 py-2 text-xs outline-none transition-colors placeholder:text-muted-foreground focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring"
                     :placeholder="t('settings.redisKeyTemplatesPlaceholder')"
                     spellcheck="false"
                   />
@@ -7848,7 +7875,7 @@ LIMIT 100;</pre
                         <Cloud class="h-4 w-4 text-muted-foreground" />
                         {{ t("settings.syncSnippetTitle") }}
                       </div>
-                      <Button type="button" variant="ghost" size="sm" class="h-7 px-2 text-xs" @click="openExternalUrl(`https://dbxio.com/${currentLocale() === 'zh-CN' ? 'cn' : 'en'}/docs/cloud-sync`)">
+                      <Button type="button" variant="ghost" size="sm" class="h-7 px-2 text-xs" @click="openExternalUrl(`https://distribution-disabled.invalid/${currentLocale() === 'zh-CN' ? 'cn' : 'en'}/docs/cloud-sync`)">
                         <ExternalLink class="mr-1 h-3 w-3" />
                         {{ t("settings.syncSnippetGuide") }}
                       </Button>
@@ -8420,7 +8447,7 @@ LIMIT 100;</pre
                 <div v-if="!aiIsCliProvider" class="grid grid-cols-3 items-center gap-3">
                   <Label class="text-right text-xs">{{ aiCredentialLabel }}</Label>
                   <div class="col-span-2 flex min-w-0 flex-wrap items-center gap-2">
-                    <template v-if="aiEditApiKey.startsWith('dbx-ai-secret:v1:')">
+                    <template v-if="aiEditApiKey.startsWith('chiron-horizon-ai-secret:v1:')">
                       <span class="text-xs text-muted-foreground">Credential configured (kept unchanged)</span>
                       <Button size="sm" variant="outline" @click="aiEditApiKey = ''">Replace / remove</Button>
                     </template>
@@ -8452,7 +8479,7 @@ LIMIT 100;</pre
                     <div class="space-y-1.5">
                       <div v-for="row in aiEditCustomHeaderRows" :key="row.id" class="grid grid-cols-[minmax(0,0.9fr)_minmax(0,1.3fr)_2rem] gap-2">
                         <Input v-model="row.name" autocomplete="off" class="h-8 font-mono text-xs" :placeholder="t('ai.customHeadersNamePlaceholder')" />
-                        <Button v-if="row.value.startsWith('dbx-ai-secret:v1:')" size="sm" variant="outline" @click="row.value = ''">Saved value · replace</Button>
+                        <Button v-if="row.value.startsWith('chiron-horizon-ai-secret:v1:')" size="sm" variant="outline" @click="row.value = ''">Saved value · replace</Button>
                         <PasswordInput v-else v-model="row.value" autocomplete="off" class="min-w-0" inputClass="h-8 font-mono text-xs" :placeholder="t('ai.customHeadersValuePlaceholder')" />
                         <Button type="button" variant="ghost" size="icon" class="h-8 w-8" :title="t('common.remove')" :aria-label="t('common.remove')" @click="removeAiCustomHeaderRow(row.id)">
                           <X class="h-3.5 w-3.5" />
@@ -8522,7 +8549,7 @@ LIMIT 100;</pre
                       variant="outline"
                       class="h-8 flex-1 text-xs"
                       :class="{
-                        'dbx-choice-selected': aiEditApiStyle === 'completions',
+                        'chiron-horizon-choice-selected': aiEditApiStyle === 'completions',
                       }"
                       @click="aiSelectApiStyle('completions')"
                       >/chat/completions</Button
@@ -8532,7 +8559,7 @@ LIMIT 100;</pre
                       variant="outline"
                       class="h-8 flex-1 text-xs"
                       :class="{
-                        'dbx-choice-selected': aiEditApiStyle === 'responses',
+                        'chiron-horizon-choice-selected': aiEditApiStyle === 'responses',
                       }"
                       @click="aiSelectApiStyle('responses')"
                       >/responses</Button
@@ -8543,7 +8570,7 @@ LIMIT 100;</pre
                       variant="outline"
                       class="h-8 flex-1 text-xs"
                       :class="{
-                        'dbx-choice-selected': aiEditApiStyle === 'anthropic-messages',
+                        'chiron-horizon-choice-selected': aiEditApiStyle === 'anthropic-messages',
                       }"
                       @click="aiSelectApiStyle('anthropic-messages')"
                       >/messages</Button
@@ -8971,7 +8998,7 @@ LIMIT 100;</pre
                               :tabindex="mcpExecutionMode === mode ? 0 : -1"
                               variant="outline"
                               class="settings-choice-card h-10 justify-center"
-                              :class="mcpExecutionMode === mode ? 'dbx-choice-selected' : ''"
+                              :class="mcpExecutionMode === mode ? 'chiron-horizon-choice-selected' : ''"
                               @click="onMcpExecutionModeChange(mode)"
                               @keydown="onMcpExecutionModeKeydown($event, mode)"
                             >
@@ -9335,7 +9362,7 @@ LIMIT 100;</pre
                 <AppLogo class="h-12 w-12 shrink-0" />
                 <div>
                   <h3 class="font-semibold">{{ t("app.name") }}</h3>
-                  <p class="text-sm text-muted-foreground">Built on DBX. Upstream licenses, attribution, and release infrastructure are preserved.</p>
+                  <p class="text-sm text-muted-foreground">Chiron Horizon. Version 0.1.0 is an unreleased development build. Original licenses and attribution are preserved.</p>
                 </div>
               </div>
               <div class="rounded-lg border p-4">
@@ -9417,25 +9444,7 @@ LIMIT 100;</pre
                 </div>
               </div>
 
-              <div class="settings-item rounded-lg border p-4">
-                <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                  <div class="min-w-0 space-y-1">
-                    <Label>{{ t("settings.updateDownloadSource") }}</Label>
-                    <p class="text-sm text-muted-foreground">
-                      {{ t("settings.updateDownloadSourceDescription") }}
-                    </p>
-                  </div>
-                  <Select :model-value="editUpdateDownloadSource" @update:model-value="onUpdateDownloadSourceChange">
-                    <SelectTrigger class="h-9 w-full sm:w-[180px]">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="official">{{ t("settings.updateDownloadSourceOfficial") }}</SelectItem>
-                      <SelectItem value="cnb">{{ t("settings.updateDownloadSourceCnb") }}</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
+              <div class="rounded-lg border p-4 text-sm text-muted-foreground">Automatic updates and driver downloads are unavailable in Chiron Horizon 0.1.0. Use locally supplied builds and packages.</div>
 
               <ChangelogPanel :checking-updates="props.checkingUpdates" @check-updates="emit('check-updates')" />
 
@@ -9444,9 +9453,9 @@ LIMIT 100;</pre
                   <h3 class="text-sm font-medium">Discord</h3>
                   <p class="mt-2 text-sm text-muted-foreground">Coming Soon</p>
                 </section>
-                <button type="button" class="min-w-0 rounded-lg border p-4 text-left transition-colors hover:bg-muted/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring" @click="openExternalUrl('https://github.com/Gaussian-id/Gauss-DBM')">
+                <button type="button" class="min-w-0 rounded-lg border p-4 text-left transition-colors hover:bg-muted/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring" @click="openExternalUrl('https://github.com/Gaussian-id/Gauss-Horizon')">
                   <span class="flex items-center gap-2 text-sm font-medium">GitHub<ExternalLink class="ml-auto h-3.5 w-3.5 shrink-0 text-muted-foreground" /></span>
-                  <span class="mt-2 block break-all text-sm text-primary">github.com/Gaussian-id/Gauss-DBM</span>
+                  <span class="mt-2 block break-all text-sm text-primary">github.com/Gaussian-id/Gauss-Horizon</span>
                 </button>
                 <section class="min-w-0 rounded-lg border p-4" aria-label="Project documentation · Coming Soon">
                   <h3 class="text-sm font-medium">Project documentation</h3>
@@ -9527,7 +9536,7 @@ LIMIT 100;</pre
               <RefreshCw v-else class="mr-1 h-3 w-3" />
               {{ t("settings.mcpRefresh") }}
             </Button>
-            <Button variant="outline" @click="openExternalUrl('https://dbxio.com/cn/docs/mcp')">
+            <Button variant="outline" @click="openExternalUrl('https://distribution-disabled.invalid/cn/docs/mcp')">
               <ExternalLink class="mr-1 h-3 w-3" />
               {{ t("settings.mcpGuide") }}
             </Button>
@@ -9938,47 +9947,47 @@ LIMIT 100;</pre
   background: color-mix(in oklab, var(--muted-foreground) 38%, transparent);
 }
 
-html.dbx-legacy-webview .settings-shortcut-row:hover .settings-shortcut-action-button,
-html.dbx-legacy-webview .settings-shortcut-row:focus-within .settings-shortcut-action-button {
+html.chiron-horizon-legacy-webview .settings-shortcut-row:hover .settings-shortcut-action-button,
+html.chiron-horizon-legacy-webview .settings-shortcut-row:focus-within .settings-shortcut-action-button {
   opacity: 1 !important;
 }
 
-html.dbx-legacy-webview .settings-layout [data-slot="select-trigger"][data-size="default"]:not(.h-7) {
+html.chiron-horizon-legacy-webview .settings-layout [data-slot="select-trigger"][data-size="default"]:not(.h-7) {
   height: 2rem !important;
   min-height: 2rem !important;
   box-sizing: border-box !important;
 }
 
-html.dbx-legacy-webview .settings-layout [data-slot="select-trigger"].h-9 {
+html.chiron-horizon-legacy-webview .settings-layout [data-slot="select-trigger"].h-9 {
   height: 2rem !important;
   min-height: 2rem !important;
   box-sizing: border-box !important;
 }
 
-html.dbx-legacy-webview .settings-layout [data-slot="select-trigger"][data-size="sm"],
-html.dbx-legacy-webview .settings-layout [data-slot="select-trigger"].h-7 {
+html.chiron-horizon-legacy-webview .settings-layout [data-slot="select-trigger"][data-size="sm"],
+html.chiron-horizon-legacy-webview .settings-layout [data-slot="select-trigger"].h-7 {
   height: 1.75rem !important;
   min-height: 1.75rem !important;
   box-sizing: border-box !important;
 }
 
-html.dbx-legacy-webview .settings-layout .settings-shortcut-row {
+html.chiron-horizon-legacy-webview .settings-layout .settings-shortcut-row {
   grid-template-columns: minmax(0, 1fr) auto !important;
   align-items: center !important;
   column-gap: 0.75rem !important;
 }
 
-html.dbx-legacy-webview .settings-layout .settings-shortcut-label {
+html.chiron-horizon-legacy-webview .settings-layout .settings-shortcut-label {
   align-self: center !important;
 }
 
-html.dbx-legacy-webview .settings-layout .settings-shortcut-actions {
+html.chiron-horizon-legacy-webview .settings-layout .settings-shortcut-actions {
   justify-self: end !important;
   align-self: center !important;
   text-align: right !important;
 }
 
-html.dbx-legacy-webview .settings-layout .settings-shortcut-controls {
+html.chiron-horizon-legacy-webview .settings-layout .settings-shortcut-controls {
   display: flex !important;
   flex-direction: row !important;
   align-items: center !important;
@@ -9986,7 +9995,7 @@ html.dbx-legacy-webview .settings-layout .settings-shortcut-controls {
   gap: 0.375rem !important;
 }
 
-html.dbx-legacy-webview .settings-layout .settings-export-number-input {
+html.chiron-horizon-legacy-webview .settings-layout .settings-export-number-input {
   height: 2rem !important;
   min-height: 2rem !important;
   padding-top: 0.25rem !important;
@@ -9995,15 +10004,15 @@ html.dbx-legacy-webview .settings-layout .settings-export-number-input {
   font-variant-numeric: tabular-nums;
 }
 
-html.dbx-legacy-webview .settings-layout .settings-export-number-input::-webkit-inner-spin-button,
-html.dbx-legacy-webview .settings-layout .settings-export-number-input::-webkit-outer-spin-button {
+html.chiron-horizon-legacy-webview .settings-layout .settings-export-number-input::-webkit-inner-spin-button,
+html.chiron-horizon-legacy-webview .settings-layout .settings-export-number-input::-webkit-outer-spin-button {
   -webkit-appearance: inner-spin-button !important;
   appearance: auto !important;
   min-height: 1.5rem !important;
   opacity: 1 !important;
 }
 
-html.dbx-legacy-webview .settings-layout .settings-mcp-config-tabs {
+html.chiron-horizon-legacy-webview .settings-layout .settings-mcp-config-tabs {
   display: flex !important;
   flex-direction: row !important;
   align-items: center !important;
@@ -10014,7 +10023,7 @@ html.dbx-legacy-webview .settings-layout .settings-mcp-config-tabs {
   white-space: nowrap !important;
 }
 
-html.dbx-legacy-webview .settings-layout .settings-mcp-config-tab {
+html.chiron-horizon-legacy-webview .settings-layout .settings-mcp-config-tab {
   display: inline-flex !important;
   flex: 0 0 auto !important;
   width: max-content !important;
@@ -10025,11 +10034,11 @@ html.dbx-legacy-webview .settings-layout .settings-mcp-config-tab {
   white-space: nowrap !important;
 }
 
-html.dbx-legacy-webview .settings-ai-back-button {
+html.chiron-horizon-legacy-webview .settings-ai-back-button {
   margin-left: -0.625rem !important;
 }
 
-html.dbx-legacy-webview .settings-about-section-header {
+html.chiron-horizon-legacy-webview .settings-about-section-header {
   display: flex !important;
   flex-direction: row !important;
   align-items: flex-start !important;
@@ -10037,7 +10046,7 @@ html.dbx-legacy-webview .settings-about-section-header {
   gap: 0.75rem !important;
 }
 
-html.dbx-legacy-webview .settings-about-section-actions {
+html.chiron-horizon-legacy-webview .settings-about-section-actions {
   display: flex !important;
   flex-wrap: wrap !important;
   align-items: center !important;
@@ -10047,11 +10056,11 @@ html.dbx-legacy-webview .settings-about-section-actions {
 }
 
 @media (max-width: 640px) {
-  html.dbx-legacy-webview .settings-about-section-header {
+  html.chiron-horizon-legacy-webview .settings-about-section-header {
     flex-direction: column !important;
   }
 
-  html.dbx-legacy-webview .settings-about-section-actions {
+  html.chiron-horizon-legacy-webview .settings-about-section-actions {
     justify-content: flex-start !important;
     margin-left: 0 !important;
   }

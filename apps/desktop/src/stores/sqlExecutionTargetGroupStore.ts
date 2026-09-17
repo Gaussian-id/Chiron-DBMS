@@ -5,7 +5,7 @@ import { safeLocalStorageGet, safeLocalStorageSet } from "@/lib/backend/safeStor
 import { dedupeMultiDbExecutionTargets, executionTargetGroupNameKey, normalizeMultiDbExecutionTarget, type MultiDbExecutionTarget, type SqlExecutionTargetDatabaseTypeResolver, type SqlExecutionTargetGroup } from "@/types/sqlExecution";
 import type { DatabaseType } from "@/types/database";
 
-const STORAGE_KEY = "dbx-sql-execution-target-groups";
+const STORAGE_KEY = "chiron-horizon-sql-execution-target-groups";
 const STORAGE_VERSION = 1;
 
 interface PersistedTargetGroupState {
@@ -64,7 +64,7 @@ function readGroups(): SqlExecutionTargetGroup[] {
     }
     return sortGroups(groups);
   } catch (error) {
-    console.warn("[DBX][sql-execution-target-groups:load] invalid persisted state", error);
+    console.warn("[Chiron Horizon][sql-execution-target-groups:load] invalid persisted state", error);
     return [];
   }
 }

@@ -1,11 +1,11 @@
 {
-  "name": "@dbx-app/mcp-win32-x64",
-  "version": "0.4.86",
-  "description": "Precompiled DBX MCP Rust binary for win32 x64",
+  "name": "@chiron-horizon/mcp-win32-x64",
+  "version": "0.1.0",
+  "description": "Precompiled Chiron Horizon MCP Rust binary for win32 x64",
   "license": "Apache-2.0",
   "repository": {
     "type": "git",
-    "url": "https://github.com/t8y2/dbx",
+    "url": "https://github.com/Gaussian-id/Gauss-Horizon",
     "directory": "packages/mcp-win32-x64"
   },
   "os": [
@@ -15,7 +15,7 @@
     "x64"
   ],
   "bin": {
-    "dbx-mcp-native": "bin/dbx-mcp.exe"
+    "chiron-horizon-mcp-native": "bin/chiron-horizon-mcp.exe"
   },
   "files": [
     "bin"

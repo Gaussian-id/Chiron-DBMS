@@ -44,7 +44,7 @@ describe("queryStore switchTab", () => {
 
     queryStore.switchTab(tabId);
 
-    expect(dispatchEvent).toHaveBeenCalledWith(expect.objectContaining({ type: "dbx:activate-query-surface" }));
+    expect(dispatchEvent).toHaveBeenCalledWith(expect.objectContaining({ type: "chiron-horizon:activate-query-surface" }));
   });
 
   it("deactivates settings page when switching to a different tab", async () => {

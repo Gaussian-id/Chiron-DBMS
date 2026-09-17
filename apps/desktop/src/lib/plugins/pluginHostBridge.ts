@@ -1,15 +1,15 @@
 import type { InstalledPlugin, PluginBinaryEvent, PluginEvent, PluginUiAssetPayload, PluginWorkbenchContribution } from "@/types/database";
 import { clonePluginData, snapshotPluginWorkbenchContext } from "./pluginData";
 
-const PLUGIN_MESSAGE_SOURCE = "dbx-plugin";
-const HOST_MESSAGE_SOURCE = "dbx-host";
+const PLUGIN_MESSAGE_SOURCE = "chiron-horizon-plugin";
+const HOST_MESSAGE_SOURCE = "chiron-horizon-host";
 const BRIDGE_VERSION = 1;
 const MAX_BRIDGE_PAYLOAD_BYTES = 2 * 1024 * 1024;
 const MAX_BRIDGE_BINARY_BYTES = 8 * 1024 * 1024;
 
 export interface PluginBridgeTheme {
   appearance: "light" | "dark";
-  /** Resolved DBX design tokens (`--color-*`, `--radius-*`, ...) for the current theme. */
+  /** Resolved Chiron Horizon design tokens (`--color-*`, `--radius-*`, ...) for the current theme. */
   tokens: Record<string, string>;
 }
 
@@ -108,7 +108,7 @@ export class PluginHostBridge {
     this.post({ source: HOST_MESSAGE_SOURCE, version: BRIDGE_VERSION, type: "env", locale });
   }
 
-  /** Push resolved theme tokens so the plugin UI can follow DBX light/dark and palette changes. */
+  /** Push resolved theme tokens so the plugin UI can follow Chiron Horizon light/dark and palette changes. */
   updateTheme(theme: PluginBridgeTheme): void {
     this.theme = clonePluginData(theme);
     this.post({ source: HOST_MESSAGE_SOURCE, version: BRIDGE_VERSION, type: "env", locale: this.locale, theme: this.theme });
@@ -203,7 +203,7 @@ export class PluginHostBridge {
 /**
  * Parse `host.network:<origin>` permission entries into CSP connect-src
  * origins. Must stay aligned with `parse_host_network_permission` in
- * crates/dbx-core/src/plugins/manifest.rs.
+ * crates/chiron-horizon-core/src/plugins/manifest.rs.
  */
 export function pluginNetworkOrigins(permissions: readonly string[] | undefined): string[] {
   const origins = new Set<string>();
@@ -230,7 +230,7 @@ export function pluginSandboxDocument(html: string, permissions?: readonly strin
 
 /**
  * Minimal official component kit for plugin workbenches. Every class is built
- * on the DBX design tokens the host pushes through the bridge, so plugin UI
+ * on the Chiron Horizon design tokens the host pushes through the bridge, so plugin UI
  * follows light/dark and palette changes without any plugin-side logic.
  */
 export function pluginUiKitCss(): string {
@@ -245,13 +245,13 @@ body {
   color: var(--color-foreground, #18181b);
   background: var(--color-background, #ffffff);
 }
-.dbx-card {
+.chiron-horizon-card {
   border: 1px solid var(--color-border, #e4e4e7);
   border-radius: var(--radius-lg, 10px);
   background: var(--color-card, #ffffff);
   padding: 14px 16px;
 }
-.dbx-section-title {
+.chiron-horizon-section-title {
   font-size: 11px;
   font-weight: 600;
   letter-spacing: 0.04em;
@@ -259,7 +259,7 @@ body {
   color: var(--color-muted-foreground, #71717a);
   margin: 0 0 10px;
 }
-.dbx-btn {
+.chiron-horizon-btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -273,14 +273,14 @@ body {
   font-size: 13px;
   cursor: pointer;
 }
-.dbx-btn:hover { background: var(--color-muted, #f4f4f5); }
-.dbx-btn--primary { background: var(--color-primary, #2563eb); border-color: var(--color-primary, #2563eb); color: var(--color-primary-foreground, #ffffff); }
-.dbx-btn--primary:hover { background: var(--color-primary, #2563eb); opacity: 0.9; }
-.dbx-btn--danger { background: var(--color-destructive, #dc2626); border-color: var(--color-destructive, #dc2626); color: var(--color-destructive-foreground, #ffffff); }
-.dbx-btn--ghost { border-color: transparent; background: transparent; }
-.dbx-btn:disabled { opacity: 0.5; cursor: not-allowed; }
-.dbx-label { display: inline-flex; font-size: 12px; font-weight: 500; color: var(--color-foreground, #18181b); }
-.dbx-input, .dbx-select, .dbx-textarea {
+.chiron-horizon-btn:hover { background: var(--color-muted, #f4f4f5); }
+.chiron-horizon-btn--primary { background: var(--color-primary, #2563eb); border-color: var(--color-primary, #2563eb); color: var(--color-primary-foreground, #ffffff); }
+.chiron-horizon-btn--primary:hover { background: var(--color-primary, #2563eb); opacity: 0.9; }
+.chiron-horizon-btn--danger { background: var(--color-destructive, #dc2626); border-color: var(--color-destructive, #dc2626); color: var(--color-destructive-foreground, #ffffff); }
+.chiron-horizon-btn--ghost { border-color: transparent; background: transparent; }
+.chiron-horizon-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+.chiron-horizon-label { display: inline-flex; font-size: 12px; font-weight: 500; color: var(--color-foreground, #18181b); }
+.chiron-horizon-input, .chiron-horizon-select, .chiron-horizon-textarea {
   width: 100%;
   height: 30px;
   padding: 0 10px;
@@ -291,16 +291,16 @@ body {
   font-size: 13px;
   font-family: inherit;
 }
-.dbx-textarea { height: auto; min-height: 64px; padding: 6px 10px; resize: vertical; }
-.dbx-input:focus, .dbx-select:focus, .dbx-textarea:focus { outline: 2px solid var(--color-ring, #93c5fd); outline-offset: 1px; border-color: var(--color-ring, #93c5fd); }
-.dbx-hint { font-size: 12px; color: var(--color-muted-foreground, #71717a); }
-.dbx-row { display: grid; grid-template-columns: minmax(96px, auto) minmax(0, 1fr); gap: 8px 12px; align-items: center; margin-bottom: 10px; }
-.dbx-table { width: 100%; border-collapse: collapse; font-size: 12px; }
-.dbx-table th { text-align: left; font-weight: 600; color: var(--color-muted-foreground, #71717a); border-bottom: 1px solid var(--color-border, #e4e4e7); padding: 6px 8px; }
-.dbx-table td { border-bottom: 1px solid var(--color-border, #e4e4e7); padding: 6px 8px; }
-.dbx-badge { display: inline-flex; align-items: center; height: 20px; padding: 0 8px; border-radius: 999px; background: var(--color-primary-alpha, rgba(37, 99, 235, 0.12)); color: var(--color-primary, #2563eb); font-size: 11px; font-weight: 500; }
-.dbx-link { color: var(--color-primary, #2563eb); text-decoration: none; cursor: pointer; }
-.dbx-link:hover { text-decoration: underline; }
+.chiron-horizon-textarea { height: auto; min-height: 64px; padding: 6px 10px; resize: vertical; }
+.chiron-horizon-input:focus, .chiron-horizon-select:focus, .chiron-horizon-textarea:focus { outline: 2px solid var(--color-ring, #93c5fd); outline-offset: 1px; border-color: var(--color-ring, #93c5fd); }
+.chiron-horizon-hint { font-size: 12px; color: var(--color-muted-foreground, #71717a); }
+.chiron-horizon-row { display: grid; grid-template-columns: minmax(96px, auto) minmax(0, 1fr); gap: 8px 12px; align-items: center; margin-bottom: 10px; }
+.chiron-horizon-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+.chiron-horizon-table th { text-align: left; font-weight: 600; color: var(--color-muted-foreground, #71717a); border-bottom: 1px solid var(--color-border, #e4e4e7); padding: 6px 8px; }
+.chiron-horizon-table td { border-bottom: 1px solid var(--color-border, #e4e4e7); padding: 6px 8px; }
+.chiron-horizon-badge { display: inline-flex; align-items: center; height: 20px; padding: 0 8px; border-radius: 999px; background: var(--color-primary-alpha, rgba(37, 99, 235, 0.12)); color: var(--color-primary, #2563eb); font-size: 11px; font-weight: 500; }
+.chiron-horizon-link { color: var(--color-primary, #2563eb); text-decoration: none; cursor: pointer; }
+.chiron-horizon-link:hover { text-decoration: underline; }
 `.trim();
 }
 
@@ -317,7 +317,7 @@ function pluginSdkSource(): string {
       if (!value || typeof value !== 'object') return;
       theme = value;
       const root = document.documentElement;
-      root.dataset.dbxTheme = value.appearance === 'dark' ? 'dark' : 'light';
+      root.dataset.chironHorizonTheme = value.appearance === 'dark' ? 'dark' : 'light';
       const tokens = value.tokens && typeof value.tokens === 'object' ? value.tokens : {};
       for (const [name, tokenValue] of Object.entries(tokens)) {
         if (/^--[a-z0-9-]+$/i.test(name) && typeof tokenValue === 'string') root.style.setProperty(name, tokenValue);
@@ -342,7 +342,7 @@ function pluginSdkSource(): string {
       for (const byte of bytes) binary += String.fromCharCode(byte);
       return btoa(binary);
     };
-    window.dbxPlugin = Object.freeze({
+    window.chironHorizonPlugin = Object.freeze({
       ready,
       get context() { return context; },
       get locale() { return locale; },
@@ -383,23 +383,23 @@ function pluginSdkSource(): string {
         applyTheme(message.theme);
         resolveReady(context);
         listeners.init.forEach((listener) => listener(context));
-        dispatchEvent(new CustomEvent('dbx-plugin-init', { detail: message }));
+        dispatchEvent(new CustomEvent('chiron-horizon-plugin-init', { detail: message }));
       } else if (message.type === 'context') {
         context = message.context;
         listeners.context.forEach((listener) => listener(context));
-        dispatchEvent(new CustomEvent('dbx-plugin-context', { detail: context }));
+        dispatchEvent(new CustomEvent('chiron-horizon-plugin-context', { detail: context }));
       } else if (message.type === 'env') {
         if (typeof message.locale === 'string') locale = message.locale;
         if (message.theme) applyTheme(message.theme);
         listeners.event.forEach((listener) => listener(message));
-        dispatchEvent(new CustomEvent('dbx-plugin-env', { detail: message }));
+        dispatchEvent(new CustomEvent('chiron-horizon-plugin-env', { detail: message }));
       } else if (message.type === 'event') {
         listeners.event.forEach((listener) => listener(message));
-        dispatchEvent(new CustomEvent('dbx-plugin-event', { detail: message }));
+        dispatchEvent(new CustomEvent('chiron-horizon-plugin-event', { detail: message }));
       } else if (message.type === 'binary') {
         const payload = { channel: message.channel, data: message.data ? new Uint8Array(message.data) : new Uint8Array(0) };
         listeners.binary.forEach((listener) => listener(payload));
-        dispatchEvent(new CustomEvent('dbx-plugin-binary', { detail: payload }));
+        dispatchEvent(new CustomEvent('chiron-horizon-plugin-binary', { detail: payload }));
       }
     });
     addEventListener('keydown', (event) => {

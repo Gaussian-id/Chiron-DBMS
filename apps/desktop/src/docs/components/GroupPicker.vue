@@ -21,7 +21,7 @@ const emit = defineEmits<{
  * file, so this is treated as the sentinel only when no real group claims it —
  * otherwise picking that group would silently open a create flow instead.
  */
-const CREATE = "__dbx_new_group__";
+const CREATE = "__chiron_horizon_new_group__";
 
 const selected = computed(() => props.groups.find((group) => group.id === props.modelValue) ?? null);
 

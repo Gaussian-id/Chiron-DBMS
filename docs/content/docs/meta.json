@@ -1,9 +1,10 @@
 {
-  "title": "DBX Docs",
+  "title": "Chiron Horizon Docs",
   "pages": [
     "---Introduction---",
-    "what-is-dbx",
+    "what-is-chiron-horizon",
     "getting-started",
+    "user-guide",
     "databases",
     "changelog",
     "faq",

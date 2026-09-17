@@ -7,7 +7,7 @@ function pairs(text: string): string[] {
 
 describe("tokenizeDataGridCondition", () => {
   it("colors keywords, fields and values in a where condition", () => {
-    expect(pairs("name = 'dbx' and age >= 18")).toEqual(["field:name", "plain: = ", "value:'dbx'", "plain: ", "keyword:and", "plain: ", "field:age", "plain: >= ", "value:18"]);
+    expect(pairs("name = 'chiron-horizon' and age >= 18")).toEqual(["field:name", "plain: = ", "value:'chiron-horizon'", "plain: ", "keyword:and", "plain: ", "field:age", "plain: >= ", "value:18"]);
   });
 
   it("matches keywords case-insensitively", () => {
@@ -51,7 +51,7 @@ describe("tokenizeDataGridCondition", () => {
   });
 
   it("preserves the full text across tokens", () => {
-    const text = "name = 'dbx' and (age >= 18 or city like 'sh%') order by id desc";
+    const text = "name = 'chiron-horizon' and (age >= 18 or city like 'sh%') order by id desc";
     const joined = tokenizeDataGridCondition(text)
       .map((token: DataGridConditionToken) => token.text)
       .join("");

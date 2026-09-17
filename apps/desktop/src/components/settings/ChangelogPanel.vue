@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label";
 import { currentLocale } from "@/i18n";
 import { isTauriRuntime } from "@/lib/backend/tauriRuntime";
 import { formatAiInlineMarkdownFragment, handleAiMarkdownLinkClick } from "@/lib/ai/aiMarkdown";
-import { changelogLangFromLocale, changelogReleaseUrl, changelogWebsiteUrl, createLatestRequestGuard, fetchChangelog, type ChangelogItem, type ChangelogLang, type ChangelogRelease } from "@/lib/app/changelog";
+import { changelogLangFromLocale, changelogReleaseUrl, changelogRepositoryUrl, createLatestRequestGuard, fetchChangelog, type ChangelogItem, type ChangelogLang, type ChangelogRelease } from "@/lib/app/changelog";
 
 const PAGE_SIZE = 5;
 
@@ -142,12 +142,12 @@ watch(changelogLang, (lang) => {
         <p class="text-sm text-muted-foreground">{{ t("settings.changelogDescription") }}</p>
       </div>
       <div class="settings-about-section-actions flex shrink-0 flex-wrap items-center gap-2">
-        <Button type="button" variant="outline" size="sm" :disabled="checkingUpdates" @click="emit('check-updates')">
+        <Button v-if="false" type="button" variant="outline" size="sm" :disabled="checkingUpdates" @click="emit('check-updates')">
           <Loader2 v-if="checkingUpdates" class="mr-1 h-3.5 w-3.5 animate-spin" />
           <CloudDownload v-else class="mr-1 h-3.5 w-3.5" />
           {{ t("updates.check") }}
         </Button>
-        <Button type="button" variant="outline" size="sm" :disabled="loading" @click="openExternalUrl(changelogWebsiteUrl(changelogLang))">
+        <Button type="button" variant="outline" size="sm" :disabled="loading" @click="openExternalUrl(changelogRepositoryUrl(changelogLang))">
           <ExternalLink class="mr-1 h-3.5 w-3.5" />
           {{ t("settings.changelogOpenWebsite") }}
         </Button>
@@ -167,7 +167,7 @@ watch(changelogLang, (lang) => {
       <p class="text-sm text-destructive">{{ t("settings.changelogLoadFailed") }}</p>
       <div class="flex flex-wrap gap-2">
         <Button type="button" variant="outline" size="sm" @click="load(true)">{{ t("settings.changelogRetry") }}</Button>
-        <Button type="button" variant="outline" size="sm" @click="openExternalUrl(changelogWebsiteUrl(changelogLang))">
+        <Button type="button" variant="outline" size="sm" @click="openExternalUrl(changelogRepositoryUrl(changelogLang))">
           <ExternalLink class="mr-1 h-3.5 w-3.5" />
           {{ t("settings.changelogOpenWebsite") }}
         </Button>
@@ -187,7 +187,7 @@ watch(changelogLang, (lang) => {
             {{ t("settings.changelogNew") }}
           </span>
           <span class="min-w-0 flex-1 truncate text-xs text-muted-foreground">
-            {{ t("settings.changelogPublishedOn", { date: formatReleaseDate(release.date) }) }}
+            {{ release.unreleased ? "Development build · Not published" : t("settings.changelogPublishedOn", { date: formatReleaseDate(release.date) }) }}
           </span>
           <ChevronDown class="h-4 w-4 shrink-0 text-muted-foreground transition-transform" :class="isExpanded(release.tag) ? 'rotate-180' : ''" />
         </button>
@@ -206,9 +206,9 @@ watch(changelogLang, (lang) => {
           </template>
           <p v-else class="text-xs italic text-muted-foreground">{{ t("settings.changelogNoDetails") }}</p>
 
-          <Button type="button" variant="ghost" size="sm" class="mt-3 h-7 px-2 text-xs" @click.stop="openExternalUrl(changelogReleaseUrl(release.tag))">
+          <Button type="button" variant="ghost" size="sm" class="mt-3 h-7 px-2 text-xs" @click.stop="openExternalUrl(release.unreleased ? changelogRepositoryUrl(changelogLang) : changelogReleaseUrl(release.tag))">
             <ExternalLink class="mr-1 h-3 w-3" />
-            {{ t("settings.changelogOpenGitHub") }}
+            {{ release.unreleased ? t("settings.changelogOpenWebsite") : t("settings.changelogOpenGitHub") }}
           </Button>
         </div>
       </div>

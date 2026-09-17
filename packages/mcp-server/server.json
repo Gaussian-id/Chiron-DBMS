@@ -1,16 +1,16 @@
 {
   "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
-  "name": "io.github.t8y2/dbx",
-  "description": "Query and manage databases from AI agents using connections configured in DBX.",
+  "name": "io.github.Gaussian-id/Gauss-Horizon",
+  "description": "Query and manage databases from AI agents using connections configured in Chiron Horizon.",
   "repository": {
-    "url": "https://github.com/t8y2/dbx",
+    "url": "https://github.com/Gaussian-id/Gauss-Horizon",
     "source": "github"
   },
   "version": "0.4.86",
   "packages": [
     {
       "registryType": "npm",
-      "identifier": "@dbx-app/mcp-server",
+      "identifier": "@chiron-horizon/mcp-server",
       "version": "0.4.86",
       "transport": {
         "type": "stdio"

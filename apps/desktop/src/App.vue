@@ -66,7 +66,6 @@ import { resolveExecutableSql, resolveExecutableSqlWithBackend, type SqlExecutio
 import { uuid } from "@/lib/common/utils";
 import { isMacOS, isWindows } from "@/lib/backend/platform";
 import { isTauriRuntime } from "@/lib/backend/tauriRuntime";
-import { relationalComingSoon, relationalComingSoonPanel } from "@/lib/app/relationalComingSoon";
 import { openQueryResultArchiveFile } from "@/lib/query/queryResultArchiveFile";
 import { rememberExternalSqlFileTarget, resolveExternalSqlFileTarget, unassociatedExternalSqlFileTarget } from "@/lib/sql/externalSqlFileTarget";
 import { externalSqlFileOpenErrorMessage, externalSqlEditorMaxBytes, isSqlFilePath, readBrowserSqlFile, sqlFileTitleFromPath } from "@/lib/sql/sqlFileOpen";
@@ -187,7 +186,6 @@ const savedSqlStore = useSavedSqlStore();
 const promptTemplateStore = usePromptTemplateStore();
 const recentConnectionIds = ref<readonly string[]>(parseRecentConnectionIds(safeLocalStorageGet(RECENT_CONNECTION_IDS_STORAGE_KEY)));
 connectionStore.setBeforeConnectHandler(async (config) => {
-  if (relationalComingSoon(config.db_type)) throw new Error("Relational database connections · Coming Soon");
   await ensureJdbcxRuntimeDrivers(config, api);
   const jdbcProductRuntimeBefore = JSON.stringify({
     connectionString: config.connection_string ?? null,
@@ -340,11 +338,11 @@ const showTabSwitcher = ref(false);
 const tabSwitcherIndex = ref(0);
 const agentDriverUpdateCount = ref(0);
 const showHistory = ref(false);
-const showAiPanel = ref(safeLocalStorageGet("dbx-ai-panel-open") === "true");
+const showAiPanel = ref(safeLocalStorageGet("chiron-horizon-ai-panel-open") === "true");
 const isAiPanelMaximized = ref(false);
 const isZenMode = ref(false);
-const showSqlLibraryPanel = relationalComingSoonPanel();
-const showSqlFilePanel = relationalComingSoonPanel();
+const showSqlLibraryPanel = ref(safeLocalStorageGet("chiron-horizon-sql-library-open") === "true");
+const showSqlFilePanel = ref(safeLocalStorageGet("chiron-horizon-sql-file-panel-open") === "true");
 const rightSidebarPanelRefs: Record<RightSidebarPanelId, typeof showAiPanel> = {
   ai: showAiPanel,
   history: showHistory,
@@ -352,12 +350,12 @@ const rightSidebarPanelRefs: Record<RightSidebarPanelId, typeof showAiPanel> = {
   sqlFile: showSqlFilePanel,
 };
 const rightSidebarPanelStorageKeys: Partial<Record<RightSidebarPanelId, string>> = {
-  ai: "dbx-ai-panel-open",
-  sqlLibrary: "dbx-sql-library-open",
-  sqlFile: "dbx-sql-file-panel-open",
+  ai: "chiron-horizon-ai-panel-open",
+  sqlLibrary: "chiron-horizon-sql-library-open",
+  sqlFile: "chiron-horizon-sql-file-panel-open",
 };
 let lastOpenedRightSidebarPanel = RIGHT_SIDEBAR_PANEL_IDS.find((panelId) => rightSidebarPanelRefs[panelId].value);
-const sidebarOpen = ref(safeLocalStorageGet("dbx-sidebar-open") !== "false");
+const sidebarOpen = ref(safeLocalStorageGet("chiron-horizon-sidebar-open") !== "false");
 const aiPanelReady = ref(false);
 const { sidebarWidth, aiPanelWidth, historyWidth, sqlLibraryWidth, sqlFilePanelWidth, tabBarWidth, tabBarCollapsed, startSidebarResize, startAiPanelResize, startHistoryResize, startSqlLibraryResize, startSqlFilePanelResize, startLeftTabBarResize, startRightTabBarResize, setTabBarCollapsed } =
   usePanelResize();
@@ -525,7 +523,7 @@ async function persistDetachedReturnRequest(reason: "return" | "close") {
     const handoff = await queryStore.prepareDetachedTab(detachedContextTabId, { activeOutputView: activeOutputView.value });
     await api.saveDetachedTabHandoff(detachedContextTabId, handoff);
     detachedCloseInProgress = true;
-    await emitDetachedEvent("dbx:detached-tab-return-requested", { tabId: detachedContextTabId, revision: handoff.revision, reason });
+    await emitDetachedEvent("chiron-horizon:detached-tab-return-requested", { tabId: detachedContextTabId, revision: handoff.revision, reason });
   } catch (error: any) {
     detachedCloseInProgress = false;
     toast(error?.message || String(error), 5000);
@@ -555,12 +553,12 @@ function cancelDetachedTabClose() {
 
 async function handleDetachedHeaderDragStart(position: { x: number; y: number }) {
   if (!detachedContextTabId) return;
-  await emitDetachedEvent("dbx:detached-tab-dragging", { tabId: detachedContextTabId, x: position.x, y: position.y });
+  await emitDetachedEvent("chiron-horizon:detached-tab-dragging", { tabId: detachedContextTabId, x: position.x, y: position.y });
 }
 
 async function handleDetachedHeaderDragging(position: { x: number; y: number }) {
   if (!detachedContextTabId) return;
-  await emitDetachedEvent("dbx:detached-tab-dragging", { tabId: detachedContextTabId, x: position.x, y: position.y });
+  await emitDetachedEvent("chiron-horizon:detached-tab-dragging", { tabId: detachedContextTabId, x: position.x, y: position.y });
 }
 
 async function handleDetachedHeaderDragEnd(position: { x: number; y: number }) {
@@ -568,7 +566,7 @@ async function handleDetachedHeaderDragEnd(position: { x: number; y: number }) {
   try {
     const handoff = await queryStore.prepareDetachedTab(detachedContextTabId, { activeOutputView: activeOutputView.value });
     await api.saveDetachedTabHandoff(detachedContextTabId, handoff);
-    await emitDetachedEvent("dbx:detached-tab-dropped", { tabId: detachedContextTabId, revision: handoff.revision, x: position.x, y: position.y });
+    await emitDetachedEvent("chiron-horizon:detached-tab-dropped", { tabId: detachedContextTabId, revision: handoff.revision, x: position.x, y: position.y });
   } catch (error: any) {
     toast(error?.message || String(error), 5000);
   }
@@ -610,7 +608,7 @@ async function handleDetachedTabLost(payload: unknown) {
     await queryStore.flushPendingPersist();
     await api.deleteDetachedTabHandoff(tabId);
   } catch (error) {
-    console.warn("[DBX][detached-tab:lost-restore:error]", error);
+    console.warn("[Chiron Horizon][detached-tab:lost-restore:error]", error);
   }
 }
 
@@ -627,7 +625,7 @@ async function handleDetachedReturnRequested(payload: unknown) {
     // least one durable store at every point of the flow.
     await queryStore.flushPendingPersist();
     await api.deleteDetachedTabHandoff(data.tabId);
-    await emitDetachedEvent("dbx:detached-tab-return-complete", { tabId: data.tabId });
+    await emitDetachedEvent("chiron-horizon:detached-tab-return-complete", { tabId: data.tabId });
   } catch (error: any) {
     toast(error?.message || String(error), 5000);
   }
@@ -647,7 +645,7 @@ async function initDetachedWindow() {
   await queryStore.hydrateSavedSqlTabs();
   if (handoff.runtime.activeOutputView) activeOutputView.value = handoff.runtime.activeOutputView;
   const { emit } = await import("@tauri-apps/api/event");
-  await emit("dbx:detached-tab-ready", { tabId: detachedContextTabId, revision: handoff.revision });
+  await emit("chiron-horizon:detached-tab-ready", { tabId: detachedContextTabId, revision: handoff.revision });
 }
 
 async function setupDetachedWindowEvents() {
@@ -655,15 +653,15 @@ async function setupDetachedWindowEvents() {
   const { listen } = await import("@tauri-apps/api/event");
   const events: Array<[string, (payload: unknown) => Promise<void>]> = isDetachedWindowContext
     ? [
-        ["dbx:detached-tab-close-requested", handleDetachedCloseRequested],
-        ["dbx:detached-tab-return-complete", handleDetachedReturnComplete],
+        ["chiron-horizon:detached-tab-close-requested", handleDetachedCloseRequested],
+        ["chiron-horizon:detached-tab-return-complete", handleDetachedReturnComplete],
       ]
     : [
-        ["dbx:detached-tab-ready", handleDetachedTabReady],
-        ["dbx:detached-tab-return-requested", handleDetachedReturnRequested],
-        ["dbx:detached-tab-dragging", handleDetachedTabDragging],
-        ["dbx:detached-tab-dropped", handleDetachedTabDropped],
-        ["dbx:detached-tab-lost", handleDetachedTabLost],
+        ["chiron-horizon:detached-tab-ready", handleDetachedTabReady],
+        ["chiron-horizon:detached-tab-return-requested", handleDetachedReturnRequested],
+        ["chiron-horizon:detached-tab-dragging", handleDetachedTabDragging],
+        ["chiron-horizon:detached-tab-dropped", handleDetachedTabDropped],
+        ["chiron-horizon:detached-tab-lost", handleDetachedTabLost],
       ];
   for (const [event, handler] of events) {
     detachedEventUnlisteners.push(await listen(event, (message) => void (handler as (payload: unknown) => Promise<void>)(message.payload)));
@@ -1076,8 +1074,18 @@ function closeSettingsPage() {
 
 const driverStoreFocus = ref<DriverStoreFocus | null>(null);
 
-function openDriverStorePage(_target?: "agent" | "jdbc" | "storage" | "runtime" | DriverStoreFocus | null) {
-  toast("Driver Manager · Coming Soon");
+function openDriverStorePage(target?: "agent" | "jdbc" | "storage" | "runtime" | DriverStoreFocus | null) {
+  if (typeof target === "string") {
+    driverStoreActiveTab.value = target;
+    driverStoreFocus.value = null;
+  } else if (target && target.target === "tab") {
+    driverStoreActiveTab.value = target.tab;
+    driverStoreFocus.value = null;
+  } else {
+    driverStoreFocus.value = target ?? null;
+  }
+  driverStoreTabOpen.value = true;
+  activateMainContentSurface("driverStore");
 }
 
 function closeDriverStorePage() {
@@ -1087,8 +1095,10 @@ function closeDriverStorePage() {
   driverStoreFocus.value = null;
 }
 
-function openPluginCenterPage(_focus?: PluginCenterFocus | null) {
-  toast("Plugin Center · Coming Soon");
+function openPluginCenterPage(focus?: PluginCenterFocus | null) {
+  pluginCenterFocus.value = focus ?? null;
+  pluginCenterTabOpen.value = true;
+  activateMainContentSurface("pluginCenter");
 }
 
 function closePluginCenterPage() {
@@ -1186,10 +1196,10 @@ const uiScaleApplyQueue = createUiScaleApplyQueue(
     await getCurrentWebview().setZoom(scale);
   },
   (scale) => {
-    window.dispatchEvent(new CustomEvent("dbx:ui-scale-applied", { detail: { scale } }));
+    window.dispatchEvent(new CustomEvent("chiron-horizon:ui-scale-applied", { detail: { scale } }));
   },
   (scale, error) => {
-    console.warn("[DBX] Failed to apply UI scale", { scale, error });
+    console.warn("[Chiron Horizon] Failed to apply UI scale", { scale, error });
   },
 );
 
@@ -1271,7 +1281,7 @@ watch(
   (id, previousId) => {
     if (previousId && previousId !== id && typeof window !== "undefined") {
       window.dispatchEvent(
-        new CustomEvent("dbx:before-tab-switch", {
+        new CustomEvent("chiron-horizon:before-tab-switch", {
           detail: { tabId: id, fromTabId: previousId },
         }),
       );
@@ -2726,15 +2736,15 @@ function changeActiveSchema(tabId: string, schema: string | undefined) {
 }
 
 function openGitHub() {
-  openUrl("https://github.com/Gaussian-id/Gauss-DBM");
+  openUrl("https://github.com/Gaussian-id/Gauss-Horizon");
 }
 function openMcpGuide() {
-  openUrl("https://dbxio.com/cn/docs/mcp");
+  openUrl("https://distribution-disabled.invalid/cn/docs/mcp");
 }
 
 function setSidebarOpen(open: boolean) {
   sidebarOpen.value = open;
-  safeLocalStorageSet("dbx-sidebar-open", open ? "true" : "false");
+  safeLocalStorageSet("chiron-horizon-sidebar-open", open ? "true" : "false");
 }
 
 async function locateTabInSidebar(tab: QueryTab) {
@@ -2761,11 +2771,11 @@ function routeAiRedisCommand(command: string, execute: boolean): boolean {
   // recreate the original bug by opening a SQL tab for a Redis command.
   const routed = execute ? contentAreaRef.value?.executeRedisCommand(command) : contentAreaRef.value?.insertRedisCommand(command);
   if (!routed) {
-    console.warn("[DBX] Redis AI command could not reach the active Redis console");
+    console.warn("[Chiron Horizon] Redis AI command could not reach the active Redis console");
     return true;
   }
   void routed.then((handled: any) => {
-    if (!handled) console.warn("[DBX] Redis AI command could not reach the active Redis console");
+    if (!handled) console.warn("[Chiron Horizon] Redis AI command could not reach the active Redis console");
   });
   return true;
 }
@@ -3009,7 +3019,7 @@ async function handleQuickOpenSelect(item: any) {
 
 function dispatchBeforeTabSwitch(tabId: string) {
   if (tabId === queryStore.activeTabId) return;
-  window.dispatchEvent(new CustomEvent("dbx:before-tab-switch", { detail: { tabId, fromTabId: queryStore.activeTabId } }));
+  window.dispatchEvent(new CustomEvent("chiron-horizon:before-tab-switch", { detail: { tabId, fromTabId: queryStore.activeTabId } }));
 }
 
 function activateQueryTab(tabId: string): boolean {
@@ -3455,10 +3465,10 @@ onMounted(async () => {
   window.addEventListener("keyup", handleKeyup, true);
   window.addEventListener("blur", handleTabSwitcherWindowBlur);
   document.addEventListener("visibilitychange", handleTabSwitcherVisibilityChange);
-  window.addEventListener("dbx-open-driver-store", openDriverStoreFromEvent);
-  window.addEventListener("dbx:activate-query-surface", activateQuerySurface);
-  window.addEventListener("dbx-mcp-status-changed", handleMcpStatusChanged);
-  window.addEventListener("dbx:ai-run-notify", handleAiRunNotify);
+  window.addEventListener("chiron-horizon-open-driver-store", openDriverStoreFromEvent);
+  window.addEventListener("chiron-horizon:activate-query-surface", activateQuerySurface);
+  window.addEventListener("chiron-horizon-mcp-status-changed", handleMcpStatusChanged);
+  window.addEventListener("chiron-horizon:ai-run-notify", handleAiRunNotify);
   if (isDesktop) {
     document.addEventListener("contextmenu", handleContextMenu);
   }
@@ -3536,10 +3546,10 @@ onUnmounted(() => {
   window.removeEventListener("blur", handleTabSwitcherWindowBlur);
   document.removeEventListener("visibilitychange", handleTabSwitcherVisibilityChange);
   tabSwitcherKeyboard.reset();
-  window.removeEventListener("dbx-open-driver-store", openDriverStoreFromEvent);
-  window.removeEventListener("dbx:activate-query-surface", activateQuerySurface);
-  window.removeEventListener("dbx-mcp-status-changed", handleMcpStatusChanged);
-  window.removeEventListener("dbx:ai-run-notify", handleAiRunNotify);
+  window.removeEventListener("chiron-horizon-open-driver-store", openDriverStoreFromEvent);
+  window.removeEventListener("chiron-horizon:activate-query-surface", activateQuerySurface);
+  window.removeEventListener("chiron-horizon-mcp-status-changed", handleMcpStatusChanged);
+  window.removeEventListener("chiron-horizon:ai-run-notify", handleAiRunNotify);
   document.removeEventListener("contextmenu", handleContextMenu);
   window.clearTimeout(sqlLibraryFlyAnimationTimer);
 });
@@ -3552,7 +3562,7 @@ onUnmounted(() => {
       <div class="h-full w-full" :style="appBackgroundImageStyle"></div>
     </div>
     <TooltipProvider :delay-duration="300">
-      <div class="h-screen w-screen max-w-full min-w-[760px] min-h-[600px] flex flex-col bg-background text-foreground overflow-hidden" :class="{ 'dbx-desktop-window-frame': drawDesktopWindowFrame }" :style="appUiFontFamilyStyle">
+      <div class="h-screen w-screen max-w-full min-w-[760px] min-h-[600px] flex flex-col bg-background text-foreground overflow-hidden" :class="{ 'chiron-horizon-desktop-window-frame': drawDesktopWindowFrame }" :style="appUiFontFamilyStyle">
         <AppToolbar
           v-if="!isDetachedWindowContext"
           :is-dark="isDark"
@@ -4091,7 +4101,7 @@ onUnmounted(() => {
         @saved="onQueryEditorObjectSourceSaved"
       />
     </TooltipProvider>
-    <div id="dbx-query-editor-tooltip-root" class="fixed left-0 top-0 z-[70] h-0 w-0 overflow-visible" />
+    <div id="chiron-horizon-query-editor-tooltip-root" class="fixed left-0 top-0 z-[70] h-0 w-0 overflow-visible" />
   </div>
 </template>
 

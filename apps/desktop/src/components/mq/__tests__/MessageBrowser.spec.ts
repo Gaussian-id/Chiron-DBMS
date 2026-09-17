@@ -231,7 +231,7 @@ describe("MessageBrowser", () => {
 
     await loadMessages(browser);
 
-    expect(backend.mqPeekMessages).toHaveBeenCalledWith("mq-1", expect.objectContaining({ topic: "events" }), "__dbx_kafka_viewer__", 20, { startPosition: "latest" });
+    expect(backend.mqPeekMessages).toHaveBeenCalledWith("mq-1", expect.objectContaining({ topic: "events" }), "__chiron_horizon_kafka_viewer__", 20, { startPosition: "latest" });
   });
 
   it("orders loaded Kafka messages newest first by default and changes presentation without reloading", async () => {
@@ -288,7 +288,7 @@ describe("MessageBrowser", () => {
     await loadMessages(browser);
 
     expect(countInput.value).toBe("2");
-    expect(backend.mqPeekMessages).toHaveBeenCalledWith("mq-1", expect.objectContaining({ topic: "events" }), "__dbx_kafka_viewer__", 2, { startPosition: "latest" });
+    expect(backend.mqPeekMessages).toHaveBeenCalledWith("mq-1", expect.objectContaining({ topic: "events" }), "__chiron_horizon_kafka_viewer__", 2, { startPosition: "latest" });
   });
 
   it("shows an explicit warning when the broker returns an incomplete snapshot", async () => {
@@ -443,7 +443,7 @@ describe("MessageBrowser", () => {
 
     await setSelectValue(startPosition, "earliest");
     await loadMessages(browser);
-    expect(backend.mqPeekMessages).toHaveBeenLastCalledWith("mq-1", expect.objectContaining({ topic: "events" }), "__dbx_kafka_viewer__", 20, { startPosition: "earliest" });
+    expect(backend.mqPeekMessages).toHaveBeenLastCalledWith("mq-1", expect.objectContaining({ topic: "events" }), "__chiron_horizon_kafka_viewer__", 20, { startPosition: "earliest" });
 
     await setSelectValue(startPosition, "offset");
     const partition = browser.querySelector<HTMLInputElement>('[data-testid="kafka-peek-partition"]');
@@ -453,7 +453,7 @@ describe("MessageBrowser", () => {
     await setInputValue(offset, "17");
     await loadMessages(browser);
 
-    expect(backend.mqPeekMessages).toHaveBeenLastCalledWith("mq-1", expect.objectContaining({ topic: "events" }), "__dbx_kafka_viewer__", 20, { startPosition: "offset", partition: 2, offset: 17 });
+    expect(backend.mqPeekMessages).toHaveBeenLastCalledWith("mq-1", expect.objectContaining({ topic: "events" }), "__chiron_horizon_kafka_viewer__", 20, { startPosition: "offset", partition: 2, offset: 17 });
   });
 
   it("allows an all-partition offset read but requires an offset", async () => {
@@ -475,7 +475,7 @@ describe("MessageBrowser", () => {
 
     await setInputValue(offset, "17");
     await loadMessages(browser);
-    expect(backend.mqPeekMessages).toHaveBeenLastCalledWith("mq-1", expect.objectContaining({ topic: "events" }), "__dbx_kafka_viewer__", 20, { startPosition: "offset", offset: 17 });
+    expect(backend.mqPeekMessages).toHaveBeenLastCalledWith("mq-1", expect.objectContaining({ topic: "events" }), "__chiron_horizon_kafka_viewer__", 20, { startPosition: "offset", offset: 17 });
   });
 
   it("clears results and does not leak an offset into a different read mode", async () => {
@@ -496,7 +496,7 @@ describe("MessageBrowser", () => {
 
     await setSelectValue(startPosition, "latest");
     await loadMessages(browser);
-    expect(backend.mqPeekMessages).toHaveBeenLastCalledWith("mq-1", expect.objectContaining({ topic: "events" }), "__dbx_kafka_viewer__", 20, { startPosition: "latest", partition: 2 });
+    expect(backend.mqPeekMessages).toHaveBeenLastCalledWith("mq-1", expect.objectContaining({ topic: "events" }), "__chiron_horizon_kafka_viewer__", 20, { startPosition: "latest", partition: 2 });
   });
 
   it("ignores an older topic request that resolves after the current request", async () => {
@@ -720,6 +720,6 @@ describe("MessageBrowser", () => {
     await setInputValue(offset, "17");
     await loadMessages(browser);
 
-    expect(backend.mqPeekMessages).toHaveBeenCalledWith("mq-1", expect.objectContaining({ tenant: "_rabbitmq", topic: "events" }), "__dbx_kafka_viewer__", 20, { partition: 2, offset: 17 });
+    expect(backend.mqPeekMessages).toHaveBeenCalledWith("mq-1", expect.objectContaining({ tenant: "_rabbitmq", topic: "events" }), "__chiron_horizon_kafka_viewer__", 20, { partition: 2, offset: 17 });
   });
 });

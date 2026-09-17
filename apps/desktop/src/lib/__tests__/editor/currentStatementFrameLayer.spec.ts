@@ -253,7 +253,7 @@ describe("currentStatementFrameRect", () => {
     expect(rect!.height).toBe(expectedHeight);
   });
 
-  it("skips huge multi-thousand-line statements instead of probing every line (dbx#7226)", () => {
+  it("skips huge multi-thousand-line statements instead of probing every line (chiron-horizon#7226)", () => {
     // A large Oracle package body is parsed as one statement spanning the
     // whole file. Without a cap, this loop would issue two coordsAtPos
     // calls per logical line, freezing the UI on every scroll frame.

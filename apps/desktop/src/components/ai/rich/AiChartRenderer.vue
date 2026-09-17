@@ -93,7 +93,7 @@ async function downloadPng() {
     if (isTauriRuntime()) {
       const { save } = await import("@tauri-apps/plugin-dialog");
       const path = await save({
-        defaultPath: "dbx-ai-chart.png",
+        defaultPath: "chiron-horizon-ai-chart.png",
         filters: [{ name: "PNG", extensions: ["png"] }],
       });
       if (!path) return;
@@ -107,7 +107,7 @@ async function downloadPng() {
     const url = URL.createObjectURL(blob);
     const anchor = document.createElement("a");
     anchor.href = url;
-    anchor.download = "dbx-ai-chart.png";
+    anchor.download = "chiron-horizon-ai-chart.png";
     anchor.click();
     URL.revokeObjectURL(url);
   } catch {

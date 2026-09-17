@@ -3,7 +3,7 @@ import { publicBasePathRedirectMiddleware } from "../../apps/desktop/vitePublicB
 
 type RedirectMiddleware = ReturnType<typeof publicBasePathRedirectMiddleware>;
 
-function runMiddleware(requestUrl: string, publicBasePath = "/dbx") {
+function runMiddleware(requestUrl: string, publicBasePath = "/chiron-horizon") {
   const middleware = publicBasePathRedirectMiddleware(publicBasePath);
   const request = { url: requestUrl } as Parameters<RedirectMiddleware>[0];
   const response = {
@@ -19,8 +19,8 @@ function runMiddleware(requestUrl: string, publicBasePath = "/dbx") {
 
 test("redirects the exact bare public base path and preserves its query", () => {
   for (const [requestUrl, expectedLocation] of [
-    ["/dbx", "/dbx/"],
-    ["/dbx?next=%2Fworkspace&theme=dark", "/dbx/?next=%2Fworkspace&theme=dark"],
+    ["/chiron-horizon", "/chiron-horizon/"],
+    ["/chiron-horizon?next=%2Fworkspace&theme=dark", "/chiron-horizon/?next=%2Fworkspace&theme=dark"],
   ]) {
     const { next, response } = runMiddleware(requestUrl);
 
@@ -32,7 +32,7 @@ test("redirects the exact bare public base path and preserves its query", () => 
 });
 
 test("passes root, trailing slash, static assets, API routes, and root deployments through", () => {
-  for (const requestUrl of ["/", "/dbx/", "/dbx/favicon.png", "/dbx/api/probe?value=1"]) {
+  for (const requestUrl of ["/", "/chiron-horizon/", "/chiron-horizon/favicon.png", "/chiron-horizon/api/probe?value=1"]) {
     const { next, response } = runMiddleware(requestUrl);
 
     expect(next).toHaveBeenCalledOnce();

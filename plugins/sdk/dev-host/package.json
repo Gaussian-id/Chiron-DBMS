@@ -1,5 +1,5 @@
 {
-  "name": "@dbx-app/plugin-dev-host-source",
+  "name": "@chiron-horizon/plugin-dev-host-source",
   "private": true,
   "type": "module",
   "scripts": {
@@ -26,5 +26,6 @@
     "vite": "^6.1.0",
     "vite-plugin-singlefile": "^2.3.0",
     "vue": "^3.5.21"
-  }
+  },
+  "version": "0.1.0"
 }

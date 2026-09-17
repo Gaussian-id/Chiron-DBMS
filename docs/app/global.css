@@ -51,12 +51,12 @@
   --color-fd-accent: #f0f0f0;
   --color-fd-accent-foreground: #171717;
   --color-fd-ring: #a3a3a3;
-  --dbx-surface: #fefefe;
-  --dbx-surface-soft: #f7f7f7;
-  --dbx-line: var(--color-fd-border);
-  --dbx-blue: #171717;
-  --dbx-sky: #737373;
-  --dbx-green: #525252;
+  --chiron-horizon-surface: #fefefe;
+  --chiron-horizon-surface-soft: #f7f7f7;
+  --chiron-horizon-line: var(--color-fd-border);
+  --chiron-horizon-blue: #171717;
+  --chiron-horizon-sky: #737373;
+  --chiron-horizon-green: #525252;
 }
 
 .dark {
@@ -76,12 +76,12 @@
   --color-fd-accent: #262626;
   --color-fd-accent-foreground: #fff;
   --color-fd-ring: #595959;
-  --dbx-surface: #0a0a0a;
-  --dbx-surface-soft: #141414;
-  --dbx-line: var(--color-fd-border);
-  --dbx-blue: #fafafa;
-  --dbx-sky: #999;
-  --dbx-green: #d4d4d4;
+  --chiron-horizon-surface: #0a0a0a;
+  --chiron-horizon-surface-soft: #141414;
+  --chiron-horizon-line: var(--color-fd-border);
+  --chiron-horizon-blue: #fafafa;
+  --chiron-horizon-sky: #999;
+  --chiron-horizon-green: #d4d4d4;
 }
 
 html {
@@ -137,7 +137,7 @@ article h1 {
 }
 
 article h2 {
-  border-top: 1px solid var(--dbx-line);
+  border-top: 1px solid var(--chiron-horizon-line);
   margin-top: 2.35rem;
   padding-top: 1.35rem;
   letter-spacing: 0;
@@ -157,18 +157,18 @@ article p {
 }
 
 article a:not([class]) {
-  color: var(--dbx-blue);
+  color: var(--chiron-horizon-blue);
   font-weight: 560;
   text-decoration-color: color-mix(in srgb, var(--color-fd-primary) 32%, transparent);
   text-underline-offset: 3px;
 }
 
 article a:not([class]):hover {
-  text-decoration-color: var(--dbx-blue);
+  text-decoration-color: var(--chiron-horizon-blue);
 }
 
 article img {
-  border: 1px solid var(--dbx-line);
+  border: 1px solid var(--chiron-horizon-line);
   border-radius: 10px;
   box-shadow: 0 18px 54px color-mix(in srgb, black 12%, transparent);
 }
@@ -176,16 +176,16 @@ article img {
 article table {
   width: 100%;
   overflow: hidden;
-  border: 1px solid var(--dbx-line);
+  border: 1px solid var(--chiron-horizon-line);
   border-radius: 9px;
   border-collapse: separate;
   border-spacing: 0;
-  background: var(--dbx-surface);
+  background: var(--chiron-horizon-surface);
   font-size: 0.925rem;
 }
 
 article thead {
-  background: var(--dbx-surface-soft);
+  background: var(--chiron-horizon-surface-soft);
 }
 
 article th {
@@ -195,7 +195,7 @@ article th {
 
 article th,
 article td {
-  border-bottom: 1px solid var(--dbx-line);
+  border-bottom: 1px solid var(--chiron-horizon-line);
   padding: 0.78rem 0.92rem;
 }
 
@@ -264,32 +264,32 @@ article figure.shiki button:hover {
 }
 
 article :not(pre) > code {
-  border: 1px solid var(--dbx-line);
+  border: 1px solid var(--chiron-horizon-line);
   border-radius: 6px;
   padding: 0.12rem 0.34rem;
   background: color-mix(in srgb, var(--color-fd-muted) 72%, transparent);
-  color: color-mix(in srgb, var(--color-fd-foreground) 88%, var(--dbx-blue));
+  color: color-mix(in srgb, var(--color-fd-foreground) 88%, var(--chiron-horizon-blue));
   font-size: 0.88em;
 }
 
 article a.block.rounded-xl,
 article a.flex.rounded-lg {
-  border-color: var(--dbx-line);
+  border-color: var(--chiron-horizon-line);
   border-radius: 9px;
-  background: var(--dbx-surface);
+  background: var(--chiron-horizon-surface);
   box-shadow: 0 1px 2px color-mix(in srgb, black 4%, transparent);
 }
 
 article a.block.rounded-xl:hover,
 article a.flex.rounded-lg:hover {
-  border-color: color-mix(in srgb, var(--color-fd-primary) 28%, var(--dbx-line));
-  background: color-mix(in srgb, var(--color-fd-accent) 58%, var(--dbx-surface));
+  border-color: color-mix(in srgb, var(--color-fd-primary) 28%, var(--chiron-horizon-line));
+  background: color-mix(in srgb, var(--color-fd-accent) 58%, var(--chiron-horizon-surface));
   box-shadow: 0 10px 28px color-mix(in srgb, black 7%, transparent);
 }
 
 article [role="tablist"].not-prose {
   border: 0;
-  border-bottom: 1px solid var(--dbx-line);
+  border-bottom: 1px solid var(--chiron-horizon-line);
   border-radius: 0;
   background: transparent;
   padding: 0 1rem;
@@ -306,11 +306,11 @@ article [role="tablist"].not-prose [role="tab"][data-state="active"] {
 }
 
 article [role="tabpanel"] {
-  border-color: var(--dbx-line);
+  border-color: var(--chiron-horizon-line);
 }
 
 article div[class*="border"] {
-  border-color: var(--dbx-line);
+  border-color: var(--chiron-horizon-line);
 }
 
 aside a[href*="/docs/"][class*="rounded-lg"][data-active="true"],
@@ -320,49 +320,49 @@ aside a[href*="/docs/"][class*="rounded-lg"][aria-current="page"] {
   font-weight: 650;
 }
 
-.dbx-docs-sidebar-footer {
+.chiron-horizon-docs-sidebar-footer {
   padding-top: 0.5rem;
 }
 
-#nd-sidebar .dbx-docs-sidebar-footer {
-  border-top: 1px solid var(--dbx-line);
+#nd-sidebar .chiron-horizon-docs-sidebar-footer {
+  border-top: 1px solid var(--chiron-horizon-line);
   margin-inline: -1rem;
   padding: 0.8rem 1rem 0;
 }
 
-.dbx-docs-sidebar-tools {
+.chiron-horizon-docs-sidebar-tools {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 0.75rem;
 }
 
-.dbx-docs-sidebar-tools a,
-.dbx-docs-sidebar-tools button {
+.chiron-horizon-docs-sidebar-tools a,
+.chiron-horizon-docs-sidebar-tools button {
   outline-offset: 2px;
 }
 
-.dbx-docs-theme-switch {
+.chiron-horizon-docs-theme-switch {
   border-color: color-mix(in srgb, var(--color-fd-border) 82%, transparent);
   background: color-mix(in srgb, var(--color-fd-secondary) 72%, transparent);
   padding: 0.125rem;
   box-shadow: 0 1px 2px color-mix(in srgb, black 5%, transparent);
 }
 
-.dbx-docs-theme-switch [class*="size-6.5"] {
+.chiron-horizon-docs-theme-switch [class*="size-6.5"] {
   width: 1.55rem;
   height: 1.55rem;
   padding: 0.33rem;
 }
 
-.dbx-docs-theme-switch [class*="bg-fd-accent"] {
+.chiron-horizon-docs-theme-switch [class*="bg-fd-accent"] {
   background: var(--color-fd-popover);
   box-shadow:
     0 1px 2px color-mix(in srgb, black 8%, transparent),
     0 0 0 1px color-mix(in srgb, var(--color-fd-border) 64%, transparent);
 }
 
-.dark .dbx-docs-theme-switch [class*="bg-fd-accent"] {
+.dark .chiron-horizon-docs-theme-switch [class*="bg-fd-accent"] {
   background: color-mix(in srgb, var(--color-fd-accent) 72%, var(--color-fd-popover));
 }
 

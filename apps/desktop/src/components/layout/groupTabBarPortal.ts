@@ -5,7 +5,7 @@ export interface GroupTabBarPortal {
   targets: Map<string, HTMLElement>;
 }
 
-export const GROUP_TAB_BAR_PORTAL: InjectionKey<GroupTabBarPortal> = Symbol("dbx:group-tab-bar-portal");
+export const GROUP_TAB_BAR_PORTAL: InjectionKey<GroupTabBarPortal> = Symbol("chiron-horizon:group-tab-bar-portal");
 
 // Moving the existing bars preserves their grouping, search and scroll state.
 export function createGroupTabBarPortal(active: Readonly<Ref<boolean>>): GroupTabBarPortal {

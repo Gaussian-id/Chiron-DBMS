@@ -16,13 +16,13 @@ const cliManifest = readFileSync(join(repositoryRoot, "plugins/sdk/cli/Cargo.tom
 const cliVersion = cliManifest.match(/^version\s*=\s*"([^"]+)"/m)?.[1];
 if (cliVersion !== packageManifest.version) {
   throw new Error(
-    `@dbx-app/plugin-cli version ${packageManifest.version} does not match dbx-plugin-cli ${cliVersion ?? "unknown"}.`,
+    `@chiron-horizon/plugin-cli version ${packageManifest.version} does not match chiron-horizon-plugin-cli ${cliVersion ?? "unknown"}.`,
   );
 }
 
 const sources = [
-  ["plugins/sdk/rust/dbx-plugin-sdk", "plugins/sdk/rust/dbx-plugin-sdk"],
-  ["plugins/sdk/go/dbx-plugin-sdk", "plugins/sdk/go/dbx-plugin-sdk"],
+  ["plugins/sdk/rust/chiron-horizon-plugin-sdk", "plugins/sdk/rust/chiron-horizon-plugin-sdk"],
+  ["plugins/sdk/go/chiron-horizon-plugin-sdk", "plugins/sdk/go/chiron-horizon-plugin-sdk"],
 ];
 const excludedNames = new Set([".DS_Store", ".gitignore", "Cargo.lock", "target"]);
 
@@ -45,5 +45,5 @@ for (const [sourceRelative, destinationRelative] of sources) {
 
 writeFileSync(
   join(destinationRoot, "README.md"),
-  "# Bundled DBX Plugin SDK\n\nThis directory is bundled for `dbx-plugin package` and is managed by `@dbx-app/plugin-cli`.\n",
+  "# Bundled Chiron Horizon Plugin SDK\n\nThis directory is bundled for `chiron-horizon-plugin package` and is managed by `@chiron-horizon/plugin-cli`.\n",
 );

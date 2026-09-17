@@ -102,7 +102,7 @@ describe("jdbc dialect inference", () => {
     expect(inferJdbcDialect(connection)).toBe("tdengine");
     expect(effectiveDatabaseTypeForConnection(connection)).toBe("tdengine");
     expect(connectionUsesDatabaseObjectTreeMode(connection)).toBe(false);
-    expect(connectionObjectTreeQuerySchema(connection, "dbx_test")).toBe("dbx_test");
+    expect(connectionObjectTreeQuerySchema(connection, "chiron_horizon_test")).toBe("chiron_horizon_test");
   });
 
   it("keeps Phoenix as generic JDBC while preserving its schema tree", () => {
@@ -128,8 +128,8 @@ describe("jdbc dialect inference", () => {
     expect(inferJdbcDialect(connection)).toBe(dialect);
     expect(connectionUsesConnectionRootSchemaMode(connection)).toBe(true);
     expect(connectionUsesDatabaseObjectTreeMode(connection)).toBe(false);
-    expect(connectionObjectTreeQuerySchema(connection, "DBX_TEST", "DBX_TEST")).toBe("DBX_TEST");
-    expect(connectionObjectTreeNodeSchema(connection, "DBX_TEST", "DBX_TEST")).toBe("DBX_TEST");
+    expect(connectionObjectTreeQuerySchema(connection, "CHIRON_HORIZON_TEST", "CHIRON_HORIZON_TEST")).toBe("CHIRON_HORIZON_TEST");
+    expect(connectionObjectTreeNodeSchema(connection, "CHIRON_HORIZON_TEST", "CHIRON_HORIZON_TEST")).toBe("CHIRON_HORIZON_TEST");
   });
 
   it("detects GaussDB-compatible JDBC connections as schema-aware", () => {
@@ -224,7 +224,7 @@ describe("jdbc dialect inference", () => {
   it("detects GBase JDBC connections for transfer dialect selection", () => {
     const gbaseConnection = {
       db_type: "jdbc" as const,
-      connection_string: "jdbc:gbase://localhost:5258/dbx_test",
+      connection_string: "jdbc:gbase://localhost:5258/chiron_horizon_test",
       jdbc_driver_class: "cn.gbase.Driver",
     };
 
@@ -234,7 +234,7 @@ describe("jdbc dialect inference", () => {
     // GBase 8s is Informix-based and must stay on generic jdbc (no MySQL-family transfer dialect).
     const gbase8sByUrl = {
       db_type: "jdbc" as const,
-      connection_string: "jdbc:gbasedbt-sqli://localhost:9088/dbx_test:INFORMIXSERVER=ol_gbasedbt",
+      connection_string: "jdbc:gbasedbt-sqli://localhost:9088/chiron_horizon_test:INFORMIXSERVER=ol_gbasedbt",
       jdbc_driver_class: "com.gbasedbt.jdbc.Driver",
     };
     const gbase8sByProfile = {
@@ -244,7 +244,7 @@ describe("jdbc dialect inference", () => {
     const gbase8sProfileWithLegacyGbaseUrl = {
       db_type: "jdbc" as const,
       driver_profile: "gbase8s",
-      connection_string: "jdbc:gbase://localhost:5258/dbx_test",
+      connection_string: "jdbc:gbase://localhost:5258/chiron_horizon_test",
       jdbc_driver_class: "cn.gbase.Driver",
     };
     expect(inferJdbcDialect(gbase8sByUrl)).toBe("informix");
@@ -277,10 +277,10 @@ describe("jdbc dialect inference", () => {
     expect(transferDatabaseTypeForConnection({ db_type: "mysql" })).toBe("mysql");
     expect(transferDatabaseTypeForConnection({ db_type: "postgres" })).toBe("postgres");
     expect(transferDatabaseTypeForConnection({ db_type: "gbase" })).toBe("mysql");
-    expect(transferDatabaseTypeForConnection({ db_type: "jdbc", connection_string: "jdbc:gbase://localhost:5258/dbx_test" })).toBe("gbase");
+    expect(transferDatabaseTypeForConnection({ db_type: "jdbc", connection_string: "jdbc:gbase://localhost:5258/chiron_horizon_test" })).toBe("gbase");
     // A generic-JDBC Doris URL keeps its raw db_type (never admitted), matching
     // the pre-effective-type behavior for unknown jdbc connections.
-    expect(transferDatabaseTypeForConnection({ db_type: "jdbc", connection_string: "jdbc:doris://localhost:9030/dbx_test" })).toBe("jdbc");
+    expect(transferDatabaseTypeForConnection({ db_type: "jdbc", connection_string: "jdbc:doris://localhost:9030/chiron_horizon_test" })).toBe("jdbc");
   });
 
   it("uses Hive tree and execution semantics for Inceptor JDBC metadata", () => {
@@ -461,31 +461,31 @@ describe("object tree node schema", () => {
     // Query tabs can reach locate/metadata paths before a schema is picked (a
     // toolbar "new query" tab, or an external .sql file reopened from disk).
     // PostgreSQL and its relatives keep tables under a separate schema level, so
-    // `schema || database` sends "dbx_test" as the schema and matches nothing —
+    // `schema || database` sends "chiron_horizon_test" as the schema and matches nothing —
     // locate in the sidebar silently does nothing (issue #7648). The blank schema
     // lets the backend resolve the session default instead.
     for (const dbType of ["postgres", "gaussdb", "opengauss", "kingbase", "redshift", "duckdb"] as const) {
-      expect(connectionObjectTreeQuerySchema({ db_type: dbType }, "dbx_test")).toBe("");
-      expect(connectionObjectTreeNodeSchema({ db_type: dbType }, "dbx_test")).toBeUndefined();
-      expect(metadataSchemaForConnection({ db_type: dbType }, "dbx_test")).toBe("");
+      expect(connectionObjectTreeQuerySchema({ db_type: dbType }, "chiron_horizon_test")).toBe("");
+      expect(connectionObjectTreeNodeSchema({ db_type: dbType }, "chiron_horizon_test")).toBeUndefined();
+      expect(metadataSchemaForConnection({ db_type: dbType }, "chiron_horizon_test")).toBe("");
       // An explicit schema still wins, and the database name is a legitimate
       // schema name when the user really did select it.
-      expect(connectionObjectTreeQuerySchema({ db_type: dbType }, "dbx_test", "public")).toBe("public");
-      expect(connectionObjectTreeNodeSchema({ db_type: dbType }, "dbx_test", "public")).toBe("public");
+      expect(connectionObjectTreeQuerySchema({ db_type: dbType }, "chiron_horizon_test", "public")).toBe("public");
+      expect(connectionObjectTreeNodeSchema({ db_type: dbType }, "chiron_horizon_test", "public")).toBe("public");
     }
     // SQL Server keeps its own dbo default for metadata lookups.
-    expect(connectionObjectTreeQuerySchema({ db_type: "sqlserver" }, "dbx_test")).toBe("");
-    expect(connectionObjectTreeNodeSchema({ db_type: "sqlserver" }, "dbx_test")).toBeUndefined();
-    expect(metadataSchemaForConnection({ db_type: "sqlserver" }, "dbx_test")).toBe("dbo");
+    expect(connectionObjectTreeQuerySchema({ db_type: "sqlserver" }, "chiron_horizon_test")).toBe("");
+    expect(connectionObjectTreeNodeSchema({ db_type: "sqlserver" }, "chiron_horizon_test")).toBeUndefined();
+    expect(metadataSchemaForConnection({ db_type: "sqlserver" }, "chiron_horizon_test")).toBe("dbo");
   });
 
   it("keeps the database-as-schema fallback for engines whose database is the schema", () => {
     // Oracle, Dameng and the Hive family address objects as schema.table with no
     // separate schema level in the tree, so the database name is the schema there
     // and must survive the fix above.
-    expect(connectionObjectTreeNodeSchema({ db_type: "oracle" }, "DBX_TEST")).toBe("DBX_TEST");
-    expect(connectionObjectTreeQuerySchema({ db_type: "oracle" }, "DBX_TEST")).toBe("DBX_TEST");
-    expect(connectionObjectTreeNodeSchema({ db_type: "dameng" }, "DBX_TEST")).toBe("DBX_TEST");
+    expect(connectionObjectTreeNodeSchema({ db_type: "oracle" }, "CHIRON_HORIZON_TEST")).toBe("CHIRON_HORIZON_TEST");
+    expect(connectionObjectTreeQuerySchema({ db_type: "oracle" }, "CHIRON_HORIZON_TEST")).toBe("CHIRON_HORIZON_TEST");
+    expect(connectionObjectTreeNodeSchema({ db_type: "dameng" }, "CHIRON_HORIZON_TEST")).toBe("CHIRON_HORIZON_TEST");
     expect(connectionObjectTreeNodeSchema({ db_type: "hive" }, "CS")).toBe("CS");
     expect(connectionObjectTreeNodeSchema({ db_type: "spark" }, "CS")).toBe("CS");
     // Flat engines keep returning no tree schema at all.

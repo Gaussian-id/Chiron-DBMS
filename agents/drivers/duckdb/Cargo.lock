@@ -1229,7 +1229,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a4ae5f15dda3c708c0ade84bfee31ccab44a3da4f88015ed22f63732abe300c8"
 
 [[package]]
-name = "dbx-core"
+name = "chiron-horizon-core"
 version = "0.1.0"
 dependencies = [
  "aes 0.8.4",
@@ -1244,7 +1244,7 @@ dependencies = [
  "cbc 0.1.2",
  "chrono",
  "csv",
- "dbx-sqlite-worker",
+ "chiron-horizon-sqlite-worker",
  "deadpool-postgres",
  "ed25519-dalek 2.2.0",
  "encoding_rs",
@@ -1306,11 +1306,11 @@ dependencies = [
 ]
 
 [[package]]
-name = "dbx-duckdb-driver"
+name = "chiron-horizon-duckdb-driver"
 version = "0.1.0"
 dependencies = [
  "chrono",
- "dbx-core",
+ "chiron-horizon-core",
  "duckdb",
  "log",
  "serde",
@@ -1322,8 +1322,8 @@ dependencies = [
 ]
 
 [[package]]
-name = "dbx-sqlite-worker"
-version = "0.1.1"
+name = "chiron-horizon-sqlite-worker"
+version = "0.1.0"
 dependencies = [
  "serde",
  "serde_json",

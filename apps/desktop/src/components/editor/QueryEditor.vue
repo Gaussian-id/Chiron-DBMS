@@ -117,10 +117,10 @@ import { lineColumnToOffset, sqlErrorDecorationRange as resolveSqlErrorDecoratio
 import { analyzeMysqlRoutineSyntax, supportsMysqlRoutineSyntaxDiagnostics } from "@/lib/sql/mysqlRoutineSyntaxDiagnostics";
 import { buildOracleSyntaxDiagnostics } from "@/lib/sql/oracleSyntaxDiagnostics";
 import {
-  DBX_TABLE_REFERENCE_MIME,
-  DBX_TABLE_REFERENCE_DROP_EVENT,
-  DBX_TABLE_REFERENCE_HOVER_EVENT,
-  DBX_TABLE_REFERENCE_DRAG_END_EVENT,
+  CHIRON_HORIZON_TABLE_REFERENCE_MIME,
+  CHIRON_HORIZON_TABLE_REFERENCE_DROP_EVENT,
+  CHIRON_HORIZON_TABLE_REFERENCE_HOVER_EVENT,
+  CHIRON_HORIZON_TABLE_REFERENCE_DRAG_END_EVENT,
   activeTableReferencePayloadValue,
   clearActiveTableReferencePayload,
   hasTableReferencePayloadType,
@@ -153,7 +153,7 @@ import { createSqlAliasHighlights } from "@/lib/editor/codemirrorSqlAliasHighlig
 import { createInsertValueHintsExtension, requestInsertValueHintsRefresh, supportsInsertValueHints } from "@/lib/editor/codemirrorInsertValueHints";
 import { sqlBlockFoldService } from "@/lib/editor/codemirrorSqlBlockFolding";
 import { focusEditorView } from "@/lib/editor/queryEditorFocus";
-import { createDbxCodeMirrorSqlDialect, type CodeMirrorSqlDialectName } from "@/lib/editor/codemirrorSqlDialect";
+import { createChironHorizonCodeMirrorSqlDialect, type CodeMirrorSqlDialectName } from "@/lib/editor/codemirrorSqlDialect";
 import { sqlSemanticTableNameSpansForSyntaxTree } from "@/lib/editor/codemirrorSqlSemanticHighlight";
 import { startsQueryEditorRectangularSelection, startsQueryEditorSelectionDrag, usesQueryEditorObjectNavigationModifier } from "@/lib/editor/queryEditorPointerSelection";
 import { LARGE_PASTE_HISTORY_USER_EVENT, normalizeQueryEditorPasteText, recoverableNativePasteSuffix, shouldRecoverLargeTauriPaste } from "@/lib/editor/queryEditorLargePaste";
@@ -600,7 +600,7 @@ let codeMirrorVim: typeof import("@replit/codemirror-vim").vim | null = null;
 let codeMirrorVimApi: typeof import("@replit/codemirror-vim").Vim | null = null;
 let codeMirrorGetVimCm: typeof import("@replit/codemirror-vim").getCM | null = null;
 let codeMirrorVimImportPromise: Promise<typeof import("@replit/codemirror-vim")> | null = null;
-let dbxVimCommandsConfigured = false;
+let chironHorizonVimCommandsConfigured = false;
 let buildSqlDiagnosticExtension: (() => import("@codemirror/state").Extension) | null = null;
 let buildSqlSignatureExtension: (() => import("@codemirror/state").Extension) | null = null;
 let buildSqlCompletionExtension: (() => import("@codemirror/state").Extension) | null = null;
@@ -681,8 +681,8 @@ let editorSelectionDropCursorEl: HTMLDivElement | null = null;
 const EDITOR_SCROLLBAR_POINTER_GUTTER_PX = 18;
 const EDITOR_SELECTION_DRAG_THRESHOLD_PX = 6;
 const tableNavigationHoverClass = "query-editor--table-navigation-hover";
-const DBX_VIM_SAVE_EVENT = "dbx-vim-save";
-const BEFORE_TAB_SWITCH_EVENT = "dbx:before-tab-switch";
+const CHIRON_HORIZON_VIM_SAVE_EVENT = "chiron-horizon-vim-save";
+const BEFORE_TAB_SWITCH_EVENT = "chiron-horizon:before-tab-switch";
 
 function editorThemeAppearance() {
   return editorThemeAppearanceFor(isDark.value ? "dark" : "light", themePalette.value, themePalette.value === "custom" ? activeCustomUiColors.value : undefined);
@@ -822,8 +822,8 @@ function syncEditorFontCssVars(fontSize = liveFontSize.value, fontFamily = setti
 function syncEditorDiagnosticCssVars() {
   if (!editorRef.value) return;
   const colors = editorDiagnosticColors(editorThemeAppearance());
-  editorRef.value.style.setProperty("--dbx-editor-diagnostic-error", colors.error);
-  editorRef.value.style.setProperty("--dbx-editor-diagnostic-warning", colors.warning);
+  editorRef.value.style.setProperty("--chiron-horizon-editor-diagnostic-error", colors.error);
+  editorRef.value.style.setProperty("--chiron-horizon-editor-diagnostic-warning", colors.warning);
 }
 
 let pendingFontReconfig: { size: number; family: string } | null = null;
@@ -912,7 +912,7 @@ function handleTab(view: EditorViewType): boolean {
 // but it must only accept an open completion popup when the user's configured
 // "accept completion" shortcut is actually Tab — otherwise a user who remapped
 // that shortcut (e.g. to Enter) would find Tab silently accepting completions
-// anyway, ignoring their setting (dbx#6236).
+// anyway, ignoring their setting (chiron-horizon#6236).
 function tabKeyAcceptsCompletion(): boolean {
   const shortcuts = normalizeShortcutSettings(settingsStore.editorSettings.shortcuts);
   return shortcutToCodeMirrorKey(shortcuts.acceptCompletion) === "Tab";
@@ -1431,7 +1431,7 @@ function updateEditorSelectionDropCursor(currentView: EditorViewType, event: Mou
   const cursor = editorSelectionDropCursorEl ?? ownerDocument.createElement("div");
   if (!editorSelectionDropCursorEl) {
     cursor.setAttribute("aria-hidden", "true");
-    cursor.className = "dbx-editor-selection-drop-cursor";
+    cursor.className = "chiron-horizon-editor-selection-drop-cursor";
     // Use a fixed overlay instead of CodeMirror's internal drop cursor layer so
     // the marker stays visible above selection layers, themes, and scrollers.
     cursor.style.position = "fixed";
@@ -2479,7 +2479,7 @@ function vimModeExtension(enabled = settingsStore.editorSettings.vimModeEnabled)
   const vimExtension = codeMirrorVim({ status: true });
   if (!codeMirrorPrec || !editorViewModule || !codeMirrorGetVimCm || !codeMirrorVimApi) return vimExtension;
 
-  // Beekeeper treats Vim as a first-class editor keymap. Keep it above DBX's
+  // Beekeeper treats Vim as a first-class editor keymap. Keep it above Chiron Horizon's
   // normal shortcuts so regular normal-mode keys are not stolen by other maps.
   return codeMirrorPrec.highest([
     editorViewModule.keymap.of([
@@ -2502,11 +2502,11 @@ function vimModeExtension(enabled = settingsStore.editorSettings.vimModeEnabled)
   ]);
 }
 
-function configureDbxVimCommands(vimApi: typeof import("@replit/codemirror-vim").Vim) {
-  if (dbxVimCommandsConfigured) return;
-  dbxVimCommandsConfigured = true;
+function configureChironHorizonVimCommands(vimApi: typeof import("@replit/codemirror-vim").Vim) {
+  if (chironHorizonVimCommandsConfigured) return;
+  chironHorizonVimCommandsConfigured = true;
   vimApi.defineEx("write", "w", (cm) => {
-    cm.cm6?.contentDOM.dispatchEvent(new CustomEvent(DBX_VIM_SAVE_EVENT, { bubbles: true }));
+    cm.cm6?.contentDOM.dispatchEvent(new CustomEvent(CHIRON_HORIZON_VIM_SAVE_EVENT, { bubbles: true }));
   });
 }
 
@@ -2517,7 +2517,7 @@ async function ensureCodeMirrorVim() {
   codeMirrorVim = vim;
   codeMirrorVimApi = Vim;
   codeMirrorGetVimCm = getCM;
-  configureDbxVimCommands(Vim);
+  configureChironHorizonVimCommands(Vim);
   return true;
 }
 
@@ -2889,7 +2889,7 @@ async function ensureForeignKeysForTable(table: { name: string; database?: strin
     const foreignKeys = await connectionStore.listCompletionForeignKeys(props.connectionId, target.database, table.name, target.schema);
     cachedForeignKeysByTable.set(cacheKey, foreignKeys);
   } catch (e) {
-    console.warn(`[DBX] Failed to load foreign keys for ${cacheKey}:`, e);
+    console.warn(`[Chiron Horizon] Failed to load foreign keys for ${cacheKey}:`, e);
     cachedForeignKeysByTable.set(cacheKey, []);
   }
 }
@@ -3047,7 +3047,7 @@ async function resolveSqlHoverTooltip(currentView: EditorViewType, pos: number) 
       semanticModel = buildSqlSemanticModel(sql, pos, sqlCompletionDialectOptions());
     } catch (error) {
       semanticModel = null;
-      console.warn(`[DBX] Failed to build semantic model for hover tooltip:`, error);
+      console.warn(`[Chiron Horizon] Failed to build semantic model for hover tooltip:`, error);
     }
   }
   const semanticTarget = semanticModel ? resolveSqlSemanticNavigationTarget(semanticModel, parts) : null;
@@ -3117,7 +3117,7 @@ async function resolveSqlHoverTooltip(currentView: EditorViewType, pos: number) 
           sqlContent = settingsStore.editorSettings.generateSqlQuoteIdentifiers ? formatted : omitDdlIdentifierQuotes(formatted, formatDialect);
         }
       } catch (error) {
-        console.warn(`[DBX] Failed to load table DDL for ${hoverDatabase}.${hoverSchema}.${table.name}:`, error);
+        console.warn(`[Chiron Horizon] Failed to load table DDL for ${hoverDatabase}.${hoverSchema}.${table.name}:`, error);
       }
 
       // Fallback path: rebuild the DDL from cached table metadata when the
@@ -3135,14 +3135,14 @@ async function resolveSqlHoverTooltip(currentView: EditorViewType, pos: number) 
           fullIndexes = indexesResult.value;
         } catch (error) {
           metadataLoadFailed = true;
-          console.warn(`[DBX] Failed to load table metadata for ${hoverDatabase}.${hoverSchema}.${table.name}:`, error);
+          console.warn(`[Chiron Horizon] Failed to load table metadata for ${hoverDatabase}.${hoverSchema}.${table.name}:`, error);
         }
         if (!metadataLoadFailed) {
           try {
             const commentResult = await loadObjectMetadataFacet(objectMetadataRequest, "comment", () => api.getTableComment(props.connectionId!, hoverDatabase, hoverSchema, table.name, hoverScope.catalog));
             if (commentResult.value) tableComment = commentResult.value;
           } catch (error) {
-            console.warn(`[DBX] Failed to load table comment for ${hoverDatabase}.${hoverSchema}.${table.name}:`, error);
+            console.warn(`[Chiron Horizon] Failed to load table comment for ${hoverDatabase}.${hoverSchema}.${table.name}:`, error);
           }
         }
         if (fullColumns.length > 0) {
@@ -3157,7 +3157,7 @@ async function resolveSqlHoverTooltip(currentView: EditorViewType, pos: number) 
       return {
         pos: range.from,
         end: range.to,
-        create: () => createHoverDom(table.name, sqlObjectHoverDetail(table), sqlContent, metadataLoadFailed ? ["[DBX] Failed to load table structure — check connection"] : undefined),
+        create: () => createHoverDom(table.name, sqlObjectHoverDetail(table), sqlContent, metadataLoadFailed ? ["[Chiron Horizon] Failed to load table structure — check connection"] : undefined),
       };
     }
 
@@ -3636,7 +3636,7 @@ function compressCurrentSql() {
 }
 
 function droppedTableReference(event: DragEvent) {
-  return activeTableReferencePayloadValue() ?? parseTableReferencePayload(event.dataTransfer?.getData(DBX_TABLE_REFERENCE_MIME));
+  return activeTableReferencePayloadValue() ?? parseTableReferencePayload(event.dataTransfer?.getData(CHIRON_HORIZON_TABLE_REFERENCE_MIME));
 }
 
 function hasDroppedTableReference(event: DragEvent) {
@@ -3743,17 +3743,17 @@ function onTableReferenceDragEndEvent() {
 
 function registerTableReferenceDropListener() {
   if (tableReferenceDropListenerRegistered) return;
-  window.addEventListener(DBX_TABLE_REFERENCE_DROP_EVENT, onTableReferenceDropEvent);
-  window.addEventListener(DBX_TABLE_REFERENCE_HOVER_EVENT, onTableReferenceHoverEvent);
-  window.addEventListener(DBX_TABLE_REFERENCE_DRAG_END_EVENT, onTableReferenceDragEndEvent);
+  window.addEventListener(CHIRON_HORIZON_TABLE_REFERENCE_DROP_EVENT, onTableReferenceDropEvent);
+  window.addEventListener(CHIRON_HORIZON_TABLE_REFERENCE_HOVER_EVENT, onTableReferenceHoverEvent);
+  window.addEventListener(CHIRON_HORIZON_TABLE_REFERENCE_DRAG_END_EVENT, onTableReferenceDragEndEvent);
   tableReferenceDropListenerRegistered = true;
 }
 
 function unregisterTableReferenceDropListener() {
   if (!tableReferenceDropListenerRegistered) return;
-  window.removeEventListener(DBX_TABLE_REFERENCE_DROP_EVENT, onTableReferenceDropEvent);
-  window.removeEventListener(DBX_TABLE_REFERENCE_HOVER_EVENT, onTableReferenceHoverEvent);
-  window.removeEventListener(DBX_TABLE_REFERENCE_DRAG_END_EVENT, onTableReferenceDragEndEvent);
+  window.removeEventListener(CHIRON_HORIZON_TABLE_REFERENCE_DROP_EVENT, onTableReferenceDropEvent);
+  window.removeEventListener(CHIRON_HORIZON_TABLE_REFERENCE_HOVER_EVENT, onTableReferenceHoverEvent);
+  window.removeEventListener(CHIRON_HORIZON_TABLE_REFERENCE_DRAG_END_EVENT, onTableReferenceDragEndEvent);
   tableReferenceDropListenerRegistered = false;
 }
 
@@ -3811,12 +3811,12 @@ interface BatchColumnSelectionActionItem {
 }
 
 type QueryCompletionOption = Completion & {
-  dbxBatchColumnSelection?: { sessionKey: string; candidateKey: string };
-  dbxBatchColumnSelectionAction?: { sessionKey: string };
+  chironHorizonBatchColumnSelection?: { sessionKey: string; candidateKey: string };
+  chironHorizonBatchColumnSelectionAction?: { sessionKey: string };
 };
 
 let batchColumnSelectionSession: BatchColumnSelectionSession | null = null;
-type BatchColumnSelectionCheckboxMarker = NonNullable<QueryCompletionOption["dbxBatchColumnSelection"]>;
+type BatchColumnSelectionCheckboxMarker = NonNullable<QueryCompletionOption["chironHorizonBatchColumnSelection"]>;
 interface BatchColumnSelectionDragState {
   view: EditorViewType;
   sessionKey: string;
@@ -3936,7 +3936,7 @@ function scheduleBatchColumnSelectionRefresh(view: EditorViewType, sessionKey: s
     // Keep CodeMirror's virtualized range anchored to the item where the drag ended.
     const focusIndex =
       codeMirrorCurrentCompletions?.(view.state).findIndex((completion) => {
-        const marker = (completion as QueryCompletionOption).dbxBatchColumnSelection;
+        const marker = (completion as QueryCompletionOption).chironHorizonBatchColumnSelection;
         return marker?.sessionKey === sessionKey && marker.candidateKey === focusCandidateKey;
       }) ?? -1;
     if (focusIndex >= 0 && codeMirrorSetSelectedCompletion) view.dispatch({ effects: codeMirrorSetSelectedCompletion(focusIndex) });
@@ -4011,7 +4011,7 @@ function prepareBatchColumnSelectionSession(items: SqlCompletionItem[], document
   return batchColumnSelectionSession;
 }
 
-function batchColumnSelectionMarkerForItem(item: QueryCompletionItem): QueryCompletionOption["dbxBatchColumnSelection"] | undefined {
+function batchColumnSelectionMarkerForItem(item: QueryCompletionItem): QueryCompletionOption["chironHorizonBatchColumnSelection"] | undefined {
   if (!("batchSelectionMode" in item) || item.type !== "column" || !item.batchSelectionMode || !item.apply) return undefined;
   const session = batchColumnSelectionSession;
   if (!session || session.mode !== item.batchSelectionMode) return undefined;
@@ -4020,7 +4020,7 @@ function batchColumnSelectionMarkerForItem(item: QueryCompletionItem): QueryComp
   return { sessionKey: session.key, candidateKey };
 }
 
-function cacheBatchColumnSelectionOption(marker: QueryCompletionOption["dbxBatchColumnSelection"], option: QueryCompletionOption): QueryCompletionOption {
+function cacheBatchColumnSelectionOption(marker: QueryCompletionOption["chironHorizonBatchColumnSelection"], option: QueryCompletionOption): QueryCompletionOption {
   if (!marker || !batchColumnSelectionSession || batchColumnSelectionSession.key !== marker.sessionKey) return option;
   const cached = batchColumnSelectionSession.completionOptions.get(marker.candidateKey);
   if (cached) return cached;
@@ -4039,7 +4039,7 @@ function toggleBatchColumnSelection(view: EditorViewType, sessionKey: string, ca
 
 function toggleSelectedBatchColumnSelection(view: EditorViewType): boolean {
   const completion = codeMirrorSelectedCompletion?.(view.state) as QueryCompletionOption | null | undefined;
-  const marker = completion?.dbxBatchColumnSelection;
+  const marker = completion?.chironHorizonBatchColumnSelection;
   if (!marker) return false;
   toggleBatchColumnSelection(view, marker.sessionKey, marker.candidateKey);
   return true;
@@ -4183,7 +4183,7 @@ function startBatchColumnSelectionDrag(view: EditorViewType, marker: BatchColumn
 }
 
 function renderBatchColumnSelectionCheckbox(completion: Completion, _state: import("@codemirror/state").EditorState, currentView: EditorViewType): Node | null {
-  const marker = (completion as QueryCompletionOption).dbxBatchColumnSelection;
+  const marker = (completion as QueryCompletionOption).chironHorizonBatchColumnSelection;
   const session = batchColumnSelectionSession;
   if (!marker || !session || session.key !== marker.sessionKey) return null;
 
@@ -4213,7 +4213,7 @@ function renderBatchColumnSelectionCheckbox(completion: Completion, _state: impo
 }
 
 function renderBatchColumnSelectionActionMarker(completion: Completion): Node | null {
-  const action = (completion as QueryCompletionOption).dbxBatchColumnSelectionAction;
+  const action = (completion as QueryCompletionOption).chironHorizonBatchColumnSelectionAction;
   if (!action) return null;
   const marker = document.createElement("span");
   marker.className = "cm-batch-column-selection-action-marker";
@@ -4415,7 +4415,7 @@ function completionOptionForItem(item: QueryCompletionItem | BatchColumnSelectio
   if (isBatchColumnSelectionAction(item)) {
     return {
       ...labelPresentation,
-      dbxBatchColumnSelectionAction: { sessionKey: item.sessionKey },
+      chironHorizonBatchColumnSelectionAction: { sessionKey: item.sessionKey },
       type: item.type,
       detail: item.detail,
       boost: item.boost,
@@ -4439,7 +4439,7 @@ function completionOptionForItem(item: QueryCompletionItem | BatchColumnSelectio
     const originalApply = completion.apply;
     return cacheBatchColumnSelectionOption(batchColumnSelection, {
       ...completion,
-      ...(batchColumnSelection ? { dbxBatchColumnSelection: batchColumnSelection } : {}),
+      ...(batchColumnSelection ? { chironHorizonBatchColumnSelection: batchColumnSelection } : {}),
       apply(view: EditorViewType, completionItem: unknown, from: number, to: number) {
         record();
         markCompletionAccepted(item);
@@ -4464,7 +4464,7 @@ function completionOptionForItem(item: QueryCompletionItem | BatchColumnSelectio
   }
   return cacheBatchColumnSelectionOption(batchColumnSelection, {
     ...labelPresentation,
-    ...(batchColumnSelection ? { dbxBatchColumnSelection: batchColumnSelection } : {}),
+    ...(batchColumnSelection ? { chironHorizonBatchColumnSelection: batchColumnSelection } : {}),
     type: item.type,
     detail: item.detail,
     info: item.info,
@@ -5549,7 +5549,7 @@ async function performAsyncCompletionWithResult(epoch: number, completionContext
           if (prefixCacheKey) cachedPrefixColumnsByTable.set(prefixCacheKey, columns);
           else cachedColumnsByTable.set(cacheKey, columns);
         } catch (e) {
-          console.error(`[DBX] Failed to load columns for ${cacheKey}:`, e);
+          console.error(`[Chiron Horizon] Failed to load columns for ${cacheKey}:`, e);
         }
       }),
     );
@@ -5849,11 +5849,11 @@ onMounted(async () => {
 
   const diagnosticTheme = EditorView.baseTheme({
     ".cm-sql-error": {
-      textDecoration: "underline wavy var(--dbx-editor-diagnostic-error, var(--destructive))",
+      textDecoration: "underline wavy var(--chiron-horizon-editor-diagnostic-error, var(--destructive))",
       textUnderlineOffset: "3px",
     },
     ".cm-sql-semantic-warning": {
-      textDecoration: "underline wavy var(--dbx-editor-diagnostic-warning, var(--warning))",
+      textDecoration: "underline wavy var(--chiron-horizon-editor-diagnostic-warning, var(--warning))",
       textUnderlineOffset: "3px",
     },
   });
@@ -6082,7 +6082,7 @@ onMounted(async () => {
       compareCompletions: (a, b) => compareSqlCompletions(a, b, settingsStore.editorSettings.sortCompletionColumnsAlphabetically),
       // Keep normal completion lists virtualized; batch-field selection needs every row in the DOM.
       maxRenderedOptions: batchColumnSelectionExpandedRendering ? Number.MAX_SAFE_INTEGER : 100,
-      optionClass: (completion) => ((completion as QueryCompletionOption).dbxBatchColumnSelectionAction ? "cm-batch-column-selection-action" : ""),
+      optionClass: (completion) => ((completion as QueryCompletionOption).chironHorizonBatchColumnSelectionAction ? "cm-batch-column-selection-action" : ""),
       addToOptions: [
         { position: 5, render: renderBatchColumnSelectionActionMarker },
         { position: 10, render: renderBatchColumnSelectionCheckbox },
@@ -6093,7 +6093,7 @@ onMounted(async () => {
   const shellLineCommentHighlightPlugin = createShellLineCommentHighlight({ ViewPlugin, Decoration, highlightingFor, syntaxTree });
   buildSqlLanguageExtension = () => [
     langSql.sql({
-      dialect: createDbxCodeMirrorSqlDialect(langSql, props.syntaxDialect ?? props.dialect, props.databaseType, sqlDriverProfile.value),
+      dialect: createChironHorizonCodeMirrorSqlDialect(langSql, props.syntaxDialect ?? props.dialect, props.databaseType, sqlDriverProfile.value),
     }),
     // Non-SQL editors (MongoDB shell) keep the SQL grammar for highlighting, so override the
     // comment marker that toggleLineComment reads from language data.
@@ -6326,7 +6326,7 @@ onMounted(async () => {
 
   const editorElement = editorRef.value;
   if (!editorElement) return;
-  const tooltipParent = editorElement.closest<HTMLElement>("#root")?.querySelector<HTMLElement>("#dbx-query-editor-tooltip-root") ?? editorElement;
+  const tooltipParent = editorElement.closest<HTMLElement>("#root")?.querySelector<HTMLElement>("#chiron-horizon-query-editor-tooltip-root") ?? editorElement;
   const state = EditorState.create({
     doc: props.modelValue,
     selection: normalizedEditorSelection(props.initialSelection, props.modelValue.length),
@@ -6382,7 +6382,7 @@ onMounted(async () => {
       syntaxHighlighting(defaultHighlightStyle, { fallback: true }),
       crosshairCursor(),
       activeLineHighlighter,
-      // Vim must be mounted before DBX/default keymaps so normal-mode keys are handled first.
+      // Vim must be mounted before Chiron Horizon/default keymaps so normal-mode keys are handled first.
       vimModeComp.of(vimModeExtension(initialSettings.vimModeEnabled)),
       defaultKeymapComp.of(defaultKeymapExtension()),
       keymap.of([...searchKeymapWithoutModD(searchKeymap), ...historyKeymap, ...foldKeymap, ...completionKeymap]),
@@ -6543,7 +6543,7 @@ onMounted(async () => {
           window.setTimeout(flushImeComposition, 0);
           return false;
         },
-        [DBX_VIM_SAVE_EVENT]() {
+        [CHIRON_HORIZON_VIM_SAVE_EVENT]() {
           emit("save");
           return true;
         },
@@ -6801,7 +6801,7 @@ onMounted(async () => {
                 emit("clickColumn", matchedCols);
               }
             } catch (e) {
-              console.error("[DBX] Ctrl+click error:", e);
+              console.error("[Chiron Horizon] Ctrl+click error:", e);
             }
           }, 0);
           return true;
@@ -7568,11 +7568,11 @@ defineExpose({
 }
 
 :deep(.cm-db-execution-preview) {
-  background: var(--dbx-editor-selection-background, rgba(59, 130, 246, 0.35));
+  background: var(--chiron-horizon-editor-selection-background, rgba(59, 130, 246, 0.35));
 }
 
 :deep(.cm-db-result-source-highlight) {
-  background: var(--dbx-editor-selection-background, rgba(126, 34, 206, 0.2));
+  background: var(--chiron-horizon-editor-selection-background, rgba(126, 34, 206, 0.2));
 }
 
 :deep(.cm-lineNumbers .cm-db-result-source-line-number) {
@@ -7613,12 +7613,12 @@ defineExpose({
   align-items: center;
   justify-content: center;
   box-sizing: border-box;
-  width: min(24px, calc(var(--dbx-editor-font-size, 13px) * 1.6));
-  height: min(24px, calc(var(--dbx-editor-font-size, 13px) * 1.6));
+  width: min(24px, calc(var(--chiron-horizon-editor-font-size, 13px) * 1.6));
+  height: min(24px, calc(var(--chiron-horizon-editor-font-size, 13px) * 1.6));
   margin: 0;
   padding: 0;
   border: 1px solid transparent;
-  border-radius: var(--dbx-radius-fixed-6);
+  border-radius: var(--chiron-horizon-radius-fixed-6);
   vertical-align: middle;
   white-space: nowrap;
   transition:
@@ -7665,12 +7665,12 @@ defineExpose({
   align-items: center;
   justify-content: center;
   box-sizing: border-box;
-  width: min(24px, calc(var(--dbx-editor-font-size, 13px) * 1.6));
-  height: min(24px, calc(var(--dbx-editor-font-size, 13px) * 1.6));
+  width: min(24px, calc(var(--chiron-horizon-editor-font-size, 13px) * 1.6));
+  height: min(24px, calc(var(--chiron-horizon-editor-font-size, 13px) * 1.6));
   margin: 0;
   padding: 0;
   border: 1px solid transparent;
-  border-radius: var(--dbx-radius-fixed-6);
+  border-radius: var(--chiron-horizon-radius-fixed-6);
   background: transparent;
   color: transparent;
   vertical-align: middle;
@@ -7744,10 +7744,10 @@ defineExpose({
 }
 
 :deep(.cm-statement-execution-spinner) {
-  animation: dbx-statement-execution-spin 0.8s linear infinite;
+  animation: chiron-horizon-statement-execution-spin 0.8s linear infinite;
 }
 
-@keyframes dbx-statement-execution-spin {
+@keyframes chiron-horizon-statement-execution-spin {
   to {
     transform: rotate(360deg);
   }

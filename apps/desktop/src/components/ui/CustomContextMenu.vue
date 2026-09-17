@@ -273,7 +273,7 @@ onBeforeUnmount(() => {
     <div
       v-if="show"
       ref="menuRef"
-      data-dbx-context-menu
+      data-chiron-horizon-context-menu
       :style="{ position: 'fixed', left: x + 'px', top: y + 'px', zIndex: 9999 }"
       class="pointer-events-auto bg-popover text-popover-foreground min-w-40 w-max max-w-[calc(100vw-16px)] rounded-md p-1 overflow-y-auto ring-1 ring-foreground/10 shadow-lg"
     >
@@ -302,7 +302,7 @@ onBeforeUnmount(() => {
     <div
       v-if="show && activeSubIndex !== null && activeItems[activeSubIndex]?.children?.length"
       ref="subRef"
-      data-dbx-context-menu
+      data-chiron-horizon-context-menu
       :style="{ position: 'fixed', left: subX + 'px', top: subY + 'px', zIndex: 10000, maxHeight: 'min(420px, calc(100vh - 16px))' }"
       class="pointer-events-auto bg-popover text-popover-foreground min-w-56 w-max max-w-[calc(100vw-16px)] rounded-md p-1 overflow-y-auto ring-1 ring-foreground/10 shadow-lg"
       @mouseenter="onSubMouseEnter"

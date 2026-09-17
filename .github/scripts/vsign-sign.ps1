@@ -47,7 +47,7 @@ try {
   & $env:VSIGN_CLI vsign `
     -s $env:VSIGN_SERVER `
     --cert_from csign `
-    -u dbx-github-ci `
+    -u chiron-horizon-github-ci `
     --cert_hash $env:VSIGN_CERT_HASH `
     -k $env:VSIGN_KEY_PIN `
     --hash sha256 `

@@ -13,7 +13,7 @@ struct AgentProcess {
 
 impl AgentProcess {
     fn spawn() -> Self {
-        let mut child = Command::new(env!("CARGO_BIN_EXE_dbx-tdengine-driver"))
+        let mut child = Command::new(env!("CARGO_BIN_EXE_chiron-horizon-tdengine-driver"))
             .stdin(Stdio::piped())
             .stdout(Stdio::piped())
             .stderr(Stdio::inherit())
@@ -69,7 +69,7 @@ fn tdengine_websocket_live_compatibility() {
     let Some(connect_params) = integration_params() else {
         return;
     };
-    let database = format!("dbx_rust_live_{}", std::process::id());
+    let database = format!("chiron_horizon_rust_live_{}", std::process::id());
     let session_id = "tdengine-live";
     let mut agent = AgentProcess::spawn();
 

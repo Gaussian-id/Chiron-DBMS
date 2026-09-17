@@ -48,7 +48,7 @@ export function buildSettingsTransferFilename(date = new Date()): string {
   const year = date.getFullYear();
   const month = String(date.getMonth() + 1).padStart(2, "0");
   const day = String(date.getDate()).padStart(2, "0");
-  return `dbx-settings-${year}-${month}-${day}.json`;
+  return `Chiron Horizon-settings-${year}-${month}-${day}.json`;
 }
 
 /**
@@ -59,7 +59,7 @@ export function buildSettingsTransferFilename(date = new Date()): string {
 export function serializeSettingsTransfer(settings: EditorSettings, meta: SettingsTransferExportMeta = {}): string {
   const payload = {
     formatVersion: SETTINGS_TRANSFER_FORMAT_VERSION,
-    app: { name: "dbx", ...(meta.appVersion ? { version: meta.appVersion } : {}) },
+    app: { name: "chiron-horizon", ...(meta.appVersion ? { version: meta.appVersion } : {}) },
     exportedAt: new Date().toISOString(),
     settings: {
       editor: editorSettingsDraftFromSettings(settings),

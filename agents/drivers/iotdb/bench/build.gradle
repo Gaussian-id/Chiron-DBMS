@@ -19,10 +19,10 @@ sourceSets {
 }
 
 tasks.named('shadowJar') {
-    archiveBaseName = 'dbx-iotdb-jdbc-benchmark'
+    archiveBaseName = 'chiron-horizon-iotdb-jdbc-benchmark'
     archiveClassifier = ''
     manifest {
-        attributes('Main-Class': 'com.dbx.agent.iotdb.bench.JdbcDriverBenchmark')
+        attributes('Main-Class': 'com.chiron.horizon.agent.iotdb.bench.JdbcDriverBenchmark')
     }
 }
 

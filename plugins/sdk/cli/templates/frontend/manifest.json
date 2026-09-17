@@ -1,5 +1,5 @@
 {
-  "$schema": "https://raw.githubusercontent.com/t8y2/dbx/plugin-sdk-v1/plugins/manifest.schema.json",
+  "$schema": "https://raw.githubusercontent.com/Gaussian-id/Gauss-Horizon/plugin-sdk-v1/plugins/manifest.schema.json",
   "manifest_version": 1,
   "id": "{{PLUGIN_ID}}",
   "name": "{{PLUGIN_NAME_JSON}}",
@@ -8,7 +8,7 @@
   "description": "{{DESCRIPTION_JSON}}",
   "icon": "assets/plugin.svg",
   "engines": {
-    "dbx": ">=0.5.68",
+    "chiron-horizon": ">=0.5.68",
     "host_api": "1"
   },
   "entrypoints": {

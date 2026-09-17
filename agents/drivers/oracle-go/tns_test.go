@@ -11,12 +11,12 @@ import (
 func TestBuildDSNForConnectResolvesTNSAlias(t *testing.T) {
 	tnsAdmin := t.TempDir()
 	descriptor := `(DESCRIPTION=(FAILOVER=ON)(ADDRESS_LIST=(ADDRESS=(PROTOCOL=TCP)(HOST=db1.example.com)(PORT=1521))(ADDRESS=(PROTOCOL=TCP)(HOST=db2.example.com)(PORT=1521)))(CONNECT_DATA=(SERVICE_NAME=ORCLPDB1)))`
-	writeTNSNames(t, tnsAdmin, "DBX_FAILOVER =\n  "+descriptor+"\n")
+	writeTNSNames(t, tnsAdmin, "CHIRON_HORIZON_FAILOVER =\n  "+descriptor+"\n")
 
 	dsn, err := buildDSNForConnect(connectParams{
 		Username:         "scott",
 		Password:         "tiger",
-		ConnectionString: oracleTNSJDBCURL("DBX_FAILOVER", tnsAdmin),
+		ConnectionString: oracleTNSJDBCURL("CHIRON_HORIZON_FAILOVER", tnsAdmin),
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -29,15 +29,15 @@ func TestBuildDSNForConnectResolvesTNSAlias(t *testing.T) {
 		t.Fatal(err)
 	}
 	if parsed.Query().Get("PREFETCH_ROWS") != oracleDefaultPrefetchRows {
-		t.Fatalf("TNS Oracle DSN should use the DBX prefetch default, got: %s", dsn)
+		t.Fatalf("TNS Oracle DSN should use the Chiron Horizon prefetch default, got: %s", dsn)
 	}
 }
 
 func TestBuildDSNForConnectPreservesTNSPrefetchRows(t *testing.T) {
 	tnsAdmin := t.TempDir()
-	writeTNSNames(t, tnsAdmin, "DBX = (DESCRIPTION=(ADDRESS=(PROTOCOL=TCP)(HOST=db.example.com)(PORT=1521))(CONNECT_DATA=(SERVICE_NAME=XE)))")
+	writeTNSNames(t, tnsAdmin, "Chiron Horizon = (DESCRIPTION=(ADDRESS=(PROTOCOL=TCP)(HOST=db.example.com)(PORT=1521))(CONNECT_DATA=(SERVICE_NAME=XE)))")
 	dsn, err := buildDSNForConnect(connectParams{
-		ConnectionString: oracleTNSJDBCURL("DBX", tnsAdmin),
+		ConnectionString: oracleTNSJDBCURL("Chiron Horizon", tnsAdmin),
 		Username:         "scott",
 		Password:         "tiger",
 		URLParams:        "prefetch_rows=20",
@@ -58,7 +58,7 @@ func TestBuildDSNForConnectPreservesTNSPrefetchRows(t *testing.T) {
 }
 
 func TestBuildDSNForConnectRejectsMissingTNSAdmin(t *testing.T) {
-	_, err := buildDSNForConnect(connectParams{ConnectionString: "jdbc:oracle:thin:@DBX_FAILOVER"})
+	_, err := buildDSNForConnect(connectParams{ConnectionString: "jdbc:oracle:thin:@CHIRON_HORIZON_FAILOVER"})
 	if err == nil || !strings.Contains(err.Error(), "TNS_ADMIN") {
 		t.Fatalf("expected a clear TNS_ADMIN error, got: %v", err)
 	}
@@ -75,7 +75,7 @@ func TestBuildDSNForConnectRejectsUnknownAlias(t *testing.T) {
 }
 
 func TestBuildDSNForConnectRejectsInvalidTNSAdmin(t *testing.T) {
-	_, err := buildDSNForConnect(connectParams{ConnectionString: oracleTNSJDBCURL("DBX", filepath.Join(t.TempDir(), "missing"))})
+	_, err := buildDSNForConnect(connectParams{ConnectionString: oracleTNSJDBCURL("Chiron Horizon", filepath.Join(t.TempDir(), "missing"))})
 	if err == nil || !strings.Contains(err.Error(), "not accessible") {
 		t.Fatalf("expected an invalid directory error, got: %v", err)
 	}
@@ -84,7 +84,7 @@ func TestBuildDSNForConnectRejectsInvalidTNSAdmin(t *testing.T) {
 func TestReadOracleTNSAliasesSupportsIFILEAndMultipleAliases(t *testing.T) {
 	tnsAdmin := t.TempDir()
 	includePath := filepath.Join(tnsAdmin, "included.ora")
-	if err := os.WriteFile(includePath, []byte("DBX_A, DBX_B = (DESCRIPTION=(ADDRESS=(HOST=db.example.com)(PORT=1521))(CONNECT_DATA=(SERVICE_NAME=ORCL)))\n"), 0o600); err != nil {
+	if err := os.WriteFile(includePath, []byte("CHIRON_HORIZON_A, CHIRON_HORIZON_B = (DESCRIPTION=(ADDRESS=(HOST=db.example.com)(PORT=1521))(CONNECT_DATA=(SERVICE_NAME=ORCL)))\n"), 0o600); err != nil {
 		t.Fatal(err)
 	}
 	writeTNSNames(t, tnsAdmin, "IFILE = included.ora\n")
@@ -93,7 +93,7 @@ func TestReadOracleTNSAliasesSupportsIFILEAndMultipleAliases(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if aliases["DBX_A"] == "" || aliases["DBX_B"] == "" {
+	if aliases["CHIRON_HORIZON_A"] == "" || aliases["CHIRON_HORIZON_B"] == "" {
 		t.Fatalf("expected both aliases from IFILE, got: %#v", aliases)
 	}
 }
@@ -101,7 +101,7 @@ func TestReadOracleTNSAliasesSupportsIFILEAndMultipleAliases(t *testing.T) {
 func TestReadOracleTNSAliasesSupportsIndentedEntriesAndInlineComments(t *testing.T) {
 	tnsAdmin := t.TempDir()
 	writeTNSNames(t, tnsAdmin, `
-  DBX_INDENTED =
+  CHIRON_HORIZON_INDENTED =
     (DESCRIPTION =
       (ADDRESS = (PROTOCOL = TCP)(HOST = db.example.com)(PORT = 1521)) # preferred listener
       (CONNECT_DATA = (SERVICE_NAME = ORCL))
@@ -112,7 +112,7 @@ func TestReadOracleTNSAliasesSupportsIndentedEntriesAndInlineComments(t *testing
 	if err != nil {
 		t.Fatal(err)
 	}
-	descriptor := aliases["DBX_INDENTED"]
+	descriptor := aliases["CHIRON_HORIZON_INDENTED"]
 	if !strings.Contains(descriptor, "HOST = db.example.com") || strings.Contains(descriptor, "preferred listener") {
 		t.Fatalf("expected an indented descriptor without comments, got: %q", descriptor)
 	}

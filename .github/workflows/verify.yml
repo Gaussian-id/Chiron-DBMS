@@ -1,0 +1,73 @@
+name: Chiron Horizon verification
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: verify-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  desktop:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: macos-14
+            target: aarch64-apple-darwin
+            bundles: app,dmg
+          - os: macos-15-intel
+            target: x86_64-apple-darwin
+            bundles: app,dmg
+          - os: windows-2022
+            target: x86_64-pc-windows-msvc
+            bundles: nsis
+          - os: ubuntu-22.04
+            target: x86_64-unknown-linux-gnu
+            bundles: deb,appimage
+    runs-on: ${{ matrix.os }}
+    env:
+      CARGO_INCREMENTAL: '0'
+      CARGO_BUILD_JOBS: '3'
+      CARGO_PROFILE_DEV_DEBUG: '0'
+      CARGO_PROFILE_TEST_DEBUG: '0'
+      NODE_OPTIONS: --max-old-space-size=6144
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.27.0
+      - uses: dtolnay/rust-toolchain@1.94.1
+        with:
+          targets: ${{ matrix.target }}
+      - name: Linux dependencies
+        if: runner.os == 'Linux'
+        run: sudo apt-get update && sudo apt-get install -y libwebkit2gtk-4.1-dev libayatana-appindicator3-dev librsvg2-dev patchelf libssl-dev libsecret-1-dev libfontconfig1-dev libxdo-dev
+      - run: pnpm install --frozen-lockfile
+      - run: node scripts/audit-branding.mjs
+      - run: node scripts/sync-connection-types.mjs --check
+      - run: pnpm exec vue-tsc --noEmit -p apps/desktop/tsconfig.json
+      - run: pnpm exec vitest run apps/desktop/src/lib/chiron apps/desktop/src/components/vector/__tests__ apps/desktop/src/lib/compat
+      - run: pnpm test:database-availability
+      - run: cargo test -p chiron-horizon-core --no-default-features --features sqlite-bundled --lib legacy::tests
+      - run: cargo test -p chiron-horizon-core --no-default-features --features sqlite-bundled --test ai_credentials --test chirondb_connector
+      - run: cargo check -p chiron-horizon-cli -p chiron-horizon-web --no-default-features
+      - run: cargo check --manifest-path plugins/sdk/cli/Cargo.toml
+      - run: node --test packages/plugin-cli/tests/launcher.test.mjs packages/plugin-cli/tests/dev-launcher.test.mjs
+      - name: Build standalone desktop
+        env:
+          APPLE_SIGNING_IDENTITY: '-'
+        run: pnpm exec tauri build --features custom-protocol --target ${{ matrix.target }} --bundles ${{ matrix.bundles }} --ci
+      - name: Verify macOS local signature
+        if: runner.os == 'macOS'
+        run: codesign --verify --deep --strict --verbose=2 "target/${{ matrix.target }}/release/bundle/macos/Chiron Horizon.app"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Chiron Horizon-0.1.0-${{ matrix.target }}
+          path: target/${{ matrix.target }}/release/bundle/
+          if-no-files-found: error

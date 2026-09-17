@@ -34,14 +34,14 @@ function connectionConfig(urlParams?: string): ConnectionConfig {
 describe("SQL Server legacy compatibility", () => {
   it("recognizes native encryption policy independently from the legacy driver profile", () => {
     expect(isSqlServerNativeEncryptionDisabled("sqlserverEncryption=disabled")).toBe(true);
-    expect(isSqlServerNativeEncryptionDisabled("applicationName=dbx;encrypt=false")).toBe(true);
-    expect(isSqlServerNativeEncryptionDisabled("?Encrypt=0&applicationName=dbx")).toBe(true);
+    expect(isSqlServerNativeEncryptionDisabled("applicationName=chiron-horizon;encrypt=false")).toBe(true);
+    expect(isSqlServerNativeEncryptionDisabled("?Encrypt=0&applicationName=chiron-horizon")).toBe(true);
     expect(isSqlServerNativeEncryptionDisabled("encrypt=true")).toBe(false);
   });
 
   it("updates native encryption params without changing the driver profile", () => {
-    expect(setSqlServerNativeEncryptionDisabled("applicationName=dbx;encrypt=true", true)).toBe("applicationName=dbx&sqlserverEncryption=disabled");
-    expect(setSqlServerNativeEncryptionDisabled("applicationName=dbx;sqlserverEncryption=disabled", false)).toBe("applicationName=dbx");
+    expect(setSqlServerNativeEncryptionDisabled("applicationName=chiron-horizon;encrypt=true", true)).toBe("applicationName=chiron-horizon&sqlserverEncryption=disabled");
+    expect(setSqlServerNativeEncryptionDisabled("applicationName=chiron-horizon;sqlserverEncryption=disabled", false)).toBe("applicationName=chiron-horizon");
   });
 
   it("migrates historical disabled-encryption connections to the legacy driver profile", () => {
@@ -62,38 +62,38 @@ describe("SQL Server legacy compatibility", () => {
   });
 
   it("preserves unrelated params while migrating the historical compatibility flag", () => {
-    const config = connectionConfig("applicationName=dbx;sqlserverEncryption=off;encrypt=false");
+    const config = connectionConfig("applicationName=chiron-horizon;sqlserverEncryption=off;encrypt=false");
 
     migrateSqlServerLegacyCompatibilityConfig(config);
 
     expect(config.driver_profile).toBe("sqlserver-legacy");
-    expect(config.url_params).toBe("applicationName=dbx;encrypt=false");
+    expect(config.url_params).toBe("applicationName=chiron-horizon;encrypt=false");
   });
 
   it("preserves semicolons and special characters inside braced values during migration", () => {
-    const config = connectionConfig("applicationName={DBX; Client};password=50%;sqlserverEncryption=disabled;encrypt=false");
+    const config = connectionConfig("applicationName={Chiron Horizon; Client};password=50%;sqlserverEncryption=disabled;encrypt=false");
 
     migrateSqlServerLegacyCompatibilityConfig(config);
 
     expect(config.driver_profile).toBe("sqlserver-legacy");
-    expect(config.url_params).toBe("applicationName={DBX; Client};password=50%;encrypt=false");
+    expect(config.url_params).toBe("applicationName={Chiron Horizon; Client};password=50%;encrypt=false");
   });
 
   it("keeps escaped closing braces from exposing separators inside braced values", () => {
-    const config = connectionConfig("applicationName={DBX}}; Client};sqlserverEncryption=disabled;encrypt=false");
+    const config = connectionConfig("applicationName={Chiron Horizon}}; Client};sqlserverEncryption=disabled;encrypt=false");
 
     migrateSqlServerLegacyCompatibilityConfig(config);
 
-    expect(config.url_params).toBe("applicationName={DBX}}; Client};encrypt=false");
+    expect(config.url_params).toBe("applicationName={Chiron Horizon}}; Client};encrypt=false");
   });
 
   it("keeps generic JDBC encrypt=false on the native driver", () => {
-    const config = connectionConfig("applicationName=dbx;encrypt=false");
+    const config = connectionConfig("applicationName=chiron-horizon;encrypt=false");
 
     migrateSqlServerLegacyCompatibilityConfig(config);
 
     expect(config.driver_profile).toBe("sqlserver");
-    expect(config.url_params).toBe("applicationName=dbx;encrypt=false");
+    expect(config.url_params).toBe("applicationName=chiron-horizon;encrypt=false");
   });
 
   it("treats a persisted legacy driver profile as compatibility mode", () => {
@@ -105,16 +105,16 @@ describe("SQL Server legacy compatibility", () => {
   });
 
   it("updates the explicit driver profile without rewriting native encryption params", () => {
-    const config = connectionConfig("applicationName=dbx&encrypt=false");
+    const config = connectionConfig("applicationName=chiron-horizon&encrypt=false");
 
     setSqlServerLegacyCompatibilityConfig(config, true);
     expect(config.driver_profile).toBe("sqlserver-legacy");
     expect(config.driver_label).toBe("SQL Server legacy compatibility component");
-    expect(config.url_params).toBe("applicationName=dbx&encrypt=false");
+    expect(config.url_params).toBe("applicationName=chiron-horizon&encrypt=false");
 
     setSqlServerLegacyCompatibilityConfig(config, false);
     expect(config.driver_profile).toBe("sqlserver");
     expect(config.driver_label).toBe("SQL Server");
-    expect(config.url_params).toBe("applicationName=dbx&encrypt=false");
+    expect(config.url_params).toBe("applicationName=chiron-horizon&encrypt=false");
   });
 });

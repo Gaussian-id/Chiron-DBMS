@@ -25,7 +25,7 @@ MySQL 8.0
 
 ### 支持信息
 
-DBX 版本: v0.5.62`,
+Chiron Horizon 版本: v0.5.62`,
   labels: [{ name: "bug" }, { name: "db/mysql" }],
 };
 
@@ -251,7 +251,7 @@ test("formats a cautious localized comment with concise issue references", () =>
     { candidate: { number: 82, title: "[Bug] [快捷键](https://example.com)", state: "closed" } },
   ]);
 
-  assert.match(comment, /^<!-- dbx-similar-issues -->/u);
+  assert.match(comment, /^<!-- chiron-horizon-similar-issues -->/u);
   assert.match(comment, /\n- #82\n/u);
   assert.match(comment, /尚未确认重复/u);
   assert.doesNotMatch(comment, /快捷键|已关闭|https:/u);
@@ -301,7 +301,7 @@ test("run searches and posts one idempotent comment", async (t) => {
 
   const client = new GitHubClient({
     token: "test-token",
-    repository: "t8y2/dbx",
+    repository: "Gaussian-id/Gauss-Horizon",
     apiBase: `http://127.0.0.1:${address.port}`,
   });
   const candidates = await run({ issue: baseIssue, client });
@@ -314,7 +314,7 @@ test("run searches and posts one idempotent comment", async (t) => {
     const parameters = new URL(searchRequest.url, "http://localhost").searchParams;
     assert.equal(parameters.get("search_type"), "hybrid");
     assert.equal(parameters.get("per_page"), "20");
-    assert.match(parameters.get("q"), /^repo:t8y2\/dbx is:issue /u);
+    assert.match(parameters.get("q"), /^repo:t8y2\/chiron-horizon is:issue /u);
     assert.ok(parameters.get("q").length < 600);
   }
 });

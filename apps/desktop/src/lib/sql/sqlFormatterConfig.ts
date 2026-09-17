@@ -24,10 +24,10 @@ export interface SqlFormatterCustomParameter {
   regex: string;
 }
 
-// DBX substitutes `${name}`/`#{name}` placeholders client-side (see sqlVariableSyntax.ts),
+// Chiron Horizon substitutes `${name}`/`#{name}` placeholders client-side (see sqlVariableSyntax.ts),
 // but no sql-formatter dialect tokenizes them, so raw SQL containing them would fail to
 // format with a parse error. Always registering them as custom params keeps formatting working.
-const DBX_CUSTOM_PARAM_TYPES: SqlFormatterCustomParameter[] = [{ regex: String.raw`\$\{[^}]+\}` }, { regex: String.raw`#\{[^}]+\}` }];
+const CHIRON_HORIZON_CUSTOM_PARAM_TYPES: SqlFormatterCustomParameter[] = [{ regex: String.raw`\$\{[^}]+\}` }, { regex: String.raw`#\{[^}]+\}` }];
 
 export interface SqlFormatterParamTypes {
   positional?: boolean;
@@ -291,7 +291,7 @@ export function sqlFormatterOptions(settings: unknown) {
       ...paramTypes,
       positional: paramTypes.positional ?? true,
       named: paramTypes.named ?? [":", "@"],
-      custom: [...(paramTypes.custom ?? []), ...DBX_CUSTOM_PARAM_TYPES],
+      custom: [...(paramTypes.custom ?? []), ...CHIRON_HORIZON_CUSTOM_PARAM_TYPES],
     },
   };
 }

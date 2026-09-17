@@ -25,7 +25,7 @@ test("listOpenUnassignedIssues filters pull requests and assigned issues across 
     ...(index === 1 ? { pull_request: { url: "https://example.test/pr/2" } } : {}),
   }));
   const client = {
-    repository: "t8y2/dbx",
+    repository: "Gaussian-id/Gauss-Horizon",
     request: async (_method, path) => {
       const page = new URL(path, "https://api.github.test").searchParams.get("page");
       return page === "1" ? firstPage : [{ number: 101, assignees: [] }];
@@ -42,7 +42,7 @@ test("listOpenUnassignedIssues filters pull requests and assigned issues across 
 test("backfill skips existing comments and searches only its chunk", async () => {
   const searchedTitles = [];
   const client = {
-    repository: "t8y2/dbx",
+    repository: "Gaussian-id/Gauss-Horizon",
     request: async () => [
       { number: 6, title: "six", body: "body", labels: [], assignees: [] },
       { number: 5, title: "five", body: "body", labels: [], assignees: [] },

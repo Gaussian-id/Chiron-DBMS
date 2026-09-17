@@ -536,7 +536,7 @@ onBeforeUnmount(() => {
         <textarea
           v-model="requestText"
           :readonly="loading"
-          class="dbx-editor-font-family h-full w-full resize-none bg-background px-3 py-2 text-xs leading-5 outline-none"
+          class="chiron-horizon-editor-font-family h-full w-full resize-none bg-background px-3 py-2 text-xs leading-5 outline-none"
           :aria-label="t('vector.requestEditor')"
           spellcheck="false"
           autocomplete="off"

@@ -9,7 +9,7 @@ export interface BatchSqlRecoveryState {
 
 function isRecoverableStatementError(batch: BatchSqlExecution, statementIndex: number): boolean {
   const error = batch.items[statementIndex]?.errorDetails;
-  return error?.code === "DBX-JDBC-4001" || error?.diagnostics?.category === "sql";
+  return error?.code === "Chiron Horizon-JDBC-4001" || error?.diagnostics?.category === "sql";
 }
 
 export function batchSqlRecoveryState(tab: Pick<QueryTab, "autoCommit" | "batchSqlExecution" | "isExecuting">): BatchSqlRecoveryState | undefined {

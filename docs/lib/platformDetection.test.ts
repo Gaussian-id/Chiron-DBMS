@@ -21,7 +21,8 @@ test("detects an Intel Mac from Chromium architecture hints", async () => {
   const download = createInstallOptions("cn", "0.5.85").find((option) => option.id === platformId);
 
   assert.equal(platformId, "macos-intel");
-  assert.match(download?.href ?? "", /_x64\.dmg/);
+  assert.equal(download?.action, "instructions");
+  assert.equal(download?.id, "macos-intel");
 });
 
 test("does not trust the Intel token in an Apple Silicon Mac user agent", async () => {

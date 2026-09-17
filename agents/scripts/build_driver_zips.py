@@ -80,7 +80,7 @@ def build_driver_zips(release_dir: Path) -> list[Path]:
             package_driver.pop("native", None)
             package_driver["jar"] = packaged_artifact(jar_artifact, source)
             package_registry = {"jres": {}, "drivers": {driver_name: package_driver}}
-            output = release_dir / f"dbx-agent-{driver_name}-{version}.tar.zst"
+            output = release_dir / f"chiron-horizon-agent-{driver_name}-{version}.tar.zst"
             if not output.exists():
                 write_driver_tar_zstd(output, package_registry, source, executable=False)
             elif not output.is_file():
@@ -98,7 +98,7 @@ def build_driver_zips(release_dir: Path) -> list[Path]:
             package_driver.pop("jar", None)
             package_driver["native"] = {platform: packaged_artifact(artifact, source)}
             package_registry = {"jres": {}, "drivers": {driver_name: package_driver}}
-            output = release_dir / f"dbx-agent-{driver_name}-{version}-{platform}.tar.zst"
+            output = release_dir / f"chiron-horizon-agent-{driver_name}-{version}-{platform}.tar.zst"
             if not output.exists():
                 write_driver_tar_zstd(output, package_registry, source, executable=True)
             elif not output.is_file():
@@ -112,7 +112,7 @@ def build_driver_zips(release_dir: Path) -> list[Path]:
 
 def remove_raw_driver_artifacts(release_dir: Path) -> list[Path]:
     removed: list[Path] = []
-    for path in sorted(release_dir.glob("dbx-agent-*")):
+    for path in sorted(release_dir.glob("chiron-horizon-agent-*")):
         if path.name.endswith(".tar.zst") or not path.is_file():
             continue
         path.unlink()
@@ -121,7 +121,7 @@ def remove_raw_driver_artifacts(release_dir: Path) -> list[Path]:
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="Build tar.zst packages for individual DBX agents")
+    parser = argparse.ArgumentParser(description="Build tar.zst packages for individual Chiron Horizon agents")
     parser.add_argument("release_dir", type=Path)
     parser.add_argument("--cleanup-sources", action="store_true")
     args = parser.parse_args()

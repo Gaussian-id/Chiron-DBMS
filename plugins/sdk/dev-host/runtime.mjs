@@ -8,9 +8,9 @@ import { stopProcessTree } from "./process-tree.mjs";
 
 export async function startDevelopment(options) {
   const diagnostics = options.diagnostics || new Diagnostics();
-  if (Number(process.versions.node.split(".")[0]) < 22) throw new Error("dbx-plugin dev requires Node.js 22+");
+  if (Number(process.versions.node.split(".")[0]) < 22) throw new Error("chiron-horizon-plugin dev requires Node.js 22+");
   const project = resolve(options.project),
-    dataDir = resolve(options.dataDir || resolve(project, ".dbx-dev"));
+    dataDir = resolve(options.dataDir || resolve(project, ".chiron-horizon-dev"));
   await mkdir(dataDir, { recursive: true, mode: 0o700 });
   await chmod(dataDir, 0o700);
   await mkdir(resolve(dataDir, "bin"), { recursive: true });
@@ -101,7 +101,7 @@ export async function startDevelopment(options) {
         process.stdout.write(chunk);
         for (const character of chunk) {
           if (character === "\n") {
-            if (!oversized && line.replace(/\r$/, "") === "DBX_UI_BUILD_SUCCESS") {
+            if (!oversized && line.replace(/\r$/, "") === "CHIRON_HORIZON_UI_BUILD_SUCCESS") {
               void host.uiBuilt().catch(() => diagnostics.record("error", "build", "前端构建产物不可读取"));
             }
             line = "";
@@ -126,7 +126,7 @@ export async function startDevelopment(options) {
 
 if (process.argv[1] && import.meta.url === pathToFileURL(resolve(process.argv[1])).href) {
   try {
-    if (process.argv[2] !== "--config" || !process.argv[3]) throw new Error("Start this runtime using dbx-plugin dev");
+    if (process.argv[2] !== "--config" || !process.argv[3]) throw new Error("Start this runtime using chiron-horizon-plugin dev");
     await startDevelopment(JSON.parse(process.argv[3]));
   } catch (error) {
     console.error(error.message);

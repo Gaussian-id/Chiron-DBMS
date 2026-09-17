@@ -457,7 +457,7 @@ describe("ScheduledDatabaseBackupSettings schedule dialog", () => {
     await flush();
 
     const preview = currentDialog().querySelector<HTMLElement>("[data-backup-output-path-preview]");
-    expect(preview?.textContent).toContain("/backups/dbx-backup__");
+    expect(preview?.textContent).toContain("/backups/chiron-horizon-backup__");
     expect(preview?.textContent).toContain("preview0");
 
     const input = currentDialog().querySelector<HTMLInputElement>("[data-backup-run-directory-pattern]");

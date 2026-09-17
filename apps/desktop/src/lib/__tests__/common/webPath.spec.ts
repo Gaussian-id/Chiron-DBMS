@@ -1,38 +1,38 @@
 import { describe, expect, it } from "vitest";
-import { apiUrl, apiWebSocketUrl, dbxWebBasePath, webPath } from "@/lib/common/webPath";
+import { apiUrl, apiWebSocketUrl, chironHorizonWebBasePath, webPath } from "@/lib/common/webPath";
 
 describe("webPath", () => {
   it("keeps root deployments on root-relative API paths", () => {
-    expect(dbxWebBasePath("/", "/")).toBe("");
+    expect(chironHorizonWebBasePath("/", "/")).toBe("");
     expect(apiUrl("/api/auth/check", "")).toBe("/api/auth/check");
   });
 
   it("uses an explicit build base path", () => {
-    expect(dbxWebBasePath("/", "/dbx/")).toBe("/dbx");
-    expect(webPath("/login", "/dbx")).toBe("/dbx/login");
-    expect(webPath("/", "/dbx")).toBe("/dbx/");
-    expect(webPath("/icons/database/mysql.svg", "/dbx")).toBe("/dbx/icons/database/mysql.svg");
-    expect(webPath("/icons/ai/openai.svg", "/dbx")).toBe("/dbx/icons/ai/openai.svg");
-    expect(webPath("/logo.png", "/dbx")).toBe("/dbx/logo.png");
-    expect(webPath("/logo-black.png", "/dbx")).toBe("/dbx/logo-black.png");
-    expect(webPath("/icon-preview-default.png", "/dbx")).toBe("/dbx/icon-preview-default.png");
-    expect(webPath("/icon-preview-black.png", "/dbx")).toBe("/dbx/icon-preview-black.png");
-    expect(apiUrl("/auth/check", "/dbx")).toBe("/dbx/api/auth/check");
-    expect(apiUrl("/api/auth/check", "/dbx")).toBe("/dbx/api/auth/check");
-    expect(apiUrl("api/auth/check", "/dbx")).toBe("/dbx/api/auth/check");
+    expect(chironHorizonWebBasePath("/", "/chiron-horizon/")).toBe("/chiron-horizon");
+    expect(webPath("/login", "/chiron-horizon")).toBe("/chiron-horizon/login");
+    expect(webPath("/", "/chiron-horizon")).toBe("/chiron-horizon/");
+    expect(webPath("/icons/database/mysql.svg", "/chiron-horizon")).toBe("/chiron-horizon/icons/database/mysql.svg");
+    expect(webPath("/icons/ai/openai.svg", "/chiron-horizon")).toBe("/chiron-horizon/icons/ai/openai.svg");
+    expect(webPath("/logo.png", "/chiron-horizon")).toBe("/chiron-horizon/logo.png");
+    expect(webPath("/logo-black.png", "/chiron-horizon")).toBe("/chiron-horizon/logo-black.png");
+    expect(webPath("/icon-preview-default.png", "/chiron-horizon")).toBe("/chiron-horizon/icon-preview-default.png");
+    expect(webPath("/icon-preview-black.png", "/chiron-horizon")).toBe("/chiron-horizon/icon-preview-black.png");
+    expect(apiUrl("/auth/check", "/chiron-horizon")).toBe("/chiron-horizon/api/auth/check");
+    expect(apiUrl("/api/auth/check", "/chiron-horizon")).toBe("/chiron-horizon/api/auth/check");
+    expect(apiUrl("api/auth/check", "/chiron-horizon")).toBe("/chiron-horizon/api/auth/check");
   });
 
   it("infers the runtime base path from the login URL for relative builds", () => {
-    expect(dbxWebBasePath("/dbx/login", "./")).toBe("/dbx");
-    expect(dbxWebBasePath("/tools/dbx/login", "./")).toBe("/tools/dbx");
+    expect(chironHorizonWebBasePath("/chiron-horizon/login", "./")).toBe("/chiron-horizon");
+    expect(chironHorizonWebBasePath("/tools/chiron-horizon/login", "./")).toBe("/tools/chiron-horizon");
   });
 
   it("infers the runtime base path from a mounted relative build", () => {
-    expect(dbxWebBasePath("/dbx/", "./")).toBe("/dbx");
-    expect(dbxWebBasePath("/tools/dbx/", "./")).toBe("/tools/dbx");
+    expect(chironHorizonWebBasePath("/chiron-horizon/", "./")).toBe("/chiron-horizon");
+    expect(chironHorizonWebBasePath("/tools/chiron-horizon/", "./")).toBe("/tools/chiron-horizon");
   });
 
   it("builds websocket URLs with the configured base path", () => {
-    expect(apiWebSocketUrl("/redis/session/123", "/dbx", { protocol: "https:", host: "example.test" })).toBe("wss://example.test/dbx/api/redis/session/123");
+    expect(apiWebSocketUrl("/redis/session/123", "/chiron-horizon", { protocol: "https:", host: "example.test" })).toBe("wss://example.test/chiron-horizon/api/redis/session/123");
   });
 });

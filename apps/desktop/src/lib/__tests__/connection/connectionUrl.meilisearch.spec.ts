@@ -91,7 +91,7 @@ describe("Meilisearch connection URLs", () => {
   });
 
   it("preserves the proxy path when a Meilisearch URL arrives through a deep link", () => {
-    const link = new URL("dbx://connection/new");
+    const link = new URL("chiron-horizon://connection/new");
     link.searchParams.set("type", "meilisearch");
     link.searchParams.set("url", "https://search.example.com/gateway/meili?insecure=true");
 

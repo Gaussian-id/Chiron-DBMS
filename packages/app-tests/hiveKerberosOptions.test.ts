@@ -7,14 +7,14 @@ test("adds Hive Kerberos URL and JVM options while preserving unrelated params",
     authMode: "kerberos",
     principal: "hive/_HOST@EXAMPLE.COM",
     krb5ConfPath: "C:\\ProgramData\\MIT\\Kerberos5\\krb5.ini",
-    jaasConfigPath: "C:\\dbx\\hive-jaas.conf",
+    jaasConfigPath: "C:\\chiron-horizon\\hive-jaas.conf",
     useSubjectCredsOnlyFalse: true,
     extraJavaOptions: "-Dsun.security.krb5.debug=true",
     urlParams: ";serviceDiscoveryMode=zooKeeper;principal=hive/old@EXAMPLE.COM",
   });
 
   assert.equal(result.urlParams, "serviceDiscoveryMode=zooKeeper;principal=hive/_HOST@EXAMPLE.COM");
-  assert.deepEqual(result.agentJavaOptions, ["-Djava.security.krb5.conf=C:\\ProgramData\\MIT\\Kerberos5\\krb5.ini", "-Djava.security.auth.login.config=C:\\dbx\\hive-jaas.conf", "-Djavax.security.auth.useSubjectCredsOnly=false", "-Dsun.security.krb5.debug=true"]);
+  assert.deepEqual(result.agentJavaOptions, ["-Djava.security.krb5.conf=C:\\ProgramData\\MIT\\Kerberos5\\krb5.ini", "-Djava.security.auth.login.config=C:\\chiron-horizon\\hive-jaas.conf", "-Djavax.security.auth.useSubjectCredsOnly=false", "-Dsun.security.krb5.debug=true"]);
 });
 
 test("disabling Hive Kerberos removes generated URL params but keeps extra JVM options", () => {

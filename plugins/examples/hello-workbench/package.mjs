@@ -6,19 +6,19 @@ import process from "node:process";
 import { fileURLToPath } from "node:url";
 
 const root = path.dirname(fileURLToPath(import.meta.url));
-const dist = process.env.DBX_PLUGIN_OUTPUT_DIR ? path.resolve(process.env.DBX_PLUGIN_OUTPUT_DIR) : path.join(root, "dist");
-const buildRoot = await mkdtemp(path.join(os.tmpdir(), "dbx-hello-package-"));
+const dist = process.env.CHIRON_HORIZON_PLUGIN_OUTPUT_DIR ? path.resolve(process.env.CHIRON_HORIZON_PLUGIN_OUTPUT_DIR) : path.join(root, "dist");
+const buildRoot = await mkdtemp(path.join(os.tmpdir(), "chiron-horizon-hello-package-"));
 const stage = path.join(buildRoot, "stage");
 const detectedTarget = platformTarget();
-const target = process.env.DBX_PLUGIN_TARGET || detectedTarget;
-if (target !== detectedTarget) throw new Error(`DBX_PLUGIN_TARGET ${target} does not match native build host ${detectedTarget}`);
-const executableName = process.platform === "win32" ? "dbx-example-hello.exe" : "dbx-example-hello";
+const target = process.env.CHIRON_HORIZON_PLUGIN_TARGET || detectedTarget;
+if (target !== detectedTarget) throw new Error(`CHIRON_HORIZON_PLUGIN_TARGET ${target} does not match native build host ${detectedTarget}`);
+const executableName = process.platform === "win32" ? "chiron-horizon-example-hello.exe" : "chiron-horizon-example-hello";
 const backendTarget = path.join(buildRoot, "backend-target");
 const packagerTarget = path.join(buildRoot, "packager-target");
-const output = path.join(dist, `dbx.example.hello-1.0.0-${target}.dbxp`);
-const artifactMetadata = output.replace(/\.dbxp$/, ".artifact.json");
+const output = path.join(dist, `chiron.horizon.example.hello-1.0.0-${target}.chiron-horizonp`);
+const artifactMetadata = output.replace(/\.chiron-horizonp$/, ".artifact.json");
 
-if (process.env.DBX_PLUGIN_SIGNING_KEY || process.env.DBX_PLUGIN_SIGNING_KEY_ID) {
+if (process.env.CHIRON_HORIZON_PLUGIN_SIGNING_KEY || process.env.CHIRON_HORIZON_PLUGIN_SIGNING_KEY_ID) {
   throw new Error("package.mjs only builds unsigned review candidates; use repository-sign.mjs after review");
 }
 

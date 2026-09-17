@@ -926,7 +926,7 @@ function createTabDragGhost(sourceEl: HTMLElement, x: number, y: number) {
   const ghost = document.createElement("div");
   const textNode = sourceEl.querySelector(".truncate");
   ghost.textContent = textNode?.textContent || "";
-  ghost.style.cssText = `position: fixed; pointer-events: none; z-index: 9999; opacity: 0.9; box-shadow: 0 2px 8px rgba(0,0,0,0.15); border-radius: var(--dbx-radius-fixed-6); background: var(--background, #fff); border: 1px solid var(--border, #e5e7eb); max-width: 200px; height: 28px; padding: 0 12px; font-size: 12px; line-height: 28px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; left: ${x + 12}px; top: ${y - 14}px;`;
+  ghost.style.cssText = `position: fixed; pointer-events: none; z-index: 9999; opacity: 0.9; box-shadow: 0 2px 8px rgba(0,0,0,0.15); border-radius: var(--chiron-horizon-radius-fixed-6); background: var(--background, #fff); border: 1px solid var(--border, #e5e7eb); max-width: 200px; height: 28px; padding: 0 12px; font-size: 12px; line-height: 28px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; left: ${x + 12}px; top: ${y - 14}px;`;
   document.body.appendChild(ghost);
   return ghost;
 }
@@ -955,7 +955,7 @@ function dispatchBeforeTabSwitch(tabId: string) {
   if (tabId === props.activeTabId) {
     return;
   }
-  window.dispatchEvent(new CustomEvent("dbx:before-tab-switch", { detail: { tabId, fromTabId: props.activeTabId } }));
+  window.dispatchEvent(new CustomEvent("chiron-horizon:before-tab-switch", { detail: { tabId, fromTabId: props.activeTabId } }));
 }
 
 function activateTab(tabId: string) {

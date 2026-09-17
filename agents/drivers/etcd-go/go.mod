@@ -1,4 +1,4 @@
-module github.com/t8y2/dbx/agents/drivers/etcd-go
+module github.com/Gaussian-id/Gauss-Horizon/agents/drivers/etcd-go
 
 go 1.26
 

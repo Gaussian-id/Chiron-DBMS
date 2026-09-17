@@ -18,25 +18,25 @@ describe("mq exchanges/bindings tauri API", () => {
 
   it("invokes mq_list_exchanges with the namespace ref", async () => {
     const { mqListExchanges } = await import("@/lib/backend/mq-tauri");
-    mocks.invoke.mockResolvedValue([{ name: "dbx-events", type: "topic", durable: true, autoDelete: false, internal: false }]);
+    mocks.invoke.mockResolvedValue([{ name: "chiron-horizon-events", type: "topic", durable: true, autoDelete: false, internal: false }]);
 
     const result = await mqListExchanges("conn-1", NS);
 
     expect(mocks.invoke).toHaveBeenCalledWith("mq_list_exchanges", { connectionId: "conn-1", ns: NS });
     expect(result).toHaveLength(1);
-    expect(result[0]?.name).toBe("dbx-events");
+    expect(result[0]?.name).toBe("chiron-horizon-events");
   });
 
   it("invokes mq_create_exchange with flattened fields", async () => {
     const { mqCreateExchange } = await import("@/lib/backend/mq-tauri");
     mocks.invoke.mockResolvedValue(undefined);
 
-    await mqCreateExchange("conn-1", NS, { name: "dbx-events", type: "topic", durable: true, autoDelete: false });
+    await mqCreateExchange("conn-1", NS, { name: "chiron-horizon-events", type: "topic", durable: true, autoDelete: false });
 
     expect(mocks.invoke).toHaveBeenCalledWith("mq_create_exchange", {
       connectionId: "conn-1",
       ns: NS,
-      name: "dbx-events",
+      name: "chiron-horizon-events",
       exchangeType: "topic",
       durable: true,
       autoDelete: false,
@@ -47,17 +47,17 @@ describe("mq exchanges/bindings tauri API", () => {
     const { mqDeleteExchange } = await import("@/lib/backend/mq-tauri");
     mocks.invoke.mockResolvedValue(undefined);
 
-    await mqDeleteExchange("conn-1", NS, "dbx-events");
+    await mqDeleteExchange("conn-1", NS, "chiron-horizon-events");
 
-    expect(mocks.invoke).toHaveBeenCalledWith("mq_delete_exchange", { connectionId: "conn-1", ns: NS, name: "dbx-events" });
+    expect(mocks.invoke).toHaveBeenCalledWith("mq_delete_exchange", { connectionId: "conn-1", ns: NS, name: "chiron-horizon-events" });
   });
 
   it("invokes mq_list_bindings with optional filters", async () => {
     const { mqListBindings } = await import("@/lib/backend/mq-tauri");
     mocks.invoke.mockResolvedValue([]);
 
-    await mqListBindings("conn-1", NS, { exchange: "dbx-events" });
-    expect(mocks.invoke).toHaveBeenCalledWith("mq_list_bindings", { connectionId: "conn-1", ns: NS, exchange: "dbx-events", queue: undefined });
+    await mqListBindings("conn-1", NS, { exchange: "chiron-horizon-events" });
+    expect(mocks.invoke).toHaveBeenCalledWith("mq_list_bindings", { connectionId: "conn-1", ns: NS, exchange: "chiron-horizon-events", queue: undefined });
 
     await mqListBindings("conn-1", NS);
     expect(mocks.invoke).toHaveBeenCalledWith("mq_list_bindings", { connectionId: "conn-1", ns: NS, exchange: undefined, queue: undefined });
@@ -66,7 +66,7 @@ describe("mq exchanges/bindings tauri API", () => {
   it("invokes mq_bind and mq_unbind with the binding object", async () => {
     const { mqBind, mqUnbind } = await import("@/lib/backend/mq-tauri");
     mocks.invoke.mockResolvedValue(undefined);
-    const binding = { source: "dbx-events", destination: "dbx-queue", destinationType: "queue", routingKey: "orders.*" };
+    const binding = { source: "chiron-horizon-events", destination: "chiron-horizon-queue", destinationType: "queue", routingKey: "orders.*" };
 
     await mqBind("conn-1", NS, binding);
     expect(mocks.invoke).toHaveBeenCalledWith("mq_bind", { connectionId: "conn-1", ns: NS, binding });
@@ -103,23 +103,23 @@ describe("mq exchanges/bindings HTTP API", () => {
     await mqListExchanges("conn-1", NS);
     expect(lastCall(fetchMock)).toEqual({ url: "/api/mq/exchanges/list", body: { connectionId: "conn-1", ns: NS } });
 
-    await mqCreateExchange("conn-1", NS, { name: "dbx-events", type: "fanout", durable: false, autoDelete: true });
+    await mqCreateExchange("conn-1", NS, { name: "chiron-horizon-events", type: "fanout", durable: false, autoDelete: true });
     expect(lastCall(fetchMock)).toEqual({
       url: "/api/mq/exchanges/create",
-      body: { connectionId: "conn-1", ns: NS, name: "dbx-events", exchangeType: "fanout", durable: false, autoDelete: true },
+      body: { connectionId: "conn-1", ns: NS, name: "chiron-horizon-events", exchangeType: "fanout", durable: false, autoDelete: true },
     });
 
-    await mqDeleteExchange("conn-1", NS, "dbx-events");
-    expect(lastCall(fetchMock)).toEqual({ url: "/api/mq/exchanges/delete", body: { connectionId: "conn-1", ns: NS, name: "dbx-events" } });
+    await mqDeleteExchange("conn-1", NS, "chiron-horizon-events");
+    expect(lastCall(fetchMock)).toEqual({ url: "/api/mq/exchanges/delete", body: { connectionId: "conn-1", ns: NS, name: "chiron-horizon-events" } });
   });
 
   it("posts to the bindings endpoints", async () => {
     const fetchMock = stubFetch();
     const { mqListBindings, mqBind, mqUnbind } = await import("@/lib/backend/mq-http");
-    const binding = { source: "dbx-events", destination: "dbx-queue", destinationType: "queue", routingKey: "orders.*" };
+    const binding = { source: "chiron-horizon-events", destination: "chiron-horizon-queue", destinationType: "queue", routingKey: "orders.*" };
 
-    await mqListBindings("conn-1", NS, { queue: "dbx-queue" });
-    expect(lastCall(fetchMock)).toEqual({ url: "/api/mq/bindings/list", body: { connectionId: "conn-1", ns: NS, exchange: undefined, queue: "dbx-queue" } });
+    await mqListBindings("conn-1", NS, { queue: "chiron-horizon-queue" });
+    expect(lastCall(fetchMock)).toEqual({ url: "/api/mq/bindings/list", body: { connectionId: "conn-1", ns: NS, exchange: undefined, queue: "chiron-horizon-queue" } });
 
     await mqBind("conn-1", NS, binding);
     expect(lastCall(fetchMock)).toEqual({ url: "/api/mq/bindings/bind", body: { connectionId: "conn-1", ns: NS, binding } });

@@ -2,10 +2,10 @@
 
 Status date: 2026-09-03.
 
-This agent is a fork of `agents/drivers/hive-go` created to serve 星环Argo
+This agent is a fork of `agents/drivers/hive-go` created to serve ArgoDB
 (Transwarp ArgoDB) connections exclusively: `supportsRoutines()` returns true
 unconditionally and connection identity reports `ArgoDB (Transwarp)` /
-`DBX ArgoDB Go Agent`. Vanilla Hive / Kyuubi / Impala stay on hive-go.
+`Chiron Horizon ArgoDB Go Agent`. Vanilla Hive / Kyuubi / Impala stay on hive-go.
 
 No Hive 3 / Hive 4 / Kyuubi parity is claimed for this directory. The
 validation matrix in `agents/drivers/hive-go/MIGRATION_PARITY.md` applies to
@@ -24,7 +24,7 @@ Validated against Transwarp ArgoDB by the PR author (#7933):
 
 - `go test ./...` green in this module (routine views asserted queried
   unconditionally; ArgoDB identity asserted)
-- End-to-end on a local build with an ArgoDB connection: 星环Argo branding
+- End-to-end on a local build with an ArgoDB connection: ArgoDB branding
   shown, stored-procedure source opens as one whole statement, `CREATE OR
   REPLACE PROCEDURE` executes as a single statement, and execute errors
   surface readable diagnostics

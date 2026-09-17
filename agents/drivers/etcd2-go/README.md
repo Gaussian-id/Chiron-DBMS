@@ -1,6 +1,6 @@
 # etcd v2 native agent (`etcd2`)
 
-Native Go agent speaking the etcd **v2 HTTP/JSON API** with the standard DBX
+Native Go agent speaking the etcd **v2 HTTP/JSON API** with the standard Chiron Horizon
 agent protocol (NDJSON JSON-RPC over stdio). Registered as agentKey `etcd2`,
 selected through the `etcd-v2` driver profile of the `etcd` connection type.
 
@@ -62,9 +62,9 @@ UI hides the corresponding workspaces for `etcd-v2` connections.
 
 ```bash
 go test ./...                                  # unit tests
-DBX_ETCD2_LIVE=1 go test -run Live ./...       # live flow (default endpoint below)
+CHIRON_HORIZON_ETCD2_LIVE=1 go test -run Live ./...       # live flow (default endpoint below)
 ```
 
-Live test environment variables: `DBX_ETCD2_ENDPOINTS`, `DBX_ETCD2_USER`,
-`DBX_ETCD2_PASSWORD`. The default endpoint points at the team test server's
+Live test environment variables: `CHIRON_HORIZON_ETCD2_ENDPOINTS`, `CHIRON_HORIZON_ETCD2_USER`,
+`CHIRON_HORIZON_ETCD2_PASSWORD`. The default endpoint points at the team test server's
 etcd 2.3.8 instance; see `docs/testing-databases.md` in the workspace root.

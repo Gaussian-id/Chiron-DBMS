@@ -1,5 +1,5 @@
 /dist/
-/.dbx-dev/
-.dbx-repository-signing-key.env
+/.chiron-horizon-dev/
+.chiron-horizon-repository-signing-key.env
 .DS_Store
 *.log

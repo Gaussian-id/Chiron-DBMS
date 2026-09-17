@@ -81,7 +81,7 @@ async function loadVhosts() {
     const namespaces = await mqListNamespaces(props.connectionId, RABBITMQ_MQ_TENANT);
     vhosts.value = namespaces.map((ns) => ns.namespace);
   } catch (e: unknown) {
-    console.warn("[DBX] Failed to load RabbitMQ vhosts:", e);
+    console.warn("[Chiron Horizon] Failed to load RabbitMQ vhosts:", e);
   }
 }
 
@@ -296,7 +296,7 @@ watch(
           </div>
           <div class="form-group">
             <label>{{ t("mqRabbitMqPolicies.pattern") }}</label>
-            <input v-model="editForm.pattern" type="text" placeholder="^dbx-" :disabled="readOnly" />
+            <input v-model="editForm.pattern" type="text" placeholder="^chiron-horizon-" :disabled="readOnly" />
           </div>
           <div class="form-hint">{{ t("mqRabbitMqPolicies.patternHint") }}</div>
           <div class="form-group">
@@ -404,7 +404,7 @@ watch(
   overflow: auto;
   background: var(--color-background);
   border: 1px solid var(--color-border);
-  border-radius: var(--dbx-radius-fixed-6);
+  border-radius: var(--chiron-horizon-radius-fixed-6);
 }
 
 table {
@@ -503,7 +503,7 @@ button:disabled {
 
 .dialog {
   background: var(--color-background);
-  border-radius: var(--dbx-radius-fixed-6);
+  border-radius: var(--chiron-horizon-radius-fixed-6);
   width: 90%;
   max-width: 560px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
@@ -553,7 +553,7 @@ button:disabled {
   width: 100%;
   padding: 8px 12px;
   border: 1px solid var(--color-border);
-  border-radius: var(--dbx-radius-fixed-4);
+  border-radius: var(--chiron-horizon-radius-fixed-4);
   font-size: 14px;
   box-sizing: border-box;
   background: var(--color-background);

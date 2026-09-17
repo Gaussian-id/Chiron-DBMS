@@ -8,14 +8,14 @@ import { fileURLToPath } from "node:url";
 const root = path.dirname(fileURLToPath(import.meta.url));
 const repositoryRoot = path.resolve(root, "..", "..", "..");
 const target = platformTarget();
-const temporary = await mkdtemp(path.join(os.tmpdir(), "dbx-plugin-repository-smoke-"));
+const temporary = await mkdtemp(path.join(os.tmpdir(), "chiron-horizon-plugin-repository-smoke-"));
 const candidateDirectory = path.join(temporary, "candidates");
-const candidate = path.join(candidateDirectory, `dbx.example.hello-1.0.0-${target}.dbxp`);
+const candidate = path.join(candidateDirectory, `chiron.horizon.example.hello-1.0.0-${target}.chiron-horizonp`);
 const keyFile = path.join(temporary, "repository-key.env");
-const signed = path.join(temporary, `dbx.example.hello-1.0.0-${target}.signed.dbxp`);
+const signed = path.join(temporary, `chiron.horizon.example.hello-1.0.0-${target}.signed.chiron-horizonp`);
 
 try {
-  run(process.execPath, [path.join(root, "package.mjs")], { DBX_PLUGIN_OUTPUT_DIR: candidateDirectory });
+  run(process.execPath, [path.join(root, "package.mjs")], { CHIRON_HORIZON_PLUGIN_OUTPUT_DIR: candidateDirectory });
   run(
     "cargo",
     [
@@ -35,13 +35,13 @@ try {
   const signingEnvironment = await readEnvironmentFile(keyFile);
   run(process.execPath, [path.join(root, "repository-sign.mjs"), candidate, signed], {
     ...signingEnvironment,
-    DBX_PLUGIN_TARGET: target,
-    DBX_PLUGIN_SKIP_EXAMPLE_CATALOG: "1",
+    CHIRON_HORIZON_PLUGIN_TARGET: target,
+    CHIRON_HORIZON_PLUGIN_SKIP_EXAMPLE_CATALOG: "1",
   });
   run(process.execPath, [path.join(root, "smoke.mjs"), signed], {
     CARGO_TARGET_DIR: path.join(temporary, "core-target"),
-    DBX_PLUGIN_SMOKE_TRUSTED_KEYS_JSON: JSON.stringify({
-      [signingEnvironment.DBX_PLUGIN_SIGNING_KEY_ID]: signingEnvironment.DBX_PLUGIN_SIGNING_PUBLIC_KEY,
+    CHIRON_HORIZON_PLUGIN_SMOKE_TRUSTED_KEYS_JSON: JSON.stringify({
+      [signingEnvironment.CHIRON_HORIZON_PLUGIN_SIGNING_KEY_ID]: signingEnvironment.CHIRON_HORIZON_PLUGIN_SIGNING_PUBLIC_KEY,
     }),
   });
   console.log("Repository signing smoke passed: candidate -> repository signature -> trusted install -> lifecycle -> uninstall");
@@ -65,7 +65,7 @@ async function readEnvironmentFile(file) {
     const match = /^export ([A-Z0-9_]+)=(.*)$/.exec(line);
     if (match) environment[match[1]] = match[2];
   }
-  for (const name of ["DBX_PLUGIN_SIGNING_KEY", "DBX_PLUGIN_SIGNING_KEY_ID", "DBX_PLUGIN_SIGNING_PUBLIC_KEY"]) {
+  for (const name of ["CHIRON_HORIZON_PLUGIN_SIGNING_KEY", "CHIRON_HORIZON_PLUGIN_SIGNING_KEY_ID", "CHIRON_HORIZON_PLUGIN_SIGNING_PUBLIC_KEY"]) {
     if (!environment[name]) throw new Error(`Generated repository key file is missing ${name}`);
   }
   return environment;

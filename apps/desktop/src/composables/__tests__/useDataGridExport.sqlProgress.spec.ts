@@ -62,7 +62,7 @@ function createOptions(overrides: Partial<UseDataGridExportOptions> = {}): UseDa
     })),
     databaseType: computed(() => "postgres"),
     connectionId: computed(() => "connection-1"),
-    database: computed(() => "dbx"),
+    database: computed(() => "chiron-horizon"),
     context: computed(() => "results"),
     sourceColumns: computed(() => ["id", "name"]),
     columnTypes: computed(() => ["int4", "text"]),
@@ -83,7 +83,7 @@ function createOptions(overrides: Partial<UseDataGridExportOptions> = {}): UseDa
     queryResultExportRequest: vi.fn(async (request) => ({
       ...request,
       connectionId: "connection-1",
-      database: "dbx",
+      database: "chiron-horizon",
       databaseType: "postgres",
       queryBaseSql: "SELECT id, name FROM users",
       sql: "SELECT id, name FROM users",

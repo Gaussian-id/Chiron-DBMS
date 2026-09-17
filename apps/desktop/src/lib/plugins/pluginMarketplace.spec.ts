@@ -3,17 +3,17 @@ import { buildMarketplacePluginListings, filterMarketplacePluginListings, select
 import type { InstalledPlugin, PluginRepositoryCatalogResult } from "@/types/database";
 
 const result: PluginRepositoryCatalogResult = {
-  repository: { id: "dbx-official", name: "DBX Marketplace", kind: "official", enabled: true, managed: true },
+  repository: { id: "chiron-horizon-official", name: "Chiron Horizon Marketplace", kind: "official", enabled: true, managed: true },
   target: "darwin-arm64",
   catalog: {
     catalogVersion: 1,
-    repository: { id: "dbx-official", name: "DBX Marketplace" },
+    repository: { id: "chiron-horizon-official", name: "Chiron Horizon Marketplace" },
     plugins: [
       {
         id: "example.hello",
         name: "Hello",
         description: "Greets the user",
-        publisher: "DBX",
+        publisher: "Chiron Horizon",
         verified: true,
         tags: ["sample"],
         permissions: [],
@@ -21,7 +21,7 @@ const result: PluginRepositoryCatalogResult = {
         versions: [
           {
             version: "1.1.0",
-            artifacts: [{ target: "darwin-arm64", url: "https://plugins.example.com/hello.dbxp", sha256: "a".repeat(64), signingKeyId: "dbx.release" }],
+            artifacts: [{ target: "darwin-arm64", url: "https://plugins.example.com/hello.chiron-horizonp", sha256: "a".repeat(64), signingKeyId: "chiron.horizon.release" }],
           },
         ],
         localizations: { "zh-CN": { name: "你好工作台", description: "用于验证插件工作台" } },
@@ -37,9 +37,9 @@ function installed(version: string): InstalledPlugin {
       id: "example.hello",
       name: "Hello",
       version,
-      publisher: "DBX",
+      publisher: "Chiron Horizon",
       description: "",
-      engines: { dbx: "", host_api: "" },
+      engines: { "chiron-horizon": "", host_api: "" },
       permissions: [],
       entrypoints: {},
       contributions: [],
@@ -55,7 +55,7 @@ describe("plugin marketplace listings", () => {
     const listings = buildMarketplacePluginListings([result], [installed("1.0.0")], "zh-CN");
 
     expect(listings[0]).toMatchObject({ name: "你好工作台", status: "update", target: "darwin-arm64" });
-    expect(filterMarketplacePluginListings(listings, "验证", "dbx-official")).toHaveLength(1);
+    expect(filterMarketplacePluginListings(listings, "验证", "chiron-horizon-official")).toHaveLength(1);
   });
 
   it("marks a plugin unsupported when the current target has no artifact", () => {
@@ -68,15 +68,15 @@ describe("plugin marketplace listings", () => {
   it("uses a universal artifact when the current target has no exact artifact", () => {
     const universal = structuredClone(result);
     universal.target = "linux-x64";
-    universal.catalog!.plugins[0].versions[0].artifacts = [{ target: "universal", url: "https://plugins.example.com/hello-universal.dbxp", sha256: "b".repeat(64), signingKeyId: "dbx.release" }];
+    universal.catalog!.plugins[0].versions[0].artifacts = [{ target: "universal", url: "https://plugins.example.com/hello-universal.chiron-horizonp", sha256: "b".repeat(64), signingKeyId: "chiron.horizon.release" }];
 
     expect(buildMarketplacePluginListings([universal], [], "en")[0]).toMatchObject({ status: "install", artifact: { target: "universal" } });
   });
 
   it("prefers an exact artifact over the universal fallback", () => {
     const artifacts = [
-      { target: "universal", url: "https://plugins.example.com/hello-universal.dbxp", sha256: "a".repeat(64), signingKeyId: "dbx.release" },
-      { target: "darwin-arm64", url: "https://plugins.example.com/hello-darwin.dbxp", sha256: "b".repeat(64), signingKeyId: "dbx.release" },
+      { target: "universal", url: "https://plugins.example.com/hello-universal.chiron-horizonp", sha256: "a".repeat(64), signingKeyId: "chiron.horizon.release" },
+      { target: "darwin-arm64", url: "https://plugins.example.com/hello-darwin.chiron-horizonp", sha256: "b".repeat(64), signingKeyId: "chiron.horizon.release" },
     ];
 
     expect(selectMarketplaceArtifact(artifacts, "darwin-arm64")?.target).toBe("darwin-arm64");

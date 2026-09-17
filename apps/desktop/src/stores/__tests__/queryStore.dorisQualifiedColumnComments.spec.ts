@@ -68,7 +68,7 @@ describe("queryStore Doris qualified-table metadata target", () => {
     setActivePinia(createPinia());
     // Doris connection WITHOUT a default database: the query tab has no
     // execution database either, so the only source of the table's namespace
-    // is the database explicitly qualified in the SQL (`dbx6590_test.tbl`).
+    // is the database explicitly qualified in the SQL (`chiron-horizon6590_test.tbl`).
     getConnectionConfig.mockReturnValue({ id: "doris-1", name: "Doris", db_type: "doris", database: null, query_timeout_secs: 30 });
     getColumns.mockResolvedValue(dorisColumns);
     listIndexes.mockResolvedValue([]);
@@ -77,11 +77,11 @@ describe("queryStore Doris qualified-table metadata target", () => {
     analyzeEditableQueryEditability.mockResolvedValue({
       editable: true,
       analysis: {
-        // `dbx6590_test.dbx_comment_test` → the qualified database lands in
+        // `chiron-horizon6590_test.chiron_horizon_comment_test` → the qualified database lands in
         // `schema` (MySQL-family two-part names), matching the Rust parser.
-        schema: "dbx6590_test",
+        schema: "chiron-horizon6590_test",
         schemaQuoted: false,
-        tableName: "dbx_comment_test",
+        tableName: "chiron_horizon_comment_test",
         tableNameQuoted: false,
         tableAlias: undefined,
         selectStar: true,
@@ -91,7 +91,7 @@ describe("queryStore Doris qualified-table metadata target", () => {
       },
     });
     buildSortedQuerySql.mockResolvedValue({ ok: true, sql: `${"SELECT *"} ORDER BY 1` });
-    buildDataGridCountSql.mockResolvedValue("SELECT COUNT(*) FROM `dbx6590_test`.`dbx_comment_test`");
+    buildDataGridCountSql.mockResolvedValue("SELECT COUNT(*) FROM `chiron-horizon6590_test`.`chiron_horizon_comment_test`");
     executeMulti.mockResolvedValue([
       {
         columns: ["id", "user_name", "created_at", "extra_field"],
@@ -117,7 +117,7 @@ describe("queryStore Doris qualified-table metadata target", () => {
     const store = useQueryStore();
     const tabId = store.createTab("doris-1", "", "Query");
 
-    await store.executeTabSql(tabId, "SELECT * FROM dbx6590_test.dbx_comment_test");
+    await store.executeTabSql(tabId, "SELECT * FROM chiron-horizon6590_test.chiron_horizon_comment_test");
 
     const tab = store.tabs.find((item) => item.id === tabId)!;
     await vi.waitFor(() => expect(tab.tableMeta).toBeDefined(), { timeout: 8000 });
@@ -126,7 +126,7 @@ describe("queryStore Doris qualified-table metadata target", () => {
     // qualified database as `schema`. The backend's MySQL-compatible
     // show-metadata path resolves the effective database from `schema`
     // (fixes #6590); the query-result header then consumes tableMeta columns.
-    expect(getColumns).toHaveBeenCalledWith("doris-1", "", "dbx6590_test", "dbx_comment_test", undefined);
+    expect(getColumns).toHaveBeenCalledWith("doris-1", "", "chiron-horizon6590_test", "chiron_horizon_comment_test", undefined);
 
     // Comments must flow into tableMeta so the data grid can display them.
     const comments = new Map((tab.tableMeta?.columns ?? []).map((c) => [c.name, c.comment]));

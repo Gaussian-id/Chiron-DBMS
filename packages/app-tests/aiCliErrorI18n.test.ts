@@ -20,7 +20,7 @@ const errorCodes = [
   "claudeCodeEnvReserved",
   "claudeCodeNotAuthenticated",
   "claudeCodeMcpConfigInvalid",
-  "dbxMcpMissing",
+  "chironHorizonMcpMissing",
   "claudeCodeMcpStartupFailed",
   "claudeCodeCommandLineTooLong",
   "claudeCodeRunFailed",

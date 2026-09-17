@@ -1,4 +1,4 @@
-module github.com/t8y2/dbx/agents/drivers/vastbase-go
+module github.com/Gaussian-id/Gauss-Horizon/agents/drivers/vastbase-go
 
 go 1.22
 

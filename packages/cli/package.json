@@ -1,45 +1,45 @@
 {
-  "name": "@dbx-app/cli",
-  "version": "0.4.86",
-  "description": "Command line interface for DBX database connections, schema, and safe queries",
+  "name": "@chiron-horizon/cli",
+  "version": "0.1.0",
+  "description": "Command line interface for Chiron Horizon database connections, schema, and safe queries",
   "keywords": [
     "ai-agent",
     "automation",
     "cli",
     "codex",
     "database",
-    "dbx",
+    "chiron-horizon",
     "mysql",
     "postgresql",
     "terminal"
   ],
-  "homepage": "https://github.com/t8y2/dbx/tree/main/packages/cli",
+  "homepage": "https://github.com/Gaussian-id/Gauss-Horizon/tree/main/packages/cli",
   "license": "Apache-2.0",
   "repository": {
     "type": "git",
-    "url": "https://github.com/t8y2/dbx",
+    "url": "https://github.com/Gaussian-id/Gauss-Horizon",
     "directory": "packages/cli"
   },
   "bin": {
-    "dbx": "bin/dbx.js"
+    "chiron-horizon": "bin/chiron-horizon.js"
   },
   "files": [
     "bin"
   ],
   "type": "module",
   "scripts": {
-    "start": "cargo run -p dbx-cli --no-default-features --",
-    "test": "cargo test -p dbx-cli --no-default-features",
-    "build": "cargo build -p dbx-cli --release --no-default-features",
-    "prepublishOnly": "node --check bin/dbx.js"
+    "start": "cargo run -p chiron-horizon-cli --no-default-features --",
+    "test": "cargo test -p chiron-horizon-cli --no-default-features",
+    "build": "cargo build -p chiron-horizon-cli --release --no-default-features",
+    "prepublishOnly": "node --check bin/chiron-horizon.js"
   },
   "optionalDependencies": {
-    "@dbx-app/cli-darwin-arm64": "0.4.86",
-    "@dbx-app/cli-darwin-x64": "0.4.86",
-    "@dbx-app/cli-linux-arm64-gnu": "0.4.86",
-    "@dbx-app/cli-linux-x64-gnu": "0.4.86",
-    "@dbx-app/cli-win32-arm64": "0.4.86",
-    "@dbx-app/cli-win32-x64": "0.4.86"
+    "@chiron-horizon/cli-darwin-arm64": "workspace:*",
+    "@chiron-horizon/cli-darwin-x64": "workspace:*",
+    "@chiron-horizon/cli-linux-arm64-gnu": "workspace:*",
+    "@chiron-horizon/cli-linux-x64-gnu": "workspace:*",
+    "@chiron-horizon/cli-win32-arm64": "workspace:*",
+    "@chiron-horizon/cli-win32-x64": "workspace:*"
   },
   "engines": {
     "node": ">=18.18.0"

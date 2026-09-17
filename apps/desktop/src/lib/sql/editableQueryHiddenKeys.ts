@@ -3,7 +3,7 @@ import { buildSqlSemanticModel } from "@/lib/sql/semantic/model";
 import { tokenizeSqlSemantic } from "@/lib/sql/semantic/tokens";
 import type { DatabaseType } from "@/types/database";
 
-const HIDDEN_PRIMARY_KEY_ALIAS_PREFIX = "__DBX_PK_";
+const HIDDEN_PRIMARY_KEY_ALIAS_PREFIX = "__CHIRON_HORIZON_PK_";
 
 export interface HiddenPrimaryKeyProjection {
   sourceName: string;

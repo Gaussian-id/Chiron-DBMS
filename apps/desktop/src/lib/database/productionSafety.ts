@@ -312,7 +312,7 @@ function sqlTargetSafetyText(sql: string, quotedIdentifiers = new Map<string, st
       const close = char === "[" ? "]" : char;
       const end = readQuotedEnd(sql, index, char, close);
       const identifier = unquoteIdentifier(sql.slice(index, end), char, close).replace(/[;]/g, " ");
-      const token = `__dbxq${quotedIdentifiers.size}__`;
+      const token = `__chiron-horizonq${quotedIdentifiers.size}__`;
       quotedIdentifiers.set(token.toLowerCase(), identifier);
       output += ` ${token} `;
       index = end;

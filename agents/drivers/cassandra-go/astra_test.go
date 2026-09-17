@@ -22,9 +22,9 @@ import (
 
 // testPlaceholderPassword returns a stand-in for password fields in tests;
 // Astra treats the password as an opaque application token, so any non-empty
-// value exercises the same code path. Set DBX_TEST_PASSWORD to override.
+// value exercises the same code path. Set CHIRON_HORIZON_TEST_PASSWORD to override.
 func testPlaceholderPassword() string {
-	if value := os.Getenv("DBX_TEST_PASSWORD"); value != "" {
+	if value := os.Getenv("CHIRON_HORIZON_TEST_PASSWORD"); value != "" {
 		return value
 	}
 	return "placeholder-auth-value"
@@ -123,7 +123,7 @@ func writeTestSecureConnectBundle(t *testing.T) string {
 	}
 	template := &x509.Certificate{
 		SerialNumber:          big.NewInt(1),
-		Subject:               pkix.Name{CommonName: "dbx-astra-test"},
+		Subject:               pkix.Name{CommonName: "chiron-horizon-astra-test"},
 		NotBefore:             time.Now().Add(-time.Hour),
 		NotAfter:              time.Now().Add(time.Hour),
 		IsCA:                  true,

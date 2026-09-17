@@ -16,20 +16,20 @@ import { basename, dirname, join, resolve } from "node:path";
 
 const repositoryRoot = resolve(import.meta.dirname, "..");
 const platformPackages = {
-  "darwin-arm64": ["plugin-cli-darwin-arm64", "dbx-plugin"],
-  "darwin-x64": ["plugin-cli-darwin-x64", "dbx-plugin"],
-  "linux-arm64": ["plugin-cli-linux-arm64-gnu", "dbx-plugin"],
-  "linux-x64": ["plugin-cli-linux-x64-gnu", "dbx-plugin"],
-  "win32-arm64": ["plugin-cli-win32-arm64", "dbx-plugin.exe"],
-  "win32-x64": ["plugin-cli-win32-x64", "dbx-plugin.exe"],
+  "darwin-arm64": ["plugin-cli-darwin-arm64", "chiron-horizon-plugin"],
+  "darwin-x64": ["plugin-cli-darwin-x64", "chiron-horizon-plugin"],
+  "linux-arm64": ["plugin-cli-linux-arm64-gnu", "chiron-horizon-plugin"],
+  "linux-x64": ["plugin-cli-linux-x64-gnu", "chiron-horizon-plugin"],
+  "win32-arm64": ["plugin-cli-win32-arm64", "chiron-horizon-plugin.exe"],
+  "win32-x64": ["plugin-cli-win32-x64", "chiron-horizon-plugin.exe"],
 };
 const platformKey = `${process.platform}-${process.arch}`;
 const platformPackage = platformPackages[platformKey];
 if (!platformPackage) {
-  throw new Error(`No DBX Plugin CLI package smoke test is defined for ${platformKey}.`);
+  throw new Error(`No Chiron Horizon Plugin CLI package smoke test is defined for ${platformKey}.`);
 }
 
-const temporaryRoot = mkdtempSync(join(tmpdir(), "dbx-plugin-cli-package-"));
+const temporaryRoot = mkdtempSync(join(tmpdir(), "chiron-horizon-plugin-cli-package-"));
 const cargoTarget = join(temporaryRoot, "cargo-target");
 const tarballDirectory = join(temporaryRoot, "tarballs");
 const installDirectory = join(temporaryRoot, "install");
@@ -51,7 +51,7 @@ try {
   cpSync(join(repositoryRoot, "packages", platformPackage[0]), stagedPlatformDirectory, { recursive: true });
   const stagedBinaryDirectory = join(stagedPlatformDirectory, "bin");
   mkdirSync(stagedBinaryDirectory, { recursive: true });
-  const sourceBinary = join(cargoTarget, "release", process.platform === "win32" ? "dbx-plugin.exe" : "dbx-plugin");
+  const sourceBinary = join(cargoTarget, "release", process.platform === "win32" ? "chiron-horizon-plugin.exe" : "chiron-horizon-plugin");
   const stagedBinary = join(stagedBinaryDirectory, platformPackage[1]);
   copyFileSync(sourceBinary, stagedBinary);
   if (process.platform !== "win32") chmodSync(stagedBinary, 0o755);
@@ -70,7 +70,7 @@ try {
   mkdirSync(installDirectory, { recursive: true });
   writeFileSync(
     join(installDirectory, "package.json"),
-    `${JSON.stringify({ name: "dbx-plugin-cli-package-smoke", private: true }, null, 2)}\n`,
+    `${JSON.stringify({ name: "chiron-horizon-plugin-cli-package-smoke", private: true }, null, 2)}\n`,
   );
   run("npm", ["install", "--ignore-scripts", "--no-audit", "--no-fund", ...tarballs], { cwd: installDirectory });
 
@@ -78,26 +78,26 @@ try {
     installDirectory,
     "node_modules",
     ".bin",
-    process.platform === "win32" ? "dbx-plugin.cmd" : "dbx-plugin",
+    process.platform === "win32" ? "chiron-horizon-plugin.cmd" : "chiron-horizon-plugin",
   );
   const version = run(command, ["--version"], { cwd: installDirectory, capture: true });
-  if (!version.stdout.includes("dbx-plugin 0.1.3")) {
+  if (!version.stdout.includes("chiron-horizon-plugin 0.1.3")) {
     throw new Error(`Unexpected installed CLI version output: ${version.stdout.trim()}`);
   }
 
   await verifyTemplate(command, installDirectory, "frontend");
-  if (process.env.DBX_PLUGIN_CLI_VERIFY_NATIVE === "1") {
+  if (process.env.CHIRON_HORIZON_PLUGIN_CLI_VERIFY_NATIVE === "1") {
     await verifyTemplate(command, installDirectory, "rust");
     if (commandAvailable("go")) await verifyTemplate(command, installDirectory, "go");
   }
 
   const installedManifest = JSON.parse(
-    readFileSync(join(installDirectory, "node_modules/@dbx-app/plugin-cli/package.json"), "utf8"),
+    readFileSync(join(installDirectory, "node_modules/@chiron-horizon/plugin-cli/package.json"), "utf8"),
   );
-  if (installedManifest.name !== "@dbx-app/plugin-cli") {
+  if (installedManifest.name !== "@chiron-horizon/plugin-cli") {
     throw new Error(`Installed unexpected npm package ${installedManifest.name}.`);
   }
-  console.log(`Verified @dbx-app/plugin-cli on ${platformKey} without compiling the CLI during npm install.`);
+  console.log(`Verified @chiron-horizon/plugin-cli on ${platformKey} without compiling the CLI during npm install.`);
 } finally {
   rmSync(join(repositoryRoot, "packages/plugin-cli/sdk-root"), { recursive: true, force: true });
   rmSync(temporaryRoot, { recursive: true, force: true });
@@ -121,18 +121,18 @@ async function verifyTemplate(command, workingDirectory, template) {
     `NPM ${template} package smoke`,
   ]);
   run(command, ["package", project]);
-  const packages = readdirSync(join(project, "dist")).filter((file) => file.endsWith(".dbxp"));
+  const packages = readdirSync(join(project, "dist")).filter((file) => file.endsWith(".chiron-horizonp"));
   if (packages.length !== 1 || !existsSync(join(project, "dist", packages[0]))) {
-    throw new Error(`Expected one ${template} .dbxp package, found ${packages.join(", ")}.`);
+    throw new Error(`Expected one ${template} .chiron-horizonp package, found ${packages.join(", ")}.`);
   }
   await verifyDev(workingDirectory, project, template);
 }
 
 async function verifyDev(workingDirectory, project, template) {
-  const packageRoot = join(workingDirectory, 'node_modules/@dbx-app/plugin-cli');
+  const packageRoot = join(workingDirectory, 'node_modules/@chiron-horizon/plugin-cli');
   if (!existsSync(join(packageRoot, 'dev-runtime/runtime.mjs')) || !existsSync(join(packageRoot, 'dev-runtime/ui/index.html'))) throw new Error('Packed CLI has no dev runtime');
-  const child = spawn(process.execPath, [join(packageRoot, 'bin/dbx-plugin.js'), 'dev', '--path', project, '--port', '0'], {
-    cwd: workingDirectory, env: { ...process.env, DBX_PLUGIN_DEV_RUNTIME: '', DBX_PLUGIN_NODE: '', DBX_PLUGIN_SDK_ROOT: '' },
+  const child = spawn(process.execPath, [join(packageRoot, 'bin/chiron-horizon-plugin.js'), 'dev', '--path', project, '--port', '0'], {
+    cwd: workingDirectory, env: { ...process.env, CHIRON_HORIZON_PLUGIN_DEV_RUNTIME: '', CHIRON_HORIZON_PLUGIN_NODE: '', CHIRON_HORIZON_PLUGIN_SDK_ROOT: '' },
     stdio: ['ignore', 'pipe', 'pipe'], detached: process.platform !== 'win32',
   });
   let output = '';
@@ -190,8 +190,8 @@ function run(command, args, options = {}) {
   if (process.platform === "win32" && command === "npm") {
     args = [process.env.npm_execpath || join(dirname(process.execPath), "node_modules/npm/bin/npm-cli.js"), ...args];
     command = process.execPath;
-  } else if (process.platform === "win32" && command.endsWith("dbx-plugin.cmd")) {
-    args = [join(dirname(command), "../@dbx-app/plugin-cli/bin/dbx-plugin.js"), ...args];
+  } else if (process.platform === "win32" && command.endsWith("chiron-horizon-plugin.cmd")) {
+    args = [join(dirname(command), "../@chiron-horizon/plugin-cli/bin/chiron-horizon-plugin.js"), ...args];
     command = process.execPath;
   }
   const result = spawnSync(command, args, {

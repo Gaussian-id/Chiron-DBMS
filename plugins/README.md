@@ -1,32 +1,26 @@
-# DBX plugin platform
+# Chiron Horizon plugin platform
 
-DBX plugins are optional, versioned `.dbxp` packages. They can add native backend behavior, sandboxed workbench UI, saved connection types, and filesystem providers without increasing the base DBX installation size. Declarative extension metadata consumed at build time lives here as well.
+Chiron Horizon plugins are optional, versioned `.chiron-horizonp` packages. They can add native backend behavior, sandboxed workbench UI, saved connection types, and filesystem providers without increasing the base Chiron Horizon installation size. Declarative extension metadata consumed at build time lives here as well.
 
-New plugin developers can read the official [Chinese documentation](https://dbxio.com/cn/docs/plugin-development) or [English documentation](https://dbxio.com/en/docs/plugin-development). The source files are also available as [Chinese MDX](../docs/content/docs/plugin-development.cn.mdx) and [English MDX](../docs/content/docs/plugin-development.mdx); the lower-level Chinese CLI walkthrough remains available in [`GETTING_STARTED.zh-CN.md`](./GETTING_STARTED.zh-CN.md).
+Plugin development documentation is maintained in [`../docs/content/docs/plugin-development.mdx`](../docs/content/docs/plugin-development.mdx). The npm plugin CLI is deferred for 0.1.0; build it from this repository for source development.
 
-Install the precompiled development CLI without cloning or compiling DBX:
+Marketplace listing pull requests go to `Gaussian-id/Gauss-DBM-store`. Plugin host, SDK, CLI, schema, documentation, and official-example changes go to `Gaussian-id/Gauss-Horizon`. Ordinary plugin source stays in the plugin author's own repository.
 
-```bash
-npm install --global @dbx-app/plugin-cli
-```
-
-Marketplace listing pull requests go to `t8y2/dbx-store`. Plugin host, SDK, CLI, schema, documentation, and official-example changes go to `t8y2/dbx`. Ordinary plugin source stays in the plugin author's own repository.
-
-The platform contract is manifest v1 + Host API 1.x + sidecar protocol v1. The source code for a plugin may live in this repository or in a separate repository; DBX installs only the built package.
+The platform contract is manifest v1 + Host API 1.x + sidecar protocol v1. The source code for a plugin may live in this repository or in a separate repository; Chiron Horizon installs only the built package.
 
 ## Repository layout
 
 - `manifest.schema.json` — editor/CI schema for manifest v1.
 - `marketplace.schema.json` — editor/CI schema for marketplace catalog v1.
-- `sdk/rust/dbx-plugin-sdk` — Rust sidecar SDK.
-- `sdk/go/dbx-plugin-sdk` — Go sidecar SDK.
-- `sdk/cli` — Rust source for the `dbx-plugin create/package` CLI published as `@dbx-app/plugin-cli`.
-- `sdk/packager` — deterministic `.dbxp` packager plus repository-side Ed25519 signing.
+- `sdk/rust/chiron-horizon-plugin-sdk` — Rust sidecar SDK.
+- `sdk/go/chiron-horizon-plugin-sdk` — Go sidecar SDK.
+- `sdk/cli` — Rust source for the `chiron-horizon-plugin create/package` CLI; npm publication is deferred for 0.1.0.
+- `sdk/packager` — deterministic `.chiron-horizonp` packager plus repository-side Ed25519 signing.
 - `sdk/templates/github/plugin-release.yml` — caller template for multi-platform unsigned release candidates.
 - `examples/hello-workbench` — complete connection provider + native sidecar + sandboxed workbench example.
 - `RELEASING.md` — source ownership, release assets, official-store submission, and review workflow.
 - `SIGNING.md` — repository-signing trust model, key rotation, and future author-attestation boundary.
-- `connection-types/` — build-time registry for every DBX connection target, including databases, data services, message queues, and service registries.
+- `connection-types/` — build-time registry for every Chiron Horizon connection target, including databases, data services, message queues, and service registries.
 - `dialects/` — SQL dialect descriptors, type catalogs, DDL templates, and metadata rules.
 - `mappings/` — cross-dialect type mapping rules.
 - `jdbc/` — legacy JDBC sidecar retained during migration to manifest v1; connects through vendor JDBC drivers and custom JDBC URLs.
@@ -34,22 +28,22 @@ The platform contract is manifest v1 + Host API 1.x + sidecar protocol v1. The s
 Create a frontend-only universal plugin or a complete Rust/Go plugin project:
 
 ```bash
-dbx-plugin create my-ui-plugin --template frontend
-dbx-plugin create my-rust-plugin --template rust
-dbx-plugin create my-go-plugin --template go
+chiron-horizon-plugin create my-ui-plugin --template frontend
+chiron-horizon-plugin create my-rust-plugin --template rust
+chiron-horizon-plugin create my-go-plugin --template go
 ```
 
-All generated projects include sandbox workbench UI, localized manifest metadata, `.dbxp` packaging configuration, and a GitHub Release workflow. Rust and Go templates additionally include a native sidecar and multi-platform build matrix; frontend-only projects publish one `universal` package.
+All generated projects include sandbox workbench UI, localized manifest metadata, `.chiron-horizonp` packaging configuration, and a GitHub Release workflow. Rust and Go templates additionally include a native sidecar and multi-platform build matrix; frontend-only projects publish one `universal` package.
 
 ## Source, package, and installation
 
 These are separate artifacts:
 
 1. **Source repository** — plugin authors build and test here or in another repository.
-2. **`.dbxp` artifacts** — plugin CI publishes unsigned review candidates; the repository operator signs approved candidates and publishes the installable assets.
-3. **Installed plugin** — DBX verifies and extracts the package under its plugin store.
+2. **`.chiron-horizonp` artifacts** — plugin CI publishes unsigned review candidates; the repository operator signs approved candidates and publishes the installable assets.
+3. **Installed plugin** — Chiron Horizon verifies and extracts the package under its plugin store.
 
-Optional plugins are not bundled into the DBX base package. Installing SSH, SFTP, OpenDAL, or another future plugin increases only the local plugin store size.
+Optional plugins are not bundled into the Chiron Horizon base package. Installing SSH, SFTP, OpenDAL, or another future plugin increases only the local plugin store size.
 
 ## Marketplace and repository model
 
@@ -57,23 +51,23 @@ The Plugin Center separates three concerns:
 
 - **Marketplace** aggregates enabled repositories, searches and filters catalog metadata, selects the current platform artifact, and installs or updates it.
 - **Installed** manages the local plugin lifecycle and opens connection providers, workbenches, and filesystem providers.
-- **Settings** manages local `.dbxp` installation, custom repositories, development-only unsigned packages, and advanced repository trust.
+- **Settings** manages local `.chiron-horizonp` installation, custom repositories, development-only unsigned packages, and advanced repository trust.
 
-Repository configuration is persisted under the plugin store in `.repositories.json`. DBX always exposes one managed `dbx-official` repository backed by the official catalog:
+Repository configuration is persisted under the plugin store in `.repositories.json`. Chiron Horizon always exposes one managed `chiron-horizon-official` repository backed by the official catalog:
 
 ```text
-https://raw.githubusercontent.com/t8y2/dbx-store/main/catalog/index.json
+https://distribution-disabled.invalid/main/catalog/index.json
 ```
 
-The official URL is part of the DBX client contract and cannot be edited in Plugin Center settings. Official repository signing public keys are built into DBX; release builds may append rotation keys with `DBX_PLUGIN_MARKETPLACE_TRUSTED_KEYS_JSON`. Custom repositories use user-managed repository keys. The official repository accepts only DBX-managed keys, so adding a custom key cannot impersonate an official package.
+The official URL is part of the Chiron Horizon client contract and cannot be edited in Plugin Center settings. Official repository signing public keys are built into Chiron Horizon; release builds may append rotation keys with `CHIRON_HORIZON_PLUGIN_MARKETPLACE_TRUSTED_KEYS_JSON`. Custom repositories use user-managed repository keys. The official repository accepts only Chiron Horizon-managed keys, so adding a custom key cannot impersonate an official package.
 
-Catalog v1 is defined by `marketplace.schema.json` and includes repository metadata, localized plugin metadata, searchable tags, permissions, versions, release notes, and target artifacts. Each artifact declares `signingKeyId`. DBX first selects the exact current target and then falls back to `universal`. Artifact URLs may be relative to the catalog URL. DBX enforces a 4 MiB catalog limit and a 512 MiB package limit, resolves only HTTP(S) URLs, limits redirects, isolates repository failures, verifies the catalog-declared size and SHA-256, then requires the package Manifest ID, version, publisher, permissions, and Ed25519 key ID to match the reviewed catalog before activation.
+Catalog v1 is defined by `marketplace.schema.json` and includes repository metadata, localized plugin metadata, searchable tags, permissions, versions, release notes, and target artifacts. Each artifact declares `signingKeyId`. Chiron Horizon first selects the exact current target and then falls back to `universal`. Artifact URLs may be relative to the catalog URL. Chiron Horizon enforces a 4 MiB catalog limit and a 512 MiB package limit, resolves only HTTP(S) URLs, limits redirects, isolates repository failures, verifies the catalog-declared size and SHA-256, then requires the package Manifest ID, version, publisher, permissions, and Ed25519 key ID to match the reviewed catalog before activation.
 
 Run the live official-store smoke test with:
 
 ```bash
-cargo run -p dbx-core --no-default-features --example plugin_marketplace_smoke
-cargo run -p dbx-core --no-default-features --example plugin_marketplace_smoke -- <plugin-id> [version]
+cargo run -p chiron-horizon-core --no-default-features --example plugin_marketplace_smoke
+cargo run -p chiron-horizon-core --no-default-features --example plugin_marketplace_smoke -- <plugin-id> [version]
 ```
 
 Without a plugin ID the smoke test verifies catalog availability and parsing. With a listed plugin ID it additionally downloads, verifies, installs, and reports the trusted signing key.
@@ -89,10 +83,10 @@ Review alone cannot protect an already approved download URL from later replacem
 
 ### Recommended repository ownership
 
-Keep the host, SDK, schemas, packager, and minimal examples in `t8y2/dbx`. The official catalog and review metadata live in the separate [`t8y2/dbx-store`](https://github.com/t8y2/dbx-store) repository:
+Keep the host, SDK, schemas, packager, and minimal examples in `Gaussian-id/Gauss-Horizon`. The official catalog and review metadata live in the separate [`Gaussian-id/Gauss-DBM-store`](https://github.com/Gaussian-id/Gauss-DBM-store) repository:
 
 ```text
-t8y2/dbx-store
+Gaussian-id/Gauss-DBM-store
 ├── plugins/              # reviewed metadata submissions
 ├── publishers/           # publisher identity and review records
 ├── revoked.json          # revoked versions or signing keys
@@ -100,14 +94,14 @@ t8y2/dbx-store
 └── .github/workflows/    # schema, review, hash, and publish gates
 ```
 
-Plugin source code may remain in independent author repositories. Author CI builds one unsigned `.dbxp` candidate per target and publishes it to GitHub Releases, a CDN, or object storage. The reusable release workflow emits `release-candidates.json` with Manifest identity plus verified candidate metadata. After review, the repository signing workflow signs the accepted bytes and publishes final artifacts and metadata; the catalog Git repository should not accumulate binary packages.
+Plugin source code may remain in independent author repositories. Author CI builds one unsigned `.chiron-horizonp` candidate per target and publishes it to GitHub Releases, a CDN, or object storage. The reusable release workflow emits `release-candidates.json` with Manifest identity plus verified candidate metadata. After review, the repository signing workflow signs the accepted bytes and publishes final artifacts and metadata; the catalog Git repository should not accumulate binary packages.
 
 The same protocol supports future commercial deployment without changing package format: a public official repository, user-added third-party repositories, managed enterprise repositories with organization policy, and fully offline catalog/package mirrors. Credentials for private repositories must enter a secret-store-backed request layer rather than `.repositories.json`.
 
 ## Package layout
 
 ```text
-example-1.0.0-darwin-arm64.dbxp
+example-1.0.0-darwin-arm64.chiron-horizonp
 ├── manifest.json
 ├── checksums.json
 ├── signature.json                 # required except explicit development installs
@@ -122,7 +116,7 @@ example-1.0.0-darwin-arm64.dbxp
     └── assets/...
 ```
 
-`.dbxp` is a ZIP container with stricter rules:
+`.chiron-horizonp` is a ZIP container with stricter rules:
 
 - every file except `checksums.json` and `signature.json` must be covered exactly once by SHA-256 checksums;
 - absolute paths, parent traversal, duplicate entries, symlinks, oversized entries, and decompression bombs are rejected;
@@ -144,10 +138,10 @@ Add the schema to a manifest for editor validation:
   "name": "Example",
   "icon": "assets/plugin.svg",
   "version": "1.0.0",
-  "source": "https://github.com/example/dbx-plugin",
-  "homepage": "https://example.com/dbx-plugin",
+  "source": "https://github.com/example/chiron-horizon-plugin",
+  "homepage": "https://example.com/chiron-horizon-plugin",
   "engines": {
-    "dbx": ">=0.5.68",
+    "chiron-horizon": ">=0.5.68",
     "host_api": "^1.0"
   }
 }
@@ -177,7 +171,7 @@ Use `stdio-jsonl` for ordinary request/event traffic. Use `stdio-framed` when PT
 
 ### `connection-provider`
 
-A provider owns validation and connect/disconnect lifecycle for a saved non-SQL connection. DBX stores these as:
+A provider owns validation and connect/disconnect lifecycle for a saved non-SQL connection. Chiron Horizon stores these as:
 
 ```text
 ConnectionConfig
@@ -191,7 +185,7 @@ ConnectionConfig
 └── transport_layers: SSH jump / SOCKS / HTTP proxy
 ```
 
-The provider-defined type, such as `ssh`, stays in `plugin_connection_type`; it does not extend DBX's exhaustive database enum.
+The provider-defined type, such as `ssh`, stays in `plugin_connection_type`; it does not extend Chiron Horizon's exhaustive database enum.
 
 Plugin authors may declare package-relative display metadata:
 
@@ -210,7 +204,7 @@ Plugin authors may declare package-relative display metadata:
 }
 ```
 
-DBX resolves connection display metadata in this order: provider `label` / `icon`, plugin `name` / `icon`, then provider ID and the built-in generic plugin icon. Declared icon files must remain inside the plugin package and use SVG, PNG, JPEG, GIF, WebP, or ICO. SVG is rendered through an image URL rather than injected into the DBX document.
+Chiron Horizon resolves connection display metadata in this order: provider `label` / `icon`, plugin `name` / `icon`, then provider ID and the built-in generic plugin icon. Declared icon files must remain inside the plugin package and use SVG, PNG, JPEG, GIF, WebP, or ICO. SVG is rendered through an image URL rather than injected into the Chiron Horizon document.
 
 Field bindings:
 
@@ -220,7 +214,7 @@ Field bindings:
 | `config`                                                   | `external_config[field.key]`                                     |
 | `secret`                                                   | `connection_secrets[field.key]`, persisted outside `config_json` |
 
-Password fields default to `secret` when `binding` is omitted. DBX validates required values and value types before calling the plugin. The plugin receives the hydrated connection only in its backend lifecycle request; the workbench UI receives a connection ID and non-secret navigation context.
+Password fields default to `secret` when `binding` is omitted. Chiron Horizon validates required values and value types before calling the plugin. The plugin receives the hydrated connection only in its backend lifecycle request; the workbench UI receives a connection ID and non-secret navigation context.
 
 Lifecycle methods receive:
 
@@ -232,11 +226,11 @@ Lifecycle methods receive:
 }
 ```
 
-`runtime.host` and `runtime.port` are the final endpoint after DBX transport layers. A protocol plugin must connect to this endpoint instead of rebuilding DBX tunnels itself.
+`runtime.host` and `runtime.port` are the final endpoint after Chiron Horizon transport layers. A protocol plugin must connect to this endpoint instead of rebuilding Chiron Horizon tunnels itself.
 
 #### Connection dialog actions
 
-Connection providers may add ordered custom actions before DBX-owned lifecycle buttons:
+Connection providers may add ordered custom actions before Chiron Horizon-owned lifecycle buttons:
 
 ```json
 {
@@ -251,9 +245,9 @@ Connection providers may add ordered custom actions before DBX-owned lifecycle b
 }
 ```
 
-- `actions` declares only custom button metadata. DBX invokes `connection/action` with the action ID; plugins cannot choose arbitrary RPC method names.
-- `test`, `save`, and `save-and-connect` are host-owned actions. DBX adds them from provider capabilities and dialog mode, validates the form, persists secrets through its secret store, and invokes the fixed lifecycle methods.
-- A custom action may run with an incomplete form only when `requires_valid_form` is `false`; DBX still validates declared field types, secret keys, and transport configuration.
+- `actions` declares only custom button metadata. Chiron Horizon invokes `connection/action` with the action ID; plugins cannot choose arbitrary RPC method names.
+- `test`, `save`, and `save-and-connect` are host-owned actions. Chiron Horizon adds them from provider capabilities and dialog mode, validates the form, persists secrets through its secret store, and invokes the fixed lifecycle methods.
+- A custom action may run with an incomplete form only when `requires_valid_form` is `false`; Chiron Horizon still validates declared field types, secret keys, and transport configuration.
 - `when` accepts `always`, `create`, or `edit`. `variant` accepts `default`, `outline`, `secondary`, `destructive`, or `ghost`. `timeout_ms` is limited to 1-120000 ms.
 - `close_on_success` controls whether the connection dialog closes after a successful custom action.
 
@@ -270,14 +264,14 @@ Connection providers may add ordered custom actions before DBX-owned lifecycle b
 }
 ```
 
-`fieldValues` may contain only fields declared by that provider and must match their declared types. `null` clears a field. The plugin cannot write arbitrary `ConnectionConfig` keys or bypass DBX-owned save, secret persistence, transport, and connection lifecycle logic.
+`fieldValues` may contain only fields declared by that provider and must match their declared types. `null` clears a field. The plugin cannot write arbitrary `ConnectionConfig` keys or bypass Chiron Horizon-owned save, secret persistence, transport, and connection lifecycle logic.
 
 ### `workbench`
 
-A workbench opens in a normal persistent DBX tab. The iframe is loaded with `sandbox="allow-scripts"`, a restrictive CSP, no Tauri object, no parent DOM access, and no direct network access. The host injects `window.dbxPlugin`:
+A workbench opens in a normal persistent Chiron Horizon tab. The iframe is loaded with `sandbox="allow-scripts"`, a restrictive CSP, no Tauri object, no parent DOM access, and no direct network access. The host injects `window.chironHorizonPlugin`:
 
-- `ready` / `context` / `locale` — `locale` is the current DBX locale such as `en` or `zh-CN`
-- `theme` — `{ appearance: "light" | "dark", tokens }` with the resolved DBX design tokens; theme changes are pushed live through env updates, and the SDK applies them to the plugin document root
+- `ready` / `context` / `locale` — `locale` is the current Chiron Horizon locale such as `en` or `zh-CN`
+- `theme` — `{ appearance: "light" | "dark", tokens }` with the resolved Chiron Horizon design tokens; theme changes are pushed live through env updates, and the SDK applies them to the plugin document root
 - `onContext(listener)` — context changes are pushed live; the iframe is not reloaded, so plugin UI state survives navigation
 - `invoke(method, params, options)`
 - `notify(method, params)`
@@ -294,29 +288,29 @@ All backend calls are rebound to the owning plugin ID by the host. A plugin UI c
 
 ### Official UI kit and theming
 
-Every sandbox document ships with a small official component kit built on the DBX design tokens, so plugin UI follows light/dark mode and custom palettes automatically:
+Every sandbox document ships with a small official component kit built on the Chiron Horizon design tokens, so plugin UI follows light/dark mode and custom palettes automatically:
 
 ```html
-<button class="dbx-btn dbx-btn--primary">Connect</button>
-<input class="dbx-input" placeholder="Endpoint" />
-<span class="dbx-badge">Ready</span>
+<button class="chiron-horizon-btn chiron-horizon-btn--primary">Connect</button>
+<input class="chiron-horizon-input" placeholder="Endpoint" />
+<span class="chiron-horizon-badge">Ready</span>
 ```
 
-Available classes: `dbx-card`, `dbx-section-title`, `dbx-btn` (`--primary` / `--danger` / `--ghost`), `dbx-label`, `dbx-input`, `dbx-select`, `dbx-textarea`, `dbx-hint`, `dbx-row` (label + field grid), `dbx-table`, `dbx-badge`, `dbx-link`. Custom plugin CSS can use the same `var(--color-*)` tokens; `document.documentElement.dataset.dbxTheme` reflects the current appearance.
+Available classes: `chiron-horizon-card`, `chiron-horizon-section-title`, `chiron-horizon-btn` (`--primary` / `--danger` / `--ghost`), `chiron-horizon-label`, `chiron-horizon-input`, `chiron-horizon-select`, `chiron-horizon-textarea`, `chiron-horizon-hint`, `chiron-horizon-row` (label + field grid), `chiron-horizon-table`, `chiron-horizon-badge`, `chiron-horizon-link`. Custom plugin CSS can use the same `var(--color-*)` tokens; `document.documentElement.dataset.chironHorizonTheme` reflects the current appearance.
 
-Plugin-authored names, descriptions, contribution labels, form-field text, and select-option labels can be localized through `manifest.json > localizations`. DBX selects the exact current locale first, then its base language, and finally falls back to the manifest's default text:
+Plugin-authored names, descriptions, contribution labels, form-field text, and select-option labels can be localized through `manifest.json > localizations`. Chiron Horizon selects the exact current locale first, then its base language, and finally falls back to the manifest's default text:
 
 ```json
 {
   "localizations": {
     "zh-CN": {
-      "name": "示例插件",
+      "name": "Example Plugin",
       "contributions": {
         "vendor.example.connection": {
-          "label": "示例连接",
+          "label": "Example connection",
           "fields": {
-            "host": { "label": "主机", "placeholder": "请输入主机" },
-            "mode": { "options": { "readonly": "只读" } }
+            "host": { "label": "Host", "placeholder": "Enter host" },
+            "mode": { "options": { "readonly": "Read only" } }
           }
         }
       }
@@ -327,7 +321,7 @@ Plugin-authored names, descriptions, contribution labels, form-field text, and s
 
 ### `result-view`
 
-A result view contributes a plugin-rendered visualization for query results. DBX shows one toolbar button per installed view next to the result grid; clicking it opens the plugin workbench with the current result as context:
+A result view contributes a plugin-rendered visualization for query results. Chiron Horizon shows one toolbar button per installed view next to the result grid; clicking it opens the plugin workbench with the current result as context:
 
 ```json
 {
@@ -341,7 +335,7 @@ The workbench `context.result` is a bounded snapshot — `{ columns, rows (<= 50
 
 ### `context-menu`
 
-A context-menu entry is rendered **natively** by DBX (no sandbox iframe, native theme and keyboard behavior) in the declared menu surface. v1 supports the saved-connection sidebar menu:
+A context-menu entry is rendered **natively** by Chiron Horizon (no sandbox iframe, native theme and keyboard behavior) in the declared menu surface. v1 supports the saved-connection sidebar menu:
 
 ```json
 {
@@ -356,9 +350,9 @@ Clicking the item dispatches a `contextMenu/<id>` backend request with a non-sec
 
 ### `filesystem-provider`
 
-A filesystem provider declares URI schemes, an optional icon, `root_uri`, and capabilities (`read`, `write`, `delete`, `rename`, `mkdir`). It is the reusable boundary for OpenDAL-like storage integrations: DBX owns the generic file-browser tab, while the plugin owns authentication, remote API calls, and provider-specific state. The provider icon is used for the saved connection in the sidebar and for its DBX tab; it falls back to the plugin-level icon when omitted.
+A filesystem provider declares URI schemes, an optional icon, `root_uri`, and capabilities (`read`, `write`, `delete`, `rename`, `mkdir`). It is the reusable boundary for OpenDAL-like storage integrations: Chiron Horizon owns the generic file-browser tab, while the plugin owns authentication, remote API calls, and provider-specific state. The provider icon is used for the saved connection in the sidebar and for its Chiron Horizon tab; it falls back to the plugin-level icon when omitted.
 
-A connection provider can set `filesystem_provider` instead of `workbench`. Opening that saved connection connects the plugin lifecycle and opens the DBX host file manager. A provider may declare both: DBX opens the custom workbench by default, and the sandboxed UI can call `openFilesystem(providerId, context)` with `host.filesystem` permission.
+A connection provider can set `filesystem_provider` instead of `workbench`. Opening that saved connection connects the plugin lifecycle and opens the Chiron Horizon host file manager. A provider may declare both: Chiron Horizon opens the custom workbench by default, and the sandboxed UI can call `openFilesystem(providerId, context)` with `host.filesystem` permission.
 
 ```json
 {
@@ -381,22 +375,22 @@ Host API 1.x defines these backend methods:
 - `filesystem/delete` receives `providerId`, optional `connectionId`, `uri`, and `recursive`.
 - `filesystem/rename` receives `providerId`, optional `connectionId`, `sourceUri`, `targetUri`, and `overwrite`.
 
-Every entry has `name`, canonical `uri`, `kind` (`file`, `directory`, `symlink`, or `other`), and optional `size`, `modifiedAt`, and `contentType`. DBX validates schemes, response sizes, base64, cursors, and entry metadata before the frontend sees a result.
+Every entry has `name`, canonical `uri`, `kind` (`file`, `directory`, `symlink`, or `other`), and optional `size`, `modifiedAt`, and `contentType`. Chiron Horizon validates schemes, response sizes, base64, cursors, and entry metadata before the frontend sees a result.
 
 Mutation methods return `{ success, message?, entry? }` and are rejected unless the provider declares the matching capability. Inline read/write payloads are capped at 4 MiB. The built-in file manager currently owns directory navigation, pagination, and bounded file preview. Large upload/download and PTY/SFTP streams use `stdio-framed` binary channels with plugin-defined transfer methods, chunk acknowledgements, cancellation, and progress events; they must not be encoded as one large JSON value.
 
 ## Backend protocol
 
-The backend is a persistent child process with stdin/stdout reserved for the DBX protocol. Diagnostics must go to stderr.
+The backend is a persistent child process with stdin/stdout reserved for the Chiron Horizon protocol. Diagnostics must go to stderr.
 
 ### Initialization
 
-DBX starts every sidecar with `plugin/initialize`:
+Chiron Horizon starts every sidecar with `plugin/initialize`:
 
 ```json
 {
   "host": {
-    "dbxVersion": "0.5.68",
+    "chironHorizonVersion": "0.5.68",
     "hostApiVersion": "1.0.0",
     "protocolVersions": [1]
   },
@@ -446,7 +440,7 @@ Binary payloads are limited to 64 MiB per frame. Channel names are validated. Us
 
 ```mermaid
 sequenceDiagram
-  participant UI as DBX UI
+  participant UI as Chiron Horizon UI
   participant Host as PluginHost
   participant Sidecar as Plugin sidecar
   UI->>Host: invoke / test / connect / open workbench
@@ -459,21 +453,21 @@ sequenceDiagram
   Host-->>UI: typed result + plugin-scoped events
 ```
 
-Sidecars are shared per plugin process, not spawned per tab. Plugins own their internal session registries. DBX tears down plugin-owned connection pools before replace, rollback, or uninstall. Uninstall is blocked while saved connections still reference the plugin.
+Sidecars are shared per plugin process, not spawned per tab. Plugins own their internal session registries. Chiron Horizon tears down plugin-owned connection pools before replace, rollback, or uninstall. Uninstall is blocked while saved connections still reference the plugin.
 
 ## Security model
 
 - **Package authenticity:** checksums + trusted Ed25519 repository keys.
 - **UI isolation:** sandboxed iframe, restrictive CSP, bounded bridge payloads, safe asset paths, plugin identity binding.
-- **Secret persistence:** plugin secrets are removed from connection JSON and stored through DBX's secret-store path. Ordinary cloud-sync snapshots always contain redacted placeholders. Secrets enter sync data only inside the encrypted payload when the user has configured a sync passphrase; without one, plugin secrets remain local and are not synchronized.
+- **Secret persistence:** plugin secrets are removed from connection JSON and stored through Chiron Horizon's secret-store path. Ordinary cloud-sync snapshots always contain redacted placeholders. Secrets enter sync data only inside the encrypted payload when the user has configured a sync passphrase; without one, plugin secrets remain local and are not synchronized.
 - **Native backend trust:** a native sidecar runs with the current OS user's privileges. A signature identifies the repository that approved and published the package; it is not an OS sandbox or proof that the author is harmless. Install only plugins whose backend code you trust.
-- **Permission declarations:** privileged host bridge operations require declared permissions. Plugin UI network egress is fully blocked except for explicitly declared `host.network:` origins. Native process filesystem/network access cannot currently be completely mediated by DBX.
+- **Permission declarations:** privileged host bridge operations require declared permissions. Plugin UI network egress is fully blocked except for explicitly declared `host.network:` origins. Native process filesystem/network access cannot currently be completely mediated by Chiron Horizon.
 
 Custom repository public keys can be added or removed in Plugin Center. Obtain them through a channel independent from the downloaded package.
 
 ## Build and release
 
-The complete author and official-store flow is documented in [`RELEASING.md`](RELEASING.md). Plugin authors keep source code in their own repository and publish unsigned candidates. DBX Store reviews and signs approved candidates, publishes installable artifacts, and records only catalog metadata in Git.
+The complete author and official-store flow is documented in [`RELEASING.md`](RELEASING.md). Plugin authors keep source code in their own repository and publish unsigned candidates. Chiron Horizon Store reviews and signs approved candidates, publishes installable artifacts, and records only catalog metadata in Git.
 
 For a Rust backend:
 
@@ -486,7 +480,7 @@ Stage `manifest.json`, declared assets, the current-target binary, and optional 
 ```bash
 cargo run --release \
   --manifest-path plugins/sdk/packager/Cargo.toml \
-  -- path/to/stage path/to/vendor.example-1.0.0-darwin-arm64.dbxp \
+  -- path/to/stage path/to/vendor.example-1.0.0-darwin-arm64.chiron-horizonp \
   --artifact-metadata path/to/vendor.example-1.0.0-darwin-arm64.artifact.json \
   --target darwin-arm64
 ```
@@ -494,10 +488,10 @@ cargo run --release \
 Repository operators sign an already-built candidate after review:
 
 ```bash
-DBX_PLUGIN_SIGNING_KEY="..." \
+CHIRON_HORIZON_PLUGIN_SIGNING_KEY="..." \
 cargo run --release \
   --manifest-path plugins/sdk/packager/Cargo.toml \
-  -- sign path/to/vendor.example-1.0.0-darwin-arm64.unsigned.dbxp path/to/vendor.example-1.0.0-darwin-arm64.dbxp \
+  -- sign path/to/vendor.example-1.0.0-darwin-arm64.unsigned.chiron-horizonp path/to/vendor.example-1.0.0-darwin-arm64.chiron-horizonp \
   --key-id vendor-release \
   --artifact-metadata path/to/vendor.example-1.0.0-darwin-arm64.artifact.json \
   --target darwin-arm64
@@ -505,13 +499,13 @@ cargo run --release \
 
 Plugin authors do not receive the official repository private key. Never commit a repository signing seed. Publish the corresponding 32-byte public key separately and rotate it with a new `signingKeyId`.
 
-For native plugins, copy `sdk/templates/github/plugin-release.yml` into the plugin repository and pin the reusable workflow to a released DBX plugin SDK tag or commit. Frontend-only plugins may replace the build matrix with one `universal` build.
+For native plugins, copy `sdk/templates/github/plugin-release.yml` into the plugin repository and pin the reusable workflow to a released Chiron Horizon plugin SDK tag or commit. Frontend-only plugins may replace the build matrix with one `universal` build.
 
 ## Compatibility policy
 
-- Increment `manifest_version` only for manifest shape changes that an older DBX cannot interpret.
+- Increment `manifest_version` only for manifest shape changes that an older Chiron Horizon cannot interpret.
 - Increment the sidecar protocol version only for wire-level incompatibilities.
-- Use `engines.host_api` for host API compatibility and `engines.dbx` for product-version constraints.
+- Use `engines.host_api` for host API compatibility and `engines.chiron-horizon` for product-version constraints.
 - Additive contribution fields should remain optional within the same host API major version.
 - Saved plugin connections must remain readable across plugin upgrades; migrate provider-owned `external_config` explicitly in the plugin backend when needed.
 
@@ -520,14 +514,14 @@ For native plugins, copy `sdk/templates/github/plugin-release.yml` into the plug
 Core checks:
 
 ```bash
-cargo test -p dbx-core --no-default-features plugins::
-cargo check -p dbx-web --no-default-features
+cargo test -p chiron-horizon-core --no-default-features plugins::
+cargo check -p chiron-horizon-web --no-default-features
 ```
 
 SDK and example checks:
 
 ```bash
-cargo test --manifest-path plugins/sdk/rust/dbx-plugin-sdk/Cargo.toml
+cargo test --manifest-path plugins/sdk/rust/chiron-horizon-plugin-sdk/Cargo.toml
 cargo check --manifest-path plugins/sdk/packager/Cargo.toml
 node plugins/examples/hello-workbench/package.mjs
 node plugins/examples/hello-workbench/smoke.mjs

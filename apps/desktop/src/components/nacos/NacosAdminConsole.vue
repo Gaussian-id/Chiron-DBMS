@@ -148,7 +148,7 @@ const configDataId = ref(restoredUiState.configDataId ?? "");
 const configAppName = ref(restoredUiState.configAppName ?? "");
 const configPageNo = ref(restoredUiState.configPageNo ?? 1);
 const NACOS_CONFIG_PAGE_SIZE_OPTIONS = [20, 50, 100, 200, 500] as const;
-const NACOS_CONFIG_PAGE_SIZE_STORAGE_KEY = "dbx-nacos-config-page-size";
+const NACOS_CONFIG_PAGE_SIZE_STORAGE_KEY = "chiron-horizon-nacos-config-page-size";
 const savedNacosConfigPageSize = Number(safeLocalStorageGet(NACOS_CONFIG_PAGE_SIZE_STORAGE_KEY));
 const configPageSize = ref<number>(restoredUiState.configPageSize ?? NACOS_CONFIG_PAGE_SIZE_OPTIONS.find((size) => size === savedNacosConfigPageSize) ?? 20);
 const configs = ref<NacosConfigItem[]>([]);
@@ -296,7 +296,7 @@ let instanceUpdateSequence = 0;
 let instanceOperationToken = 0;
 let serviceMutationSequence = 0;
 
-const NACOS_SPLIT_SIZE_KEY = "dbx-nacos-admin-split-size";
+const NACOS_SPLIT_SIZE_KEY = "chiron-horizon-nacos-admin-split-size";
 const savedNacosSplitSize = Number(safeLocalStorageGet(NACOS_SPLIT_SIZE_KEY));
 const nacosSplitSize = ref(restoredUiState.nacosSplitSize ?? (savedNacosSplitSize >= 20 && savedNacosSplitSize <= 80 ? savedNacosSplitSize : 42));
 
@@ -2634,7 +2634,7 @@ watch(
     try {
       await connectionStore.ensureConnected(props.connectionId);
     } catch (e) {
-      console.warn("[DBX] ensureConnected failed for", props.connectionId, e);
+      console.warn("[Chiron Horizon] ensureConnected failed for", props.connectionId, e);
     }
     await loadInfo();
     await Promise.all([loadConfigsWithRetry(1), loadServicesWithRetry(1)]);
@@ -2646,7 +2646,7 @@ onMounted(async () => {
   try {
     await connectionStore.ensureConnected(props.connectionId);
   } catch (e) {
-    console.warn("[DBX] ensureConnected failed for", props.connectionId, e);
+    console.warn("[Chiron Horizon] ensureConnected failed for", props.connectionId, e);
   }
   await loadInfo();
   await Promise.all([loadConfigsWithRetry(configPageNo.value), loadServicesWithRetry(servicePageNo.value)]);
@@ -3718,11 +3718,11 @@ useUpdateBlocker(() =>
 .nacos-config-editor :deep(.cm-focused > .cm-scroller > .cm-selectionLayer .cm-selectionBackground),
 .nacos-config-editor :deep(.cm-trimmedSelection) {
   display: block !important;
-  background: var(--dbx-editor-selection-background, rgba(59, 130, 246, 0.35)) !important;
+  background: var(--chiron-horizon-editor-selection-background, rgba(59, 130, 246, 0.35)) !important;
 }
 
 .nacos-config-editor :deep(.cm-content ::selection) {
-  background: var(--dbx-editor-selection-background, rgba(59, 130, 246, 0.35)) !important;
+  background: var(--chiron-horizon-editor-selection-background, rgba(59, 130, 246, 0.35)) !important;
 }
 
 .nacos-config-editor :deep(.cm-nacos-config-validation-error) {

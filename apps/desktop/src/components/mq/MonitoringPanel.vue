@@ -948,7 +948,7 @@ onUnmounted(() => {
   min-height: 32px;
   padding: 5px 9px;
   border: 1px solid transparent;
-  border-radius: var(--dbx-radius-fixed-4);
+  border-radius: var(--chiron-horizon-radius-fixed-4);
   font-size: 13px;
   font-weight: 500;
   color: var(--monitor-muted);
@@ -976,7 +976,7 @@ onUnmounted(() => {
   min-height: 34px;
   padding: 5px 30px 5px 10px;
   border: 1px solid var(--monitor-border);
-  border-radius: var(--dbx-radius-fixed-4);
+  border-radius: var(--chiron-horizon-radius-fixed-4);
   font-size: 13px;
   font-weight: 500;
   background: var(--monitor-surface);
@@ -1011,7 +1011,7 @@ onUnmounted(() => {
   min-height: 34px;
   padding: 7px 12px;
   border: 1px solid var(--monitor-border);
-  border-radius: var(--dbx-radius-fixed-4);
+  border-radius: var(--chiron-horizon-radius-fixed-4);
   background: var(--monitor-surface);
   color: var(--monitor-text);
   cursor: pointer;
@@ -1100,7 +1100,7 @@ onUnmounted(() => {
 
 .loading-skeleton-card {
   height: 96px;
-  border-radius: var(--dbx-radius-fixed-6);
+  border-radius: var(--chiron-horizon-radius-fixed-6);
   background: linear-gradient(90deg, transparent, rgb(255 255 255 / 0.45), transparent), var(--monitor-surface);
   background-size: 220% 100%;
   border: 1px solid var(--monitor-border);
@@ -1167,7 +1167,7 @@ onUnmounted(() => {
   min-height: 260px;
   padding: 14px;
   border: 1px solid var(--monitor-border);
-  border-radius: var(--dbx-radius-fixed-6);
+  border-radius: var(--chiron-horizon-radius-fixed-6);
   background: var(--monitor-surface);
   box-shadow: var(--monitor-shadow);
 }
@@ -1202,7 +1202,7 @@ onUnmounted(() => {
   padding: 17px 18px;
   background: var(--monitor-surface);
   border: 1px solid var(--monitor-border);
-  border-radius: var(--dbx-radius-fixed-6);
+  border-radius: var(--chiron-horizon-radius-fixed-6);
   box-shadow: 0 1px 0 rgb(255 255 255 / 0.52) inset;
   transition:
     transform 0.22s cubic-bezier(0.16, 1, 0.3, 1),
@@ -1262,7 +1262,7 @@ onUnmounted(() => {
   height: 42px;
   flex: 0 0 42px;
   border: 1px solid var(--monitor-accent-border);
-  border-radius: var(--dbx-radius-fixed-6);
+  border-radius: var(--chiron-horizon-radius-fixed-6);
   background: var(--monitor-accent-soft);
   color: var(--monitor-accent);
 }
@@ -1307,7 +1307,7 @@ onUnmounted(() => {
 .partition-table-wrap {
   overflow-x: auto;
   border: 1px solid var(--monitor-border);
-  border-radius: var(--dbx-radius-fixed-6);
+  border-radius: var(--chiron-horizon-radius-fixed-6);
   background: var(--monitor-surface);
   box-shadow: var(--monitor-shadow);
 }
@@ -1404,7 +1404,7 @@ onUnmounted(() => {
 .partition-detail {
   padding: 14px;
   border: 1px solid var(--monitor-border);
-  border-radius: var(--dbx-radius-fixed-6);
+  border-radius: var(--chiron-horizon-radius-fixed-6);
   background: var(--monitor-surface);
   box-shadow: var(--monitor-shadow);
 }
@@ -1433,7 +1433,7 @@ onUnmounted(() => {
 .empty-state.compact {
   padding: 16px;
   border: 1px dashed var(--monitor-border);
-  border-radius: var(--dbx-radius-fixed-6);
+  border-radius: var(--chiron-horizon-radius-fixed-6);
   background: color-mix(in srgb, var(--monitor-surface) 74%, transparent);
 }
 
@@ -1445,7 +1445,7 @@ onUnmounted(() => {
   padding: 13px 15px;
   background: var(--monitor-surface);
   border: 1px solid var(--monitor-border);
-  border-radius: var(--dbx-radius-fixed-6);
+  border-radius: var(--chiron-horizon-radius-fixed-6);
   box-shadow: 0 1px 0 rgb(255 255 255 / 0.48) inset;
 }
 

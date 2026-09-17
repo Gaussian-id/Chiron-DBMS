@@ -37,8 +37,8 @@ test("bumps DuckDB after its initial release", () => {
 test("bumps the SQLite SSH worker from its crate path", () => {
   const result = evaluateAgentVersionBump({
     versions: { "sqlite-worker": "0.1.0" },
-    changedFiles: ["crates/dbx-sqlite-worker/src/runtime.rs"],
-    moduleExists: (path) => path === "crates/dbx-sqlite-worker",
+    changedFiles: ["crates/chiron-horizon-sqlite-worker/src/runtime.rs"],
+    moduleExists: (path) => path === "crates/chiron-horizon-sqlite-worker",
     readModuleFile: () => "",
   });
 
@@ -231,7 +231,7 @@ test("builds only common-dependent Java modules for a shared runtime change", ()
   ]);
   const result = evaluateAgentVersionBump({
     versions: { access: "0.1.0", mongodb: "0.1.0" },
-    changedFiles: ["agents/common/src/main/java/com/dbx/Agent.java"],
+    changedFiles: ["agents/common/src/main/java/com/chiron-horizon/Agent.java"],
     legacyStandaloneModules: new Set(["mongodb"]),
     moduleExists: (path) => existing.has(path),
     readModuleFile: () => "",
@@ -301,10 +301,10 @@ test("keeps versions.json publish-relevant when it changes after the sync commit
 });
 
 function createRepository(versions) {
-  const repository = mkdtempSync(join(tmpdir(), "dbx-agent-release-"));
+  const repository = mkdtempSync(join(tmpdir(), "chiron-horizon-agent-release-"));
   git(repository, ["init", "--initial-branch=main"]);
-  git(repository, ["config", "user.name", "DBX Test"]);
-  git(repository, ["config", "user.email", "dbx-test@example.com"]);
+  git(repository, ["config", "user.name", "Chiron Horizon Test"]);
+  git(repository, ["config", "user.email", "chiron-horizon-test@example.com"]);
   mkdirSync(join(repository, "agents/drivers/kingbase-go"), { recursive: true });
   mkdirSync(join(repository, "agents/drivers/duckdb"), { recursive: true });
   writeVersions(repository, versions);

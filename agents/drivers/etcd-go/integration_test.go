@@ -10,16 +10,16 @@ import (
 )
 
 // TestLiveEtcdAgent exercises the full agent surface against a real etcd
-// server. Enable with DBX_ETCD_LIVE=1; configure via DBX_ETCD_ENDPOINTS,
-// DBX_ETCD_USER, and DBX_ETCD_PASSWORD (defaults match the deploy recipes:
+// server. Enable with CHIRON_HORIZON_ETCD_LIVE=1; configure via CHIRON_HORIZON_ETCD_ENDPOINTS,
+// CHIRON_HORIZON_ETCD_USER, and CHIRON_HORIZON_ETCD_PASSWORD (defaults match the deploy recipes:
 // root/123456 on 127.0.0.1:10700 for 3.7).
 func TestLiveEtcdAgent(t *testing.T) {
-	if os.Getenv("DBX_ETCD_LIVE") != "1" {
-		t.Skip("set DBX_ETCD_LIVE=1 to run the live etcd agent test")
+	if os.Getenv("CHIRON_HORIZON_ETCD_LIVE") != "1" {
+		t.Skip("set CHIRON_HORIZON_ETCD_LIVE=1 to run the live etcd agent test")
 	}
-	endpoints := envOrDefault("DBX_ETCD_ENDPOINTS", "http://127.0.0.1:10700")
-	user := envOrDefault("DBX_ETCD_USER", "root")
-	password := envOrDefault("DBX_ETCD_PASSWORD", "123456")
+	endpoints := envOrDefault("CHIRON_HORIZON_ETCD_ENDPOINTS", "http://127.0.0.1:10700")
+	user := envOrDefault("CHIRON_HORIZON_ETCD_USER", "root")
+	password := envOrDefault("CHIRON_HORIZON_ETCD_PASSWORD", "123456")
 
 	state := newEtcdSession()
 	connectParams := map[string]json.RawMessage{
@@ -41,7 +41,7 @@ func TestLiveEtcdAgent(t *testing.T) {
 		}
 	}
 
-	prefix := fmt.Sprintf("dbx/live/%d/", time.Now().UnixNano())
+	prefix := fmt.Sprintf("chiron-horizon/live/%d/", time.Now().UnixNano())
 
 	// --- KV basics -----------------------------------------------------
 	putResult, err := state.put(paramsWith(map[string]json.RawMessage{
@@ -309,25 +309,25 @@ func TestLiveEtcdAgent(t *testing.T) {
 	}
 
 	// --- auth ----------------------------------------------------------
-	userName := fmt.Sprintf("dbx_live_%d", time.Now().UnixNano()%100000)
+	userName := fmt.Sprintf("chiron_horizon_live_%d", time.Now().UnixNano()%100000)
 	if _, err := state.authUserAdd(paramsWith(map[string]json.RawMessage{
 		"user":     jsonString(userName),
 		"password": jsonString("secret123"),
 	})); err != nil {
 		t.Fatalf("user add failed: %v", err)
 	}
-	if _, err := state.authRoleAdd(paramsWith(map[string]json.RawMessage{"role": jsonString("dbx_live_role")})); err != nil {
+	if _, err := state.authRoleAdd(paramsWith(map[string]json.RawMessage{"role": jsonString("chiron_horizon_live_role")})); err != nil {
 		t.Fatalf("role add failed: %v", err)
 	}
 	if _, err := state.authRolePermission(paramsWith(map[string]json.RawMessage{
-		"role":     jsonString("dbx_live_role"),
+		"role":     jsonString("chiron_horizon_live_role"),
 		"resource": jsonString("prefix"),
 		"key":      jsonString(prefix),
 		"access":   jsonString("READWRITE"),
 	}), true); err != nil {
 		t.Fatalf("role grant permission failed: %v", err)
 	}
-	roleDetail, err := state.authRoleGet(paramsWith(map[string]json.RawMessage{"role": jsonString("dbx_live_role")}))
+	roleDetail, err := state.authRoleGet(paramsWith(map[string]json.RawMessage{"role": jsonString("chiron_horizon_live_role")}))
 	if err != nil {
 		t.Fatalf("role get failed: %v", err)
 	}
@@ -337,7 +337,7 @@ func TestLiveEtcdAgent(t *testing.T) {
 	}
 	if _, err := state.authUserGrantRevokeRole(paramsWith(map[string]json.RawMessage{
 		"user": jsonString(userName),
-		"role": jsonString("dbx_live_role"),
+		"role": jsonString("chiron_horizon_live_role"),
 	}), true); err != nil {
 		t.Fatalf("grant role failed: %v", err)
 	}
@@ -357,12 +357,12 @@ func TestLiveEtcdAgent(t *testing.T) {
 	}
 	if _, err := state.authUserGrantRevokeRole(paramsWith(map[string]json.RawMessage{
 		"user": jsonString(userName),
-		"role": jsonString("dbx_live_role"),
+		"role": jsonString("chiron_horizon_live_role"),
 	}), false); err != nil {
 		t.Fatalf("revoke role failed: %v", err)
 	}
 	if _, err := state.authRolePermission(paramsWith(map[string]json.RawMessage{
-		"role":     jsonString("dbx_live_role"),
+		"role":     jsonString("chiron_horizon_live_role"),
 		"resource": jsonString("prefix"),
 		"key":      jsonString(prefix),
 	}), false); err != nil {
@@ -371,7 +371,7 @@ func TestLiveEtcdAgent(t *testing.T) {
 	if _, err := state.authUserDelete(paramsWith(map[string]json.RawMessage{"user": jsonString(userName)})); err != nil {
 		t.Fatalf("user delete failed: %v", err)
 	}
-	if _, err := state.authRoleDelete(paramsWith(map[string]json.RawMessage{"role": jsonString("dbx_live_role")})); err != nil {
+	if _, err := state.authRoleDelete(paramsWith(map[string]json.RawMessage{"role": jsonString("chiron_horizon_live_role")})); err != nil {
 		t.Fatalf("role delete failed: %v", err)
 	}
 
@@ -430,12 +430,12 @@ func TestLiveEtcdAgent(t *testing.T) {
 // TestLiveEtcdProtocolFlow drives the multi-session runtime exactly like the
 // Rust host does: NDJSON lines with agentSessionId routing.
 func TestLiveEtcdProtocolFlow(t *testing.T) {
-	if os.Getenv("DBX_ETCD_LIVE") != "1" {
-		t.Skip("set DBX_ETCD_LIVE=1 to run the live etcd agent test")
+	if os.Getenv("CHIRON_HORIZON_ETCD_LIVE") != "1" {
+		t.Skip("set CHIRON_HORIZON_ETCD_LIVE=1 to run the live etcd agent test")
 	}
-	endpoints := envOrDefault("DBX_ETCD_ENDPOINTS", "http://127.0.0.1:10700")
-	user := envOrDefault("DBX_ETCD_USER", "root")
-	password := envOrDefault("DBX_ETCD_PASSWORD", "123456")
+	endpoints := envOrDefault("CHIRON_HORIZON_ETCD_ENDPOINTS", "http://127.0.0.1:10700")
+	user := envOrDefault("CHIRON_HORIZON_ETCD_USER", "root")
+	password := envOrDefault("CHIRON_HORIZON_ETCD_PASSWORD", "123456")
 
 	server := newRuntimeServer()
 	connection := fmt.Sprintf(`{"etcd_endpoints":%q,"username":%q,"password":%q}`, endpoints, user, password)
@@ -451,7 +451,7 @@ func TestLiveEtcdProtocolFlow(t *testing.T) {
 		t.Fatalf("open_session failed: %#v", opened)
 	}
 
-	putLine := fmt.Sprintf(`{"id":3,"method":"kv_put","params":{"agentSessionId":"s1","key":"dbx:proto","value":{"encoding":"utf8","data":"flow"}}}`)
+	putLine := fmt.Sprintf(`{"id":3,"method":"kv_put","params":{"agentSessionId":"s1","key":"chiron-horizon:proto","value":{"encoding":"utf8","data":"flow"}}}`)
 	put, _ := server.handleLine(putLine)
 	if put.Error != nil {
 		t.Fatalf("kv_put failed: %#v", put)

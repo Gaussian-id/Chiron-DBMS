@@ -11,7 +11,6 @@ import { hasQueryOutput } from "@/lib/query/queryOutput";
 import { safeLocalStorageGet, safeLocalStorageSet } from "@/lib/backend/safeStorage";
 import { Button } from "@/components/ui/button";
 import EditorGroup from "./EditorGroup.vue";
-import { relationalComingSoon } from "@/lib/app/relationalComingSoon";
 import QueryResultSurface from "./QueryResultSurface.vue";
 import { createContentSurfaceEventForwarders } from "@/lib/tabs/contentSurfaceEvents";
 import type { ContentAreaSurfaceEmits, ContentAreaSurfaceProps, StatementRange } from "./querySurfaces";
@@ -132,13 +131,13 @@ function setTabBarTarget(groupId: string, element: unknown) {
   else workspaceTabBarPortal.targets.delete(groupId);
 }
 const activeTab = computed(() => queryStore.tabs.find((tab) => tab.id === queryStore.activeTabId));
-const showSharedResult = computed(() => activeTab.value?.mode === "query" && props.activeConnection?.db_type !== "chirondb" && !relationalComingSoon(props.activeConnection?.db_type));
+const showSharedResult = computed(() => activeTab.value?.mode === "query" && props.activeConnection?.db_type !== "chirondb");
 const hasSharedOutput = computed(() => showSharedResult.value && hasQueryOutput(activeTab.value));
 
 const SHARED_RESULT_PANE_MIN_SIZE = 12;
 const SHARED_RESULT_PANE_MAX_SIZE = 80;
 const SHARED_RESULT_PANE_DEFAULT_SIZE = 32;
-const SHARED_RESULT_PANE_STORAGE_KEY = "dbx-shared-results-pane-size";
+const SHARED_RESULT_PANE_STORAGE_KEY = "chiron-horizon-shared-results-pane-size";
 const storedResultPaneSize = Number(safeLocalStorageGet(SHARED_RESULT_PANE_STORAGE_KEY));
 const resultPaneSize = ref(Number.isFinite(storedResultPaneSize) && storedResultPaneSize >= SHARED_RESULT_PANE_MIN_SIZE && storedResultPaneSize <= SHARED_RESULT_PANE_MAX_SIZE ? storedResultPaneSize : SHARED_RESULT_PANE_DEFAULT_SIZE);
 const showResultPane = computed({

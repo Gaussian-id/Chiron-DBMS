@@ -1,1109 +1,372 @@
-name: Release
+name: Chiron Horizon release
 
 on:
   push:
-    tags:
-      - "v*"
+    tags: ["v*"]
 
 permissions:
   contents: write
 
-env:
-  CNB_REPOSITORY: "dbxio.com/dbx"
-  CNB_USERNAME: "cnb"
-  CNB_REGISTRY: "docker.cnb.cool"
+concurrency:
+  group: chiron-horizon-release-${{ github.ref_name }}
+  cancel-in-progress: false
 
 jobs:
-  release-ready:
-    name: Verify draft release
-    runs-on: ubuntu-latest
-    steps:
-      - name: Wait for the draft release
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        shell: bash
-        run: |
-          for attempt in $(seq 1 30); do
-            RELEASE_JSON="$(gh release view "${GITHUB_REF_NAME}" \
-              --repo "${GITHUB_REPOSITORY}" \
-              --json tagName,isDraft,body 2>/dev/null || true)"
-            if [ -n "$RELEASE_JSON" ] \
-              && [ "$(jq -r '.tagName' <<<"$RELEASE_JSON")" = "${GITHUB_REF_NAME}" ] \
-              && [ "$(jq -r '.isDraft' <<<"$RELEASE_JSON")" = true ] \
-              && [ -n "$(jq -r '.body' <<<"$RELEASE_JSON")" ]; then
-              echo "Agent-created draft release is ready."
-              exit 0
-            fi
-            sleep 2
-          done
-          echo "Agent-created draft release was not ready for ${GITHUB_REF_NAME}." >&2
-          exit 1
-
-  nix-packaging:
+  preflight:
+    name: Release preflight
     runs-on: ubuntu-22.04
-    continue-on-error: true
+    env:
+      CARGO_INCREMENTAL: "0"
+      CARGO_TARGET_DIR: ${{ github.workspace }}/.release-target-preflight
+      NODE_OPTIONS: --max-old-space-size=6144
     steps:
-      - uses: actions/checkout@v5
-
-      - name: Install Nix
-        uses: DeterminateSystems/nix-installer-action@ef8a148080ab6020fd15196c2084a2eea5ff2d25 # v22
-
-      - name: Build Nix desktop package
-        run: nix build .#dbx-desktop --no-link --print-build-logs
-
-  bump-jdbc-plugin-version:
-    runs-on: ubuntu-latest
-    outputs:
-      changed: ${{ steps.bump.outputs.changed }}
-      old_version: ${{ steps.bump.outputs.old_version }}
-      new_version: ${{ steps.bump.outputs.new_version }}
-      prev_tag: ${{ steps.prev-tag.outputs.prev_tag }}
-    steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-          token: ${{ secrets.MCP_RELEASE_TOKEN }}
-
-      - name: Find previous release tag
-        id: prev-tag
-        shell: bash
+      - name: Require a main branch release commit
         run: |
-          PREV_TAG=$(git tag --sort=-creatordate | grep '^v' | sed -n '2p')
-          if [ -z "$PREV_TAG" ]; then
-            PREV_TAG=$(git rev-list --max-parents=0 HEAD)
-          fi
-          echo "prev_tag=${PREV_TAG}" >> "$GITHUB_OUTPUT"
-          echo "Comparing ${PREV_TAG}..HEAD"
-
-      - name: Detect JDBC plugin changes and bump version
-        id: bump
-        shell: bash
-        run: |
-          BUMP_OUTPUT="$(node .github/scripts/bump-jdbc-plugin-version.mjs "${{ steps.prev-tag.outputs.prev_tag }}" HEAD --write)"
-          echo "$BUMP_OUTPUT"
-          echo "$BUMP_OUTPUT" >> "$GITHUB_OUTPUT"
-
-      - name: Commit JDBC plugin version bump
-        if: steps.bump.outputs.changed == 'true'
-        shell: bash
-        run: |
-          TMP_DIR="$(mktemp -d)"
-          cp plugins/jdbc/build.gradle "$TMP_DIR/build.gradle"
-          cp plugins/jdbc/manifest.json "$TMP_DIR/manifest.json"
-          git restore plugins/jdbc/build.gradle plugins/jdbc/manifest.json
-
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git fetch origin main
-          git switch -C jdbc-plugin-version-bump origin/main
-          cp "$TMP_DIR/build.gradle" plugins/jdbc/build.gradle
-          cp "$TMP_DIR/manifest.json" plugins/jdbc/manifest.json
-          git add plugins/jdbc/build.gradle plugins/jdbc/manifest.json
-          if git diff --cached --quiet; then
-            echo "JDBC plugin version ${{ steps.bump.outputs.new_version }} is already on main."
-            exit 0
-          fi
-          git commit -m "chore(jdbc): bump plugin version [skip ci]"
-          for attempt in 1 2 3; do
-            if git push origin HEAD:main; then
-              exit 0
-            fi
-            if [ "$attempt" -eq 3 ]; then
-              echo "::error::Unable to push JDBC plugin version bump after ${attempt} attempts."
-              exit 1
-            fi
-            git fetch origin main --no-tags
-            git rebase origin/main
-          done
-
-  build:
-    # Explicit name keeps matrix-only fields such as asset_pattern from being
-    # appended to the generated job display name.
-    name: build (${{ matrix.platform }}, ${{ matrix.target }})
-    needs: release-ready
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          # assetNamePattern renames every bundle artifact of a matrix leg, so
-          # it is set only on aarch64 legs (aarch64 -> arm64). x64 legs leave
-          # it empty and keep the default Tauri CLI names (x64.dmg, amd64
-          # deb/rpm/AppImage) used by downloadLinks and package consumers.
-          - platform: macos-latest
-            target: aarch64-apple-darwin
-            asset_pattern: "DBX_[version]_arm64[setup][ext]"
-          - platform: macos-15-intel
-            target: x86_64-apple-darwin
-          - platform: ubuntu-22.04
-            target: x86_64-unknown-linux-gnu
-          - platform: ubuntu-22.04-arm
-            target: aarch64-unknown-linux-gnu
-            asset_pattern: "DBX_[version]_arm64[setup][ext]"
-
-    runs-on: ${{ matrix.platform }}
-    env:
-      CARGO_INCREMENTAL: "0"
-      RUSTC_WRAPPER: sccache
-      # Keep releases working until the shared S3 secrets are configured.
-      SCCACHE_GHA_ENABLED: ${{ secrets.SCCACHE_S3_BUCKET == '' && 'true' || 'false' }}
-    steps:
-      - uses: actions/checkout@v5
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v6
+          git fetch origin main --depth=1
+          git merge-base --is-ancestor "$GITHUB_SHA" origin/main
+      - uses: actions/setup-node@v4
         with:
-          node-version: 22
-
-      - name: Setup pnpm
-        uses: pnpm/action-setup@v6
-
-      - name: Install frontend dependencies
-        run: pnpm install
-
-      - name: Setup Rust
-        uses: dtolnay/rust-toolchain@1.97.1
+          node-version: "22"
+      - name: Require the tag to match the application version
+        run: |
+          VERSION="$(node -p "require('./src-tauri/tauri.conf.json').version")"
+          test "$GITHUB_REF_NAME" = "v$VERSION"
+      - uses: pnpm/action-setup@v4
         with:
-          targets: ${{ matrix.target }}
-
-      - name: Setup sccache
-        uses: mozilla-actions/sccache-action@9e7fa8a12102821edf02ca5dbea1acd0f89a2696 # v0.0.10
-        with:
-          version: "v0.10.0"
-
-      - name: Configure S3 sccache
-        if: env.SCCACHE_GHA_ENABLED != 'true'
-        shell: bash
-        env:
-          CACHE_BUCKET: ${{ secrets.SCCACHE_S3_BUCKET }}
-          CACHE_ENDPOINT: ${{ secrets.SCCACHE_S3_ENDPOINT }}
-          CACHE_REGION: ${{ secrets.SCCACHE_S3_REGION }}
-          CACHE_KEY_PREFIX: ${{ secrets.SCCACHE_S3_KEY_PREFIX }}
-          CACHE_ACCESS_KEY_ID: ${{ secrets.SCCACHE_S3_ACCESS_KEY_ID }}
-          CACHE_SECRET_ACCESS_KEY: ${{ secrets.SCCACHE_S3_SECRET_ACCESS_KEY }}
-        run: |
-          {
-            echo "SCCACHE_BUCKET=${CACHE_BUCKET}"
-            echo "SCCACHE_ENDPOINT=${CACHE_ENDPOINT}"
-            echo "SCCACHE_REGION=${CACHE_REGION}"
-            echo "SCCACHE_S3_KEY_PREFIX=${CACHE_KEY_PREFIX}"
-            echo "SCCACHE_S3_USE_SSL=true"
-            echo "AWS_ACCESS_KEY_ID=${CACHE_ACCESS_KEY_ID}"
-            echo "AWS_SECRET_ACCESS_KEY=${CACHE_SECRET_ACCESS_KEY}"
-            # Linking, bundling, and signing run for 30+ minutes after the last
-            # rustc call; the server's 10-minute default idle timeout would
-            # exit first and zero the counters shown by "Show sccache stats".
-            echo "SCCACHE_IDLE_TIMEOUT=0"
-            # Also cache the C/C++ compilation of -sys crates. All matrix legs
-            # are native builds, so plain CC/CXX select the target compiler;
-            # MSVC stays unwrapped. SCCACHE_PATH avoids depending on PATH.
-            case "${RUNNER_OS}" in
-              Linux)
-                echo "CC=${SCCACHE_PATH} cc"
-                echo "CXX=${SCCACHE_PATH} c++"
-                ;;
-              macOS)
-                echo "CC=${SCCACHE_PATH} clang"
-                echo "CXX=${SCCACHE_PATH} clang++"
-                ;;
-            esac
-          } >> "$GITHUB_ENV"
-
-      - name: Compute Rust dependency hash
-        id: deps-hash
-        shell: bash
-        run: |
-          {
-            find . -name Cargo.toml -not -path './target/*' -print0 \
-              | sort -z \
-              | xargs -0 sed -E '/^version = /d'
-            grep -v '^version = ' Cargo.lock
-          } | sha256sum | cut -d' ' -f1 | {
-            read -r hash
-            echo "hash=${hash:0:20}" >> "$GITHUB_OUTPUT"
-          }
-
-      - name: Rust cache
-        uses: swatinem/rust-cache@v2
-        with:
-          workspaces: "./ -> target"
-          shared-key: release-${{ matrix.target }}-${{ steps.deps-hash.outputs.hash }}
-          add-rust-environment-hash-key: false
-          # Release tags cannot reuse target caches across refs; sccache handles compiler outputs.
-          cache-targets: false
-          cache-on-failure: true
-
-      - name: Install Apple certificate (macOS)
-        if: startsWith(matrix.platform, 'macos')
-        env:
-          APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
-          APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
-        run: |
-          CERTIFICATE_PATH=$RUNNER_TEMP/certificate.p12
-          KEYCHAIN_PATH=$RUNNER_TEMP/app-signing.keychain-db
-          echo -n "$APPLE_CERTIFICATE" | base64 --decode -o $CERTIFICATE_PATH
-          security create-keychain -p "" $KEYCHAIN_PATH
-          security set-keychain-settings -lut 21600 $KEYCHAIN_PATH
-          security unlock-keychain -p "" $KEYCHAIN_PATH
-          security import $CERTIFICATE_PATH -P "$APPLE_CERTIFICATE_PASSWORD" -A -t cert -f pkcs12 -k $KEYCHAIN_PATH
-          security set-key-partition-list -S apple-tool:,apple: -k "" $KEYCHAIN_PATH
-          security list-keychains -d user -s $KEYCHAIN_PATH login.keychain-db
-
-      - name: Install system dependencies (Linux)
-        if: startsWith(matrix.platform, 'ubuntu')
-        run: |
-          sudo apt-get update
-          # Bundle GTK input-method modules from the same Jammy ABI baseline
-          # instead of loading potentially incompatible modules from the host.
-          sudo apt-get install -y fcitx5-frontend-gtk3 ibus-gtk3 libwebkit2gtk-4.1-dev libgtk-3-dev libappindicator3-dev librsvg2-dev patchelf libssl-dev xdg-utils
-
-      - name: Setup Tauri signing key
-        shell: bash
-        run: |
-          echo "${{ secrets.TAURI_SIGNING_PRIVATE_KEY_BASE64 }}" | base64 --decode > "$RUNNER_TEMP/updater.key"
-          KEY_B64=$(base64 < "$RUNNER_TEMP/updater.key" | tr -d '\r\n')
-          echo "TAURI_SIGNING_PRIVATE_KEY=$KEY_B64" >> "$GITHUB_ENV"
-          if [ -n "${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}" ]; then
-            echo "TAURI_SIGNING_PRIVATE_KEY_PASSWORD=${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}" >> "$GITHUB_ENV"
-          fi
-
-      - name: Build Tauri app
-        uses: tauri-apps/tauri-action@v0
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          APPLE_SIGNING_IDENTITY: ${{ startsWith(matrix.platform, 'macos') && secrets.APPLE_SIGNING_IDENTITY || '' }}
-          APPLE_ID: ${{ startsWith(matrix.platform, 'macos') && secrets.APPLE_ID || '' }}
-          APPLE_PASSWORD: ${{ startsWith(matrix.platform, 'macos') && secrets.APPLE_PASSWORD || '' }}
-          APPLE_TEAM_ID: ${{ startsWith(matrix.platform, 'macos') && secrets.APPLE_TEAM_ID || '' }}
-        with:
-          tagName: ${{ github.ref_name }}
-          releaseDraft: true
-          # Empty on x64 legs: tauri-action then keeps the default Tauri CLI names.
-          assetNamePattern: ${{ matrix.asset_pattern }}
-          args: --target ${{ matrix.target }}
-
-      - name: Verify AppImage input methods
-        if: startsWith(matrix.platform, 'ubuntu')
-        shell: bash
-        run: ./.github/scripts/verify-appimage-input-methods.sh "target/${{ matrix.target }}/release/bundle/appimage"
-
-      - name: Show sccache stats
-        if: always()
-        continue-on-error: true
-        shell: bash
-        run: ${SCCACHE_PATH} --show-stats
-
-  build-windows:
-    needs: release-ready
-    environment: release-signing
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - target: x86_64-pc-windows-msvc
-            arch: x64
-          - target: aarch64-pc-windows-msvc
-            arch: arm64
-    runs-on: windows-2022
-    env:
-      CARGO_INCREMENTAL: "0"
-      RUSTC_WRAPPER: sccache
-      SCCACHE_GHA_ENABLED: ${{ secrets.SCCACHE_S3_BUCKET == '' && 'true' || 'false' }}
-      VSIGN_CERT_HASH: ${{ vars.VSIGN_CERT_HASH }}
-      VSIGN_OPERATOR_SHA1: ${{ vars.VSIGN_OPERATOR_SHA1 }}
-      VSIGN_SERVER: ${{ vars.VSIGN_SERVER }}
-      VSIGN_TOOL_SHA256: ${{ vars.VSIGN_TOOL_SHA256 }}
-    steps:
-      - uses: actions/checkout@v5
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v6
-        with:
-          node-version: 22
-
-      - name: Setup pnpm
-        uses: pnpm/action-setup@v6
-
-      - name: Install frontend dependencies
-        run: pnpm install
-
-      - name: Setup Rust
-        uses: dtolnay/rust-toolchain@1.97.1
-        with:
-          targets: ${{ matrix.target }}
-
-      - name: Setup sccache
-        uses: mozilla-actions/sccache-action@9e7fa8a12102821edf02ca5dbea1acd0f89a2696 # v0.0.10
-        with:
-          version: "v0.10.0"
-
-      - name: Configure S3 sccache
-        if: env.SCCACHE_GHA_ENABLED != 'true'
-        shell: bash
-        env:
-          CACHE_BUCKET: ${{ secrets.SCCACHE_S3_BUCKET }}
-          CACHE_ENDPOINT: ${{ secrets.SCCACHE_S3_ENDPOINT }}
-          CACHE_REGION: ${{ secrets.SCCACHE_S3_REGION }}
-          CACHE_KEY_PREFIX: ${{ secrets.SCCACHE_S3_KEY_PREFIX }}
-          CACHE_ACCESS_KEY_ID: ${{ secrets.SCCACHE_S3_ACCESS_KEY_ID }}
-          CACHE_SECRET_ACCESS_KEY: ${{ secrets.SCCACHE_S3_SECRET_ACCESS_KEY }}
-        run: |
-          {
-            echo "SCCACHE_BUCKET=${CACHE_BUCKET}"
-            echo "SCCACHE_ENDPOINT=${CACHE_ENDPOINT}"
-            echo "SCCACHE_REGION=${CACHE_REGION}"
-            echo "SCCACHE_S3_KEY_PREFIX=${CACHE_KEY_PREFIX}"
-            echo "SCCACHE_S3_USE_SSL=true"
-            echo "AWS_ACCESS_KEY_ID=${CACHE_ACCESS_KEY_ID}"
-            echo "AWS_SECRET_ACCESS_KEY=${CACHE_SECRET_ACCESS_KEY}"
-            # Linking, bundling, and signing run for 30+ minutes after the last
-            # rustc call; the server's 10-minute default idle timeout would
-            # exit first and zero the counters shown by "Show sccache stats".
-            echo "SCCACHE_IDLE_TIMEOUT=0"
-            # Also cache the C/C++ compilation of -sys crates. All matrix legs
-            # are native builds, so plain CC/CXX select the target compiler;
-            # MSVC stays unwrapped. SCCACHE_PATH avoids depending on PATH.
-            case "${RUNNER_OS}" in
-              Linux)
-                echo "CC=${SCCACHE_PATH} cc"
-                echo "CXX=${SCCACHE_PATH} c++"
-                ;;
-              macOS)
-                echo "CC=${SCCACHE_PATH} clang"
-                echo "CXX=${SCCACHE_PATH} clang++"
-                ;;
-            esac
-          } >> "$GITHUB_ENV"
-
-      - name: Compute Rust dependency hash
-        id: deps-hash
-        shell: bash
-        run: |
-          {
-            find . -name Cargo.toml -not -path './target/*' -print0 \
-              | sort -z \
-              | xargs -0 sed -E '/^version = /d'
-            grep -v '^version = ' Cargo.lock
-          } | sha256sum | cut -d' ' -f1 | {
-            read -r hash
-            echo "hash=${hash:0:20}" >> "$GITHUB_OUTPUT"
-          }
-
-      - name: Rust cache
-        uses: swatinem/rust-cache@v2
-        with:
-          workspaces: "./ -> target"
-          shared-key: release-${{ matrix.target }}-${{ steps.deps-hash.outputs.hash }}
-          add-rust-environment-hash-key: false
-          cache-targets: false
-          cache-on-failure: true
-
-      - name: Setup Tauri signing key
-        shell: bash
-        run: |
-          echo "${{ secrets.TAURI_SIGNING_PRIVATE_KEY_BASE64 }}" | base64 --decode > "$RUNNER_TEMP/updater.key"
-          KEY_B64=$(base64 < "$RUNNER_TEMP/updater.key" | tr -d '\r\n')
-          echo "TAURI_SIGNING_PRIVATE_KEY=$KEY_B64" >> "$GITHUB_ENV"
-          if [ -n "${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}" ]; then
-            echo "TAURI_SIGNING_PRIVATE_KEY_PASSWORD=${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}" >> "$GITHUB_ENV"
-          fi
-
-      - name: Setup TrustAsia VSign
-        shell: pwsh
-        env:
-          VSIGN_OPERATOR_PFX_B64: ${{ secrets.VSIGN_OPERATOR_PFX_B64 }}
-          VSIGN_OPERATOR_PWD: ${{ secrets.VSIGN_OPERATOR_PWD }}
-        run: ./.github/scripts/setup-vsign.ps1
-
-      - name: Build and sign Tauri app
-        uses: tauri-apps/tauri-action@v0
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          SSIGNCODE_OPERATOR_PWD: ${{ secrets.VSIGN_OPERATOR_PWD }}
-          VSIGN_KEY_PIN: ${{ secrets.VSIGN_KEY_PIN }}
-        with:
-          tagName: ${{ github.ref_name }}
-          releaseDraft: true
-          # No assetNamePattern: the default Tauri CLI names already produce
-          # DBX_[version]_x64/arm64-setup.exe and keep the _en-US.msi names.
-          args: --target ${{ matrix.target }} --config src-tauri/tauri.vsign.conf.json
-
-      - name: Verify Windows bundles
-        shell: pwsh
-        run: |
-          $bundleRoot = "target/${{ matrix.target }}/release/bundle"
-          $nsisInstallers = @(
-            Get-ChildItem (Join-Path $bundleRoot "nsis") -Filter "*.exe" -File -ErrorAction SilentlyContinue
-          )
-          $msiInstallers = @(
-            Get-ChildItem (Join-Path $bundleRoot "msi") -Filter "*.msi" -File -ErrorAction SilentlyContinue
-          )
-          if ($nsisInstallers.Count -eq 0) {
-            throw "No NSIS installer was produced for ${{ matrix.target }}"
-          }
-          if ($msiInstallers.Count -eq 0) {
-            throw "No MSI installer was produced for ${{ matrix.target }}"
-          }
-          ./.github/scripts/assert-authenticode.ps1 -Path @(
-            $nsisInstallers.FullName
-            $msiInstallers.FullName
-          )
-
-      - name: Upload Windows WebView2 offline installer
-        shell: pwsh
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          SSIGNCODE_OPERATOR_PWD: ${{ secrets.VSIGN_OPERATOR_PWD }}
-          VSIGN_KEY_PIN: ${{ secrets.VSIGN_KEY_PIN }}
-        run: |
-          $version = "${env:GITHUB_REF_NAME}".TrimStart("v")
-          $arch = "${{ matrix.arch }}"
-          $bundleDir = "target/${{ matrix.target }}/release/bundle/nsis"
-          $offlineName = "DBX_${version}_${arch}-offline-setup.exe"
-          $before = @{}
-
-          if (Test-Path $bundleDir) {
-            Get-ChildItem $bundleDir -Filter "*.exe" | ForEach-Object { $before[$_.FullName] = $_.LastWriteTimeUtc }
-          }
-
-          pnpm tauri bundle --bundles nsis --target ${{ matrix.target }} `
-            --config src-tauri/tauri.webview2-offline.conf.json `
-            --config src-tauri/tauri.vsign.conf.json
-
-          $installer = Get-ChildItem $bundleDir -Filter "*.exe" |
-            Where-Object { !$before.ContainsKey($_.FullName) -or $_.LastWriteTimeUtc -gt $before[$_.FullName] } |
-            Sort-Object LastWriteTimeUtc -Descending |
-            Select-Object -First 1
-
-          if (!$installer) {
-            throw "Missing WebView2 offline installer in ${bundleDir}"
-          }
-
-          ./.github/scripts/assert-authenticode.ps1 -Path $installer.FullName
-          Copy-Item $installer.FullName $offlineName -Force
-          gh release upload "${env:GITHUB_REF_NAME}" $offlineName --repo "${env:GITHUB_REPOSITORY}" --clobber
-
-      - name: Upload Windows portable ZIP
-        timeout-minutes: 20
-        shell: pwsh
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          SSIGNCODE_OPERATOR_PWD: ${{ secrets.VSIGN_OPERATOR_PWD }}
-          VSIGN_KEY_PIN: ${{ secrets.VSIGN_KEY_PIN }}
-        run: |
-          $version = "${env:GITHUB_REF_NAME}".TrimStart("v")
-          $arch = "${{ matrix.arch }}"
-          $portableRoot = "portable"
-          $portableDir = Join-Path $portableRoot "DBX_${version}_${arch}"
-          $zipName = "DBX_${version}_${arch}-portable.zip"
-          $exePath = "target/${{ matrix.target }}/release/dbx.exe"
-          $cargoMetadata = cargo metadata --no-deps --format-version 1 | ConvertFrom-Json
-          $appVersion = ($cargoMetadata.packages | Where-Object { $_.name -eq "dbx" } | Select-Object -First 1).version
-
-          if (!(Test-Path $exePath)) {
-            throw "Missing Windows executable: $exePath"
-          }
-          if (!$appVersion -or $appVersion -ne $version) {
-            throw "Release tag version $version does not match the built DBX package version $appVersion"
-          }
-
-          ./.github/scripts/vsign-sign.ps1 -FilePath $exePath
-          ./.github/scripts/assert-authenticode.ps1 -Path $exePath
-
-          New-Item -ItemType Directory -Force -Path $portableDir | Out-Null
-          Copy-Item $exePath (Join-Path $portableDir "DBX.exe") -Force
-          Copy-Item "LICENSE" (Join-Path $portableDir "LICENSE") -Force
-          Copy-Item "README.md" (Join-Path $portableDir "README.md") -Force
-          Set-Content -Path (Join-Path $portableDir "portable.dbx") -Value "" -NoNewline
-
-          $portableExe = Join-Path $portableDir "DBX.exe"
-          $manifest = [ordered]@{
-            schema_version = 1
-            version = $appVersion
-            arch = $arch
-            executable = "DBX.exe"
-            executable_sha256 = (Get-FileHash -LiteralPath $portableExe -Algorithm SHA256).Hash.ToLowerInvariant()
-          } | ConvertTo-Json
-          Set-Content -Path (Join-Path $portableDir "portable-update.json") -Value $manifest -Encoding utf8NoBOM
-
-          Compress-Archive -Path (Join-Path $portableDir "*") -DestinationPath $zipName -Force
-          # Tauri prompts interactively when the password is omitted, so pass an explicit
-          # empty value for the existing passwordless updater key used by DBX releases.
-          if ([string]::IsNullOrEmpty($env:TAURI_SIGNING_PRIVATE_KEY_PASSWORD)) {
-            pnpm tauri signer sign "--password=" $zipName
-          } else {
-            pnpm tauri signer sign $zipName
-          }
-
-          $signatureName = "${zipName}.sig"
-          if (!(Test-Path $signatureName)) {
-            throw "Missing portable update signature: $signatureName"
-          }
-
-          gh release upload "${env:GITHUB_REF_NAME}" $zipName $signatureName --repo "${env:GITHUB_REPOSITORY}" --clobber
-
-      - name: Show sccache stats
-        if: always()
-        continue-on-error: true
-        shell: bash
-        run: ${SCCACHE_PATH} --show-stats
-
-      - name: Remove temporary VSign files
-        if: always()
-        shell: pwsh
-        run: |
-          $workDir = if ([string]::IsNullOrWhiteSpace($env:VSIGN_WORK_DIR)) {
-            Join-Path $env:RUNNER_TEMP "vsign-$env:GITHUB_RUN_ID-$env:GITHUB_RUN_ATTEMPT"
-          } else {
-            $env:VSIGN_WORK_DIR
-          }
-          if (Test-Path -LiteralPath $workDir) {
-            Remove-Item -LiteralPath $workDir -Recurse -Force
-          }
-
-  build-windows-7-offline:
-    needs: release-ready
-    runs-on: windows-2022
-    environment: release-signing
-    # No sccache here: the loader patch rewrites a file inside the cargo
-    # registry, which is invisible to any compile cache. v0.6.0 shipped a
-    # binary linked against the wrong (>= 1.0.1054.31) WebView2 loader even
-    # though the patched 1.0.902.49 loader was verified on disk, so caching is
-    # disabled for this target until the patch is vendored into the source
-    # tree.
-    env:
-      CARGO_INCREMENTAL: "0"
-      RUSTFLAGS: -C debuginfo=line-tables-only -C target-feature=+crt-static
-      VSIGN_CERT_HASH: ${{ vars.VSIGN_CERT_HASH }}
-      VSIGN_OPERATOR_SHA1: ${{ vars.VSIGN_OPERATOR_SHA1 }}
-      VSIGN_SERVER: ${{ vars.VSIGN_SERVER }}
-      VSIGN_TOOL_SHA256: ${{ vars.VSIGN_TOOL_SHA256 }}
-    steps:
-      - uses: actions/checkout@v5
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v6
-        with:
-          node-version: 22
-
-      - name: Setup pnpm
-        uses: pnpm/action-setup@v6
-
-      - name: Install frontend dependencies
-        run: pnpm install
-
-      - name: Setup Rust for Windows 7
-        uses: dtolnay/rust-toolchain@nightly
-        with:
-          toolchain: nightly-2026-07-22
-          components: rust-src
-
-      - name: Prepare Win7-compatible WebView2 loader
-        shell: pwsh
-        run: ./.github/scripts/prepare-webview2-win7-loader.ps1
-
-      - name: Prepare WebView2 109 fixed runtime
-        shell: pwsh
-        run: ./.github/scripts/prepare-webview2-win7-runtime.ps1
-
-      - name: Probe WebView2 109 fixed runtime
-        shell: pwsh
-        run: ./.github/scripts/assert-webview2-win7-runtime.ps1
-
-      - name: Rust cache
-        uses: swatinem/rust-cache@v2
-        with:
-          workspaces: "./ -> target"
-          shared-key: release-x86_64-win7-windows-msvc
-          add-rust-environment-hash-key: true
-          cache-targets: false
-          cache-on-failure: true
-
-      - name: Build frontend
-        run: pnpm build
-
-      - name: Build DBX for Windows 7
-        shell: pwsh
-        run: |
-          $env:TAURI_CONFIG = Get-Content src-tauri/tauri.webview2-win7-fixed.conf.json -Raw
-          cargo build --locked --package dbx --release --features custom-protocol --target x86_64-win7-windows-msvc -Z build-std=std,panic_abort
-
-      - name: Audit Windows 7 PE imports
-        shell: pwsh
-        run: ./.github/scripts/assert-win7-pe-compat.ps1 -BinaryPath target/x86_64-win7-windows-msvc/release/dbx.exe
-
-      - name: Audit Win7 WebView2 loader markers
-        shell: pwsh
-        run: ./.github/scripts/assert-webview2-win7-loader.ps1 -BinaryPath target/x86_64-win7-windows-msvc/release/dbx.exe
-
-      - name: Setup TrustAsia VSign
-        shell: pwsh
-        env:
-          VSIGN_OPERATOR_PFX_B64: ${{ secrets.VSIGN_OPERATOR_PFX_B64 }}
-          VSIGN_OPERATOR_PWD: ${{ secrets.VSIGN_OPERATOR_PWD }}
-        run: ./.github/scripts/setup-vsign.ps1
-
-      - name: Bundle and upload Windows 7 / Server 2012 R2 fixed-runtime installer
-        shell: pwsh
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          SSIGNCODE_OPERATOR_PWD: ${{ secrets.VSIGN_OPERATOR_PWD }}
-          VSIGN_KEY_PIN: ${{ secrets.VSIGN_KEY_PIN }}
-        run: |
-          $version = "${env:GITHUB_REF_NAME}".TrimStart("v")
-          $bundleDir = "target/x86_64-win7-windows-msvc/release/bundle/nsis"
-          $offlineName = "DBX_${version}_x64-win7-server2012r2-offline-setup.exe"
-          $checksumName = "${offlineName}.sha256"
-          $cargoMetadata = cargo metadata --no-deps --format-version 1 | ConvertFrom-Json
-          $appVersion = ($cargoMetadata.packages | Where-Object { $_.name -eq "dbx" } | Select-Object -First 1).version
-
-          if (!$appVersion -or $appVersion -ne $version) {
-            Write-Error "Release tag version $version does not match the built DBX package version $appVersion"
-            exit 1
-          }
-
-          pnpm tauri bundle --bundles nsis --target x86_64-win7-windows-msvc `
-            --config src-tauri/tauri.webview2-win7-fixed.conf.json `
-            --config src-tauri/tauri.vsign.conf.json
-
-          $installer = Get-ChildItem $bundleDir -Filter "*.exe" |
-            Sort-Object LastWriteTimeUtc -Descending |
-            Select-Object -First 1
-          if (!$installer) {
-            Write-Error "Missing Windows 7 / Server 2012 R2 fixed-runtime installer in ${bundleDir}"
-            exit 1
-          }
-
-          ./.github/scripts/assert-win7-installer-content.ps1 -InstallerPath $installer.FullName
-          ./.github/scripts/assert-authenticode.ps1 -Path $installer.FullName
-
-          Copy-Item $installer.FullName $offlineName -Force
-          $hash = (Get-FileHash -LiteralPath $offlineName -Algorithm SHA256).Hash.ToLowerInvariant()
-          "$hash  $offlineName" | Set-Content -LiteralPath $checksumName -Encoding ascii
-          gh release upload "${env:GITHUB_REF_NAME}" $offlineName $checksumName `
-            --repo "${env:GITHUB_REPOSITORY}" --clobber
-
-      - name: Remove temporary VSign files
-        if: always()
-        shell: pwsh
-        run: |
-          $workDir = if ([string]::IsNullOrWhiteSpace($env:VSIGN_WORK_DIR)) {
-            Join-Path $env:RUNNER_TEMP "vsign-$env:GITHUB_RUN_ID-$env:GITHUB_RUN_ATTEMPT"
-          } else {
-            $env:VSIGN_WORK_DIR
-          }
-          if (Test-Path -LiteralPath $workDir) {
-            Remove-Item -LiteralPath $workDir -Recurse -Force
-          }
-
-  static-browser:
-    # Fully static musl builds of the browser (dbx-web) variant. No glibc
-    # dependency, so the tarball runs on any Linux distribution (verified in
-    # the oldest pullable Ubuntu container for each arch).
-    needs: release-ready
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - platform: ubuntu-22.04
-            target: x86_64-unknown-linux-musl
-            arch: x64
-            rustflags: "-C target-feature=+crt-static"
-          - platform: ubuntu-22.04-arm
-            target: aarch64-unknown-linux-musl
-            arch: arm64
-            # 64K max-page-size keeps the binary compatible with 4K/16K/64K
-            # page-size ARM64 kernels.
-            rustflags: "-C target-feature=+crt-static -C link-arg=-z -C link-arg=max-page-size=65536"
-    runs-on: ${{ matrix.platform }}
-    env:
-      CARGO_INCREMENTAL: "0"
-      RUSTC_WRAPPER: sccache
-      SCCACHE_GHA_ENABLED: ${{ secrets.SCCACHE_S3_BUCKET == '' && 'true' || 'false' }}
-    steps:
-      - uses: actions/checkout@v5
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v6
-        with:
-          node-version: 22
-
-      - name: Setup pnpm
-        uses: pnpm/action-setup@v6
-
-      - name: Install frontend dependencies
-        run: pnpm install
-
-      - name: Setup Rust
-        uses: dtolnay/rust-toolchain@1.97.1
-        with:
-          targets: ${{ matrix.target }}
-
-      - name: Install cargo-zigbuild
-        run: pip3 install cargo-zigbuild
-
-      - name: Setup sccache
-        uses: mozilla-actions/sccache-action@9e7fa8a12102821edf02ca5dbea1acd0f89a2696 # v0.0.10
-        with:
-          version: "v0.10.0"
-
-      # Plain CC/CXX only wrap HOST C compilations (build scripts): for the
-      # musl targets cargo-zigbuild sets CC_<target> to zig cc, which takes
-      # precedence and must stay unwrapped.
-      - name: Configure S3 sccache
-        if: env.SCCACHE_GHA_ENABLED != 'true'
-        shell: bash
-        env:
-          CACHE_BUCKET: ${{ secrets.SCCACHE_S3_BUCKET }}
-          CACHE_ENDPOINT: ${{ secrets.SCCACHE_S3_ENDPOINT }}
-          CACHE_REGION: ${{ secrets.SCCACHE_S3_REGION }}
-          CACHE_KEY_PREFIX: ${{ secrets.SCCACHE_S3_KEY_PREFIX }}
-          CACHE_ACCESS_KEY_ID: ${{ secrets.SCCACHE_S3_ACCESS_KEY_ID }}
-          CACHE_SECRET_ACCESS_KEY: ${{ secrets.SCCACHE_S3_SECRET_ACCESS_KEY }}
-        run: |
-          {
-            echo "SCCACHE_BUCKET=${CACHE_BUCKET}"
-            echo "SCCACHE_ENDPOINT=${CACHE_ENDPOINT}"
-            echo "SCCACHE_REGION=${CACHE_REGION}"
-            echo "SCCACHE_S3_KEY_PREFIX=${CACHE_KEY_PREFIX}"
-            echo "SCCACHE_S3_USE_SSL=true"
-            echo "AWS_ACCESS_KEY_ID=${CACHE_ACCESS_KEY_ID}"
-            echo "AWS_SECRET_ACCESS_KEY=${CACHE_SECRET_ACCESS_KEY}"
-            # Packaging and container verification run long after the last
-            # rustc call; the server's 10-minute default idle timeout would
-            # exit first and zero the counters shown by "Show sccache stats".
-            echo "SCCACHE_IDLE_TIMEOUT=0"
-            echo "CC=${SCCACHE_PATH} cc"
-            echo "CXX=${SCCACHE_PATH} c++"
-          } >> "$GITHUB_ENV"
-
-      - name: Rust cache
-        uses: swatinem/rust-cache@v2
-        with:
-          workspaces: "./ -> target"
-          shared-key: static-browser-${{ matrix.target }}
-          cache-on-failure: true
-
-      - name: Build frontend
-        run: pnpm build
-
-      - name: Build static web binary
-        env:
-          RUSTFLAGS: ${{ matrix.rustflags }}
-        run: |
-          cargo zigbuild --release -p dbx-web --target ${{ matrix.target }} \
-            --no-default-features --features "duckdb-sidecar,dynamodb,mq-admin,dbx-core/sqlite-bundled"
-
-      - name: Package static browser runtime
-        env:
-          DBX_STATIC_TARGET: ${{ matrix.target }}
-        run: |
-          chmod +x scripts/package-web-static.sh scripts/verify-web-static.sh
-          ./scripts/package-web-static.sh
-
-      - name: Verify inside oldest available Ubuntu container
-        run: |
-          VERIFY_IMAGE=""
-          for image in ubuntu:14.04 ubuntu:16.04; do
-            if docker pull "$image" >/dev/null 2>&1; then
-              VERIFY_IMAGE="$image"
-              break
-            fi
-          done
-          if [ -z "$VERIFY_IMAGE" ]; then
-            echo "no legacy Ubuntu image available for $(uname -m)" >&2
-            exit 1
-          fi
-          echo "Verifying in $VERIFY_IMAGE"
-          docker run --rm -v "$PWD:/workspace" -w /workspace "$VERIFY_IMAGE" \
-            bash scripts/verify-web-static.sh \
-            "dist-web-static/dbx-linux-${{ matrix.arch }}-browser-static.tar.gz"
-
-      - name: Upload release asset
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          VERSION="${GITHUB_REF_NAME#v}"
-          PACKAGE_VERSION="$(cargo metadata --no-deps --format-version 1 | jq -r '.packages[] | select(.name == "dbx-web") | .version')"
-          if [ "$PACKAGE_VERSION" != "$VERSION" ]; then
-            echo "Release tag version $VERSION does not match dbx-web package version $PACKAGE_VERSION" >&2
-            exit 1
-          fi
-          SOURCE="dist-web-static/dbx-linux-${{ matrix.arch }}-browser-static.tar.gz"
-          ASSET="DBX_${VERSION}_${{ matrix.arch }}-browser-static.tar.gz"
-          CHECKSUM="${ASSET}.sha256"
-          cp "$SOURCE" "$ASSET"
-          sha256sum "$ASSET" | tee "$CHECKSUM"
-          gh release upload "${GITHUB_REF_NAME}" "$ASSET" "$CHECKSUM" \
-            --repo "${GITHUB_REPOSITORY}" --clobber
-
-      - name: Show sccache stats
-        if: always()
-        continue-on-error: true
-        run: ${SCCACHE_PATH} --show-stats
-
-  cleanup-release-signatures:
-    needs: [build, build-windows, build-windows-7-offline]
-    runs-on: ubuntu-latest
-    steps:
-      - name: Remove standalone updater signature assets
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        shell: bash
-        run: |
-          mapfile -t SIG_ASSETS < <(
-            gh release view "${GITHUB_REF_NAME}" \
-              --repo "${GITHUB_REPOSITORY}" \
-              --json assets \
-              --jq '.assets[].name | select(endswith(".sig") and (endswith("-portable.zip.sig") | not))'
-          )
-
-          if [ "${#SIG_ASSETS[@]}" -eq 0 ]; then
-            echo "No standalone .sig release assets found."
-            exit 0
-          fi
-
-          for ASSET in "${SIG_ASSETS[@]}"; do
-            echo "Deleting release asset: ${ASSET}"
-            gh release delete-asset "${GITHUB_REF_NAME}" "${ASSET}" \
-              --repo "${GITHUB_REPOSITORY}" \
-              --yes
-          done
-
-  jdbc-plugin:
-    needs: [cleanup-release-signatures, bump-jdbc-plugin-version]
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v5
-        with:
-          fetch-depth: 0
-
-      - name: Setup Java
-        uses: actions/setup-java@v5
+          version: 10.27.0
+      - uses: dtolnay/rust-toolchain@1.94.1
+      - uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: "21"
-          cache: gradle
-
-      - name: Apply automatic JDBC plugin version bump
-        shell: bash
-        run: node .github/scripts/bump-jdbc-plugin-version.mjs "${{ needs.bump-jdbc-plugin-version.outputs.prev_tag }}" HEAD --write
-
-      - name: Read JDBC plugin version
-        id: jdbc-plugin
-        shell: bash
+      - uses: actions/setup-go@v5
+        with:
+          go-version: stable
+      - run: pnpm install --frozen-lockfile
+      - run: node scripts/audit-branding.mjs
+      - run: node scripts/sync-connection-types.mjs --check
+      - run: pnpm exec vue-tsc --noEmit -p apps/desktop/tsconfig.json
+      - run: pnpm exec vitest run apps/desktop/src/lib/chiron apps/desktop/src/components/vector/__tests__ apps/desktop/src/lib/compat
+      - run: pnpm test:database-availability
+      - run: pnpm build:docs-export
+      - run: pnpm --dir docs content:check
+      - run: cargo test -p chiron-horizon-core --no-default-features --features sqlite-bundled --lib
+      - run: cargo test -p chiron-horizon-core --no-default-features --features sqlite-bundled --test ai_credentials --test chirondb_connector
+      - run: cargo check -p chiron-horizon-cli -p chiron-horizon-web -p chiron-horizon-mcp --no-default-features
+      - run: cargo check --manifest-path plugins/sdk/cli/Cargo.toml
+      - run: node --test packages/plugin-cli/tests/launcher.test.mjs packages/plugin-cli/tests/dev-launcher.test.mjs
+      - name: Validate and test Java agents on JDK 21
+        working-directory: agents
         run: |
-          VERSION="$(sed -nE "s/^version[[:space:]]*=[[:space:]]*'([^']+)'.*/\1/p" plugins/jdbc/build.gradle | head -n 1)"
-          echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
-
-      - name: Package JDBC plugin
-        run: ./plugins/jdbc/package.sh
-
-      - name: Upload JDBC plugin asset
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          python3 scripts/validate_agents.py
+          ./gradlew test shadowJar --no-daemon
+          python3 scripts/validate_agent_jars.py
+      - name: Validate release packaging helpers
         run: |
-          gh release upload "${GITHUB_REF_NAME}" \
-            "plugins/jdbc/dist/dbx-jdbc-plugin-${{ steps.jdbc-plugin.outputs.version }}.zip" \
-            "plugins/jdbc/dist/dbx-jdbc-plugin-latest.zip" \
-            --repo "${GITHUB_REPOSITORY}" \
-            --clobber
+          (cd agents/scripts && python3 -m unittest validate_agents_test.py driver_release_packages_test.py)
+          node --check scripts/stage-desktop-release.mjs
+          node --check scripts/create-release-manifest.mjs
 
-      - name: Add JDBC plugin metadata to latest.json
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        shell: bash
-        run: |
-          mkdir -p "$RUNNER_TEMP/latest-json"
-          gh release download "${GITHUB_REF_NAME}" \
-            --repo "${GITHUB_REPOSITORY}" \
-            --pattern latest.json \
-            --dir "$RUNNER_TEMP/latest-json"
-          node .github/scripts/augment-latest-json-jdbc-plugin.mjs \
-            "$RUNNER_TEMP/latest-json/latest.json" \
-            "${{ steps.jdbc-plugin.outputs.version }}" \
-            "1" \
-            "https://github.com/t8y2/dbx/releases/latest/download/dbx-jdbc-plugin-latest.zip"
-          gh release upload "${GITHUB_REF_NAME}" \
-            "$RUNNER_TEMP/latest-json/latest.json" \
-            --repo "${GITHUB_REPOSITORY}" \
-            --clobber
-
-  publish:
-    # Keep the release as a draft until every release-blocking platform job passes.
-    # Nix packaging is advisory and runs independently from publication.
-    needs: [cleanup-release-signatures, docker-manifest, jdbc-plugin, static-browser]
-    runs-on: ubuntu-latest
-    steps:
-      - name: Publish draft release
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: gh release edit ${{ github.ref_name }} --repo ${{ github.repository }} --draft=false --prerelease
-
-  sync-release-to-cnb:
-    name: Sync release to CNB
-    needs: publish
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v5
-
-      - name: Download GitHub release assets
-        env:
-          TAG_NAME: ${{ github.ref_name }}
-          GITHUB_REPOSITORY: ${{ github.repository }}
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          set -euo pipefail
-          mkdir -p "$RUNNER_TEMP/github-release" "$RUNNER_TEMP/release-assets"
-          gh release view "$TAG_NAME" \
-            --repo "$GITHUB_REPOSITORY" \
-            --json tagName,name,body,targetCommitish,isPrerelease,isDraft,assets \
-            > "$RUNNER_TEMP/github-release/release.json"
-          gh release download "$TAG_NAME" \
-            --repo "$GITHUB_REPOSITORY" \
-            --dir "$RUNNER_TEMP/release-assets" \
-            --clobber
-
-      - name: Sync release assets to CNB
-        env:
-          CNB_TOKEN: ${{ secrets.CNB_TOKEN }}
-          CNB_UPLOAD_CONCURRENCY: "3"
-        run: |
-          node .github/scripts/sync-cnb-release.mjs \
-            --github-release "$RUNNER_TEMP/github-release/release.json" \
-            --assets-dir "$RUNNER_TEMP/release-assets"
-
-      - name: Keep latest five app releases in CNB
-        continue-on-error: true
-        env:
-          CNB_TOKEN: ${{ secrets.CNB_TOKEN }}
-          CURRENT_TAG: ${{ github.ref_name }}
-        run: |
-          node .github/scripts/cleanup-cnb-releases.mjs \
-            --current-tag "$CURRENT_TAG" \
-            --tag-pattern '^v[0-9]+[.][0-9]+[.][0-9]+([.-][0-9A-Za-z.-]+)?$' \
-            --retain 5 \
-            --apply
-
-  docker:
-    runs-on: ubuntu-latest
+  desktop:
+    name: Desktop ${{ matrix.platform }}
+    needs: preflight
     strategy:
       fail-fast: false
       matrix:
-        platform: [linux/amd64, linux/arm64]
+        include:
+          - os: macos-14
+            target: aarch64-apple-darwin
+            platform: macos-arm64
+            bundles: app,dmg
+            extension: .dmg
+            output: Chiron-Horizon_0.1.0_macos-arm64.dmg
+          - os: macos-15-intel
+            target: x86_64-apple-darwin
+            platform: macos-x64
+            bundles: app,dmg
+            extension: .dmg
+            output: Chiron-Horizon_0.1.0_macos-x64.dmg
+          - os: windows-2022
+            target: x86_64-pc-windows-msvc
+            platform: windows-x64
+            bundles: nsis
+            extension: .exe
+            output: Chiron-Horizon_0.1.0_windows-x64-setup.exe
+          - os: ubuntu-22.04
+            target: x86_64-unknown-linux-gnu
+            platform: linux-x64
+            bundles: deb,appimage
+            extension: .deb
+            output: Chiron-Horizon_0.1.0_linux-x64.deb
+          - os: ubuntu-22.04
+            target: x86_64-unknown-linux-gnu
+            platform: linux-appimage-x64
+            bundles: appimage
+            extension: .AppImage
+            output: Chiron-Horizon_0.1.0_linux-x64.AppImage
+    runs-on: ${{ matrix.os }}
+    env:
+      CARGO_INCREMENTAL: "0"
+      CARGO_BUILD_JOBS: "3"
+      CARGO_PROFILE_RELEASE_DEBUG: "0"
+      CARGO_TARGET_DIR: ${{ github.workspace }}/.release-target-desktop
+      NODE_OPTIONS: --max-old-space-size=6144
     steps:
-      - uses: actions/checkout@v5
-
-      - name: Set up QEMU
-        uses: docker/setup-qemu-action@v3
-
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-
-      - name: Login to Docker Hub
-        uses: docker/login-action@v3
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
         with:
-          username: ${{ secrets.DOCKERHUB_USERNAME }}
-          password: ${{ secrets.DOCKERHUB_TOKEN }}
-
-      - name: Login to CNB Registry
-        uses: docker/login-action@v3
+          node-version: "22"
+      - uses: pnpm/action-setup@v4
         with:
-          registry: ${{ env.CNB_REGISTRY }}
-          username: cnb
-          password: ${{ secrets.CNB_TOKEN }}
-
-      - name: Build and push Docker Hub by digest
-        id: build-dockerhub
-        uses: docker/build-push-action@v6
+          version: 10.27.0
+      - uses: dtolnay/rust-toolchain@1.94.1
         with:
-          context: .
-          file: deploy/Dockerfile
-          platforms: ${{ matrix.platform }}
-          outputs: type=image,name=${{ secrets.DOCKERHUB_USERNAME }}/dbx,push-by-digest=true,name-canonical=true,push=true
-          cache-from: type=gha,scope=${{ matrix.platform }}
-          cache-to: type=gha,scope=${{ matrix.platform }},mode=max
-
-      - name: Build and push CNB by digest
-        id: build-cnb
-        uses: docker/build-push-action@v6
-        with:
-          context: .
-          file: deploy/Dockerfile
-          platforms: ${{ matrix.platform }}
-          outputs: type=image,name=${{ env.CNB_REGISTRY }}/${{ env.CNB_REPOSITORY }},push-by-digest=true,name-canonical=true,push=true
-          cache-from: type=gha,scope=${{ matrix.platform }}
-
-      - name: Export digests
+          targets: ${{ matrix.target }}
+      - name: Linux dependencies
+        if: runner.os == 'Linux'
+        run: sudo apt-get update && sudo apt-get install -y libwebkit2gtk-4.1-dev libayatana-appindicator3-dev librsvg2-dev patchelf libssl-dev libsecret-1-dev libfontconfig1-dev libxdo-dev xvfb
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm exec vue-tsc --noEmit -p apps/desktop/tsconfig.json
+      - name: Build clean standalone desktop bundle
+        env:
+          APPLE_SIGNING_IDENTITY: "-"
+        run: pnpm exec tauri build --features custom-protocol --target ${{ matrix.target }} --bundles ${{ matrix.bundles }} --ci
+      - name: Smoke macOS application and ad-hoc signature
+        if: runner.os == 'macOS'
+        shell: bash
         run: |
-          mkdir -p /tmp/digests/dockerhub /tmp/digests/cnb
-          dockerhub_digest="${{ steps.build-dockerhub.outputs.digest }}"
-          cnb_digest="${{ steps.build-cnb.outputs.digest }}"
-          touch "/tmp/digests/dockerhub/${dockerhub_digest#sha256:}"
-          touch "/tmp/digests/cnb/${cnb_digest#sha256:}"
-
-      - name: Upload Docker Hub digest
-        uses: actions/upload-artifact@v7
+          APP_PATH="$CARGO_TARGET_DIR/${{ matrix.target }}/release/bundle/macos/Chiron Horizon.app"
+          test -d "$APP_PATH"
+          codesign --verify --deep --strict --verbose=2 "$APP_PATH"
+          open "$APP_PATH"
+          sleep 5
+          pgrep -f 'Chiron Horizon' >/dev/null
+          pkill -f 'Chiron Horizon' || true
+      - name: Smoke Windows NSIS installation, startup, and restart
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          $installer = Get-ChildItem "$env:CARGO_TARGET_DIR/${{ matrix.target }}/release/bundle/nsis/*.exe" | Select-Object -First 1
+          if (-not $installer) { throw 'NSIS installer was not produced' }
+          $installDir = Join-Path $env:RUNNER_TEMP 'Chiron-Horizon-NSIS-smoke'
+          Start-Process -FilePath $installer.FullName -ArgumentList @('/S', "/D=$installDir") -Wait
+          $app = Get-ChildItem $installDir -Filter '*.exe' -Recurse | Select-Object -First 1
+          if (-not $app) { throw 'Installed Chiron Horizon executable was not found' }
+          $first = Start-Process -FilePath $app.FullName -PassThru
+          Start-Sleep -Seconds 5
+          if ($first.HasExited) { throw 'Chiron Horizon exited during first Windows smoke startup' }
+          Stop-Process -Id $first.Id -Force
+          $second = Start-Process -FilePath $app.FullName -PassThru
+          Start-Sleep -Seconds 5
+          if ($second.HasExited) { throw 'Chiron Horizon exited during Windows restart smoke' }
+          Stop-Process -Id $second.Id -Force
+      - name: Smoke Linux AppImage startup and restart under Xvfb
+        if: runner.os == 'Linux'
+        shell: bash
+        run: |
+          APPIMAGE=$(find "$CARGO_TARGET_DIR/${{ matrix.target }}/release/bundle/appimage" -name '*.AppImage' -type f | head -1)
+          if [ -n "$APPIMAGE" ]; then
+            chmod +x "$APPIMAGE"
+            xvfb-run -a timeout 15s "$APPIMAGE" --no-sandbox >/tmp/chiron-horizon-appimage.log 2>&1 & first=$!
+            sleep 5; kill -0 "$first"; kill "$first" || true; wait "$first" || true
+            xvfb-run -a timeout 15s "$APPIMAGE" --no-sandbox >/tmp/chiron-horizon-appimage-restart.log 2>&1 & second=$!
+            sleep 5; kill -0 "$second"; kill "$second" || true; wait "$second" || true
+          fi
+      - name: Stage immutable desktop release asset
+        shell: bash
+        run: node scripts/stage-desktop-release.mjs --input "$CARGO_TARGET_DIR/${{ matrix.target }}/release/bundle" --output "release/${{ matrix.output }}"
+      - uses: actions/upload-artifact@v4
         with:
-          name: dockerhub-digests-${{ matrix.platform == 'linux/amd64' && 'amd64' || 'arm64' }}
-          path: /tmp/digests/dockerhub/*
+          name: desktop-${{ matrix.platform }}
+          path: release/${{ matrix.output }}
           if-no-files-found: error
-          retention-days: 1
 
-      - name: Upload CNB digest
-        uses: actions/upload-artifact@v7
-        with:
-          name: cnb-digests-${{ matrix.platform == 'linux/amd64' && 'amd64' || 'arm64' }}
-          path: /tmp/digests/cnb/*
-          if-no-files-found: error
-          retention-days: 1
-
-  docker-manifest:
-    needs: docker
-    runs-on: ubuntu-latest
+  java-agents:
+    name: Java agents and H2 smoke
+    needs: preflight
+    runs-on: ubuntu-22.04
     steps:
-      - name: Download Docker Hub digests
-        uses: actions/download-artifact@v8
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
         with:
-          path: /tmp/digests/dockerhub
-          pattern: dockerhub-digests-*
-          merge-multiple: true
-
-      - name: Download CNB digests
-        uses: actions/download-artifact@v8
-        with:
-          path: /tmp/digests/cnb
-          pattern: cnb-digests-*
-          merge-multiple: true
-
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-
-      - name: Login to Docker Hub
-        uses: docker/login-action@v3
-        with:
-          username: ${{ secrets.DOCKERHUB_USERNAME }}
-          password: ${{ secrets.DOCKERHUB_TOKEN }}
-
-      - name: Login to CNB Registry
-        uses: docker/login-action@v3
-        with:
-          registry: ${{ env.CNB_REGISTRY }}
-          username: cnb
-          password: ${{ secrets.CNB_TOKEN }}
-
-      - name: Extract version from tag
-        id: version
-        run: echo "version=${GITHUB_REF_NAME#v}" >> "$GITHUB_OUTPUT"
-
-      - name: Create manifest list and push
+          distribution: temurin
+          java-version: "21"
+      - uses: gradle/actions/setup-gradle@v4
+      - name: Build, test, and validate Java agents
+        working-directory: agents
         run: |
-          docker buildx imagetools create \
-            -t ${{ secrets.DOCKERHUB_USERNAME }}/dbx:${{ steps.version.outputs.version }} \
-            -t ${{ secrets.DOCKERHUB_USERNAME }}/dbx:latest \
-            $(cd /tmp/digests/dockerhub && printf '${{ secrets.DOCKERHUB_USERNAME }}/dbx@sha256:%s ' *)
+          ./gradlew test shadowJar --no-daemon
+          python3 scripts/validate_agent_jars.py
+          ./gradlew :h2:test --tests '*H2AgentProcessTest' --no-daemon
+      - name: Stage versioned Java agent assets
+        shell: bash
+        run: |
+          mkdir -p release-agents
+          find agents/drivers -path '*/build/libs/chiron-horizon-agent-*.jar' -type f -exec cp {} release-agents/ \;
+          python3 agents/scripts/version_agent_artifacts.py release-agents "$(cat agents/versions.json)"
+      - name: Build immutable JDBC plugin package
+        working-directory: plugins/jdbc
+        run: |
+          ./gradlew test shadowJar --no-daemon
+          ./package.sh
+          cp dist/chiron-horizon-jdbc-plugin-0.1.0.zip ../../release-agents/
+      - uses: actions/upload-artifact@v4
+        with:
+          name: java-agents
+          path: release-agents/
+          if-no-files-found: error
 
-          docker buildx imagetools create \
-            -t ${{ env.CNB_REGISTRY }}/${{ env.CNB_REPOSITORY }}:${{ steps.version.outputs.version }} \
-            -t ${{ env.CNB_REGISTRY }}/${{ env.CNB_REPOSITORY }}:latest \
-            $(cd /tmp/digests/cnb && printf '${{ env.CNB_REGISTRY }}/${{ env.CNB_REPOSITORY }}@sha256:%s ' *)
+  go-agents:
+    name: Native Go agents
+    needs: preflight
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: stable
+      - run: agents/scripts/build_go_release_agents.sh release-agents
+      - uses: actions/upload-artifact@v4
+        with:
+          name: go-agents
+          path: release-agents/
+          if-no-files-found: error
+
+  rust-agents:
+    name: Native Rust agents ${{ matrix.platform }}
+    needs: preflight
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: macos-14
+            target: aarch64-apple-darwin
+            platform: macos-aarch64
+          - os: macos-15-intel
+            target: x86_64-apple-darwin
+            platform: macos-x64
+          - os: windows-2022
+            target: x86_64-pc-windows-msvc
+            platform: windows-x64
+          - os: ubuntu-22.04
+            target: x86_64-unknown-linux-gnu
+            platform: linux-x64
+    runs-on: ${{ matrix.os }}
+    env:
+      CARGO_INCREMENTAL: "0"
+      CARGO_TARGET_DIR: ${{ github.workspace }}/.release-target-native-agents
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@1.94.1
+        with:
+          targets: ${{ matrix.target }}
+      - name: Build DuckDB, TDengine, and SQLite worker agents from source
+        shell: bash
+        run: |
+          cargo build --manifest-path agents/drivers/duckdb/Cargo.toml --locked --release --target ${{ matrix.target }}
+          cargo build --manifest-path agents/drivers/tdengine/Cargo.toml --locked --release --target ${{ matrix.target }}
+          cargo build -p chiron-horizon-sqlite-worker --locked --release --target ${{ matrix.target }}
+          mkdir -p release-agents
+          extension=''; [ "${{ runner.os }}" = 'Windows' ] && extension='.exe'
+          cp "$CARGO_TARGET_DIR/${{ matrix.target }}/release/chiron-horizon-duckdb-driver$extension" "release-agents/chiron-horizon-agent-duckdb-0.1.0-${{ matrix.platform }}$extension"
+          cp "$CARGO_TARGET_DIR/${{ matrix.target }}/release/chiron-horizon-tdengine-driver$extension" "release-agents/chiron-horizon-agent-tdengine-0.1.0-${{ matrix.platform }}$extension"
+          cp "$CARGO_TARGET_DIR/${{ matrix.target }}/release/chiron-horizon-sqlite-worker$extension" "release-agents/chiron-horizon-agent-sqlite-worker-0.1.0-${{ matrix.platform }}$extension"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: rust-agents-${{ matrix.platform }}
+          path: release-agents/
+          if-no-files-found: error
+
+  managed-jre:
+    name: Managed JRE 21 ${{ matrix.platform }}
+    needs: preflight
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: macos-14
+            platform: macos-aarch64
+          - os: macos-15-intel
+            platform: macos-x64
+          - os: windows-2022
+            platform: windows-x64
+          - os: ubuntu-22.04
+            platform: linux-x64
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+      - name: Install zstd
+        shell: bash
+        run: |
+          if command -v zstd >/dev/null; then exit 0; fi
+          case "$RUNNER_OS" in
+            Linux) sudo apt-get update && sudo apt-get install -y zstd ;;
+            macOS) brew install zstd ;;
+            Windows) choco install zstd -y ;;
+          esac
+      - run: agents/scripts/build_managed_jre.sh release-jre ${{ matrix.platform }}
+      - uses: actions/upload-artifact@v4
+        with:
+          name: managed-jre-${{ matrix.platform }}
+          path: release-jre/
+          if-no-files-found: error
+
+  publish:
+    name: Publish verified v0.1.0 release
+    needs: [desktop, java-agents, go-agents, rust-agents, managed-jre]
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+      - name: Install release packager dependencies
+        run: sudo apt-get update && sudo apt-get install -y zstd zip
+      - uses: actions/download-artifact@v4
+        with:
+          path: release-input
+          merge-multiple: true
+      - name: Assemble immutable agent registry and offline bundles
+        shell: bash
+        run: |
+          mkdir -p release
+          find release-input -maxdepth 1 -type f -exec cp {} release/ \;
+          python3 agents/scripts/create_release_registry.py release --tag "$GITHUB_REF_NAME" --jre-version "$(java -version 2>&1 | head -1 | sed -E 's/.*\"([^\"]+)\".*/\1/')"
+          python3 agents/scripts/build_driver_zips.py release
+          JDBC_ARCHIVE="$(find release -maxdepth 1 -name 'chiron-horizon-jdbc-plugin-0.1.0.zip' -type f | head -1)"
+          test -n "$JDBC_ARCHIVE"
+          JDBC_WORK="$(mktemp -d)"
+          unzip -q "$JDBC_ARCHIVE" -d "$JDBC_WORK"
+          JDBC_RESOLVER="$(find "$JDBC_WORK" -path '*/bin/chiron-horizon-maven-resolver' -type f | head -1)"
+          test -n "$JDBC_RESOLVER"
+          chmod +x "$JDBC_RESOLVER"
+          node agents/scripts/build_offline_jdbc_payload.mjs release "$JDBC_ARCHIVE" "$JDBC_RESOLVER"
+          agents/scripts/build_offline_zip.sh release
+          node agents/scripts/verify_offline_jdbc_release.mjs release
+          python3 agents/scripts/verify_release_assets.py release
+          node scripts/create-release-manifest.mjs release
+      - name: Validate staged public assets
+        run: |
+          test "$(find release -maxdepth 1 -name 'Chiron-Horizon_0.1.0_*' -type f | wc -l)" -eq 5
+          sha256sum -c release/SHA256SUMS
+      - name: Create public GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release create "$GITHUB_REF_NAME" release/* --repo "$GITHUB_REPOSITORY" --title "Chiron Horizon 0.1.0" --notes-file docs/release-notes-v0.1.0.md --latest
+      - name: Download published assets and reverify checksums
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          mkdir published
+          gh release download "$GITHUB_REF_NAME" --repo "$GITHUB_REPOSITORY" --dir published
+          (cd published && sha256sum -c SHA256SUMS)
+          curl --fail --location --retry 3 "https://github.com/Gaussian-id/Gauss-Horizon/releases/latest/download/agent-registry.json" -o published/latest-agent-registry.json
+          cmp published/agent-registry.json published/latest-agent-registry.json

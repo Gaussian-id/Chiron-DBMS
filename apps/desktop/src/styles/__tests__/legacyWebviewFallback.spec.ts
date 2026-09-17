@@ -32,7 +32,7 @@ describe("legacy WebView CSS fallbacks", () => {
   it("keeps globals.css balanced and free of min-width media wrappers", () => {
     // Production CSS minification rewrites `@media (min-width: ...)` into range
     // syntax that legacy WebViews cannot parse, which silently disables any rule
-    // placed inside one. The html.dbx-legacy-webview class is the only gate, so
+    // placed inside one. The html.chiron-horizon-legacy-webview class is the only gate, so
     // no fallback rule may live inside a min-width media query. The brace check
     // guards the unwrap refactors against dropping rule closers.
     expect(globalsCss).not.toMatch(/@media \(min-width[^)]*\)\s*\{/);
@@ -42,37 +42,37 @@ describe("legacy WebView CSS fallbacks", () => {
     const opens = (withoutComments.match(/\{/g) ?? []).length;
     const closes = (withoutComments.match(/\}/g) ?? []).length;
     expect(opens).toBe(closes);
-    expect(globalsCss).toContain("html.dbx-legacy-webview .sm\\:flex-row");
-    expect(globalsCss).toContain("html.dbx-legacy-webview .md\\:w-full");
-    expect(globalsCss).toContain("html.dbx-legacy-webview .lg\\:grid-cols-6");
+    expect(globalsCss).toContain("html.chiron-horizon-legacy-webview .sm\\:flex-row");
+    expect(globalsCss).toContain("html.chiron-horizon-legacy-webview .md\\:w-full");
+    expect(globalsCss).toContain("html.chiron-horizon-legacy-webview .lg\\:grid-cols-6");
   });
 
   it("scopes component overrides to the runtime legacy WebView class", () => {
-    const fallbackStart = globalsCss.indexOf("html.dbx-legacy-webview .sm\\:block");
-    const tabsOverride = globalsCss.indexOf('html.dbx-legacy-webview [data-slot="tabs-trigger"]');
+    const fallbackStart = globalsCss.indexOf("html.chiron-horizon-legacy-webview .sm\\:block");
+    const tabsOverride = globalsCss.indexOf('html.chiron-horizon-legacy-webview [data-slot="tabs-trigger"]');
     const splitpanesStart = globalsCss.indexOf("/* Splitpanes */");
 
     expect(fallbackStart).toBeGreaterThan(-1);
     expect(tabsOverride).toBeGreaterThan(fallbackStart);
     expect(splitpanesStart).toBeGreaterThan(tabsOverride);
-    expect(globalsCss.slice(fallbackStart, splitpanesStart)).toContain('html.dbx-legacy-webview [data-slot="tabs-trigger"]');
+    expect(globalsCss.slice(fallbackStart, splitpanesStart)).toContain('html.chiron-horizon-legacy-webview [data-slot="tabs-trigger"]');
   });
 
   it("falls back to the legacy viewport height when dynamic viewport units are unavailable", () => {
-    const fallback = globalsCss.indexOf("--dbx-viewport-height: 100vh;");
+    const fallback = globalsCss.indexOf("--chiron-horizon-viewport-height: 100vh;");
     const supports = globalsCss.indexOf("@supports (height: 100dvh)");
-    const enhanced = globalsCss.indexOf("--dbx-viewport-height: min(100vh, 100dvh);");
+    const enhanced = globalsCss.indexOf("--chiron-horizon-viewport-height: min(100vh, 100dvh);");
 
     expect(fallback).toBeGreaterThan(-1);
     expect(supports).toBeGreaterThan(fallback);
     expect(enhanced).toBeGreaterThan(supports);
-    expect(dialogContentSource).toContain("max-h-[calc(var(--dbx-viewport-height)-2rem)]");
-    expect(dialogScrollContentSource).toContain("max-h-[calc(var(--dbx-viewport-height)-6rem)]");
-    expect(connectionDialogSource).toContain("max-height: calc(var(--dbx-viewport-height) - 2rem);");
+    expect(dialogContentSource).toContain("max-h-[calc(var(--chiron-horizon-viewport-height)-2rem)]");
+    expect(dialogScrollContentSource).toContain("max-h-[calc(var(--chiron-horizon-viewport-height)-6rem)]");
+    expect(connectionDialogSource).toContain("max-height: calc(var(--chiron-horizon-viewport-height) - 2rem);");
   });
 
   it("centralizes legacy dialog positioning and layout utility fallbacks", () => {
-    const fallbackStart = globalsCss.indexOf("html.dbx-legacy-webview .sm\\:block");
+    const fallbackStart = globalsCss.indexOf("html.chiron-horizon-legacy-webview .sm\\:block");
     const splitpanesStart = globalsCss.indexOf("/* Splitpanes */");
     const fallback = globalsCss.slice(fallbackStart, splitpanesStart);
 
@@ -87,10 +87,10 @@ describe("legacy WebView CSS fallbacks", () => {
     expect(fallback).toContain(".sm\\:grid-cols-\\[minmax\\(0\\,200px\\)_minmax\\(0\\,1fr\\)\\]");
     expect(fallback).toContain(".space-y-1\\.5 > * + *");
     expect(fallback).toContain(".space-y-2\\.5 > * + *");
-    expect(scheduledDatabaseBackupSource).toContain("dbx-form-dialog dbx-form-dialog--lg");
+    expect(scheduledDatabaseBackupSource).toContain("chiron-horizon-form-dialog chiron-horizon-form-dialog--lg");
     expect(scheduledDatabaseBackupSource).toContain("max-w-[min(720px,calc(100vw-32px))]");
     expect(scheduledDatabaseBackupSource).toContain("overflow-x-hidden overflow-y-auto pr-8 [scrollbar-gutter:stable]");
-    expect(scheduledDatabaseBackupSource).toContain("dbx-backup-dialog");
+    expect(scheduledDatabaseBackupSource).toContain("chiron-horizon-backup-dialog");
     expect(scheduledDatabaseBackupSource).toContain('class="backup-schedule-form grid gap-5 py-1"');
     expect(databaseBackupConfigFieldsSource).toContain('class="backup-config-fields grid gap-5 py-1"');
     expect(databaseBackupConfigFieldsSource).toContain('class="backup-destination-field"');
@@ -100,11 +100,11 @@ describe("legacy WebView CSS fallbacks", () => {
     expect(databaseBackupConfigFieldsSource).toContain("grid-template-columns: minmax(0, 1fr);");
     expect(databaseBackupConfigFieldsSource).toContain("overflow-wrap: anywhere;");
     expect(databaseBackupConfigFieldsSource).toContain("word-break: break-all;");
-    expect(fallback).toContain('[data-slot="dialog-content"].dbx-backup-dialog > *');
-    expect(fallback).toContain('[data-slot="dialog-content"].dbx-form-dialog');
-    expect(fallback).toContain('[data-slot="dialog-content"].dbx-form-dialog--lg');
+    expect(fallback).toContain('[data-slot="dialog-content"].chiron-horizon-backup-dialog > *');
+    expect(fallback).toContain('[data-slot="dialog-content"].chiron-horizon-form-dialog');
+    expect(fallback).toContain('[data-slot="dialog-content"].chiron-horizon-form-dialog--lg');
     expect(fallback).toContain("max-width: 45rem !important;");
-    expect(fallback).toContain('[data-slot="dialog-content"].dbx-form-dialog [data-slot="select-trigger"]');
+    expect(fallback).toContain('[data-slot="dialog-content"].chiron-horizon-form-dialog [data-slot="select-trigger"]');
     expect(fallback).toContain("height: 2rem !important;");
     expect(fallback).toContain('[data-slot="dialog-content"][class*="max-w-[min(720px"]');
   });
@@ -113,18 +113,18 @@ describe("legacy WebView CSS fallbacks", () => {
     expect(dialogOverlaySource).not.toContain("backdrop-filter");
     expect(dialogOverlaySource).toContain("bg-black/25");
     expect(dialogOverlaySource).toContain("dark:bg-background/70");
-    expect(globalsCss).not.toContain("dbx-dialog-backdrop");
+    expect(globalsCss).not.toContain("chiron-horizon-dialog-backdrop");
     expect(globalsCss).not.toContain("filter: blur(4px);");
   });
 
   it("keeps the data transfer dialog width fallback scoped to legacy WebViews", () => {
-    expect(dataTransferDialogSource).toContain('class="dbx-transfer-dialog sm:max-w-[1120px] max-h-[80vh] flex flex-col overflow-hidden resize"');
+    expect(dataTransferDialogSource).toContain('class="chiron-horizon-transfer-dialog sm:max-w-[1120px] max-h-[80vh] flex flex-col overflow-hidden resize"');
     expect(dataTransferDialogSource).toContain('width: "min(1120px, calc(100vw - 2rem))"');
-    expect(dataTransferDialogSource).toContain('html.dbx-legacy-webview [data-slot="dialog-content"].dbx-transfer-dialog[class~="max-w-sm"]');
+    expect(dataTransferDialogSource).toContain('html.chiron-horizon-legacy-webview [data-slot="dialog-content"].chiron-horizon-transfer-dialog[class~="max-w-sm"]');
     expect(dataTransferDialogSource).toContain("max-width: calc(100vw - 2rem) !important;");
     expect(dataTransferDialogSource).not.toContain("@media (min-width: 640px)");
     expect(dataTransferDialogSource).not.toMatch(/^\s+width: calc\(100vw - 2rem\) !important;$/m);
-    expect(globalsCss).not.toContain(".dbx-transfer-dialog");
+    expect(globalsCss).not.toContain(".chiron-horizon-transfer-dialog");
   });
 
   it("covers the transfer dialog footer through the global legacy rule", () => {
@@ -132,33 +132,33 @@ describe("legacy WebView CSS fallbacks", () => {
   });
 
   it("keeps the code snapshot dialog layout on the global legacy dialog fallbacks", () => {
-    expect(codeSnapshotDialogSource).toContain('class="flex max-h-[calc(var(--dbx-viewport-height)-2rem)] flex-col overflow-hidden border border-border !bg-background text-foreground shadow-2xl !backdrop-blur-none sm:max-w-[860px]"');
-    expect(codeSnapshotDialogSource).not.toContain("dbx-legacy-webview");
+    expect(codeSnapshotDialogSource).toContain('class="flex max-h-[calc(var(--chiron-horizon-viewport-height)-2rem)] flex-col overflow-hidden border border-border !bg-background text-foreground shadow-2xl !backdrop-blur-none sm:max-w-[860px]"');
+    expect(codeSnapshotDialogSource).not.toContain("chiron-horizon-legacy-webview");
     expect(codeSnapshotDialogSource).not.toContain("@media");
-    expect(globalsCss).toContain('html.dbx-legacy-webview [data-slot="dialog-content"][class*="sm:max-w-[860px]"]');
+    expect(globalsCss).toContain('html.chiron-horizon-legacy-webview [data-slot="dialog-content"][class*="sm:max-w-[860px]"]');
   });
 
   it("keeps the update dialog layout on the global legacy dialog fallbacks", () => {
     expect(updateDialogSource).toContain('class="sm:max-w-[700px]"');
-    expect(updateDialogSource).not.toContain("dbx-legacy-webview");
+    expect(updateDialogSource).not.toContain("chiron-horizon-legacy-webview");
     expect(updateDialogSource).not.toContain("@media");
-    expect(globalsCss).toContain('html.dbx-legacy-webview [data-slot="dialog-content"][class*="sm:max-w-[700px]"]');
+    expect(globalsCss).toContain('html.chiron-horizon-legacy-webview [data-slot="dialog-content"][class*="sm:max-w-[700px]"]');
   });
 
   it("keeps the DDL dialog layout on the global legacy dialog fallbacks", () => {
-    expect(ddlViewDialogSource).toContain('class="dbx-ddl-view-dialog sm:max-w-190"');
+    expect(ddlViewDialogSource).toContain('class="chiron-horizon-ddl-view-dialog sm:max-w-190"');
     // The dialog content element is rendered through reka-ui's portal Teleport and
     // never carries this component's scoped data-v attribute, so per-dialog rules
     // (scoped or unscoped) are avoided; the global width table covers the dialog.
-    expect(ddlViewDialogSource).not.toContain("dbx-legacy-webview");
+    expect(ddlViewDialogSource).not.toContain("chiron-horizon-legacy-webview");
     expect(ddlViewDialogSource).not.toContain("@media");
-    expect(globalsCss).toContain('html.dbx-legacy-webview [data-slot="dialog-content"][class~="sm:max-w-190"]');
+    expect(globalsCss).toContain('html.chiron-horizon-legacy-webview [data-slot="dialog-content"][class~="sm:max-w-190"]');
   });
 
   it("keeps the global dialog fallback block outside media queries", () => {
     // Production minification rewrites `@media (min-width: ...)` into range syntax
     // that legacy WebViews cannot parse, so this block must stay unwrapped.
-    const footerStart = globalsCss.indexOf('html.dbx-legacy-webview [data-slot="dialog-footer"]');
+    const footerStart = globalsCss.indexOf('html.chiron-horizon-legacy-webview [data-slot="dialog-footer"]');
     const splitpanesStart = globalsCss.indexOf("/* Splitpanes */", footerStart);
 
     expect(footerStart).toBeGreaterThan(-1);
@@ -167,8 +167,8 @@ describe("legacy WebView CSS fallbacks", () => {
     expect(dialogFallbackBlock).toContain("flex-direction: row !important;");
     expect(dialogFallbackBlock).toContain("justify-content: flex-end !important;");
     expect(dialogFallbackBlock).toContain("max-width: 47.5rem !important;");
-    expect(dialogFallbackBlock).toContain('html.dbx-legacy-webview [data-slot="dialog-content"][class*="sm:max-w-[1120px]"]');
-    expect(dialogFallbackBlock).toContain('html.dbx-legacy-webview [data-slot="dialog-content"][class*="sm:max-w-[min(1180px,calc(100vw-32px))]"]');
+    expect(dialogFallbackBlock).toContain('html.chiron-horizon-legacy-webview [data-slot="dialog-content"][class*="sm:max-w-[1120px]"]');
+    expect(dialogFallbackBlock).toContain('html.chiron-horizon-legacy-webview [data-slot="dialog-content"][class*="sm:max-w-[min(1180px,calc(100vw-32px))]"]');
     expect(dialogFallbackBlock).not.toContain("@media");
   });
 
@@ -177,46 +177,46 @@ describe("legacy WebView CSS fallbacks", () => {
     // un-layered 24rem generic cap in every engine (multi-db execute dialog).
     const multiDbDialogSource = readFileSync(new URL("../../components/editor/MultiDbExecuteDialog.vue", import.meta.url), "utf8");
     expect(multiDbDialogSource).toContain("max-w-[min(1080px,calc(100vw-32px))]");
-    expect(globalsCss).toContain('html.dbx-legacy-webview [data-slot="dialog-content"][class*="max-w-[min(1080px"]');
+    expect(globalsCss).toContain('html.chiron-horizon-legacy-webview [data-slot="dialog-content"][class*="max-w-[min(1080px"]');
     expect(globalsCss).toContain("max-width: min(1080px, calc(100vw - 2rem)) !important;");
-    expect(globalsCss).toContain('html.dbx-legacy-webview [data-slot="dialog-content"][class*="max-w-[1800px]"]');
+    expect(globalsCss).toContain('html.chiron-horizon-legacy-webview [data-slot="dialog-content"][class*="max-w-[1800px]"]');
   });
 
   it("keeps the schema diagram dialog width covered by the legacy width fallbacks", () => {
     // The toolbar is overflow-x-auto: when the legacy WebView clamps the dialog
     // to the generic 24rem cap, the toolbar controls get cut off entirely.
     expect(schemaDiagramDialogSource).toContain("sm:max-w-[94vw]");
-    expect(globalsCss).toContain('html.dbx-legacy-webview [data-slot="dialog-content"][class*="sm:max-w-[94vw]"]');
+    expect(globalsCss).toContain('html.chiron-horizon-legacy-webview [data-slot="dialog-content"][class*="sm:max-w-[94vw]"]');
   });
 
   it("keeps the schema diagram fullscreen mode above the generic legacy width cap", () => {
     // Fullscreen drops the sm:max-w-* classes and relies on inline width, which
     // the generic 24rem !important cap outranks in legacy WebViews — the dialog
     // then renders 24rem wide and the canvas collapses to a sliver.
-    expect(schemaDiagramDialogSource).toContain("dbx-diagram-fullscreen");
-    const ruleStart = globalsCss.indexOf('html.dbx-legacy-webview [data-slot="dialog-content"].dbx-diagram-fullscreen');
-    expect(ruleStart).toBeGreaterThan(globalsCss.indexOf('html.dbx-legacy-webview [data-slot="dialog-content"][class~="max-w-sm"]'));
+    expect(schemaDiagramDialogSource).toContain("chiron-horizon-diagram-fullscreen");
+    const ruleStart = globalsCss.indexOf('html.chiron-horizon-legacy-webview [data-slot="dialog-content"].chiron-horizon-diagram-fullscreen');
+    expect(ruleStart).toBeGreaterThan(globalsCss.indexOf('html.chiron-horizon-legacy-webview [data-slot="dialog-content"][class~="max-w-sm"]'));
     const rule = globalsCss.slice(ruleStart, globalsCss.indexOf("}", ruleStart));
     expect(rule).toContain("max-width: none !important;");
     expect(rule).toContain("width: calc(100vw - 2rem) !important;");
-    expect(rule).toContain("var(--dbx-viewport-height)");
+    expect(rule).toContain("var(--chiron-horizon-viewport-height)");
   });
 
   it("uses an explicit tooltip copy-button hover color in legacy WebViews", () => {
     expect(dataGridColumnHeaderSource).toContain("data-column-header-copy-name");
-    expect(dataGridColumnHeaderSource).toContain("html.dbx-legacy-webview [data-column-header-copy-name]:hover");
+    expect(dataGridColumnHeaderSource).toContain("html.chiron-horizon-legacy-webview [data-column-header-copy-name]:hover");
     expect(dataGridColumnHeaderSource).toContain("background-color: rgba(255, 255, 255, 0.1);");
-    expect(dataGridColumnHeaderSource).toContain("html.dbx-legacy-webview.dark [data-column-header-copy-name]:hover");
+    expect(dataGridColumnHeaderSource).toContain("html.chiron-horizon-legacy-webview.dark [data-column-header-copy-name]:hover");
     expect(dataGridColumnHeaderSource).toContain("background-color: rgba(0, 0, 0, 0.1);");
   });
 
   it("keeps primary alpha utilities readable in legacy WebViews", () => {
-    expect(globalsCss).toContain("--dbx-primary-rgb: 23, 23, 23;");
-    expect(globalsCss).toContain("--dbx-primary-rgb: 46, 95, 166;");
+    expect(globalsCss).toContain("--chiron-horizon-primary-rgb: 23, 23, 23;");
+    expect(globalsCss).toContain("--chiron-horizon-primary-rgb: 46, 95, 166;");
     expect(globalsCss).toContain(".bg-primary\\/10");
-    expect(globalsCss).toContain("background-color: rgba(var(--dbx-primary-rgb), 0.1) !important;");
+    expect(globalsCss).toContain("background-color: rgba(var(--chiron-horizon-primary-rgb), 0.1) !important;");
     expect(globalsCss).toContain(".border-primary\\/30");
-    expect(globalsCss).toContain("border-color: rgba(var(--dbx-primary-rgb), 0.3) !important;");
+    expect(globalsCss).toContain("border-color: rgba(var(--chiron-horizon-primary-rgb), 0.3) !important;");
     expect(globalsCss).toContain(".hover\\:bg-primary\\/15:hover");
     const activeConnectionSources = `${connectionTreeSource}\n${activeConnectionFilterSource}`;
     expect(activeConnectionSources).toContain("showActiveConnectionsOnly");
@@ -227,15 +227,15 @@ describe("legacy WebView CSS fallbacks", () => {
   it("keeps legacy tab triggers connected to the configured corner style", () => {
     const tabsTriggerRule = globalsCss.match(/\[data-slot="tabs-trigger"\] \{([\s\S]*?)\n  \}/)?.[1];
 
-    expect(tabsTriggerRule).toContain("border-radius: var(--dbx-radius-fixed-6);");
+    expect(tabsTriggerRule).toContain("border-radius: var(--chiron-horizon-radius-fixed-6);");
   });
 
   it("loads connection dialog media fallbacks without CSS transformation", () => {
     expect(desktopIndexSource).toContain('href="/connection-dialog-legacy.css"');
     expect(connectionDialogLegacyCss).toContain("@media (min-width: 640px)");
     expect(connectionDialogLegacyCss).toContain("@media (min-width: 1024px)");
-    expect(connectionDialogLegacyCss).toContain("html.dbx-legacy-webview .connection-db-picker-grid");
-    expect(connectionDialogLegacyCss).toContain('html.dbx-legacy-webview [data-slot="dialog-content"].connection-dialog-content--config');
+    expect(connectionDialogLegacyCss).toContain("html.chiron-horizon-legacy-webview .connection-db-picker-grid");
+    expect(connectionDialogLegacyCss).toContain('html.chiron-horizon-legacy-webview [data-slot="dialog-content"].connection-dialog-content--config');
     expect(connectionDialogLegacyCss).toContain("min-width: 38rem !important;");
     expect(connectionDialogLegacyCss).toContain("width: 0 !important;");
     expect(connectionDialogLegacyCss).toContain("grid-template-columns: repeat(auto-fit, minmax(112px, 1fr)) !important;");
@@ -266,18 +266,18 @@ describe("legacy WebView CSS fallbacks", () => {
   it("keeps the sidebar table tree scrollbar unchanged outside legacy WebViews", () => {
     expect(connectionTreeSource).toContain('class="sidebar-tree-scrollbar"');
     expect(connectionTreeSource).toMatch(/\.sidebar-tree-scrollbar \{[\s\S]*?opacity: 0;/);
-    expect(connectionTreeSource).toContain("html.dbx-legacy-webview .sidebar-tree-scrollbar");
-    expect(connectionTreeSource).toMatch(/html\.dbx-legacy-webview \.sidebar-tree-scrollbar \{[\s\S]*?opacity: 0\.9;/);
-    expect(connectionTreeSource).toContain("html.dbx-legacy-webview .sidebar-tree-scrollbar__thumb");
+    expect(connectionTreeSource).toContain("html.chiron-horizon-legacy-webview .sidebar-tree-scrollbar");
+    expect(connectionTreeSource).toMatch(/html\.chiron-horizon-legacy-webview \.sidebar-tree-scrollbar \{[\s\S]*?opacity: 0\.9;/);
+    expect(connectionTreeSource).toContain("html.chiron-horizon-legacy-webview .sidebar-tree-scrollbar__thumb");
     expect(connectionTreeSource).toContain("background: rgba(82, 82, 82, 0.42);");
-    expect(connectionTreeSource).toContain("html.dbx-legacy-webview.dark .sidebar-tree-scrollbar__thumb");
+    expect(connectionTreeSource).toContain("html.chiron-horizon-legacy-webview.dark .sidebar-tree-scrollbar__thumb");
     expect(connectionTreeSource).toContain("background: rgba(212, 212, 216, 0.42);");
   });
 
   it("keeps AI table scrollbars visible without OKLCH color mixing", () => {
     const thumbStart = aiAssistantSource.indexOf(".ai-markdown :deep(.ai-markdown-table-wrap::-webkit-scrollbar-thumb) {");
     const hoverStart = aiAssistantSource.indexOf(".ai-markdown :deep(.ai-markdown-table-wrap:hover::-webkit-scrollbar-thumb) {");
-    const legacyStart = aiAssistantSource.indexOf("html.dbx-legacy-webview.dark .ai-markdown", hoverStart);
+    const legacyStart = aiAssistantSource.indexOf("html.chiron-horizon-legacy-webview.dark .ai-markdown", hoverStart);
     const thumb = aiAssistantSource.slice(thumbStart, hoverStart);
     const hover = aiAssistantSource.slice(hoverStart, legacyStart);
 
@@ -294,8 +294,8 @@ describe("legacy WebView CSS fallbacks", () => {
 
   it("keeps selected tiles readable in WebViews without color-mix support", () => {
     const fallbackStart = globalsCss.indexOf("@supports not (background-color: color-mix(in srgb, black 10%, transparent))");
-    const choiceFallback = globalsCss.indexOf(".dbx-choice-selected", fallbackStart);
-    const tileFallback = globalsCss.indexOf(".dbx-tile-selected", fallbackStart);
+    const choiceFallback = globalsCss.indexOf(".chiron-horizon-choice-selected", fallbackStart);
+    const tileFallback = globalsCss.indexOf(".chiron-horizon-tile-selected", fallbackStart);
     const nextSupports = globalsCss.indexOf("@supports (height: 100dvh)", fallbackStart);
 
     expect(fallbackStart).toBeGreaterThan(-1);
@@ -305,15 +305,15 @@ describe("legacy WebView CSS fallbacks", () => {
     expect(tileFallback).toBeLessThan(nextSupports);
     expect(globalsCss.slice(fallbackStart, tileFallback)).toContain("background-color: rgba(23, 23, 23, 0.08) !important;");
     expect(globalsCss.slice(fallbackStart, tileFallback)).toContain("color: rgb(23, 23, 23) !important;");
-    expect(globalsCss.slice(fallbackStart, tileFallback)).toContain(".dbx-choice-selected .text-muted-foreground");
-    expect(globalsCss.slice(fallbackStart, tileFallback)).toContain(".dark .dbx-choice-selected");
+    expect(globalsCss.slice(fallbackStart, tileFallback)).toContain(".chiron-horizon-choice-selected .text-muted-foreground");
+    expect(globalsCss.slice(fallbackStart, tileFallback)).toContain(".dark .chiron-horizon-choice-selected");
     expect(globalsCss.slice(fallbackStart, nextSupports)).toContain("background-color: rgba(23, 23, 23, 0.08) !important;");
     expect(globalsCss.slice(fallbackStart, nextSupports)).toContain("color: rgb(23, 23, 23) !important;");
-    expect(globalsCss.slice(fallbackStart, nextSupports)).toContain(".dark .dbx-tile-selected");
+    expect(globalsCss.slice(fallbackStart, nextSupports)).toContain(".dark .chiron-horizon-tile-selected");
   });
 
   it("keeps the driver manager category navigation scoped to legacy WebViews", () => {
-    const fallbackStart = driverStoreDialogSource.indexOf("html.dbx-legacy-webview .driver-store-tab");
+    const fallbackStart = driverStoreDialogSource.indexOf("html.chiron-horizon-legacy-webview .driver-store-tab");
     const fallbackEnd = driverStoreDialogSource.indexOf("@media (max-width: 900px)", fallbackStart);
     const fallback = driverStoreDialogSource.slice(fallbackStart, fallbackEnd);
 
@@ -339,7 +339,7 @@ describe("legacy WebView CSS fallbacks", () => {
   });
 
   it("keeps driver manager local import buttons large enough to target", () => {
-    const fallbackStart = driverStoreDialogSource.indexOf("html.dbx-legacy-webview .driver-store-local-import-button");
+    const fallbackStart = driverStoreDialogSource.indexOf("html.chiron-horizon-legacy-webview .driver-store-local-import-button");
     const fallbackEnd = driverStoreDialogSource.indexOf("@media (max-width: 900px)", fallbackStart);
     const fallback = driverStoreDialogSource.slice(fallbackStart, fallbackEnd);
 
@@ -355,14 +355,14 @@ describe("legacy WebView CSS fallbacks", () => {
 
   it("keeps tunnel profile selection readable in legacy WebViews", () => {
     expect(tunnelProfileManagerSource).toContain("profile.id === selectedId ? 'tunnel-profile-option--selected border-primary bg-primary/5'");
-    expect(tunnelProfileManagerSource).toContain("html.dbx-legacy-webview .tunnel-profile-option--selected");
+    expect(tunnelProfileManagerSource).toContain("html.chiron-horizon-legacy-webview .tunnel-profile-option--selected");
     expect(tunnelProfileManagerSource).toContain("background-color: var(--muted) !important;");
     expect(tunnelProfileManagerSource).toContain("color: var(--foreground) !important;");
-    expect(tunnelProfileManagerSource).toContain("html.dbx-legacy-webview .tunnel-profile-option--selected .text-muted-foreground");
+    expect(tunnelProfileManagerSource).toContain("html.chiron-horizon-legacy-webview .tunnel-profile-option--selected .text-muted-foreground");
   });
 
   it("keeps transport layer selection readable in legacy WebViews", () => {
-    const fallbackStart = connectionDialogSource.indexOf("html.dbx-legacy-webview .connection-db-category-option--selected");
+    const fallbackStart = connectionDialogSource.indexOf("html.chiron-horizon-legacy-webview .connection-db-category-option--selected");
     const fallbackEnd = connectionDialogSource.indexOf(".connection-db-picker-option", fallbackStart);
     const fallback = connectionDialogSource.slice(fallbackStart, fallbackEnd);
 
@@ -373,32 +373,32 @@ describe("legacy WebView CSS fallbacks", () => {
   });
 
   it("keeps dark switches visible in legacy WebViews", () => {
-    const fallbackStart = switchSource.indexOf('html.dbx-legacy-webview.dark .dbx-switch[data-state="unchecked"] .dbx-switch-thumb');
+    const fallbackStart = switchSource.indexOf('html.chiron-horizon-legacy-webview.dark .chiron-horizon-switch[data-state="unchecked"] .chiron-horizon-switch-thumb');
     const fallback = switchSource.slice(fallbackStart);
 
     expect(fallbackStart).toBeGreaterThan(-1);
-    expect(fallback).toContain('html.dbx-legacy-webview.dark .dbx-switch[data-state="unchecked"] .dbx-switch-thumb');
+    expect(fallback).toContain('html.chiron-horizon-legacy-webview.dark .chiron-horizon-switch[data-state="unchecked"] .chiron-horizon-switch-thumb');
     expect(fallback).toContain("background-color: rgb(215, 215, 219) !important;");
-    expect(fallback).toContain("html.dbx-legacy-webview.dark .dbx-switch {");
+    expect(fallback).toContain("html.chiron-horizon-legacy-webview.dark .chiron-horizon-switch {");
     expect(fallback).toContain("background-color: rgba(110, 110, 114, 0.44) !important;");
     expect(fallback).toContain("border-color: rgb(208, 208, 214) !important;");
     expect(fallback).toContain("background-color: rgb(19, 20, 22) !important;");
   });
 
   it("keeps native number input steppers scoped to legacy WebViews", () => {
-    expect(globalsCss).toContain('html.dbx-legacy-webview input[type="number"]');
-    expect(globalsCss).toContain('html.dbx-legacy-webview input[type="number"]:not([class*="appearance-none"])::-webkit-inner-spin-button');
+    expect(globalsCss).toContain('html.chiron-horizon-legacy-webview input[type="number"]');
+    expect(globalsCss).toContain('html.chiron-horizon-legacy-webview input[type="number"]:not([class*="appearance-none"])::-webkit-inner-spin-button');
     expect(globalsCss).not.toContain('input[type="number"]::-webkit-inner-spin-button');
     expect(globalsCss).toContain("-webkit-appearance: inner-spin-button !important;");
     expect(globalsCss).not.toContain("width: 1.25rem !important;");
     expect(globalsCss).not.toContain("min-height: 1.4rem !important;");
     expect(globalsCss).not.toContain("-webkit-transform: scale(1.45);");
     expect(globalsCss).not.toContain("transform: scale(1.45);");
-    expect(globalsCss).toContain('html.dbx-legacy-webview input[type="number"]:not([class*="appearance-none"]):disabled::-webkit-inner-spin-button');
+    expect(globalsCss).toContain('html.chiron-horizon-legacy-webview input[type="number"]:not([class*="appearance-none"]):disabled::-webkit-inner-spin-button');
   });
 
   it("keeps settings field stacks spaced in legacy WebViews", () => {
-    const fallbackStart = editorSettingsDialogSource.indexOf("html.dbx-legacy-webview .settings-layout");
+    const fallbackStart = editorSettingsDialogSource.indexOf("html.chiron-horizon-legacy-webview .settings-layout");
     const fallbackEnd = editorSettingsDialogSource.indexOf("@media (max-width: 760px)", fallbackStart);
     const fallback = editorSettingsDialogSource.slice(fallbackStart, fallbackEnd);
 
@@ -419,7 +419,7 @@ describe("legacy WebView CSS fallbacks", () => {
     expect(fallback).toContain("justify-self: end !important;");
     expect(editorSettingsDialogSource).toContain("settings-shortcut-controls flex items-center justify-end gap-1.5");
     expect(editorSettingsDialogSource).toContain("settings-shortcut-action-button h-7 w-7");
-    expect(editorSettingsDialogSource).toContain("html.dbx-legacy-webview .settings-shortcut-row:hover .settings-shortcut-action-button");
+    expect(editorSettingsDialogSource).toContain("html.chiron-horizon-legacy-webview .settings-shortcut-row:hover .settings-shortcut-action-button");
     expect(editorSettingsDialogSource).toContain("opacity: 1 !important;");
     expect(fallback).toContain(".settings-layout .settings-shortcut-controls");
     expect(fallback).toContain("flex-direction: row !important;");
@@ -456,7 +456,7 @@ describe("legacy WebView CSS fallbacks", () => {
     expect(legacyWebViewSource).toContain("has-selector");
     expect(legacyWebViewSource).toContain("dynamic-viewport");
     expect(legacyWebViewSource).toContain("min-function");
-    expect(legacyWebViewSource).toContain("dbx-legacy-webview");
+    expect(legacyWebViewSource).toContain("chiron-horizon-legacy-webview");
     expect(mainSource).toContain("applyLegacyWebViewClass();");
   });
 });

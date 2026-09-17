@@ -27,16 +27,16 @@ describe("PluginHostBridge", () => {
     expect(
       bridge.handleWindowMessage({
         source: target,
-        data: { source: "dbx-plugin", version: 1, type: "request", id: "1", method: "backend.invoke", params: { method: "sample/hello", params: { name: "DBX" } } },
+        data: { source: "chiron-horizon-plugin", version: 1, type: "request", id: "1", method: "backend.invoke", params: { method: "sample/hello", params: { name: "Chiron Horizon" } } },
       } as MessageEvent),
     ).toBe(true);
     await vi.waitFor(() => expect(messages).toHaveLength(1));
 
-    expect(invoke).toHaveBeenCalledWith("sample", "sample/hello", { name: "DBX" }, undefined);
-    expect(messages[0]).toMatchObject({ source: "dbx-host", type: "response", id: "1", result: { ok: true } });
+    expect(invoke).toHaveBeenCalledWith("sample", "sample/hello", { name: "Chiron Horizon" }, undefined);
+    expect(messages[0]).toMatchObject({ source: "chiron-horizon-host", type: "response", id: "1", result: { ok: true } });
   });
 
-  it("sends the current DBX locale in the init message", () => {
+  it("sends the current Chiron Horizon locale in the init message", () => {
     const messages: unknown[] = [];
     const target = { postMessage: (message: unknown) => messages.push(message) } as unknown as Window;
     const bridge = new PluginHostBridge(
@@ -55,7 +55,7 @@ describe("PluginHostBridge", () => {
 
     bridge.sendInit();
 
-    expect(messages[0]).toMatchObject({ source: "dbx-host", type: "init", locale: "zh-CN", context: { connectionId: "connection" } });
+    expect(messages[0]).toMatchObject({ source: "chiron-horizon-host", type: "init", locale: "zh-CN", context: { connectionId: "connection" } });
   });
 
   it("snapshots nested Vue reactive context values before sending them to the plugin", () => {
@@ -129,7 +129,7 @@ describe("PluginHostBridge", () => {
     });
     bridge.handleWindowMessage({
       source: target,
-      data: { source: "dbx-plugin", version: 1, type: "request", id: "2", method: "host.openWorkbench", params: { contributionId: "sample.other" } },
+      data: { source: "chiron-horizon-plugin", version: 1, type: "request", id: "2", method: "host.openWorkbench", params: { contributionId: "sample.other" } },
     } as MessageEvent);
     await vi.waitFor(() => expect(messages).toHaveLength(1));
     expect(messages[0]).toMatchObject({ id: "2", error: "Plugin has not declared permission 'host.workbench'" });
@@ -149,7 +149,7 @@ describe("PluginHostBridge", () => {
     bridge.handleWindowMessage({
       source: target,
       data: {
-        source: "dbx-plugin",
+        source: "chiron-horizon-plugin",
         version: 1,
         type: "request",
         id: "filesystem",
@@ -178,7 +178,7 @@ describe("PluginHostBridge", () => {
     bridge.forwardBinary({ pluginId: "sample", channel: "pty", dataBase64: "AQI=" });
     bridge.handleWindowMessage({
       source: target,
-      data: { source: "dbx-plugin", version: 1, type: "request", id: "3", method: "backend.sendBinary", params: { channel: "pty", dataBase64: "AQI=" } },
+      data: { source: "chiron-horizon-plugin", version: 1, type: "request", id: "3", method: "backend.sendBinary", params: { channel: "pty", dataBase64: "AQI=" } },
     } as MessageEvent);
     await vi.waitFor(() => expect(messages).toHaveLength(3));
 
@@ -210,7 +210,7 @@ describe("PluginHostBridge", () => {
 
     bridge.handleWindowMessage({
       source: first,
-      data: { source: "dbx-plugin", version: 1, type: "request", id: "4", method: "backend.invoke", params: { method: "sample/slow" } },
+      data: { source: "chiron-horizon-plugin", version: 1, type: "request", id: "4", method: "backend.invoke", params: { method: "sample/slow" } },
     } as MessageEvent);
     current = second;
     resolveInvoke({ ok: true });
@@ -233,10 +233,10 @@ describe("PluginHostBridge", () => {
     bridge.updateContext({ connectionId: "second", values: { path: "/tmp" } });
     bridge.updateLocale("ja");
 
-    expect(messages[0]).toMatchObject({ source: "dbx-host", type: "context", context: { connectionId: "second" } });
-    expect(messages[1]).toMatchObject({ source: "dbx-host", type: "env", locale: "ja" });
+    expect(messages[0]).toMatchObject({ source: "chiron-horizon-host", type: "context", context: { connectionId: "second" } });
+    expect(messages[1]).toMatchObject({ source: "chiron-horizon-host", type: "env", locale: "ja" });
 
-    bridge.handleWindowMessage({ source: target, data: { source: "dbx-plugin", version: 1, type: "request", id: "ctx", method: "host.getContext" } } as MessageEvent);
+    bridge.handleWindowMessage({ source: target, data: { source: "chiron-horizon-plugin", version: 1, type: "request", id: "ctx", method: "host.getContext" } } as MessageEvent);
     await vi.waitFor(() => expect(messages).toHaveLength(3));
     expect(messages[2]).toMatchObject({ type: "response", id: "ctx", result: { connectionId: "second", values: { path: "/tmp" } } });
   });
@@ -262,7 +262,7 @@ describe("PluginHostBridge", () => {
     const bytes = new Uint8Array([4, 5, 6]).buffer;
     bridge.handleWindowMessage({
       source: target,
-      data: { source: "dbx-plugin", version: 1, type: "request", id: "bin", method: "backend.sendBinary", params: { channel: "pty" }, data: bytes },
+      data: { source: "chiron-horizon-plugin", version: 1, type: "request", id: "bin", method: "backend.sendBinary", params: { channel: "pty" }, data: bytes },
     } as MessageEvent);
     await vi.waitFor(() => expect(messages).toHaveLength(2));
     expect(sendBinary).toHaveBeenCalledWith("sample", "pty", "BAUG");
@@ -280,7 +280,7 @@ describe("PluginHostBridge", () => {
     });
     bridge.handleWindowMessage({
       source: target,
-      data: { source: "dbx-plugin", version: 1, type: "request", id: "denied", method: "backend.sendBinary", params: { channel: "pty" }, data: new Uint8Array([1]).buffer },
+      data: { source: "chiron-horizon-plugin", version: 1, type: "request", id: "denied", method: "backend.sendBinary", params: { channel: "pty" }, data: new Uint8Array([1]).buffer },
     } as MessageEvent);
     await vi.waitFor(() => expect(messages).toHaveLength(1));
     expect(messages[0]).toMatchObject({ id: "denied", error: "Plugin has not declared permission 'host.binary'" });
@@ -288,12 +288,12 @@ describe("PluginHostBridge", () => {
 
   it("injects the SDK, the official UI kit, and a restrictive sandbox CSP", () => {
     const document = pluginSandboxDocument("<html><head></head><body>Hello</body></html>");
-    expect(document).toContain("window.dbxPlugin");
+    expect(document).toContain("window.chironHorizonPlugin");
     expect(document).toContain("get locale() { return locale; }");
     expect(document).toContain("openFilesystem");
     expect(document).toContain("shortcut: 'closeTab'");
     expect(document).toContain("connect-src 'none'");
-    expect(document).toContain(".dbx-btn");
+    expect(document).toContain(".chiron-horizon-btn");
     expect(document).toContain("var(--color-background");
   });
 
@@ -311,7 +311,7 @@ describe("PluginHostBridge", () => {
     expect(
       bridge.handleWindowMessage({
         source: target,
-        data: { source: "dbx-plugin", version: 1, type: "shortcut", shortcut: "closeTab" },
+        data: { source: "chiron-horizon-plugin", version: 1, type: "shortcut", shortcut: "closeTab" },
       } as MessageEvent),
     ).toBe(true);
     expect(closeTab).toHaveBeenCalledOnce();

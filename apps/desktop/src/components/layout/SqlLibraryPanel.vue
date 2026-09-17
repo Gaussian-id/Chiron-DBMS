@@ -981,7 +981,7 @@ function resetDragState() {
 
 function createDragGhost(sourceEl: HTMLElement, x: number, y: number) {
   const ghost = document.createElement("div");
-  const textNode = sourceEl.querySelector(".dbx-sql-library-drag-label");
+  const textNode = sourceEl.querySelector(".chiron-horizon-sql-library-drag-label");
   ghost.textContent = textNode?.textContent || "";
   ghost.style.cssText = `
     position: fixed;
@@ -989,7 +989,7 @@ function createDragGhost(sourceEl: HTMLElement, x: number, y: number) {
     z-index: 9999;
     opacity: 0.9;
     box-shadow: 0 2px 8px rgba(0,0,0,0.12);
-    border-radius: var(--dbx-radius-fixed-4);
+    border-radius: var(--chiron-horizon-radius-fixed-4);
     background: var(--background, #fff);
     border: 1px solid var(--border, #e5e7eb);
     max-width: 220px;
@@ -1247,7 +1247,7 @@ function showDropInside(targetId: string) {
                       @click.stop
                     />
                   </template>
-                  <span v-else class="dbx-sql-library-drag-label min-w-0 flex-1 truncate">
+                  <span v-else class="chiron-horizon-sql-library-drag-label min-w-0 flex-1 truncate">
                     {{ item.item.name }}
                     <span class="ml-1 text-muted-foreground">({{ folderFileCount(item.item.id) }})</span>
                   </span>
@@ -1292,7 +1292,7 @@ function showDropInside(targetId: string) {
                       @click.stop
                     />
                   </template>
-                  <span v-else class="dbx-sql-library-drag-label min-w-0 flex-1 truncate" :title="fileTitleLabel(item.item)" :style="fileTitleStyle(item.item)">{{ item.item.name }}</span>
+                  <span v-else class="chiron-horizon-sql-library-drag-label min-w-0 flex-1 truncate" :title="fileTitleLabel(item.item)" :style="fileTitleStyle(item.item)">{{ item.item.name }}</span>
                   <span class="min-w-0 max-w-[45%] shrink truncate text-[13px]" :class="fileMetaClass(item.item.id)" :title="getConnectionLabel(item.item.connectionId)">[{{ getConnectionLabel(item.item.connectionId) }}]</span>
                 </div>
               </div>
@@ -1332,7 +1332,7 @@ function showDropInside(targetId: string) {
                       @click.stop
                     />
                   </template>
-                  <span v-else class="dbx-sql-library-drag-label min-w-0 flex-1 truncate">
+                  <span v-else class="chiron-horizon-sql-library-drag-label min-w-0 flex-1 truncate">
                     {{ row.folder.name }}
                     <span class="ml-1 text-muted-foreground">({{ folderFileCount(row.folder.id) }})</span>
                   </span>
@@ -1382,7 +1382,7 @@ function showDropInside(targetId: string) {
                       @click.stop
                     />
                   </template>
-                  <span v-else class="dbx-sql-library-drag-label min-w-0 flex-1 truncate" :title="fileTitleLabel(row.file)" :style="fileTitleStyle(row.file)">{{ row.file.name }}</span>
+                  <span v-else class="chiron-horizon-sql-library-drag-label min-w-0 flex-1 truncate" :title="fileTitleLabel(row.file)" :style="fileTitleStyle(row.file)">{{ row.file.name }}</span>
                   <span class="min-w-0 max-w-[45%] shrink truncate text-[13px]" :class="fileMetaClass(row.file.id)" :title="getConnectionLabel(row.file.connectionId)">[{{ getConnectionLabel(row.file.connectionId) }}]</span>
                 </div>
               </div>
@@ -1429,7 +1429,7 @@ function showDropInside(targetId: string) {
                       @click.stop
                     />
                   </template>
-                  <span v-else class="dbx-sql-library-drag-label min-w-0 flex-1 truncate" :title="fileTitleLabel(file)" :style="fileTitleStyle(file)">{{ file.name }}</span>
+                  <span v-else class="chiron-horizon-sql-library-drag-label min-w-0 flex-1 truncate" :title="fileTitleLabel(file)" :style="fileTitleStyle(file)">{{ file.name }}</span>
                   <span class="min-w-0 max-w-[45%] shrink truncate text-[13px]" :class="fileMetaClass(file.id)" :title="getConnectionLabel(file.connectionId)">[{{ getConnectionLabel(file.connectionId) }}]</span>
                 </div>
               </div>

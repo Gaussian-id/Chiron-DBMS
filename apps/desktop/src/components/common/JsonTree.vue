@@ -260,7 +260,7 @@ defineExpose({ expandAll, collapseAll, resetExpansion, refresh });
   padding-block: 2px;
   /* Fixed line box so the hover background wraps the glyphs symmetrically. */
   line-height: 20px;
-  border-radius: var(--dbx-radius-fixed-4);
+  border-radius: var(--chiron-horizon-radius-fixed-4);
 }
 
 .json-tree-row:hover {

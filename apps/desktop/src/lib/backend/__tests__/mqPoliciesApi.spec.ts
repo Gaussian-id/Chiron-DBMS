@@ -16,11 +16,11 @@ describe("mq policies tauri API", () => {
 
   it("invokes mq_list_policies with flattened filters", async () => {
     const { mqListPolicies } = await import("@/lib/backend/mq-tauri");
-    mocks.invoke.mockResolvedValue([{ name: "dbx-ttl", vhost: "/", pattern: "^dbx-", applyTo: "queues", priority: 0, definition: { "message-ttl": 60000 } }]);
+    mocks.invoke.mockResolvedValue([{ name: "chiron-horizon-ttl", vhost: "/", pattern: "^chiron-horizon-", applyTo: "queues", priority: 0, definition: { "message-ttl": 60000 } }]);
 
     const result = await mqListPolicies("conn-1", { virtualHost: "/" });
     expect(mocks.invoke).toHaveBeenCalledWith("mq_list_policies", { connectionId: "conn-1", virtualHost: "/", allVhosts: undefined });
-    expect(result[0]?.name).toBe("dbx-ttl");
+    expect(result[0]?.name).toBe("chiron-horizon-ttl");
     expect(result[0]?.definition).toEqual({ "message-ttl": 60000 });
 
     await mqListPolicies("conn-1", { allVhosts: true });
@@ -34,26 +34,26 @@ describe("mq policies tauri API", () => {
     const { mqSetPolicy } = await import("@/lib/backend/mq-tauri");
     mocks.invoke.mockResolvedValue(undefined);
 
-    await mqSetPolicy("conn-1", "/", { name: "dbx-ttl", pattern: "^dbx-", applyTo: "queues", priority: 10, definition: { "message-ttl": 60000 } });
+    await mqSetPolicy("conn-1", "/", { name: "chiron-horizon-ttl", pattern: "^chiron-horizon-", applyTo: "queues", priority: 10, definition: { "message-ttl": 60000 } });
     expect(mocks.invoke).toHaveBeenCalledWith("mq_set_policy", {
       connectionId: "conn-1",
       virtualHost: "/",
-      name: "dbx-ttl",
-      pattern: "^dbx-",
+      name: "chiron-horizon-ttl",
+      pattern: "^chiron-horizon-",
       applyTo: "queues",
       priority: 10,
       definition: { "message-ttl": 60000 },
     });
 
-    await mqSetPolicy("conn-1", "/", { name: "dbx-dlx", pattern: ".*", definition: { "dead-letter-exchange": "dbx-dlx" } });
+    await mqSetPolicy("conn-1", "/", { name: "chiron-horizon-dlx", pattern: ".*", definition: { "dead-letter-exchange": "chiron-horizon-dlx" } });
     expect(mocks.invoke).toHaveBeenCalledWith("mq_set_policy", {
       connectionId: "conn-1",
       virtualHost: "/",
-      name: "dbx-dlx",
+      name: "chiron-horizon-dlx",
       pattern: ".*",
       applyTo: undefined,
       priority: undefined,
-      definition: { "dead-letter-exchange": "dbx-dlx" },
+      definition: { "dead-letter-exchange": "chiron-horizon-dlx" },
     });
   });
 
@@ -61,9 +61,9 @@ describe("mq policies tauri API", () => {
     const { mqDeletePolicy } = await import("@/lib/backend/mq-tauri");
     mocks.invoke.mockResolvedValue(undefined);
 
-    await mqDeletePolicy("conn-1", "/", "dbx-ttl");
+    await mqDeletePolicy("conn-1", "/", "chiron-horizon-ttl");
 
-    expect(mocks.invoke).toHaveBeenCalledWith("mq_delete_policy", { connectionId: "conn-1", virtualHost: "/", name: "dbx-ttl" });
+    expect(mocks.invoke).toHaveBeenCalledWith("mq_delete_policy", { connectionId: "conn-1", virtualHost: "/", name: "chiron-horizon-ttl" });
   });
 });
 
@@ -86,12 +86,12 @@ describe("mq overview/nodes tauri API", () => {
 
   it("invokes mq_list_nodes with only the connection id", async () => {
     const { mqListNodes } = await import("@/lib/backend/mq-tauri");
-    mocks.invoke.mockResolvedValue([{ name: "rabbit@dbx", running: true, memUsed: 1024, memLimit: 4096, uptimeMs: 60000 }]);
+    mocks.invoke.mockResolvedValue([{ name: "rabbit@chiron-horizon", running: true, memUsed: 1024, memLimit: 4096, uptimeMs: 60000 }]);
 
     const result = await mqListNodes("conn-1");
 
     expect(mocks.invoke).toHaveBeenCalledWith("mq_list_nodes", { connectionId: "conn-1" });
-    expect(result[0]?.name).toBe("rabbit@dbx");
+    expect(result[0]?.name).toBe("rabbit@chiron-horizon");
     expect(result[0]?.running).toBe(true);
   });
 });
@@ -123,14 +123,14 @@ describe("mq policies/overview/nodes HTTP API", () => {
     await mqListPolicies("conn-1", { allVhosts: true });
     expect(lastCall(fetchMock)).toEqual({ url: "/api/mq/policies/list", body: { connectionId: "conn-1", virtualHost: undefined, allVhosts: true } });
 
-    await mqSetPolicy("conn-1", "/", { name: "dbx-ttl", pattern: "^dbx-", applyTo: "queues", priority: 10, definition: { "message-ttl": 60000 } });
+    await mqSetPolicy("conn-1", "/", { name: "chiron-horizon-ttl", pattern: "^chiron-horizon-", applyTo: "queues", priority: 10, definition: { "message-ttl": 60000 } });
     expect(lastCall(fetchMock)).toEqual({
       url: "/api/mq/policies/set",
-      body: { connectionId: "conn-1", virtualHost: "/", name: "dbx-ttl", pattern: "^dbx-", applyTo: "queues", priority: 10, definition: { "message-ttl": 60000 } },
+      body: { connectionId: "conn-1", virtualHost: "/", name: "chiron-horizon-ttl", pattern: "^chiron-horizon-", applyTo: "queues", priority: 10, definition: { "message-ttl": 60000 } },
     });
 
-    await mqDeletePolicy("conn-1", "/", "dbx-ttl");
-    expect(lastCall(fetchMock)).toEqual({ url: "/api/mq/policies/delete", body: { connectionId: "conn-1", virtualHost: "/", name: "dbx-ttl" } });
+    await mqDeletePolicy("conn-1", "/", "chiron-horizon-ttl");
+    expect(lastCall(fetchMock)).toEqual({ url: "/api/mq/policies/delete", body: { connectionId: "conn-1", virtualHost: "/", name: "chiron-horizon-ttl" } });
   });
 
   it("posts to the overview and nodes endpoints", async () => {
@@ -155,6 +155,6 @@ describe("mq policies/overview/nodes HTTP API", () => {
     );
     const { mqSetPolicy } = await import("@/lib/backend/mq-http");
 
-    await expect(mqSetPolicy("conn-1", "*", { name: "dbx-ttl", pattern: ".*", definition: {} })).rejects.toThrow('virtual host "*" is a listing sentinel');
+    await expect(mqSetPolicy("conn-1", "*", { name: "chiron-horizon-ttl", pattern: ".*", definition: {} })).rejects.toThrow('virtual host "*" is a listing sentinel');
   });
 });

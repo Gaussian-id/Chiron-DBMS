@@ -34,10 +34,10 @@ describe("right sidebar panel entry points", () => {
   });
 
   it("keeps existing persisted panel keys and synchronizes exclusivity after settings load", () => {
-    expect(appSource).toContain('ai: "dbx-ai-panel-open"');
-    expect(appSource).toContain('sqlLibrary: "dbx-sql-library-open"');
-    expect(appSource).toContain('sqlFile: "dbx-sql-file-panel-open"');
-    expect(appSource).not.toContain('history: "dbx-');
+    expect(appSource).toContain('ai: "chiron-horizon-ai-panel-open"');
+    expect(appSource).toContain('sqlLibrary: "chiron-horizon-sql-library-open"');
+    expect(appSource).toContain('sqlFile: "chiron-horizon-sql-file-panel-open"');
+    expect(appSource).not.toContain('history: "chiron-horizon-');
     expect(appSource).toContain("settingsStore.isEditorSettingsLoaded");
     expect(appSource).toContain("enforceRightSidebarPanelExclusivity(currentRightSidebarPanelState(), lastOpenedRightSidebarPanel)");
   });

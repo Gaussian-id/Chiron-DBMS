@@ -93,7 +93,7 @@ export function parseAiConfigDeepLink(value: string): AiConfigDeepLinkDraft | nu
   } catch {
     return null;
   }
-  if (url.protocol !== "dbx:" || url.hostname !== AI_CONFIG_DEEP_LINK_HOST || url.pathname !== AI_CONFIG_DEEP_LINK_PATH) return null;
+  if (url.protocol !== "chiron-horizon:" || url.hostname !== AI_CONFIG_DEEP_LINK_HOST || url.pathname !== AI_CONFIG_DEEP_LINK_PATH) return null;
   if (url.username || url.password || url.hash) throw new Error("API keys and other secrets must not be included in the link");
 
   validateParams(url);

@@ -8,7 +8,7 @@ import { startDevelopment } from "../runtime.mjs";
 import { Diagnostics } from "../diagnostics.mjs";
 
 async function project(t) {
-  const root = await mkdtemp(join(tmpdir(), "dbx-dev-runtime-"));
+  const root = await mkdtemp(join(tmpdir(), "chiron-horizon-dev-runtime-"));
   t.after(() => rm(root, { recursive: true, force: true }));
   await mkdir(join(root, "ui"));
   await writeFile(join(root, "ui/index.html"), "<html><head></head><body>Test</body></html>");
@@ -72,7 +72,7 @@ test("closing development host terminates its UI watcher and releases its port",
 
 test("watcher success markers trigger reload only after a complete line", async (t) => {
   const options = await project(t);
-  const host = await startDevelopment({ ...options, commands: { watch: [process.execPath, "-e", 'process.stdout.write("x".repeat(1100)+"DBX_UI_BUILD_SUCCESS\\n"); process.stdout.write("DBX_UI_BUILD_"); setTimeout(() => process.stdout.write("SUCCESS\\n"), 100); setInterval(() => {}, 1000)'] } });
+  const host = await startDevelopment({ ...options, commands: { watch: [process.execPath, "-e", 'process.stdout.write("x".repeat(1100)+"CHIRON_HORIZON_UI_BUILD_SUCCESS\\n"); process.stdout.write("CHIRON_HORIZON_UI_BUILD_"); setTimeout(() => process.stdout.write("SUCCESS\\n"), 100); setInterval(() => {}, 1000)'] } });
   t.after(() => host.close());
   let revision = 0;
   for (let i = 0; i < 100 && !revision; i++) {

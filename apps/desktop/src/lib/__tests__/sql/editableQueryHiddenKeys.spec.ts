@@ -12,8 +12,8 @@ describe("editable query hidden primary keys", () => {
         existingResultNames: ["name"],
       }),
     ).toEqual({
-      sql: "SELECT name, `id` AS `__DBX_PK_0` FROM users WHERE active = 1",
-      projections: [{ sourceName: "id", alias: "__DBX_PK_0" }],
+      sql: "SELECT name, `id` AS `__CHIRON_HORIZON_PK_0` FROM users WHERE active = 1",
+      projections: [{ sourceName: "id", alias: "__CHIRON_HORIZON_PK_0" }],
     });
   });
 
@@ -22,11 +22,11 @@ describe("editable query hidden primary keys", () => {
       sql: 'SELECT "value"\nFROM "items"',
       databaseType: "postgres",
       primaryKeys: ["tenant_id", "item_id"],
-      existingResultNames: ["value", "__DBX_PK_0"],
+      existingResultNames: ["value", "__CHIRON_HORIZON_PK_0"],
     });
 
-    expect(result?.sql).toBe('SELECT "value", "tenant_id" AS "__DBX_PK_1", "item_id" AS "__DBX_PK_2"\nFROM "items"');
-    expect(result?.projections.map((projection) => projection.alias)).toEqual(["__DBX_PK_1", "__DBX_PK_2"]);
+    expect(result?.sql).toBe('SELECT "value", "tenant_id" AS "__CHIRON_HORIZON_PK_1", "item_id" AS "__CHIRON_HORIZON_PK_2"\nFROM "items"');
+    expect(result?.projections.map((projection) => projection.alias)).toEqual(["__CHIRON_HORIZON_PK_1", "__CHIRON_HORIZON_PK_2"]);
   });
 
   it("preserves SQL Server TOP and Oracle optimizer hints", () => {
@@ -37,7 +37,7 @@ describe("editable query hidden primary keys", () => {
         primaryKeys: ["id"],
         existingResultNames: ["name"],
       })?.sql,
-    ).toBe("SELECT TOP 10 name, [id] AS [__DBX_PK_0] FROM dbo.users ORDER BY name");
+    ).toBe("SELECT TOP 10 name, [id] AS [__CHIRON_HORIZON_PK_0] FROM dbo.users ORDER BY name");
 
     expect(
       buildQueryWithHiddenPrimaryKeys({
@@ -46,7 +46,7 @@ describe("editable query hidden primary keys", () => {
         primaryKeys: ["ID"],
         existingResultNames: ["NAME"],
       })?.sql,
-    ).toBe('SELECT /*+ INDEX(t IDX_USERS_NAME) */ t.NAME, "ID" AS "__DBX_PK_0"\nFROM USERS t');
+    ).toBe('SELECT /*+ INDEX(t IDX_USERS_NAME) */ t.NAME, "ID" AS "__CHIRON_HORIZON_PK_0"\nFROM USERS t');
   });
 
   it("supports an Oracle ROWID expression for keyless base tables", () => {
@@ -54,13 +54,13 @@ describe("editable query hidden primary keys", () => {
       buildQueryWithHiddenPrimaryKeys({
         sql: "SELECT * FROM APP.USERS t WHERE t.ACTIVE = 1",
         databaseType: "oracle",
-        primaryKeys: ["__DBX_ROWID"],
+        primaryKeys: ["__CHIRON_HORIZON_ROWID"],
         existingResultNames: ["ID", "NAME"],
-        sourceExpressions: { __DBX_ROWID: "ROWIDTOCHAR(ROWID)" },
+        sourceExpressions: { __CHIRON_HORIZON_ROWID: "ROWIDTOCHAR(ROWID)" },
       }),
     ).toEqual({
-      sql: 'SELECT t.*, ROWIDTOCHAR(ROWID) AS "__DBX_PK_0" FROM APP.USERS t WHERE t.ACTIVE = 1',
-      projections: [{ sourceName: "__DBX_ROWID", alias: "__DBX_PK_0" }],
+      sql: 'SELECT t.*, ROWIDTOCHAR(ROWID) AS "__CHIRON_HORIZON_PK_0" FROM APP.USERS t WHERE t.ACTIVE = 1',
+      projections: [{ sourceName: "__CHIRON_HORIZON_ROWID", alias: "__CHIRON_HORIZON_PK_0" }],
     });
   });
 
@@ -69,13 +69,13 @@ describe("editable query hidden primary keys", () => {
       buildQueryWithHiddenPrimaryKeys({
         sql: "SELECT * FROM APP.USERS t WHERE t.ACTIVE = 1",
         databaseType: "xugu",
-        primaryKeys: ["__DBX_ROWID"],
+        primaryKeys: ["__CHIRON_HORIZON_ROWID"],
         existingResultNames: ["ID", "NAME"],
-        sourceExpressions: { __DBX_ROWID: "ROWID" },
+        sourceExpressions: { __CHIRON_HORIZON_ROWID: "ROWID" },
       }),
     ).toEqual({
-      sql: 'SELECT *, ROWID AS "__DBX_PK_0" FROM APP.USERS t WHERE t.ACTIVE = 1',
-      projections: [{ sourceName: "__DBX_ROWID", alias: "__DBX_PK_0" }],
+      sql: 'SELECT *, ROWID AS "__CHIRON_HORIZON_PK_0" FROM APP.USERS t WHERE t.ACTIVE = 1',
+      projections: [{ sourceName: "__CHIRON_HORIZON_ROWID", alias: "__CHIRON_HORIZON_PK_0" }],
     });
   });
 
@@ -84,11 +84,11 @@ describe("editable query hidden primary keys", () => {
       buildQueryWithHiddenPrimaryKeys({
         sql: "SELECT * FROM APP.USERS FOR UPDATE SKIP LOCKED",
         databaseType: "oracle",
-        primaryKeys: ["__DBX_ROWID"],
+        primaryKeys: ["__CHIRON_HORIZON_ROWID"],
         existingResultNames: ["ID", "NAME"],
-        sourceExpressions: { __DBX_ROWID: "ROWIDTOCHAR(ROWID)" },
+        sourceExpressions: { __CHIRON_HORIZON_ROWID: "ROWIDTOCHAR(ROWID)" },
       })?.sql,
-    ).toBe('SELECT USERS.*, ROWIDTOCHAR(ROWID) AS "__DBX_PK_0" FROM APP.USERS FOR UPDATE SKIP LOCKED');
+    ).toBe('SELECT USERS.*, ROWIDTOCHAR(ROWID) AS "__CHIRON_HORIZON_PK_0" FROM APP.USERS FOR UPDATE SKIP LOCKED');
   });
 
   it("qualifies a bare Oracle wildcard when appending a hidden key", () => {
@@ -96,21 +96,21 @@ describe("editable query hidden primary keys", () => {
       buildQueryWithHiddenPrimaryKeys({
         sql: 'SELECT /*+ FULL("Users") */ * FROM APP."Users"',
         databaseType: "oracle",
-        primaryKeys: ["__DBX_ROWID"],
+        primaryKeys: ["__CHIRON_HORIZON_ROWID"],
         existingResultNames: ["ID", "NAME"],
-        sourceExpressions: { __DBX_ROWID: "ROWIDTOCHAR(ROWID)" },
+        sourceExpressions: { __CHIRON_HORIZON_ROWID: "ROWIDTOCHAR(ROWID)" },
       })?.sql,
-    ).toBe('SELECT /*+ FULL("Users") */ "Users".*, ROWIDTOCHAR(ROWID) AS "__DBX_PK_0" FROM APP."Users"');
+    ).toBe('SELECT /*+ FULL("Users") */ "Users".*, ROWIDTOCHAR(ROWID) AS "__CHIRON_HORIZON_PK_0" FROM APP."Users"');
 
     expect(
       buildQueryWithHiddenPrimaryKeys({
         sql: 'SELECT * FROM APP.USERS "u"',
         databaseType: "oracle",
-        primaryKeys: ["__DBX_ROWID"],
+        primaryKeys: ["__CHIRON_HORIZON_ROWID"],
         existingResultNames: ["ID", "NAME"],
-        sourceExpressions: { __DBX_ROWID: "ROWIDTOCHAR(ROWID)" },
+        sourceExpressions: { __CHIRON_HORIZON_ROWID: "ROWIDTOCHAR(ROWID)" },
       })?.sql,
-    ).toBe('SELECT "u".*, ROWIDTOCHAR(ROWID) AS "__DBX_PK_0" FROM APP.USERS "u"');
+    ).toBe('SELECT "u".*, ROWIDTOCHAR(ROWID) AS "__CHIRON_HORIZON_PK_0" FROM APP.USERS "u"');
   });
 
   it("rewrites the reported Oracle queries without changing their filters", () => {
@@ -118,21 +118,21 @@ describe("editable query hidden primary keys", () => {
       buildQueryWithHiddenPrimaryKeys({
         sql: "select * from t_zyys_vte_yyfxbd",
         databaseType: "oracle",
-        primaryKeys: ["__DBX_ROWID"],
+        primaryKeys: ["__CHIRON_HORIZON_ROWID"],
         existingResultNames: ["ID", "MBMC"],
-        sourceExpressions: { __DBX_ROWID: "ROWIDTOCHAR(ROWID)" },
+        sourceExpressions: { __CHIRON_HORIZON_ROWID: "ROWIDTOCHAR(ROWID)" },
       })?.sql,
-    ).toBe('select t_zyys_vte_yyfxbd.*, ROWIDTOCHAR(ROWID) AS "__DBX_PK_0" from t_zyys_vte_yyfxbd');
+    ).toBe('select t_zyys_vte_yyfxbd.*, ROWIDTOCHAR(ROWID) AS "__CHIRON_HORIZON_PK_0" from t_zyys_vte_yyfxbd');
 
     expect(
       buildQueryWithHiddenPrimaryKeys({
         sql: "SELECT * from T_XT_MB WHERE   mbmc ='结束时'",
         databaseType: "oracle",
-        primaryKeys: ["__DBX_ROWID"],
+        primaryKeys: ["__CHIRON_HORIZON_ROWID"],
         existingResultNames: ["ID", "MBMC"],
-        sourceExpressions: { __DBX_ROWID: "ROWIDTOCHAR(ROWID)" },
+        sourceExpressions: { __CHIRON_HORIZON_ROWID: "ROWIDTOCHAR(ROWID)" },
       })?.sql,
-    ).toBe(`SELECT T_XT_MB.*, ROWIDTOCHAR(ROWID) AS "__DBX_PK_0" from T_XT_MB WHERE   mbmc ='结束时'`);
+    ).toBe(`SELECT T_XT_MB.*, ROWIDTOCHAR(ROWID) AS "__CHIRON_HORIZON_PK_0" from T_XT_MB WHERE   mbmc ='结束时'`);
   });
 
   it("preserves a WHERE subquery when adding an Oracle ROWID", () => {
@@ -140,11 +140,11 @@ describe("editable query hidden primary keys", () => {
       buildQueryWithHiddenPrimaryKeys({
         sql: "SELECT t.* FROM APP.PLATFORM_CARS t WHERE t.CUSTOMER_NO IN (SELECT c.CUSTOMER_NO FROM APP.CUSTOMERS c WHERE c.ENABLED = 1)",
         databaseType: "oracle",
-        primaryKeys: ["__DBX_ROWID"],
+        primaryKeys: ["__CHIRON_HORIZON_ROWID"],
         existingResultNames: ["ID", "CUSTOMER_NO"],
-        sourceExpressions: { __DBX_ROWID: "ROWIDTOCHAR(ROWID)" },
+        sourceExpressions: { __CHIRON_HORIZON_ROWID: "ROWIDTOCHAR(ROWID)" },
       })?.sql,
-    ).toBe('SELECT t.*, ROWIDTOCHAR(ROWID) AS "__DBX_PK_0" FROM APP.PLATFORM_CARS t WHERE t.CUSTOMER_NO IN (SELECT c.CUSTOMER_NO FROM APP.CUSTOMERS c WHERE c.ENABLED = 1)');
+    ).toBe('SELECT t.*, ROWIDTOCHAR(ROWID) AS "__CHIRON_HORIZON_PK_0" FROM APP.PLATFORM_CARS t WHERE t.CUSTOMER_NO IN (SELECT c.CUSTOMER_NO FROM APP.CUSTOMERS c WHERE c.ENABLED = 1)');
   });
 
   it("inserts hidden keys before a trailing line comment", () => {
@@ -155,7 +155,7 @@ describe("editable query hidden primary keys", () => {
         primaryKeys: ["id"],
         existingResultNames: ["name"],
       })?.sql,
-    ).toBe("SELECT name, `id` AS `__DBX_PK_0` -- visible user name\nFROM users");
+    ).toBe("SELECT name, `id` AS `__CHIRON_HORIZON_PK_0` -- visible user name\nFROM users");
   });
 
   it("analyzes SQL Server TOP projections as ordinary source columns", () => {
@@ -228,9 +228,9 @@ describe("editable query hidden primary keys", () => {
       ],
     };
 
-    expect(allPrimaryKeysPresent(["__DBX_ROWID"], ["ROWID", "NAME", "LABEL"], analysis, "t:0", "oracle")).toBe(true);
-    expect(sourceColumnsForResult(analysis, ["ROWID", "NAME", "LABEL"], "t:0", "oracle", ["__DBX_ROWID"])).toEqual(["__DBX_ROWID", "NAME", undefined]);
-    expect(allPrimaryKeysPresent(["__DBX_ROWID"], ["ROWID", "NAME", "LABEL"], analysis, "o:1", "oracle")).toBe(false);
+    expect(allPrimaryKeysPresent(["__CHIRON_HORIZON_ROWID"], ["ROWID", "NAME", "LABEL"], analysis, "t:0", "oracle")).toBe(true);
+    expect(sourceColumnsForResult(analysis, ["ROWID", "NAME", "LABEL"], "t:0", "oracle", ["__CHIRON_HORIZON_ROWID"])).toEqual(["__CHIRON_HORIZON_ROWID", "NAME", undefined]);
+    expect(allPrimaryKeysPresent(["__CHIRON_HORIZON_ROWID"], ["ROWID", "NAME", "LABEL"], analysis, "o:1", "oracle")).toBe(false);
   });
 
   it("does not assign an unqualified multi-source ROWID to a target table", () => {
@@ -241,27 +241,27 @@ describe("editable query hidden primary keys", () => {
       columns: [{ sourceName: "ROWID", resultName: "ROWID", expression: "ROWID" }],
     };
 
-    expect(allPrimaryKeysPresent(["__DBX_ROWID"], ["ROWID"], analysis, "t:0", "oracle")).toBe(false);
-    expect(sourceColumnsForResult(analysis, ["ROWID"], "t:0", "oracle", ["__DBX_ROWID"])).toEqual([undefined]);
+    expect(allPrimaryKeysPresent(["__CHIRON_HORIZON_ROWID"], ["ROWID"], analysis, "t:0", "oracle")).toBe(false);
+    expect(sourceColumnsForResult(analysis, ["ROWID"], "t:0", "oracle", ["__CHIRON_HORIZON_ROWID"])).toEqual([undefined]);
   });
 
   it("resolves appended aliases to result indexes", () => {
     expect(
       hiddenResultColumnIndexes(
-        ["name", "__DBX_PK_0", "__DBX_PK_1"],
+        ["name", "__CHIRON_HORIZON_PK_0", "__CHIRON_HORIZON_PK_1"],
         [
-          { sourceName: "tenant_id", alias: "__DBX_PK_0" },
-          { sourceName: "item_id", alias: "__DBX_PK_1" },
+          { sourceName: "tenant_id", alias: "__CHIRON_HORIZON_PK_0" },
+          { sourceName: "item_id", alias: "__CHIRON_HORIZON_PK_1" },
         ],
       ),
     ).toEqual([1, 2]);
-    expect(hiddenResultColumnIndexes(["name"], [{ sourceName: "id", alias: "__DBX_PK_0" }])).toEqual([]);
+    expect(hiddenResultColumnIndexes(["name"], [{ sourceName: "id", alias: "__CHIRON_HORIZON_PK_0" }])).toEqual([]);
     expect(
       hiddenResultColumnIndexes(
-        ["name", "__DBX_PK_1"],
+        ["name", "__CHIRON_HORIZON_PK_1"],
         [
-          { sourceName: "tenant_id", alias: "__DBX_PK_0" },
-          { sourceName: "item_id", alias: "__DBX_PK_1" },
+          { sourceName: "tenant_id", alias: "__CHIRON_HORIZON_PK_0" },
+          { sourceName: "item_id", alias: "__CHIRON_HORIZON_PK_1" },
         ],
       ),
     ).toEqual([1]);

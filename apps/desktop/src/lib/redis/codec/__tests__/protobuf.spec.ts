@@ -3,9 +3,9 @@ import { decodeProtobuf } from "../protobuf";
 
 describe("decodeProtobuf", () => {
   it("decodes varints and length-delimited strings", () => {
-    // field 1 varint 150, field 2 string "hello dbx" — canonical proto3 encoding
-    const payload = Uint8Array.from([0x08, 0x96, 0x01, 0x12, 0x09, ...new TextEncoder().encode("hello dbx")]);
-    expect(decodeProtobuf(payload)?.value).toEqual({ 1: 150, 2: "hello dbx" });
+    // field 1 varint 150, field 2 string "hello app" — canonical proto3 encoding
+    const payload = Uint8Array.from([0x08, 0x96, 0x01, 0x12, 0x09, ...new TextEncoder().encode("hello app")]);
+    expect(decodeProtobuf(payload)?.value).toEqual({ 1: 150, 2: "hello app" });
   });
 
   it("renders repeated fields as arrays", () => {

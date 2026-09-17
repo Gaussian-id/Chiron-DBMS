@@ -149,7 +149,7 @@ func TestRuntimeReconnectReleasesDetachedControlAndAllowsReplacement(t *testing.
 		Host:     "127.0.0.1",
 		Port:     5138,
 		Database: "SHOP_DEMO",
-		Username: "DBX_LOCAL_TEST",
+		Username: "CHIRON_HORIZON_LOCAL_TEST",
 		Password: "secret",
 	}
 	controlKey := buildDSN(xuguControlParams(params))
@@ -286,7 +286,7 @@ func TestCancelActiveQueryWithoutKillSessionIsSafe(t *testing.T) {
 
 func TestServerDisconnectClearsDegradedControlState(t *testing.T) {
 	s := newServer()
-	s.params = connectParams{Database: "SHOP_DEMO", Username: "DBX_LOCAL_TEST"}
+	s.params = connectParams{Database: "SHOP_DEMO", Username: "CHIRON_HORIZON_LOCAL_TEST"}
 	s.nodeID = 0
 	s.databaseSessionID = 0
 	s.killSession = nil
@@ -305,7 +305,7 @@ func TestXuguControlParamsForcesSystemDatabase(t *testing.T) {
 		Host:     "127.0.0.1",
 		Port:     5138,
 		Database: "SHOP_DEMO",
-		Username: "DBX_LOCAL_TEST",
+		Username: "CHIRON_HORIZON_LOCAL_TEST",
 		Password: "secret",
 	}
 	control := xuguControlParams(params)
@@ -325,7 +325,7 @@ func TestXuguSessionAppNameIsStableAndDoesNotExposeSessionID(t *testing.T) {
 	if name != xuguSessionAppName("tab-session-secret") {
 		t.Fatal("app name should be stable")
 	}
-	if strings.Contains(name, "tab-session-secret") || !strings.HasPrefix(name, "DBX_") {
+	if strings.Contains(name, "tab-session-secret") || !strings.HasPrefix(name, "CHIRON_HORIZON_") {
 		t.Fatalf("unexpected app name: %s", name)
 	}
 }
@@ -479,7 +479,7 @@ func TestBuildDSNParsesJdbcURL(t *testing.T) {
 	}
 }
 
-func TestBuildDSNParsesDBXURL(t *testing.T) {
+func TestBuildDSNParsesChironHorizonURL(t *testing.T) {
 	dsn := buildDSN(connectParams{
 		ConnectionString: "xugu://sysdba:secret@db.example.com:15138/demo",
 	})
@@ -517,7 +517,7 @@ func TestBuildDSNOverridesSelectedDatabase(t *testing.T) {
 			want: "IP=db.example.com;DB=SHOP_DEMO;User=sysdba;PWD=secret;Port=15138;CHAR_SET=UTF8;TRACE_LABEL=DB=SYSTEM",
 		},
 		{
-			name: "DBX URL",
+			name: "Chiron Horizon URL",
 			params: connectParams{
 				Database:         "SHOP_DEMO",
 				ConnectionString: "xugu://sysdba:secret@db.example.com:15138/SYSTEM?note=DB=shadow",
@@ -560,7 +560,7 @@ func TestBuildDSNPreservesConnectionDatabaseWithoutSelection(t *testing.T) {
 			want: "IP=db.example.com;DB=SYSTEM;User=sysdba;PWD=secret;Port=15138;CHAR_SET=UTF8",
 		},
 		{
-			name: "DBX URL",
+			name: "Chiron Horizon URL",
 			params: connectParams{
 				ConnectionString: "xugu://sysdba:secret@db.example.com:15138/SYSTEM",
 			},
@@ -657,7 +657,7 @@ func TestFallbackDatabasesFromParams(t *testing.T) {
 			want: "LOWPRIV",
 		},
 		{
-			name: "dbx url",
+			name: "chiron-horizon url",
 			params: connectParams{
 				ConnectionString: "xugu://user:secret@db.example.com:5138/demo",
 			},
@@ -747,7 +747,7 @@ func TestXuguListSchemasExposesPublicScopeWithoutGUESTCollision(t *testing.T) {
 		{name: "private only", want: []string{"APP_TEST", "SYSDBA", xuguSchedulerJobScope}},
 		{name: "public synonyms", public: true, want: []string{"APP_TEST", "SYSDBA", xuguPublicSynonymScope, xuguSchedulerJobScope}},
 		{name: "public with real guest", realGuest: true, public: true, want: []string{"APP_TEST", "GUEST", "SYSDBA", xuguPublicSynonymScope, xuguSchedulerJobScope}},
-		{name: "public with former reserved schema", realReserved: true, public: true, want: []string{"APP_TEST", "__DBX_XUGU_PUBLIC_SYNONYMS__", "SYSDBA", xuguPublicSynonymScope, xuguSchedulerJobScope}},
+		{name: "public with former reserved schema", realReserved: true, public: true, want: []string{"APP_TEST", "__CHIRON_HORIZON_XUGU_PUBLIC_SYNONYMS__", "SYSDBA", xuguPublicSynonymScope, xuguSchedulerJobScope}},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
@@ -1310,7 +1310,7 @@ func TestXuguListTablesQueryAppliesMetadataConstraints(t *testing.T) {
 		"TABLE_TYPE IN (?,?)",
 		"ORDER BY TABLE_TYPE, TABLE_NAME",
 		"ROWNUM <= ?",
-		"DBX_RN > ?",
+		"CHIRON_HORIZON_RN > ?",
 	} {
 		if !strings.Contains(query.SQL, want) {
 			t.Fatalf("expected SQL to contain %q:\n%s", want, query.SQL)
@@ -1501,7 +1501,7 @@ func TestGetSequenceSourceReconstructsExecutableDDL(t *testing.T) {
 
 func TestRenderXuguSchedulerJobDDLReconstructsEscapedReplayableCall(t *testing.T) {
 	ddl := renderXuguSchedulerJobDDL(xuguSchedulerJobMetadata{
-		Name:           `DBX_JOB_'A`,
+		Name:           `CHIRON_HORIZON_JOB_'A`,
 		JobType:        "plsql_block",
 		ParameterCount: 2,
 		Action:         `BEGIN do_work('x'); END;`,
@@ -1515,7 +1515,7 @@ func TestRenderXuguSchedulerJobDDLReconstructsEscapedReplayableCall(t *testing.T
 
 	for _, want := range []string{
 		"EXEC DBMS_SCHEDULER.CREATE_JOB(",
-		"'DBX_JOB_''A'",
+		"'CHIRON_HORIZON_JOB_''A'",
 		"'plsql_block'",
 		"'BEGIN do_work(''x''); END;'",
 		"2",
@@ -1540,16 +1540,16 @@ func TestXuguSchedulerJobQueriesRemainInCurrentDatabase(t *testing.T) {
 		t.Fatalf("job list must remain current-database scoped: %s", listQuery.SQL)
 	}
 
-	metadataQuery := xuguSchedulerJobMetadataQuery("DbxJob")
-	if !strings.Contains(metadataQuery, "DB_ID = CURRENT_DB_ID") || !strings.Contains(metadataQuery, "JOB_NAME = 'DbxJob'") {
+	metadataQuery := xuguSchedulerJobMetadataQuery("ChironHorizonJob")
+	if !strings.Contains(metadataQuery, "DB_ID = CURRENT_DB_ID") || !strings.Contains(metadataQuery, "JOB_NAME = 'ChironHorizonJob'") {
 		t.Fatalf("job metadata must remain exact-name and current-database scoped: %s", metadataQuery)
 	}
 	if !strings.Contains(metadataQuery, "TO_CHAR(BEGIN_T)") || !strings.Contains(metadataQuery, "TO_CHAR(END_T)") {
 		t.Fatalf("scheduler timestamps must be read as text to preserve SQL NULL values: %s", metadataQuery)
 	}
 
-	exact := xuguCatalogSchedulerJobNameQuery("DbxJob", false)
-	folded := xuguCatalogSchedulerJobNameQuery("DbxJob", true)
+	exact := xuguCatalogSchedulerJobNameQuery("ChironHorizonJob", false)
+	folded := xuguCatalogSchedulerJobNameQuery("ChironHorizonJob", true)
 	if strings.Contains(exact, "UPPER(JOB_NAME)") || !strings.Contains(folded, "UPPER(JOB_NAME)") {
 		t.Fatalf("job source lookup must prefer exact case before folded fallback: exact=%s folded=%s", exact, folded)
 	}
@@ -1602,11 +1602,11 @@ func TestGetSynonymSourceReconstructsPrivateQuotedDDL(t *testing.T) {
 
 	s := newServer()
 	s.db = db
-	source, err := s.getObjectSource("SYSDBA", "dbxSynonymReplayCase", "SYNONYM")
+	source, err := s.getObjectSource("SYSDBA", "chironHorizonSynonymReplayCase", "SYNONYM")
 	if err != nil {
 		t.Fatalf("get synonym source: %v", err)
 	}
-	if source["schema"] != "SYSDBA" || source["name"] != "dbxSynonymReplayCase" {
+	if source["schema"] != "SYSDBA" || source["name"] != "chironHorizonSynonymReplayCase" {
 		t.Fatalf("synonym source must preserve catalog spelling: %#v", source)
 	}
 	if source["editable"] != false {
@@ -1614,7 +1614,7 @@ func TestGetSynonymSourceReconstructsPrivateQuotedDDL(t *testing.T) {
 	}
 
 	ddl, _ := source["source"].(string)
-	want := "CREATE SYNONYM \"SYSDBA\".\"dbxSynonymReplayCase\"\nFOR \"AppSchema\".\"tbUserProfile\";"
+	want := "CREATE SYNONYM \"SYSDBA\".\"chironHorizonSynonymReplayCase\"\nFOR \"AppSchema\".\"tbUserProfile\";"
 	if ddl != want {
 		t.Fatalf("synonym DDL = %q, want %q", ddl, want)
 	}
@@ -1629,31 +1629,31 @@ func TestGetSynonymSourceReconstructsPublicDDLWithoutSyntheticSchema(t *testing.
 
 	s := newServer()
 	s.db = db
-	source, err := s.getObjectSource(xuguPublicSynonymScope, "DbxPublicMixed", "SYNONYM")
+	source, err := s.getObjectSource(xuguPublicSynonymScope, "ChironHorizonPublicMixed", "SYNONYM")
 	if err != nil {
 		t.Fatalf("get public synonym source: %v", err)
 	}
-	if source["schema"] != xuguPublicSynonymScope || source["name"] != "DbxPublicMixed" {
+	if source["schema"] != xuguPublicSynonymScope || source["name"] != "ChironHorizonPublicMixed" {
 		t.Fatalf("public synonym source must preserve synthetic scope and catalog spelling: %#v", source)
 	}
 	ddl, _ := source["source"].(string)
-	want := "CREATE PUBLIC SYNONYM \"DbxPublicMixed\"\nFOR \"SYSDBA\".\"SHOP_USERS\";"
+	want := "CREATE PUBLIC SYNONYM \"ChironHorizonPublicMixed\"\nFOR \"SYSDBA\".\"SHOP_USERS\";"
 	if ddl != want {
 		t.Fatalf("public synonym DDL = %q, want %q", ddl, want)
 	}
 }
 
 func TestXuguCatalogSynonymQueryUsesReservedPublicScope(t *testing.T) {
-	exact := strings.ToUpper(xuguCatalogSynonymQuery(xuguPublicSynonymScope, "DbxPublicMixed", false))
-	if !strings.Contains(exact, "Y.IS_PUBLIC = TRUE") || !strings.Contains(exact, "Y.SYNO_NAME = 'DBXPUBLICMIXED'") {
+	exact := strings.ToUpper(xuguCatalogSynonymQuery(xuguPublicSynonymScope, "ChironHorizonPublicMixed", false))
+	if !strings.Contains(exact, "Y.IS_PUBLIC = TRUE") || !strings.Contains(exact, "Y.SYNO_NAME = 'ChironHorizonPUBLICMIXED'") {
 		t.Fatalf("exact public synonym lookup must be global and exact:\n%s", exact)
 	}
 	if strings.Contains(exact, "S.SCHEMA_NAME =") {
 		t.Fatalf("exact public synonym lookup must not require an owning schema:\n%s", exact)
 	}
 
-	folded := strings.ToUpper(xuguCatalogSynonymQuery(xuguPublicSynonymScope, "dbxpublicmixed", true))
-	if !strings.Contains(folded, "Y.IS_PUBLIC = TRUE") || !strings.Contains(folded, "UPPER(Y.SYNO_NAME) = 'DBXPUBLICMIXED'") {
+	folded := strings.ToUpper(xuguCatalogSynonymQuery(xuguPublicSynonymScope, "chiron-horizonpublicmixed", true))
+	if !strings.Contains(folded, "Y.IS_PUBLIC = TRUE") || !strings.Contains(folded, "UPPER(Y.SYNO_NAME) = 'ChironHorizonPUBLICMIXED'") {
 		t.Fatalf("case-insensitive public synonym lookup must remain global:\n%s", folded)
 	}
 	if strings.Contains(folded, "S.SCHEMA_NAME =") {
@@ -1662,7 +1662,7 @@ func TestXuguCatalogSynonymQueryUsesReservedPublicScope(t *testing.T) {
 }
 
 func TestXuguCatalogSynonymQueryTreatsRealGuestAsPrivate(t *testing.T) {
-	query := strings.ToUpper(xuguCatalogSynonymQuery("GUEST", "DbxPrivateMixed", false))
+	query := strings.ToUpper(xuguCatalogSynonymQuery("GUEST", "ChironHorizonPrivateMixed", false))
 	if !strings.Contains(query, "Y.IS_PUBLIC = FALSE") || !strings.Contains(query, "S.SCHEMA_NAME = 'GUEST'") {
 		t.Fatalf("real GUEST schema must use private exact lookup: %s", query)
 	}
@@ -2258,21 +2258,21 @@ func TestQuoteIdentifierPreservesCase(t *testing.T) {
 
 func TestSelectXuguCatalogTableNamePrefersExactCaseAndRejectsAmbiguity(t *testing.T) {
 	candidates := []xuguCatalogTableName{
-		{Schema: "SYSDBA", Table: "DBX_CASE_TABLE"},
-		{Schema: "SYSDBA", Table: "dbx_case_table"},
+		{Schema: "SYSDBA", Table: "CHIRON_HORIZON_CASE_TABLE"},
+		{Schema: "SYSDBA", Table: "chiron_horizon_case_table"},
 	}
 
-	schema, table, err := selectXuguCatalogTableName("SYSDBA", "dbx_case_table", candidates)
-	if err != nil || schema != "SYSDBA" || table != "dbx_case_table" {
+	schema, table, err := selectXuguCatalogTableName("SYSDBA", "chiron_horizon_case_table", candidates)
+	if err != nil || schema != "SYSDBA" || table != "chiron_horizon_case_table" {
 		t.Fatalf("exact-case selection = (%q, %q, %v), want lower-case catalog table", schema, table, err)
 	}
 
-	if _, _, err := selectXuguCatalogTableName("SYSDBA", "Dbx_Case_Table", candidates); err == nil || !strings.Contains(err.Error(), "ambiguous") {
+	if _, _, err := selectXuguCatalogTableName("SYSDBA", "ChironHorizon_Case_Table", candidates); err == nil || !strings.Contains(err.Error(), "ambiguous") {
 		t.Fatalf("mixed-case ambiguous selection error = %v, want ambiguity error", err)
 	}
 
-	schema, table, err = selectXuguCatalogTableName("sysdba", "dbx_plain_table", []xuguCatalogTableName{{Schema: "SYSDBA", Table: "DBX_PLAIN_TABLE"}})
-	if err != nil || schema != "SYSDBA" || table != "DBX_PLAIN_TABLE" {
+	schema, table, err = selectXuguCatalogTableName("sysdba", "chiron_horizon_plain_table", []xuguCatalogTableName{{Schema: "SYSDBA", Table: "CHIRON_HORIZON_PLAIN_TABLE"}})
+	if err != nil || schema != "SYSDBA" || table != "CHIRON_HORIZON_PLAIN_TABLE" {
 		t.Fatalf("single-candidate fallback = (%q, %q, %v), want catalog spelling", schema, table, err)
 	}
 }
@@ -2300,16 +2300,16 @@ func TestSelectXuguCatalogSequenceNamePrefersExactCaseAndRejectsAmbiguity(t *tes
 
 func TestSelectXuguCatalogSynonymPrefersExactCaseAndRejectsAmbiguity(t *testing.T) {
 	candidates := []xuguCatalogSynonym{
-		{Schema: "SYSDBA", Name: "dbxSynonym", TargetName: "TB_A"},
-		{Schema: "SYSDBA", Name: "DBXSYNONYM", TargetName: "TB_B"},
+		{Schema: "SYSDBA", Name: "chironHorizonSynonym", TargetName: "TB_A"},
+		{Schema: "SYSDBA", Name: "ChironHorizonSYNONYM", TargetName: "TB_B"},
 	}
 
-	synonym, err := selectXuguCatalogSynonym("SYSDBA", "dbxSynonym", candidates)
-	if err != nil || synonym.Name != "dbxSynonym" || synonym.TargetName != "TB_A" {
+	synonym, err := selectXuguCatalogSynonym("SYSDBA", "chironHorizonSynonym", candidates)
+	if err != nil || synonym.Name != "chironHorizonSynonym" || synonym.TargetName != "TB_A" {
 		t.Fatalf("exact-case selection = (%#v, %v), want quoted catalog synonym", synonym, err)
 	}
 
-	if _, err := selectXuguCatalogSynonym("SYSDBA", "DbxSynonym", candidates); err == nil || !strings.Contains(err.Error(), "ambiguous") {
+	if _, err := selectXuguCatalogSynonym("SYSDBA", "ChironHorizonSynonym", candidates); err == nil || !strings.Contains(err.Error(), "ambiguous") {
 		t.Fatalf("mixed-case ambiguous selection error = %v, want ambiguity error", err)
 	}
 }
@@ -2768,7 +2768,7 @@ func (c *xuguSchemaListingConn) QueryContext(_ context.Context, query string, _ 
 			values = append(values, []driver.Value{"GUEST"})
 		}
 		if realReserved {
-			values = append(values, []driver.Value{"__DBX_XUGU_PUBLIC_SYNONYMS__"})
+			values = append(values, []driver.Value{"__CHIRON_HORIZON_XUGU_PUBLIC_SYNONYMS__"})
 		}
 		values = append(values, []driver.Value{"SYSDBA"})
 		combinedValues := make([][]driver.Value, 0, len(values)+1)
@@ -2785,7 +2785,7 @@ func (c *xuguSchemaListingConn) QueryContext(_ context.Context, query string, _ 
 			values = append(values, []driver.Value{"GUEST"})
 		}
 		if realReserved {
-			values = append(values, []driver.Value{"__DBX_XUGU_PUBLIC_SYNONYMS__"})
+			values = append(values, []driver.Value{"__CHIRON_HORIZON_XUGU_PUBLIC_SYNONYMS__"})
 		}
 		values = append(values, []driver.Value{"SYSDBA"})
 		return &xuguStaticRows{columns: []string{"SCHEMA_NAME"}, values: values}, nil
@@ -3288,12 +3288,12 @@ func (c *xuguSynonymSourceConn) QueryContext(_ context.Context, query string, _ 
 	if !strings.Contains(upper, "FROM ALL_SYNONYMS") || !strings.Contains(upper, "Y.IS_PUBLIC = FALSE") {
 		return nil, fmt.Errorf("unexpected synonym source query: %s", query)
 	}
-	if strings.Contains(upper, "UPPER(") || !strings.Contains(query, "s.SCHEMA_NAME = 'SYSDBA'") || !strings.Contains(query, "y.SYNO_NAME = 'dbxSynonymReplayCase'") {
+	if strings.Contains(upper, "UPPER(") || !strings.Contains(query, "s.SCHEMA_NAME = 'SYSDBA'") || !strings.Contains(query, "y.SYNO_NAME = 'chironHorizonSynonymReplayCase'") {
 		return nil, fmt.Errorf("synonym resolution must prioritize exact catalog identifiers: %s", query)
 	}
 	return &xuguStaticRows{
 		columns: []string{"SCHEMA_NAME", "SYNO_NAME", "TARGET_SCHEMA", "TARG_NAME", "IS_PUBLIC"},
-		values:  [][]driver.Value{{"SYSDBA", "dbxSynonymReplayCase", "AppSchema", "tbUserProfile", false}},
+		values:  [][]driver.Value{{"SYSDBA", "chironHorizonSynonymReplayCase", "AppSchema", "tbUserProfile", false}},
 	}, nil
 }
 
@@ -3317,12 +3317,12 @@ func (c *xuguPublicSynonymSourceConn) QueryContext(_ context.Context, query stri
 	if !strings.Contains(upper, "FROM ALL_SYNONYMS") || !strings.Contains(upper, "Y.IS_PUBLIC = TRUE") {
 		return nil, fmt.Errorf("unexpected public synonym source query: %s", query)
 	}
-	if strings.Contains(upper, "S.SCHEMA_NAME =") || strings.Contains(upper, "UPPER(") || !strings.Contains(query, "y.SYNO_NAME = 'DbxPublicMixed'") {
+	if strings.Contains(upper, "S.SCHEMA_NAME =") || strings.Contains(upper, "UPPER(") || !strings.Contains(query, "y.SYNO_NAME = 'ChironHorizonPublicMixed'") {
 		return nil, fmt.Errorf("public synonym resolution must use the global exact lookup: %s", query)
 	}
 	return &xuguStaticRows{
 		columns: []string{"SCHEMA_NAME", "SYNO_NAME", "TARGET_SCHEMA", "TARG_NAME", "IS_PUBLIC"},
-		values:  [][]driver.Value{{nil, "DbxPublicMixed", "SYSDBA", "SHOP_USERS", true}},
+		values:  [][]driver.Value{{nil, "ChironHorizonPublicMixed", "SYSDBA", "SHOP_USERS", true}},
 	}, nil
 }
 
@@ -3808,7 +3808,7 @@ func TestXuguWatchdogClassifiesBlockingExecAsTimeout(t *testing.T) {
 
 	errCh := make(chan error, 1)
 	go func() {
-		_, err := s.executeQuery(queryOptions{SQL: "UPDATE DBX_TIMEOUT_TEST SET VALUE = 1", TimeoutSecs: 1})
+		_, err := s.executeQuery(queryOptions{SQL: "UPDATE CHIRON_HORIZON_TIMEOUT_TEST SET VALUE = 1", TimeoutSecs: 1})
 		errCh <- err
 	}()
 
@@ -3851,7 +3851,7 @@ func TestXuguExplicitCancelClassifiesBlockingQueryAndExec(t *testing.T) {
 		{
 			name: "exec",
 			run: func(s *server) error {
-				_, err := s.executeQuery(queryOptions{SQL: "UPDATE DBX_CANCEL_TEST SET VALUE = 1"})
+				_, err := s.executeQuery(queryOptions{SQL: "UPDATE CHIRON_HORIZON_CANCEL_TEST SET VALUE = 1"})
 				return err
 			},
 		},

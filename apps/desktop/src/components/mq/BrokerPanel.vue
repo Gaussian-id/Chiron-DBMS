@@ -244,7 +244,7 @@ onUnmounted(() => {
 .refresh-interval {
   padding: 4px 8px;
   border: 1px solid var(--color-border);
-  border-radius: var(--dbx-radius-fixed-4);
+  border-radius: var(--chiron-horizon-radius-fixed-4);
   font-size: 13px;
   background: var(--color-background);
   cursor: pointer;
@@ -297,7 +297,7 @@ onUnmounted(() => {
   padding: 16px;
   background: var(--color-background-secondary);
   border: 1px solid var(--color-border);
-  border-radius: var(--dbx-radius-fixed-6);
+  border-radius: var(--chiron-horizon-radius-fixed-6);
   transition: all 0.2s;
 }
 
@@ -337,7 +337,7 @@ onUnmounted(() => {
 .broker-table-wrap {
   overflow-x: auto;
   border: 1px solid var(--color-border);
-  border-radius: var(--dbx-radius-fixed-6);
+  border-radius: var(--chiron-horizon-radius-fixed-6);
   background: var(--color-background-secondary);
 }
 

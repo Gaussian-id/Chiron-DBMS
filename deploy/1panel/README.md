@@ -1,4 +1,4 @@
-# DBX
+# Chiron Horizon
 
 25+ databases in 15 MB. Desktop & Docker self-hosting, with built-in AI assistant.
 
@@ -12,10 +12,10 @@ Supported databases: MySQL, PostgreSQL, SQLite, Redis, MongoDB, DuckDB, ClickHou
 - ER diagram, schema diff, explain plan, field lineage
 - Data import/export (CSV, Excel, JSON, Parquet)
 - Redis key browser and MongoDB document CRUD
-- SSH tunnel, dark mode, i18n (English & 简体中文)
+- SSH tunnel, dark mode, localized interface support
 
 ## Links
 
-- GitHub: https://github.com/t8y2/dbx
+- GitHub: https://github.com/Gaussian-id/Gauss-Horizon
 - Discord: https://discord.gg/W7NyVDRt6a
-- QQ 群: 1087880322
+- Community channel: 1087880322

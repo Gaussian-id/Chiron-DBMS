@@ -1,5 +1,5 @@
 export type ChironAssistantRequest =
-  | { action: "generate"; config_id: string; model: string; prompt: string; collection: string; generate_only: boolean; request_id?: string; conversation_id?: string }
+  | { action: "generate"; config_id: string; model: string; prompt: string; collection: string; generate_only: boolean; text_attachments?: { name: string; content: string; truncated: boolean }[]; images?: { mediaType: string; data: string }[]; request_id?: string; conversation_id?: string }
   | { action: "status"; request_id: string }
   | { action: "approve"; run_id: string; approval_token: string }
   | { action: "cancel"; run_id: string }
@@ -15,7 +15,7 @@ export interface ChironAssistantReply {
   phase?: string;
   run_id?: string;
   query?: string;
-  collection?: string;
+  collection?: string | null;
   approval_token?: string | null;
   message?: string;
   result?: ChironDbReply | null;
@@ -34,10 +34,11 @@ export interface ChironTranscript {
 
 export interface ChironDbReply {
   status: number;
-  body: ChironAssistantReply & {
+  body: Omit<ChironAssistantReply, "collection"> & {
     kind?: "rows" | "affected" | "empty" | "read" | "write" | "admin";
     ok?: boolean;
     statement?: string;
+    collection?: string | null;
     columns?: string[];
     rows?: Record<string, unknown>[];
     points?: Record<string, unknown>[];

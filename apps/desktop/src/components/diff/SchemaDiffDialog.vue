@@ -193,8 +193,8 @@ const showRenamePanel = ref(true);
 const deploySqlMode = ref<"forward" | "rollback">("forward");
 
 // Dialog size memory (width + height + splitpanes ratio)
-const DIALOG_SIZE_KEY = "dbx-schema-diff-size";
-const SPLITPANES_SIZE_KEY = "dbx-schema-diff-splitpanes-v2";
+const DIALOG_SIZE_KEY = "chiron-horizon-schema-diff-size";
+const SPLITPANES_SIZE_KEY = "chiron-horizon-schema-diff-splitpanes-v2";
 const savedSize = JSON.parse(localStorage.getItem(DIALOG_SIZE_KEY) || "null");
 
 const savedSplitpanes = (() => {

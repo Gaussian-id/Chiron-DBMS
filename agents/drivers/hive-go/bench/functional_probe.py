@@ -96,7 +96,7 @@ def probe_paging(process: AgentProcess, agent_session_id: str) -> dict:
             "agentSessionId": agent_session_id,
             "sql": env_default(
                 "PROBE_PAGE_SQL",
-                "SELECT id, payload FROM dbx_agent_bench.agent_bench LIMIT 3",
+                "SELECT id, payload FROM chiron_horizon_agent_bench.agent_bench LIMIT 3",
             ),
             "maxRows": env_int("PROBE_PAGE_MAX_ROWS", 3),
             "pageSize": page_size,
@@ -133,7 +133,7 @@ def probe_failure_semantics(process: AgentProcess, agent_session_id: str) -> dic
                 "agentSessionId": agent_session_id,
                 "sql": env_default(
                     "PROBE_INVALID_SQL",
-                    "SELECT * FROM dbx_missing_table_for_failure_semantics",
+                    "SELECT * FROM chiron_horizon_missing_table_for_failure_semantics",
                 ),
                 "maxRows": 10,
                 "fetchSize": env_int("PROBE_FETCH_SIZE", 10),

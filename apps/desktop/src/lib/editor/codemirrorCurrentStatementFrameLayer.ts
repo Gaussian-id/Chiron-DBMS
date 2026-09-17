@@ -43,7 +43,7 @@ function spansVisualRows(start: PositionRect, end: PositionRect): boolean {
  * statements, but a multi-thousand-line PL/SQL package body (Oracle, and
  * other dialects with BEGIN/END routine bodies) is parsed as a single
  * statement spanning the whole file, turning routine scrolling into
- * thousands of `coordsAtPos` calls per frame. See dbx#7226.
+ * thousands of `coordsAtPos` calls per frame. See chiron-horizon#7226.
  */
 export const MAX_FRAME_STATEMENT_LINES = 500;
 

@@ -220,7 +220,7 @@ onDeactivated(() => {
                 @contextmenu="onContextMenu"
               >
                 <input type="checkbox" :checked="checked.has(item.key.key_raw)" :disabled="busy" :aria-label="item.key.key_display" @click.stop="emit('check', item.key, $event)" />
-                <KeyRound class="h-3 w-3 shrink-0 text-muted-foreground" /><span class="dbx-editor-font-family min-w-0 flex-1 truncate" :title="item.key.key_display">{{ item.label || t("redisGrouping.emptyKey") }}</span>
+                <KeyRound class="h-3 w-3 shrink-0 text-muted-foreground" /><span class="chiron-horizon-editor-font-family min-w-0 flex-1 truncate" :title="item.key.key_display">{{ item.label || t("redisGrouping.emptyKey") }}</span>
                 <span class="text-xs text-muted-foreground">{{ item.key.key_type }}</span>
                 <Button variant="ghost" size="icon" class="h-5 w-5 text-destructive opacity-0 group-hover:opacity-100" :disabled="busy" :aria-label="t('redis.deleteKey')" @click.stop="emit('delete', item.key, $event)"><Trash2 class="h-3 w-3" /></Button>
               </div>

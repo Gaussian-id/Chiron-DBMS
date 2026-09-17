@@ -435,7 +435,7 @@ describe("editorSettingsDraftChanged - tabLayout", () => {
 });
 
 describe("shouldConfirmEditorSettingsDialogClose", () => {
-  // Regression for https://github.com/t8y2/dbx/issues/5905: customizing a
+  // Regression for https://github.com/Gaussian-id/Gauss-Horizon/issues/5905: customizing a
   // shortcut or the sidebar activation mode and then dismissing the dialog
   // via Escape/outside-click/the "Close" button (anything other than Apply)
   // must not silently drop the draft.

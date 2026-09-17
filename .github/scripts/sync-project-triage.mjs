@@ -2,7 +2,7 @@
 
 const DEFAULT_PROJECT_OWNER = "t8y2";
 const DEFAULT_PROJECT_NUMBER = 1;
-const DEFAULT_REPO = "t8y2/dbx";
+const DEFAULT_REPO = "Gaussian-id/Gauss-Horizon";
 
 function parseArgs(argv) {
   const args = {};
@@ -68,7 +68,7 @@ async function graphql(query, token) {
     headers: {
       Authorization: `bearer ${t}`,
       "Content-Type": "application/json",
-      "User-Agent": "dbx-project-triage/1.0",
+      "User-Agent": "chiron-horizon-project-triage/1.0",
     },
     body: JSON.stringify({ query }),
   });

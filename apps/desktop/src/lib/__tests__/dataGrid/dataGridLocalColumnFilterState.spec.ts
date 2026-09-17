@@ -4,13 +4,13 @@ import { buildDataGridLocalFilterOptions, dataGridLocalFilterKey, restoreDataGri
 describe("data grid local column filter state", () => {
   it("round-trips selected values so a remounted grid restores its filters", () => {
     const serialized = serializeDataGridLocalColumnFilters({
-      0: new Set(["str:active", "__dbx_null__"]),
+      0: new Set(["str:active", "__chiron_horizon_null__"]),
       2: new Set(["num:42"]),
     });
 
     const restored = restoreDataGridLocalColumnFilters(serialized, 3);
 
-    expect(restored[0]).toEqual(new Set(["str:active", "__dbx_null__"]));
+    expect(restored[0]).toEqual(new Set(["str:active", "__chiron_horizon_null__"]));
     expect(restored[2]).toEqual(new Set(["num:42"]));
   });
 
@@ -43,7 +43,7 @@ describe("data grid local column filter state", () => {
   });
 
   it("builds stable keys and filters rows across multiple columns", () => {
-    expect(dataGridLocalFilterKey(null)).toBe("__dbx_null__");
+    expect(dataGridLocalFilterKey(null)).toBe("__chiron_horizon_null__");
     expect(dataGridLocalFilterKey(true)).toBe("bool:true");
     expect(dataGridLocalFilterKey(42)).toBe("num:42");
     expect(dataGridLocalFilterKey("active")).toBe("str:active");
@@ -62,7 +62,7 @@ describe("data grid local column filter state", () => {
     });
 
     expect(options).toEqual([
-      { key: "__dbx_null__", label: "NULL", count: 1, value: null },
+      { key: "__chiron_horizon_null__", label: "NULL", count: 1, value: null },
       { key: "str:alpha", label: "alpha", count: 1, value: "alpha" },
       { key: "str:beta", label: "beta", count: 2, value: "beta" },
     ]);

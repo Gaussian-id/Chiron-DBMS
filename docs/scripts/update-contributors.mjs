@@ -1,7 +1,7 @@
 import { mkdir, writeFile } from "node:fs/promises";
 import { resolve } from "node:path";
 
-const repository = process.env.DBX_GITHUB_REPOSITORY || "t8y2/dbx";
+const repository = process.env.CHIRON_HORIZON_GITHUB_REPOSITORY || "Gaussian-id/Gauss-Horizon";
 const token = process.env.GITHUB_TOKEN;
 const apiBase = "https://api.github.com";
 const outputPath = resolve(import.meta.dirname, "../data/contributors.json");
@@ -9,7 +9,7 @@ const outputPath = resolve(import.meta.dirname, "../data/contributors.json");
 const headers = {
   Accept: "application/vnd.github+json",
   "X-GitHub-Api-Version": "2022-11-28",
-  "User-Agent": "dbx-contributor-sync",
+  "User-Agent": "chiron-horizon-contributor-sync",
   ...(token ? { Authorization: `Bearer ${token}` } : {}),
 };
 

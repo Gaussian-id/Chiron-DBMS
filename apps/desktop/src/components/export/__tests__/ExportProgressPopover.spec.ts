@@ -536,7 +536,7 @@ describe("ExportProgressPopover file name and reveal action", () => {
   it("shows the saved file name instead of the synthetic query-result label", async () => {
     const tracker = useExportTracker();
     tracker.addTask("Query Result", "sql", "C:\\exports\\自定义.sql");
-    tracker.addTask("Query Result", "xlsx", "/home/dbx/downloads/report-final.xlsx");
+    tracker.addTask("Query Result", "xlsx", "/home/chiron-horizon/downloads/report-final.xlsx");
 
     await mountPopover();
 

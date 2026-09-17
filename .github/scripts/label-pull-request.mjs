@@ -13,11 +13,11 @@ export const STATIC_LABEL_SPECS = {
   documentation: { color: "0075ca", description: "Documentation-only change" },
   maintenance: { color: "ededed", description: "Maintenance, refactoring, build, CI, or test change" },
   "area/desktop": { color: "1d76db", description: "Desktop application or Tauri shell" },
-  "area/core": { color: "5319e7", description: "Shared DBX core runtime" },
+  "area/core": { color: "5319e7", description: "Shared Chiron Horizon core runtime" },
   "area/web": { color: "0e8a16", description: "Web backend or web API" },
   "area/agents": { color: "f9d0c4", description: "Database agents and agent runtime" },
   "area/mcp": { color: "c2e0c6", description: "MCP server or packages" },
-  "area/cli": { color: "bfd4f2", description: "DBX command-line interface" },
+  "area/cli": { color: "bfd4f2", description: "Chiron Horizon command-line interface" },
   "area/plugins": { color: "d4c5f9", description: "Dialect, JDBC, or mapping plugins" },
   "area/docs": { color: "0075ca", description: "Documentation site or repository documentation" },
   "area/ci": { color: "e99695", description: "GitHub Actions or repository automation" },
@@ -133,20 +133,20 @@ export function inferAreaLabels(changedFiles) {
     || file.startsWith("src-tauri/"))) {
     labels.add("area/desktop");
   }
-  if (has((file) => file.startsWith("crates/dbx-core/") || file.startsWith("packages/node-core/"))) {
+  if (has((file) => file.startsWith("crates/chiron-horizon-core/") || file.startsWith("packages/node-core/"))) {
     labels.add("area/core");
   }
-  if (has((file) => file.startsWith("crates/dbx-web/") || file.startsWith("examples/web-api/"))) {
+  if (has((file) => file.startsWith("crates/chiron-horizon-web/") || file.startsWith("examples/web-api/"))) {
     labels.add("area/web");
   }
   if (has((file) => file.startsWith("agents/"))) labels.add("area/agents");
-  if (has((file) => file.startsWith("crates/dbx-mcp/")
+  if (has((file) => file.startsWith("crates/chiron-horizon-mcp/")
     || file.startsWith("packages/mcp-")
     || file.startsWith("packages/mcp-server/")
     || file.startsWith("examples/mcp/"))) {
     labels.add("area/mcp");
   }
-  if (has((file) => file.startsWith("crates/dbx-cli/")
+  if (has((file) => file.startsWith("crates/chiron-horizon-cli/")
     || file.startsWith("packages/cli-")
     || file.startsWith("packages/cli/")
     || file.startsWith("examples/cli/"))) {
@@ -220,7 +220,7 @@ export function inferDatabaseTypes(changedFiles, knownDatabaseTypes) {
 
     if (file.startsWith("plugins/jdbc/")) add("jdbc");
 
-    if (file.startsWith("apps/desktop/src/") || file.startsWith("crates/dbx-core/src/")) {
+    if (file.startsWith("apps/desktop/src/") || file.startsWith("crates/chiron-horizon-core/src/")) {
       for (const [pattern, databaseType] of DATABASE_PATH_TOKENS) {
         if (pattern.test(file)) add(databaseType);
       }
@@ -428,7 +428,7 @@ function loadEvent() {
 }
 
 function loadDatabaseCatalog() {
-  const manifestUrl = new URL("../../crates/dbx-core/assets/database-drivers.manifest.json", import.meta.url);
+  const manifestUrl = new URL("../../crates/chiron-horizon-core/assets/database-drivers.manifest.json", import.meta.url);
   const manifest = JSON.parse(fs.readFileSync(manifestUrl, "utf8"));
   return new Map(manifest.drivers.map((driver) => [driver.dbType, driver.label]));
 }

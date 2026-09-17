@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { buildEditorFontThemeRules, buildSqlCompletionThemeRules, editorDiagnosticColors, editorThemeAppearanceFor, resolveCustomThemeBackgrounds, resolveEditorTheme, SQL_BUILTIN_HIGHLIGHT_TAG } from "@/lib/editor/editorThemes";
 import { DEFAULT_APP_CUSTOM_UI_COLORS, wcagContrastRatio, type AppThemePalette } from "@/lib/app/appTheme";
 import type { EditorTheme } from "@/stores/settingsStore";
-import { createDbxCodeMirrorSqlDialect } from "@/lib/editor/codemirrorSqlDialect";
+import { createChironHorizonCodeMirrorSqlDialect } from "@/lib/editor/codemirrorSqlDialect";
 import * as langSql from "@codemirror/lang-sql";
 
 describe("resolveEditorTheme", () => {
@@ -35,7 +35,7 @@ describe("resolveEditorTheme", () => {
       "claude-dark",
       "custom",
     ];
-    const appPalettes: AppThemePalette[] = ["gaussian", "pearl", "vscode", "idea", "xcode", "jetbrains", "cursor", "claude"];
+    const appPalettes: AppThemePalette[] = ["chiron", "pearl", "vscode", "idea", "xcode", "jetbrains", "cursor", "claude"];
 
     for (const theme of explicitThemes) {
       for (const palette of appPalettes) {
@@ -154,8 +154,8 @@ describe("SQL completion theme", () => {
   it("uses the configurable medium radius for the popup container", () => {
     const rules = buildSqlCompletionThemeRules();
 
-    expect(rules[".cm-tooltip.cm-tooltip-autocomplete"]).toMatchObject({ borderRadius: "var(--dbx-radius-md)" });
-    expect(rules[".cm-tooltip.cm-tooltip-autocomplete > ul > li"]).toMatchObject({ borderRadius: "var(--dbx-radius-sm)" });
+    expect(rules[".cm-tooltip.cm-tooltip-autocomplete"]).toMatchObject({ borderRadius: "var(--chiron-horizon-radius-md)" });
+    expect(rules[".cm-tooltip.cm-tooltip-autocomplete > ul > li"]).toMatchObject({ borderRadius: "var(--chiron-horizon-radius-sm)" });
   });
 
   it("keeps completion labels ahead of long detail text", () => {
@@ -209,7 +209,7 @@ describe("SQL builtin highlight tag", () => {
       { tag: SQL_BUILTIN_HIGHLIGHT_TAG, color: "builtin" },
     ]);
 
-    const dialect = createDbxCodeMirrorSqlDialect(langSql, "postgres", "postgres");
+    const dialect = createChironHorizonCodeMirrorSqlDialect(langSql, "postgres", "postgres");
     const doc = "select count(*) from t";
     const tree = dialect.language.parser.parse(doc);
     const classesByToken = new Map<string, string>();
@@ -238,7 +238,7 @@ describe("editor font theme", () => {
     const rules = buildEditorFontThemeRules();
 
     // Ligature fonts merge runs like `--`/`==` into one glyph and can race
-    // CodeMirror's per-keystroke span patching (dbx#7900); dropping either
+    // CodeMirror's per-keystroke span patching (chiron-horizon#7900); dropping either
     // declaration would reintroduce unpainted characters in the query editor.
     expect(rules[".cm-content"]).toMatchObject({
       fontVariantLigatures: "none",

@@ -1,0 +1,21 @@
+[package]
+name = "chiron-horizon-cli"
+version = "0.1.0"
+edition = "2021"
+license = "Apache-2.0"
+
+[[bin]]
+name = "chiron-horizon"
+path = "src/main.rs"
+
+[dependencies]
+chiron-horizon-core = { path = "../chiron-horizon-core", default-features = false, features = ["sqlite-bundled"] }
+chiron-horizon-mcp = { path = "../chiron-horizon-mcp" }
+rustls = { version = "0.23", features = ["aws-lc-rs"] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+tokio = { version = "1", features = ["fs", "macros", "rt-multi-thread"] }
+
+[dev-dependencies]
+async-trait = "0.1"
+tempfile = "3"

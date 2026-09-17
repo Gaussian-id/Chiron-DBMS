@@ -1,17 +1,17 @@
 # Message Queue Admin Components
 
-消息队列管理 UI 组件集。
+UI components for message-queue administration.
 
-## 组件列表
+## Components
 
-- **MqAdminConsole.vue** - 主控制台框架
-- **TenantsPanel.vue** - 租户管理
-- **NamespacesPanel.vue** - 命名空间管理
-- **TopicsPanel.vue** - 主题管理
-- **SubscriptionsPanel.vue** - 订阅管理
-- **MonitoringPanel.vue** - 监控统计
+- **MqAdminConsole.vue** - Main console shell
+- **TenantsPanel.vue** - Tenant management
+- **NamespacesPanel.vue** - Namespace management
+- **TopicsPanel.vue** - Topic management
+- **SubscriptionsPanel.vue** - Subscription management
+- **MonitoringPanel.vue** - Monitoring statistics
 
-## 使用方式
+## Usage
 
 ```vue
 <template>
@@ -25,6 +25,6 @@ const connectionId = "your-mq-connection-id";
 </script>
 ```
 
-## 文档
+## Documentation
 
-完整文档请参考：`docs/mq-index.md`
+See `docs/mq-index.md` for the complete guide.

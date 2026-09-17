@@ -374,7 +374,7 @@ test("offers Elasticsearch query types based on mapping field type", () => {
 });
 
 test("builds wildcard queries compatible with Elasticsearch 7.x", () => {
-  assert.deepEqual(buildElasticsearchQueryFromRules([rule({ fieldName: "sku", rawValue: "DBX-*", elasticsearchQueryType: "wildcard" })]), {
-    bool: { filter: [{ wildcard: { sku: "DBX-*" } }] },
+  assert.deepEqual(buildElasticsearchQueryFromRules([rule({ fieldName: "sku", rawValue: "Chiron Horizon-*", elasticsearchQueryType: "wildcard" })]), {
+    bool: { filter: [{ wildcard: { sku: "Chiron Horizon-*" } }] },
   });
 });

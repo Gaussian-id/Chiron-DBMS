@@ -67,7 +67,7 @@ fn copy_background_image_into(data_dir: &Path, source: &Path, extension: &str) -
 
 /// Copies the picked image into the resolved data dir so the background
 /// survives the original file being moved or deleted. The data dir must be
-/// resolved here (portable mode / DBX_DATA_DIR override) — the frontend only
+/// resolved here (portable mode / CHIRON_HORIZON_DATA_DIR override) — the frontend only
 /// knows the default app data dir.
 #[tauri::command]
 pub async fn save_background_image(app: AppHandle, source_path: String) -> Result<BackgroundImageInfo, String> {
@@ -134,7 +134,7 @@ mod tests {
 
     impl TempDir {
         fn new(label: &str) -> Self {
-            let path = std::env::temp_dir().join(format!("dbx-tauri-{label}-{}", uuid::Uuid::new_v4()));
+            let path = std::env::temp_dir().join(format!("chiron-horizon-tauri-{label}-{}", uuid::Uuid::new_v4()));
             std::fs::create_dir_all(&path).unwrap();
             Self(path)
         }
@@ -186,6 +186,6 @@ mod tests {
     fn clear_guard_rejects_unexpected_file_names() {
         assert!(is_background_image_path(Path::new("/data/background-image.png")));
         assert!(!is_background_image_path(Path::new("/data/important.db")));
-        assert!(!is_background_image_path(Path::new("/data/dbx.db")));
+        assert!(!is_background_image_path(Path::new("/data/chiron-horizon.db")));
     }
 }

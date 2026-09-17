@@ -279,7 +279,7 @@ import type { AnnotationFile, SchemaSnapshot } from "@/docs/types";
 // Helpers
 // ---------------------------------------------------------------------------
 
-const DESKTOP_SETTINGS_STORAGE_KEY = "dbx-desktop-settings";
+const DESKTOP_SETTINGS_STORAGE_KEY = "chiron-horizon-desktop-settings";
 const DEFAULT_DESKTOP_SETTINGS: DesktopSettings = {
   show_tray_icon: true,
   icon_theme: "default",
@@ -320,7 +320,7 @@ async function postQueryWithDiagnostics<T>(url: string, body: unknown, traceId?:
   const responseText = await response.text();
   const bodyAt = performance.now();
   if (!response.ok) {
-    appendDebugLog("warn", "[DBX][query-transport:http:error]", {
+    appendDebugLog("warn", "[Chiron Horizon][query-transport:http:error]", {
       traceId: traceId?.slice(0, 8),
       status: response.status,
       requestBytes: new TextEncoder().encode(serializedBody).byteLength,
@@ -328,8 +328,8 @@ async function postQueryWithDiagnostics<T>(url: string, body: unknown, traceId?:
       responseHeadersMs: Math.round(headersAt - startedAt),
       responseBodyMs: Math.round(bodyAt - headersAt),
       totalMs: Math.round(bodyAt - startedAt),
-      backendCoreMs: response.headers.get("x-dbx-core-ms"),
-      backendSerializeMs: response.headers.get("x-dbx-serialize-ms"),
+      backendCoreMs: response.headers.get("x-chiron-horizon-core-ms"),
+      backendSerializeMs: response.headers.get("x-chiron-horizon-serialize-ms"),
     });
     throw await backendResponseError(
       new Response(responseText, {
@@ -341,7 +341,7 @@ async function postQueryWithDiagnostics<T>(url: string, body: unknown, traceId?:
   }
   const result = JSON.parse(responseText) as T;
   const parsedAt = performance.now();
-  appendDebugLog("info", "[DBX][query-transport:http]", {
+  appendDebugLog("info", "[Chiron Horizon][query-transport:http]", {
     traceId: traceId?.slice(0, 8),
     requestBytes: new TextEncoder().encode(serializedBody).byteLength,
     responseBytes: new TextEncoder().encode(responseText).byteLength,
@@ -349,8 +349,8 @@ async function postQueryWithDiagnostics<T>(url: string, body: unknown, traceId?:
     responseBodyMs: Math.round(bodyAt - headersAt),
     jsonParseMs: Math.round(parsedAt - bodyAt),
     totalMs: Math.round(parsedAt - startedAt),
-    backendCoreMs: response.headers.get("x-dbx-core-ms"),
-    backendSerializeMs: response.headers.get("x-dbx-serialize-ms"),
+    backendCoreMs: response.headers.get("x-chiron-horizon-core-ms"),
+    backendSerializeMs: response.headers.get("x-chiron-horizon-serialize-ms"),
   });
   return result;
 }
@@ -574,7 +574,7 @@ export async function installPluginPackage(pathOrFile: string | File, allowUnsig
     blob = pathOrFile;
     fileName = pathOrFile.name;
   } else {
-    fileName = pathOrFile.split("/").pop() || "plugin.dbxp";
+    fileName = pathOrFile.split("/").pop() || "plugin.chiron-horizonp";
     blob = await (await fetch(pathOrFile)).blob();
   }
   const formData = new FormData();
@@ -2012,7 +2012,7 @@ export async function loadMcpHttpServerSettings(): Promise<import("@/lib/backend
 }
 
 export async function saveMcpHttpServerSettings(_settings: import("@/lib/backend/tauri").McpHttpServerSettings): Promise<import("@/lib/backend/tauri").McpHttpServerStatus> {
-  throw new Error("The MCP HTTP server is available only in DBX Desktop");
+  throw new Error("The MCP HTTP server is available only in Chiron Horizon Desktop");
 }
 
 export async function mcpHttpServerStatus(): Promise<import("@/lib/backend/tauri").McpHttpServerStatus> {
@@ -2020,7 +2020,7 @@ export async function mcpHttpServerStatus(): Promise<import("@/lib/backend/tauri
 }
 
 export async function rotateMcpHttpServerToken(): Promise<import("@/lib/backend/tauri").McpHttpServerStatus> {
-  throw new Error("The MCP HTTP server is available only in DBX Desktop");
+  throw new Error("The MCP HTTP server is available only in Chiron Horizon Desktop");
 }
 
 export async function loadWebMcpHttpStatus(): Promise<import("@/lib/backend/tauri").WebMcpHttpStatus> {
@@ -2375,11 +2375,11 @@ export async function deleteAiConversation(id: string): Promise<void> {
 // symbols for backend-module parity without changing Web's request-bound SSE
 // lifecycle or adding a partially functional persistence API.
 export async function saveAiRun(_run: AiRun): Promise<void> {
-  throw new Error("Background AI runs are only available in DBX Desktop");
+  throw new Error("Background AI runs are only available in Chiron Horizon Desktop");
 }
 
 export async function saveAiRunState(_conversation: AiConversation, _run: AiRun): Promise<void> {
-  throw new Error("Background AI runs are only available in DBX Desktop");
+  throw new Error("Background AI runs are only available in Chiron Horizon Desktop");
 }
 
 export async function loadAiRuns(): Promise<AiRun[]> {
@@ -4778,9 +4778,9 @@ export async function checkMcpServerStatus(): Promise<import("@/lib/backend/taur
     native_bin_path: null,
     script_path: null,
     data_dir: null,
-    install_command: "npm install -g @dbx-app/mcp-server@latest",
-    update_command: "npm install -g @dbx-app/mcp-server@latest",
-    uninstall_command: "npm uninstall -g @dbx-app/mcp-server",
+    install_command: "The npm MCP package is deferred for Chiron Horizon 0.1.0. Use the desktop MCP service or build the stdio server from this source tree.",
+    update_command: "The npm MCP package is deferred for Chiron Horizon 0.1.0. Use the desktop MCP service or build the stdio server from this source tree.",
+    uninstall_command: "npm uninstall -g @chiron-horizon/mcp-server",
     error: "MCP Server status is only available in the desktop app.",
   };
 }

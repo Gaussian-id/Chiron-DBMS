@@ -14,7 +14,7 @@ import (
 	"time"
 )
 
-const rocketMQHelperProcessEnv = "DBX_ROCKETMQ_HELPER_PROCESS"
+const rocketMQHelperProcessEnv = "CHIRON_HORIZON_ROCKETMQ_HELPER_PROCESS"
 
 type synchronizedBuffer struct {
 	mu     sync.Mutex

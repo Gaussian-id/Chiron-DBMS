@@ -76,9 +76,9 @@ function loadDataGridComponent() {
     dataGridComponentPromise = (async () => {
       const shouldLogTiming = isDebugLoggingEnabled();
       const startedAt = shouldLogTiming ? performance.now() : 0;
-      if (shouldLogTiming) appendDebugLog("info", "[DBX][DataGrid:load:start]");
+      if (shouldLogTiming) appendDebugLog("info", "[Chiron Horizon][DataGrid:load:start]");
       const component = await import("@/components/grid/DataGrid.vue");
-      if (shouldLogTiming) appendDebugLog("info", "[DBX][DataGrid:load:done]", { elapsed: `${Math.round(performance.now() - startedAt)}ms` });
+      if (shouldLogTiming) appendDebugLog("info", "[Chiron Horizon][DataGrid:load:done]", { elapsed: `${Math.round(performance.now() - startedAt)}ms` });
       return component;
     })();
   }
@@ -115,6 +115,7 @@ const NacosAccessControlConsole = defineAsyncComponent(() => import("@/component
 const NacosDashboard = defineAsyncComponent(() => import("@/components/nacos/NacosDashboard.vue"));
 const DoltVersionControl = defineAsyncComponent(() => import("@/components/dolt/DoltVersionControl.vue"));
 const DatabaseBrowser = defineAsyncComponent(() => import("@/components/objects/DatabaseBrowser.vue"));
+const TableStructureEditor = defineAsyncComponent(() => import("@/components/structure/TableStructureEditor.vue"));
 const ObjectBrowser = defineAsyncComponent(() => import("@/components/objects/ObjectBrowser.vue"));
 const DatabaseUserAdmin = defineAsyncComponent(() => import("@/components/admin/DatabaseUserAdmin.vue"));
 const ProcessListPanel = defineAsyncComponent(() => import("@/components/admin/ProcessListPanel.vue"));
@@ -263,10 +264,10 @@ const DEFAULT_QUERY_RESULTS_PANE_SIZE = 68;
 onMounted(() => {
   // The watcher below warms the grid for query/data tabs. Keep source-only
   // tabs out of that path: loading the grid there caused freezes (#8103).
-  window.addEventListener("dbx-refresh-active-kv-browser", onRefreshActiveKvBrowser);
+  window.addEventListener("chiron-horizon-refresh-active-kv-browser", onRefreshActiveKvBrowser);
   window.addEventListener("resize", updateStandaloneResultToolbarDimensions);
   window.visualViewport?.addEventListener("resize", updateStandaloneResultToolbarDimensions);
-  window.addEventListener("dbx:ui-scale-applied", updateStandaloneResultToolbarDimensions);
+  window.addEventListener("chiron-horizon:ui-scale-applied", updateStandaloneResultToolbarDimensions);
   revealActiveResultRunAfterRender();
 });
 
@@ -658,7 +659,7 @@ const mongoQueryResultSaveHandler = computed<CustomSaveHandler | undefined>(() =
   return { save, preview, applySavedChanges, canInsert: false, canDelete: false, supportsInsert: false, readonlyColumns: [target.idColumn], targetLabel: target.collection };
 });
 const resultsPaneOpen = ref(false);
-const resultsPaneSize = ref(Number(safeLocalStorageGet("dbx-results-pane-size")) || DEFAULT_QUERY_RESULTS_PANE_SIZE);
+const resultsPaneSize = ref(Number(safeLocalStorageGet("chiron-horizon-results-pane-size")) || DEFAULT_QUERY_RESULTS_PANE_SIZE);
 // In editor-only mode the results pane is never mounted in this splitpanes,
 // so the editor pane must stay at 100%: a reactive size update alone does not
 // re-normalize a single pane, and shrinking it would leave a blank dead zone.
@@ -690,7 +691,7 @@ function onResultsResized(payload: { panes: { size: number }[] }) {
   const resultsPane = payload.panes[1];
   if (resultsPane?.size != null && resultsPane.size >= 20 && resultsPane.size <= 85) {
     resultsPaneSize.value = resultsPane.size;
-    safeLocalStorageSet("dbx-results-pane-size", String(resultsPane.size));
+    safeLocalStorageSet("chiron-horizon-results-pane-size", String(resultsPane.size));
   }
 }
 let queryRunningElapsedFrame: number | undefined;
@@ -727,10 +728,10 @@ watch(() => [props.activeTab.id, props.activeTab.isExecuting, props.activeTab.qu
 onUnmounted(() => {
   stopQueryRunningElapsedTimer();
   standaloneResultToolbarResizeObserver?.disconnect();
-  window.removeEventListener("dbx-refresh-active-kv-browser", onRefreshActiveKvBrowser);
+  window.removeEventListener("chiron-horizon-refresh-active-kv-browser", onRefreshActiveKvBrowser);
   window.removeEventListener("resize", updateStandaloneResultToolbarDimensions);
   window.visualViewport?.removeEventListener("resize", updateStandaloneResultToolbarDimensions);
-  window.removeEventListener("dbx:ui-scale-applied", updateStandaloneResultToolbarDimensions);
+  window.removeEventListener("chiron-horizon:ui-scale-applied", updateStandaloneResultToolbarDimensions);
 });
 
 watch(
@@ -777,7 +778,7 @@ watch(
     if (!result) return;
     if (!isDebugLoggingEnabled()) return;
     const startedAt = performance.now();
-    appendDebugLog("info", "[DBX][ContentArea:result:observed]", {
+    appendDebugLog("info", "[Chiron Horizon][ContentArea:result:observed]", {
       tabId: props.activeTab.id,
       rowCount: result.rows.length,
       columnCount: result.columns.length,
@@ -785,13 +786,13 @@ watch(
       isExecuting: props.activeTab.isExecuting,
     });
     nextTick(() => {
-      appendDebugLog("info", "[DBX][ContentArea:result:nextTick]", {
+      appendDebugLog("info", "[Chiron Horizon][ContentArea:result:nextTick]", {
         tabId: props.activeTab.id,
         elapsed: `${Math.round(performance.now() - startedAt)}ms`,
         isExecuting: props.activeTab.isExecuting,
       });
       requestAnimationFrame(() => {
-        appendDebugLog("info", "[DBX][ContentArea:result:first-frame]", {
+        appendDebugLog("info", "[Chiron Horizon][ContentArea:result:first-frame]", {
           tabId: props.activeTab.id,
           elapsed: `${Math.round(performance.now() - startedAt)}ms`,
           isExecuting: props.activeTab.isExecuting,
@@ -883,7 +884,7 @@ async function onHandleClickColumn(matchedCols: Array<{ name: string; table: str
     columnInfoColumns.value = results;
   } catch (e: any) {
     // Silently ignore errors
-    console.error("[DBX] Failed to fetch column info:", e);
+    console.error("[Chiron Horizon] Failed to fetch column info:", e);
     return;
   } finally {
     columnInfoLoading.value = false;
@@ -2611,10 +2612,23 @@ defineExpose({
 
     <!-- Structure mode: table structure editor -->
     <template v-else-if="activeTab.mode === 'structure'">
-      <section class="flex flex-1 flex-col items-center justify-center gap-3 p-6 text-muted-foreground" aria-label="Table design · Coming Soon">
-        <h2 class="text-base font-medium">Table design · Coming Soon</h2>
-        <p class="text-sm">Relational schema editing is not available. Existing drafts are preserved.</p>
-      </section>
+      <TableStructureEditor
+        ref="tableStructureEditorRef"
+        :key="activeTab.id"
+        :connection-id="activeTab.connectionId"
+        :database="activeTab.database"
+        :catalog="activeTab.catalog"
+        :schema="activeTab.schema"
+        :table-name="activeTab.structureTableName || ''"
+        :initial-tab="activeTab.structureInitialTab"
+        :initial-tab-request-id="activeTab.structureInitialTabRequestId"
+        :initial-target="activeTab.structureInitialTarget"
+        :draft="activeTab.structureDraft"
+        @update:draft="(draft) => (activeTab.structureDraft = draft)"
+        @saved="(commentChanged) => emit('structureEditorSaved', activeTab.id, commentChanged)"
+        @close="emit('structureEditorClose', activeTab.id)"
+        @open-settings="(initialTab, initialSection) => emit('openSettings', initialTab, initialSection)"
+      />
     </template>
 
     <template v-else-if="activeTab.mode === 'users' && activeConnection">

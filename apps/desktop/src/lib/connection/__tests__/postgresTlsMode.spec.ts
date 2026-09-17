@@ -25,8 +25,8 @@ describe("PostgreSQL legacy TLS compatibility", () => {
   });
 
   it("preserves unrelated URL parameters when toggled", () => {
-    const enabled = setPostgresLegacyTlsEnabled("sslmode=require&application_name=dbx", true);
-    expect(enabled).toBe("sslmode=require&application_name=dbx&legacy_tls=true");
-    expect(setPostgresLegacyTlsEnabled(enabled, false)).toBe("sslmode=require&application_name=dbx");
+    const enabled = setPostgresLegacyTlsEnabled("sslmode=require&application_name=chiron-horizon", true);
+    expect(enabled).toBe("sslmode=require&application_name=chiron-horizon&legacy_tls=true");
+    expect(setPostgresLegacyTlsEnabled(enabled, false)).toBe("sslmode=require&application_name=chiron-horizon");
   });
 });

@@ -1,4 +1,4 @@
-const LOSSLESS_JSON_NUMBER = Symbol("DBX lossless JSON number");
+const LOSSLESS_JSON_NUMBER = Symbol("Chiron Horizon lossless JSON number");
 
 export interface LosslessJsonNumber {
   readonly [LOSSLESS_JSON_NUMBER]: true;
@@ -51,7 +51,7 @@ export function safeJsonFormat(text: string, indent?: number): string {
  * without routing their numeric literals through JavaScript Number.
  */
 export function stringifyJsonPreservingLargeNumbers(value: unknown, indent?: number): string {
-  let placeholderPrefix = "__DBX_LOSSLESS_NUMBER_";
+  let placeholderPrefix = "__CHIRON_HORIZON_LOSSLESS_NUMBER_";
   const ordinaryJson = JSON.stringify(value);
   while (ordinaryJson?.includes(placeholderPrefix)) placeholderPrefix += "_";
 
@@ -373,7 +373,7 @@ function coalesceMidOps(ops: MidDiffOp[]): MidDiffOp[] {
 }
 
 function protectLargeJsonNumbers(text: string): ProtectedJsonNumbers {
-  let placeholderPrefix = "__DBX_LOSSLESS_NUMBER_";
+  let placeholderPrefix = "__CHIRON_HORIZON_LOSSLESS_NUMBER_";
   while (text.includes(placeholderPrefix)) placeholderPrefix += "_";
 
   const numbers = new Map<string, string>();

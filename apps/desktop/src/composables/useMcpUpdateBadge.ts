@@ -8,10 +8,10 @@ interface UseMcpUpdateBadgeOptions {
 }
 
 /**
- * MCP server 更新徽章状态。
+ * MCP status badge state.
  *
- * 照搬 app/驱动两套 badge 模式：后台 silent 轮询 + computed 驱动红点 + 事件回传。
- * 通过递增请求序号忽略过期响应，避免“定时检查旧请求晚返回、覆盖升级后新结果”的竞态。
+ * The npm package is deferred in 0.1.0, so this observes local desktop
+ * status only and never contacts an external package registry.
  */
 export function useMcpUpdateBadge(options: UseMcpUpdateBadgeOptions) {
   const mcpUpdateAvailable = ref(false);
@@ -26,13 +26,13 @@ export function useMcpUpdateBadge(options: UseMcpUpdateBadgeOptions) {
       const updateAvailable = mcpUpdateAvailability(status);
       if (updateAvailable !== null) mcpUpdateAvailable.value = updateAvailable;
     } catch {
-      // MCP 状态仅作徽章提示；取不到就保持原值，不打扰用户。
+      // A local status failure leaves the badge unchanged.
     }
   }
 
   /**
-   * EditorSettingsDialog 刷新/升级后通过事件回传已获取的 update_available，
-   * 避免根组件重复查询 npm registry，同时使在途的定时检查失效。
+   * The Settings dialog supplies the already-read local state and invalidates
+   * any in-flight status request.
    */
   function applyMcpStatus(updateAvailable: boolean, requestId?: number) {
     if (requestId !== undefined) {

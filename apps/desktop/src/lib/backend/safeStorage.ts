@@ -1,5 +1,5 @@
 function storageWarn(action: string, key: string, error: unknown) {
-  console.warn(`[DBX][storage:${action}] ${key}`, error);
+  console.warn(`[Chiron Horizon][storage:${action}] ${key}`, error);
 }
 
 export function safeLocalStorageGet(key: string): string | null {

@@ -16,11 +16,11 @@ import (
 )
 
 func TestLiveIoTDBAgentTreeAndTable(t *testing.T) {
-	if os.Getenv("DBX_IOTDB_LIVE") != "1" {
-		t.Skip("set DBX_IOTDB_LIVE=1 to run against a real IoTDB server")
+	if os.Getenv("CHIRON_HORIZON_IOTDB_LIVE") != "1" {
+		t.Skip("set CHIRON_HORIZON_IOTDB_LIVE=1 to run against a real IoTDB server")
 	}
 	suffix := strconv.Itoa(os.Getpid())
-	treeDatabase := "root.dbx_go_agent_" + suffix
+	treeDatabase := "root.chiron_horizon_go_agent_" + suffix
 	treeDevice := treeDatabase + ".d1"
 	treeServer := liveIoTDBServer(t, connectParams{Database: treeDatabase})
 	defer treeServer.disconnect()
@@ -34,7 +34,7 @@ func TestLiveIoTDBAgentTreeAndTable(t *testing.T) {
 
 	// 1.3.x servers order aggregate TsBlock columns by their own aggregate
 	// layout, not the SELECT list; values must still line up with the headers
-	// (https://github.com/t8y2/dbx/issues/7306).
+	// (https://github.com/Gaussian-id/Gauss-Horizon/issues/7306).
 	aggregate, err := treeServer.executeQuery(queryOptions{
 		SQL:     "SELECT max_time(s1), avg(s1), max_value(s1), min_value(s1) FROM " + treeDevice,
 		MaxRows: 10,
@@ -74,7 +74,7 @@ func TestLiveIoTDBAgentTreeAndTable(t *testing.T) {
 		t.Fatalf("tree DDL = %q, %v", ddl, err)
 	}
 
-	tableDatabase := "dbx_go_agent_" + suffix
+	tableDatabase := "chiron_horizon_go_agent_" + suffix
 	tableParams := liveIoTDBParams()
 	tableParams.URLParams = "sql_dialect=table&time_zone=Asia%2FShanghai"
 	tableServer := liveIoTDBServer(t, tableParams)
@@ -84,7 +84,7 @@ func TestLiveIoTDBAgentTreeAndTable(t *testing.T) {
 	mustExecuteNonQuery(t, tableServer, "CREATE DATABASE "+quoteTableIdentifier(tableDatabase), "")
 	mustExecuteNonQuery(t, tableServer,
 		"CREATE TABLE "+quoteTableIdentifier(tableDatabase)+"."+quoteTableIdentifier("d1")+
-			" (time TIMESTAMP TIME, device STRING TAG, event_time TIMESTAMP FIELD, s1 INT64 FIELD COMMENT 'value') COMMENT 'DBX live test' WITH (TTL='INF')",
+			" (time TIMESTAMP TIME, device STRING TAG, event_time TIMESTAMP FIELD, s1 INT64 FIELD COMMENT 'value') COMMENT 'Chiron Horizon live test' WITH (TTL='INF')",
 		tableDatabase,
 	)
 	mustExecuteNonQuery(t, tableServer,
@@ -96,7 +96,7 @@ func TestLiveIoTDBAgentTreeAndTable(t *testing.T) {
 		t.Fatalf("table getColumns() = %#v, %v", tableColumns, err)
 	}
 	comment, err := tableServer.getTableComment(tableDatabase, "d1")
-	if err != nil || comment == nil || *comment != "DBX live test" {
+	if err != nil || comment == nil || *comment != "Chiron Horizon live test" {
 		t.Fatalf("table comment = %#v, %v", comment, err)
 	}
 	result, err := tableServer.executeQuery(queryOptions{SQL: "SELECT * FROM d1 ORDER BY time", Database: tableDatabase, MaxRows: 10})
@@ -104,16 +104,16 @@ func TestLiveIoTDBAgentTreeAndTable(t *testing.T) {
 		t.Fatalf("table query = %#v, %v", result, err)
 	}
 	tableDDL, err := tableServer.getTableDDL(tableDatabase, "d1")
-	if err != nil || !strings.Contains(tableDDL, "COMMENT 'DBX live test'") || !strings.Contains(tableDDL, `"device" STRING TAG`) {
+	if err != nil || !strings.Contains(tableDDL, "COMMENT 'Chiron Horizon live test'") || !strings.Contains(tableDDL, `"device" STRING TAG`) {
 		t.Fatalf("table DDL = %q, %v", tableDDL, err)
 	}
 }
 
 func TestLiveIoTDBAgentTreeDatabaseConnection(t *testing.T) {
-	if os.Getenv("DBX_IOTDB_LIVE") != "1" {
-		t.Skip("set DBX_IOTDB_LIVE=1 to run against a real IoTDB server")
+	if os.Getenv("CHIRON_HORIZON_IOTDB_LIVE") != "1" {
+		t.Skip("set CHIRON_HORIZON_IOTDB_LIVE=1 to run against a real IoTDB server")
 	}
-	database := "root.dbx_go_connection_" + strconv.Itoa(os.Getpid())
+	database := "root.chiron_horizon_go_connection_" + strconv.Itoa(os.Getpid())
 	bootstrap := liveIoTDBServer(t, connectParams{})
 	defer bootstrap.disconnect()
 	mustExecuteNonQuery(t, bootstrap, "CREATE DATABASE "+database, "")
@@ -134,10 +134,10 @@ func TestLiveIoTDBAgentTreeDatabaseConnection(t *testing.T) {
 }
 
 func TestLiveIoTDBAgentTreeTimeAggregates(t *testing.T) {
-	if os.Getenv("DBX_IOTDB_LIVE") != "1" {
-		t.Skip("set DBX_IOTDB_LIVE=1 to run against a real IoTDB server")
+	if os.Getenv("CHIRON_HORIZON_IOTDB_LIVE") != "1" {
+		t.Skip("set CHIRON_HORIZON_IOTDB_LIVE=1 to run against a real IoTDB server")
 	}
-	database := "root.dbx_go_time_" + strconv.Itoa(os.Getpid())
+	database := "root.chiron_horizon_go_time_" + strconv.Itoa(os.Getpid())
 	device := database + ".d1"
 	server := liveIoTDBServer(t, connectParams{Database: database})
 	defer server.disconnect()
@@ -165,12 +165,12 @@ func TestLiveIoTDBAgentTreeTimeAggregates(t *testing.T) {
 }
 
 func TestLiveIoTDBAgentProcessMultiSessionAndCancellation(t *testing.T) {
-	if os.Getenv("DBX_IOTDB_LIVE") != "1" {
-		t.Skip("set DBX_IOTDB_LIVE=1 to run against a real IoTDB server")
+	if os.Getenv("CHIRON_HORIZON_IOTDB_LIVE") != "1" {
+		t.Skip("set CHIRON_HORIZON_IOTDB_LIVE=1 to run against a real IoTDB server")
 	}
 	process := startIoTDBAgentProcess(t)
 	defer process.close()
-	treeDatabase := "root.dbx_go_process_" + strconv.Itoa(os.Getpid())
+	treeDatabase := "root.chiron_horizon_go_process_" + strconv.Itoa(os.Getpid())
 	treeDevice := treeDatabase + ".d1"
 	treeParams := liveIoTDBParamsMap()
 	treeParams["agentSessionId"] = "tree"
@@ -211,7 +211,7 @@ func TestLiveIoTDBAgentProcessMultiSessionAndCancellation(t *testing.T) {
 }
 
 func TestIoTDBAgentHelperProcess(t *testing.T) {
-	if os.Getenv("DBX_IOTDB_AGENT_HELPER") != "1" {
+	if os.Getenv("CHIRON_HORIZON_IOTDB_AGENT_HELPER") != "1" {
 		return
 	}
 	main()
@@ -240,10 +240,10 @@ func liveIoTDBServer(t *testing.T, params connectParams) *server {
 
 func liveIoTDBParams() connectParams {
 	return connectParams{
-		Host:     envOr("DBX_IOTDB_HOST", "127.0.0.1"),
-		Port:     envIntOr("DBX_IOTDB_PORT", defaultIoTDBPort),
-		Username: envOr("DBX_IOTDB_USER", "root"),
-		Password: envOr("DBX_IOTDB_PASSWORD", "root"),
+		Host:     envOr("CHIRON_HORIZON_IOTDB_HOST", "127.0.0.1"),
+		Port:     envIntOr("CHIRON_HORIZON_IOTDB_PORT", defaultIoTDBPort),
+		Username: envOr("CHIRON_HORIZON_IOTDB_USER", "root"),
+		Password: envOr("CHIRON_HORIZON_IOTDB_PASSWORD", "root"),
 	}
 }
 
@@ -295,7 +295,7 @@ type iotdbAgentProcess struct {
 func startIoTDBAgentProcess(t *testing.T) *iotdbAgentProcess {
 	t.Helper()
 	command := exec.Command(os.Args[0], "-test.run=^TestIoTDBAgentHelperProcess$")
-	command.Env = append(os.Environ(), "DBX_IOTDB_AGENT_HELPER=1")
+	command.Env = append(os.Environ(), "CHIRON_HORIZON_IOTDB_AGENT_HELPER=1")
 	stdout, err := command.StdoutPipe()
 	if err != nil {
 		t.Fatal(err)

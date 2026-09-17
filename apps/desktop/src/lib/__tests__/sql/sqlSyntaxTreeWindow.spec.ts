@@ -2,7 +2,7 @@ import * as langSql from "@codemirror/lang-sql";
 import { ensureSyntaxTree } from "@codemirror/language";
 import { EditorState } from "@codemirror/state";
 import { describe, expect, it } from "vitest";
-import { createDbxCodeMirrorSqlDialect } from "@/lib/editor/codemirrorSqlDialect";
+import { createChironHorizonCodeMirrorSqlDialect } from "@/lib/editor/codemirrorSqlDialect";
 import { resolveLexicalLeafFromSyntaxTree, resolveStatementWindowFromSyntaxTree } from "@/lib/sql/sqlSyntaxTreeWindow";
 import type { DatabaseType } from "@/types/database";
 
@@ -12,7 +12,7 @@ import type { DatabaseType } from "@/types/database";
 function stateFor(doc: string, dialectName: "mysql" | "postgres" | "sqlserver" = "postgres", databaseType?: DatabaseType): EditorState {
   const state = EditorState.create({
     doc,
-    extensions: [langSql.sql({ dialect: createDbxCodeMirrorSqlDialect(langSql, dialectName, databaseType) })],
+    extensions: [langSql.sql({ dialect: createChironHorizonCodeMirrorSqlDialect(langSql, dialectName, databaseType) })],
   });
   ensureSyntaxTree(state, doc.length, 5_000);
   return state;

@@ -68,13 +68,13 @@ describe("locale preview", () => {
     await Promise.all([selected, restore]);
 
     expect(currentLocale()).toBe("ko");
-    expect(window.localStorage.getItem("dbx-locale")).toBe("ko");
+    expect(window.localStorage.getItem("chiron-horizon-locale")).toBe("ko");
   });
 
   it("persists an explicit choice before its delayed messages become visible", async () => {
     const selected = setLocale("it");
 
-    expect(window.localStorage.getItem("dbx-locale")).toBe("it");
+    expect(window.localStorage.getItem("chiron-horizon-locale")).toBe("it");
     expect(currentLocale()).toBe("en");
 
     delayedItalianLocale.resolve();

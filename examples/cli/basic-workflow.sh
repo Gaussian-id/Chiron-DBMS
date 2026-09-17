@@ -1,22 +1,22 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# Basic DBX CLI workflow.
+# Basic Chiron Horizon CLI workflow.
 # Replace "local" with one of your saved connection names.
 
-CONNECTION="${DBX_CONNECTION:-local}"
+CONNECTION="${CHIRON_HORIZON_CONNECTION:-local}"
 
-echo "==> Checking local DBX setup"
-dbx doctor
+echo "==> Checking local Chiron Horizon setup"
+chiron-horizon doctor
 
 echo "==> Listing connections"
-dbx connections list --json
+chiron-horizon connections list --json
 
 echo "==> Listing tables"
-dbx schema list "$CONNECTION" --json
+chiron-horizon schema list "$CONNECTION" --json
 
 echo "==> Running a read-only query"
-dbx query "$CONNECTION" "select 1 as ok" --json
+chiron-horizon query "$CONNECTION" "select 1 as ok" --json
 
 echo "==> Building schema context for prompts"
-dbx context "$CONNECTION" --tables users,orders
+chiron-horizon context "$CONNECTION" --tables users,orders

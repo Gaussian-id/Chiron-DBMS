@@ -37,8 +37,8 @@ describe("useTauriEvents", () => {
     });
 
     events.setupTauriListeners();
-    await vi.waitFor(() => expect(listeners.has("dbx-close-active-tab")).toBe(true));
-    listeners.get("dbx-close-active-tab")!({ payload: undefined });
+    await vi.waitFor(() => expect(listeners.has("chiron-horizon-close-active-tab")).toBe(true));
+    listeners.get("chiron-horizon-close-active-tab")!({ payload: undefined });
 
     expect(closeActiveSurface).toHaveBeenCalledOnce();
     events.cleanupTauriListeners();

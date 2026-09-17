@@ -3,7 +3,7 @@ import { resolve, relative } from "path";
 import { DEFAULT_LANGUAGE, LANGUAGES } from "./languages.mjs";
 
 const OUT_DIR = resolve(import.meta.dirname, "../out");
-const SITE_URL = "https://dbxio.com";
+const SITE_URL = "https://distribution-disabled.invalid";
 const EXCLUDE = new Set(["index.html", "404.html", "_not-found.html"]);
 const EXCLUDE_PATHS = new Set(LANGUAGES.map((language) => `/${language}/issue`));
 // hreflang codes differ from the route segment for locales whose segment is not

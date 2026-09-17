@@ -34,7 +34,7 @@ type DownloadArtifact = {
   browserStaticSuffixes?: Record<BrowserStaticArch, string>;
 };
 
-const DOWNLOAD_BASE_URL = "https://dl.dbxio.com/releases";
+const DOWNLOAD_BASE_URL = "https://distribution-disabled.invalid/releases";
 
 const downloadArtifacts: DownloadArtifact[] = [
   {
@@ -103,21 +103,16 @@ const downloadArtifacts: DownloadArtifact[] = [
 ];
 
 export function createInstallOptions(lang: InstallLang, version: string): InstallOption[] {
-  return downloadArtifacts.map((artifact) => ({
+  return downloadArtifacts.filter(a => ["macos-arm", "macos-intel", "windows", "linux"].includes(a.id)).map((artifact) => ({
     id: artifact.id,
     iconId: artifact.iconId,
     label: artifact.labels[lang],
-    description: artifact.descriptions?.[lang],
+    description: "0.1.0 development builds only; release downloads are not available.",
     driverLinkLabel: artifact.driverLinkLabels?.[lang],
     descriptionSuffix: artifact.descriptionSuffixes?.[lang],
     badge: artifact.badges?.[lang],
-    href: `${DOWNLOAD_BASE_URL}/v${version}/DBX_${version}_${artifact.suffix}?v=${version}`,
-    action: artifact.action ?? "download",
-    browserStaticDownloads: artifact.browserStaticSuffixes
-      ? Object.entries(artifact.browserStaticSuffixes).map(([arch, suffix]) => ({
-          arch: arch as BrowserStaticArch,
-          href: `${DOWNLOAD_BASE_URL}/v${version}/DBX_${version}_${suffix}?v=${version}`,
-        }))
-      : undefined,
+    href: "https://github.com/Gaussian-id/Gauss-Horizon/actions",
+    action: "instructions",
+
   }));
 }

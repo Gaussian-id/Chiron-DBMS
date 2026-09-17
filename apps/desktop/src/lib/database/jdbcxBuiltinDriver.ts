@@ -3,8 +3,8 @@ import type { ConnectionConfig, JdbcDriverInfo, JdbcMavenBundleInfo } from "@/ty
 export const JDBCX_DRIVER_PROFILE = "jdbcx";
 export const JDBCX_JDBC_DRIVER_CLASS = "io.github.jdbcx.WrappedDriver";
 export const JDBCX_DEFAULT_URL = "jdbcx:";
-export const JDBCX_HIGH_PRIVILEGE_EXTENSIONS_JAVA_OPTION = "-Ddbx.jdbcx.allowHighPrivilegeExtensions=true";
-const JDBCX_HIGH_PRIVILEGE_EXTENSIONS_JAVA_OPTION_PREFIX = "-Ddbx.jdbcx.allowHighPrivilegeExtensions=";
+export const JDBCX_HIGH_PRIVILEGE_EXTENSIONS_JAVA_OPTION = "-Dchiron.horizon.jdbcx.allowHighPrivilegeExtensions=true";
+const JDBCX_HIGH_PRIVILEGE_EXTENSIONS_JAVA_OPTION_PREFIX = "-Dchiron.horizon.jdbcx.allowHighPrivilegeExtensions=";
 
 export type JdbcxRuntimeDriverApi = {
   listJdbcDrivers: () => Promise<JdbcDriverInfo[]>;
@@ -43,7 +43,7 @@ export function jdbcxHighPrivilegeExtensionsEnabled(config: Pick<ConnectionConfi
 }
 
 export function setJdbcxHighPrivilegeExtensionsEnabled(config: Pick<ConnectionConfig, "agent_java_options">, enabled: boolean): void {
-  // Canonicalize this DBX-owned option so legacy whitespace cannot diverge from backend parsing.
+  // Canonicalize this Chiron Horizon-owned option so legacy whitespace cannot diverge from backend parsing.
   const options = (config.agent_java_options ?? []).filter((option) => !option.trim().startsWith(JDBCX_HIGH_PRIVILEGE_EXTENSIONS_JAVA_OPTION_PREFIX));
   config.agent_java_options = enabled ? [...options, JDBCX_HIGH_PRIVILEGE_EXTENSIONS_JAVA_OPTION] : options;
 }

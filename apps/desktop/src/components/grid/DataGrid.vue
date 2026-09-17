@@ -367,7 +367,7 @@ const DataGridBulkEditDialog = defineAsyncComponent(() => import("@/components/g
 const DataGridCopyColumnNamesDialog = defineAsyncComponent(() => import("@/components/grid/DataGridCopyColumnNamesDialog.vue"));
 const DataGridInsertRowsDialog = defineAsyncComponent(() => import("@/components/grid/DataGridInsertRowsDialog.vue"));
 const ExportProgressDialog = defineAsyncComponent(() => import("@/components/export/ExportProgressDialog.vue"));
-const FORMATTED_JSON_EDIT_WARNING_COUNT_STORAGE_KEY = "dbx-cell-detail-formatted-json-edit-warning-count";
+const FORMATTED_JSON_EDIT_WARNING_COUNT_STORAGE_KEY = "chiron-horizon-cell-detail-formatted-json-edit-warning-count";
 const FORMATTED_JSON_EDIT_WARNING_MAX_COUNT = 3;
 let largeValueRuntime: ReturnType<typeof useDataGridLargeValues> | undefined;
 
@@ -594,7 +594,7 @@ const autoRefreshEnabled = autoRefresh.enabled;
 const autoRefreshLabel = computed(() => (autoRefreshEnabled.value ? t("tabs.autoRefreshEvery", { seconds: autoRefreshIntervalSeconds.value }) : t("tabs.autoRefresh")));
 
 if (isDebugLoggingEnabled()) {
-  logDataGridTiming("[DBX][DataGrid:setup]", {
+  logDataGridTiming("[Chiron Horizon][DataGrid:setup]", {
     traceId: dataGridTraceId,
     cacheKey: props.cacheKey,
     rowCount: props.result.rows.length,
@@ -632,7 +632,7 @@ watch(
   (result) => {
     if (!isDebugLoggingEnabled()) return;
     const startedAt = performance.now();
-    logDataGridTiming("[DBX][DataGrid:result:prop]", {
+    logDataGridTiming("[Chiron Horizon][DataGrid:result:prop]", {
       traceId: dataGridTraceId,
       cacheKey: props.cacheKey,
       rowCount: result.rows.length,
@@ -643,14 +643,14 @@ watch(
     });
 
     nextTick(() => {
-      logDataGridTiming("[DBX][DataGrid:result:nextTick]", {
+      logDataGridTiming("[Chiron Horizon][DataGrid:result:nextTick]", {
         traceId: dataGridTraceId,
         cacheKey: props.cacheKey,
         elapsed: `${Math.round(performance.now() - startedAt)}ms`,
         loading: props.loading,
       });
       requestAnimationFrame(() => {
-        logDataGridTiming("[DBX][DataGrid:result:first-frame]", {
+        logDataGridTiming("[Chiron Horizon][DataGrid:result:first-frame]", {
           traceId: dataGridTraceId,
           cacheKey: props.cacheKey,
           elapsed: `${Math.round(performance.now() - startedAt)}ms`,
@@ -2256,8 +2256,8 @@ const gridStyle = computed(() => ({
   "--header-total-w": dataGridHeaderContentWidth("var(--total-w)", gridScrollbarGutter.value),
   "--grid-scrollbar-gutter": `${gridScrollbarGutter.value}px`,
   [EDITOR_FONT_FAMILY_CSS_VAR]: settingsStore.editorSettings.fontFamily,
-  "--dbx-data-grid-font-family": tableFontFamily.value,
-  "--dbx-table-font-size": `${tableFontSize.value}px`,
+  "--chiron-horizon-data-grid-font-family": tableFontFamily.value,
+  "--chiron-horizon-table-font-size": `${tableFontSize.value}px`,
 }));
 const gridHorizontalScrollLeft = ref(0);
 const gridViewportWidth = ref(0);
@@ -4507,7 +4507,7 @@ watch(
     const shouldLogTiming = isDebugLoggingEnabled();
     const startedAt = shouldLogTiming ? performance.now() : 0;
     if (shouldLogTiming) {
-      logDataGridTiming("[DBX][DataGrid:display-items:ready]", {
+      logDataGridTiming("[Chiron Horizon][DataGrid:display-items:ready]", {
         traceId: dataGridTraceId,
         cacheKey: props.cacheKey,
         displayItemCount: length,
@@ -4524,7 +4524,7 @@ watch(
       if (!shouldLogTiming) return;
       requestAnimationFrame(() => {
         const renderedRows = gridRef.value?.querySelectorAll(".vue-recycle-scroller__item-view").length;
-        logDataGridTiming("[DBX][DataGrid:display-items:first-frame]", {
+        logDataGridTiming("[Chiron Horizon][DataGrid:display-items:first-frame]", {
           traceId: dataGridTraceId,
           cacheKey: props.cacheKey,
           displayItemCount: length,
@@ -7230,9 +7230,9 @@ onMounted(() => {
   if (typeof window === "undefined") return;
   window.addEventListener("resize", refreshDataGridViewportMetrics);
   window.visualViewport?.addEventListener("resize", refreshDataGridViewportMetrics);
-  window.addEventListener("dbx:ui-scale-applied", refreshDataGridViewportMetrics);
+  window.addEventListener("chiron-horizon:ui-scale-applied", refreshDataGridViewportMetrics);
   window.addEventListener(TABLE_DATA_GRID_COLUMN_ORDER_CHANGED_EVENT, onSynchronizedTableDataGridColumnOrderChanged);
-  window.addEventListener("dbx:before-tab-switch", captureTabSwitchViewSnapshot);
+  window.addEventListener("chiron-horizon:before-tab-switch", captureTabSwitchViewSnapshot);
   window.addEventListener("blur", clearInternalClipboardCopy);
   document.addEventListener("visibilitychange", clearInternalClipboardCopy);
   nextTick(restoreTabSwitchViewSnapshot);
@@ -7241,7 +7241,7 @@ onDeactivated(pauseCanvasGridWork);
 onUnmounted(() => {
   // Capture before teardown: a tab switch unmounts this instance, and the
   // snapshot is the only carrier of its viewport/selection. This runs after the
-  // `dbx:before-tab-switch` capture and wins, because it observes the final
+  // `chiron-horizon:before-tab-switch` capture and wins, because it observes the final
   // rendered viewport. Closing a tab blocks both writes via the cache's
   // closing-tab tombstone.
   captureTabSwitchViewSnapshot();
@@ -7265,9 +7265,9 @@ onUnmounted(() => {
   if (typeof window === "undefined") return;
   window.removeEventListener("resize", refreshDataGridViewportMetrics);
   window.visualViewport?.removeEventListener("resize", refreshDataGridViewportMetrics);
-  window.removeEventListener("dbx:ui-scale-applied", refreshDataGridViewportMetrics);
+  window.removeEventListener("chiron-horizon:ui-scale-applied", refreshDataGridViewportMetrics);
   window.removeEventListener(TABLE_DATA_GRID_COLUMN_ORDER_CHANGED_EVENT, onSynchronizedTableDataGridColumnOrderChanged);
-  window.removeEventListener("dbx:before-tab-switch", captureTabSwitchViewSnapshot);
+  window.removeEventListener("chiron-horizon:before-tab-switch", captureTabSwitchViewSnapshot);
   window.removeEventListener("blur", clearInternalClipboardCopy);
   document.removeEventListener("visibilitychange", clearInternalClipboardCopy);
 });
@@ -7321,7 +7321,7 @@ async function syncUserFacingSql() {
   const generation = ++userFacingSqlGeneration;
   const executionSql = props.sql?.trim() ?? "";
   const includeDatabaseName = settingsStore.editorSettings.generateSqlIncludeDatabaseName;
-  const shouldRebuildSql = executionSql.includes("__DBX_LARGE_VALUE_BYTES_") || includeDatabaseName;
+  const shouldRebuildSql = executionSql.includes("__CHIRON_HORIZON_LARGE_VALUE_BYTES_") || includeDatabaseName;
   if (props.context !== "table-data" || !shouldRebuildSql || !props.tableMeta?.tableName) {
     userFacingSql.value = sqlWithDisplayDatabaseName(executionSql);
     return;
@@ -10528,7 +10528,7 @@ async function loadForeignKeyDisplayLabels() {
           );
           if (!referenceKeys || !foreignKeyDisplayRequests.isCurrent(requestGeneration)) return;
           if (!manualReferenceKeyColumnIsUnique(columns, referenceKeys, config.refColumn, config.filter)) {
-            appendDebugLog("warn", "[DBX][DataGrid:foreign-key-display:unsafe-manual-reference]", {
+            appendDebugLog("warn", "[Chiron Horizon][DataGrid:foreign-key-display:unsafe-manual-reference]", {
               column: props.result.columns[columnIndex],
               reference: `${schema}.${config.refTable}.${config.refColumn}`,
             });
@@ -10607,7 +10607,7 @@ async function loadForeignKeyDisplayLabels() {
         foreignKeyDisplayLabels.value = next;
       } catch (error: any) {
         if (!foreignKeyDisplayRequests.isCurrent(requestGeneration)) return;
-        appendDebugLog("warn", "[DBX][DataGrid:foreign-key-display:error]", {
+        appendDebugLog("warn", "[Chiron Horizon][DataGrid:foreign-key-display:error]", {
           column: props.result.columns[columnIndex],
           message: String(error?.message || error),
         });
@@ -10867,7 +10867,7 @@ function startLoadingElapsedTimer(reset = false) {
 watch(gridSurfaceBusy, (isLoading) => {
   stopLoadingElapsedTimer();
   if (isDebugLoggingEnabled()) {
-    logDataGridTiming(isLoading ? "[DBX][DataGrid:loading:start]" : "[DBX][DataGrid:loading:stop]", {
+    logDataGridTiming(isLoading ? "[Chiron Horizon][DataGrid:loading:start]" : "[Chiron Horizon][DataGrid:loading:stop]", {
       traceId: dataGridTraceId,
       cacheKey: props.cacheKey,
       elapsedSinceSetup: dataGridElapsed(),
@@ -10878,7 +10878,7 @@ watch(gridSurfaceBusy, (isLoading) => {
   } else if (isDebugLoggingEnabled()) {
     nextTick(() => {
       requestAnimationFrame(() => {
-        logDataGridTiming("[DBX][DataGrid:loading:stop:first-frame]", {
+        logDataGridTiming("[Chiron Horizon][DataGrid:loading:stop:first-frame]", {
           traceId: dataGridTraceId,
           cacheKey: props.cacheKey,
           elapsedSinceSetup: dataGridElapsed(),
@@ -12601,7 +12601,7 @@ useUpdateBlocker(() => (hasPendingChanges.value || hasPendingDataEditorDraft.val
                 >
                   <canvas
                     ref="canvasRef"
-                    class="canvas-grid-surface dbx-data-grid-font-family sticky left-0 top-0 z-0 block font-normal"
+                    class="canvas-grid-surface chiron-horizon-data-grid-font-family sticky left-0 top-0 z-0 block font-normal"
                     :style="{
                       width: `${canvasSurfaceWidth}px`,
                       height: `${canvasViewportHeight}px`,
@@ -12614,7 +12614,7 @@ useUpdateBlocker(() => (hasPendingChanges.value || hasPendingDataEditorDraft.val
                   />
                   <canvas
                     ref="canvasBackRef"
-                    class="canvas-grid-surface dbx-data-grid-font-family sticky left-0 top-0 z-0 block font-normal"
+                    class="canvas-grid-surface chiron-horizon-data-grid-font-family sticky left-0 top-0 z-0 block font-normal"
                     :style="{
                       width: `${canvasSurfaceWidth}px`,
                       height: `${canvasViewportHeight}px`,
@@ -12625,7 +12625,7 @@ useUpdateBlocker(() => (hasPendingChanges.value || hasPendingDataEditorDraft.val
                     @mousedown="onCanvasMouseDown"
                     @contextmenu="onCanvasContext"
                   />
-                  <div ref="canvasOverlayRef" class="canvas-grid-overlay dbx-data-grid-font-family sticky left-0 top-0 z-10 overflow-visible" :style="canvasOverlayStyle" @dblclick.stop>
+                  <div ref="canvasOverlayRef" class="canvas-grid-overlay chiron-horizon-data-grid-font-family sticky left-0 top-0 z-10 overflow-visible" :style="canvasOverlayStyle" @dblclick.stop>
                     <div v-if="canvasReadonlyTextCell" class="absolute pointer-events-auto z-20 tabular-nums" :style="canvasReadonlyTextCellStyle" @mousedown.stop @click.stop>
                       <DataGridReadonlyTextSelection :value="canvasReadonlyTextCell.value" :expanded="canvasReadonlyTextCell.expanded" @close="closeReadonlyCellTextSelection" @escape="escapeReadonlyCellTextSelection" />
                     </div>
@@ -12753,7 +12753,7 @@ useUpdateBlocker(() => (hasPendingChanges.value || hasPendingDataEditorDraft.val
               <div v-else-if="hasVisibleRows" class="relative min-h-0 flex-1">
                 <RecycleScroller
                   ref="scrollerRef"
-                  class="data-grid-scroller dbx-data-grid-font-family h-full overflow-x-auto overscroll-none"
+                  class="data-grid-scroller chiron-horizon-data-grid-font-family h-full overflow-x-auto overscroll-none"
                   :class="{
                     'is-scrolling': isScrolling,
                     'has-horizontal-scrollbar': hasGridHorizontalOverflow,
@@ -13842,8 +13842,8 @@ useUpdateBlocker(() => (hasPendingChanges.value || hasPendingDataEditorDraft.val
 .data-grid-header-row,
 .data-grid-transpose-header,
 .data-grid-transpose-row {
-  font-family: var(--dbx-data-grid-font-family);
-  font-size: var(--dbx-table-font-size, 13px);
+  font-family: var(--chiron-horizon-data-grid-font-family);
+  font-size: var(--chiron-horizon-table-font-size, 13px);
 }
 
 .data-grid-topbar-scroll {
@@ -14050,8 +14050,8 @@ useUpdateBlocker(() => (hasPendingChanges.value || hasPendingDataEditorDraft.val
 
 .canvas-grid-surface {
   cursor: cell;
-  font-family: var(--dbx-data-grid-font-family);
-  font-size: var(--dbx-table-font-size, 13px);
+  font-family: var(--chiron-horizon-data-grid-font-family);
+  font-size: var(--chiron-horizon-table-font-size, 13px);
   font-weight: 400;
   line-height: 1rem;
   outline: none;
@@ -14059,7 +14059,7 @@ useUpdateBlocker(() => (hasPendingChanges.value || hasPendingDataEditorDraft.val
 
 .cell-edit-input {
   font-family: inherit;
-  font-size: var(--dbx-table-font-size, 13px);
+  font-size: var(--chiron-horizon-table-font-size, 13px);
 }
 
 .cell-edit-input--expanded {
@@ -14078,7 +14078,7 @@ useUpdateBlocker(() => (hasPendingChanges.value || hasPendingDataEditorDraft.val
   background-color: var(--background);
   background-color: color-mix(in oklab, var(--background) 96%, var(--primary) 4%);
   border: 1px solid color-mix(in oklab, var(--primary) 62%, var(--border));
-  border-radius: var(--dbx-radius-fixed-6);
+  border-radius: var(--chiron-horizon-radius-fixed-6);
   z-index: 90;
   box-shadow:
     0 28px 72px rgb(0 0 0 / 34%),

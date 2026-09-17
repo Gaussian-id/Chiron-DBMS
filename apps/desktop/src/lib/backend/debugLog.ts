@@ -1,5 +1,5 @@
-const DEBUG_LOG_ENABLED_KEY = "dbx-debug-logging-enabled";
-const DEBUG_LOG_ENTRIES_KEY = "dbx-debug-log-entries";
+const DEBUG_LOG_ENABLED_KEY = "chiron-horizon-debug-logging-enabled";
+const DEBUG_LOG_ENTRIES_KEY = "chiron-horizon-debug-log-entries";
 const MAX_DEBUG_LOG_ENTRIES = 1500;
 const MAX_TEXT_LENGTH = 4000;
 const MAX_LABEL_LENGTH = 120;
@@ -153,16 +153,16 @@ export async function appendNativeProcessMemoryLog(event: string, context: Recor
   try {
     const { invoke } = await import("@tauri-apps/api/core");
     const memory = await invoke<NativeProcessMemorySnapshot>("get_process_memory_info");
-    appendDebugLog("info", `[DBX][native-memory:${event}]`, { ...context, ...memory });
+    appendDebugLog("info", `[Chiron Horizon][native-memory:${event}]`, { ...context, ...memory });
   } catch (error) {
-    appendDebugLog("warn", `[DBX][native-memory:${event}:error]`, { ...context, error });
+    appendDebugLog("warn", `[Chiron Horizon][native-memory:${event}:error]`, { ...context, error });
   }
 }
 
 export function setDebugLoggingEnabled(enabled: boolean) {
   safeLocalStorageSet(DEBUG_LOG_ENABLED_KEY, enabled ? "1" : "0");
   if (enabled) {
-    appendDebugLog("info", "[DBX][debug-log] enabled", {
+    appendDebugLog("info", "[Chiron Horizon][debug-log] enabled", {
       url: location.href,
       viewport: `${window.innerWidth}x${window.innerHeight}`,
       devicePixelRatio: window.devicePixelRatio,
@@ -178,14 +178,14 @@ export function clearDebugLogs() {
 
 export function getDebugLogText(): string {
   const entries = readEntries();
-  const header = [`DBX debug log`, `Exported: ${formatLocalTimestamp()}`, `User agent: ${navigator.userAgent}`, `Platform: ${navigator.platform}`, `Timezone: ${Intl.DateTimeFormat().resolvedOptions().timeZone || "unknown"}`, ""];
+  const header = [`Chiron Horizon debug log`, `Exported: ${formatLocalTimestamp()}`, `User agent: ${navigator.userAgent}`, `Platform: ${navigator.platform}`, `Timezone: ${Intl.DateTimeFormat().resolvedOptions().timeZone || "unknown"}`, ""];
   const body = entries.map((entry) => `[${entry.timestamp}] [${entry.level.toUpperCase()}] ${entry.message}`);
   return [...header, ...body].join("\n");
 }
 
 export async function downloadDebugLogs() {
   const text = await getDebugLogBundleText();
-  const filename = `dbx-debug-log-${formatLocalTimestampForFilename()}.txt`;
+  const filename = `chiron-horizon-debug-log-${formatLocalTimestampForFilename()}.txt`;
   if (typeof window !== "undefined" && isTauriRuntimeLike()) {
     const [{ save }, { writeTextFile }] = await Promise.all([import("@tauri-apps/plugin-dialog"), import("@tauri-apps/plugin-fs")]);
     const path = await save({

@@ -1,7 +1,7 @@
 [workspace]
 
 [package]
-name = "dbx-duckdb-driver"
+name = "chiron-horizon-duckdb-driver"
 version = "0.1.0"
 edition = "2021"
 license = "Apache-2.0"
@@ -31,7 +31,7 @@ serde_json = "1"
 tokio = { version = "1", features = ["full"] }
 
 [dev-dependencies]
-dbx-core = { path = "../../../crates/dbx-core", default-features = false, features = ["duckdb-sidecar"] }
+chiron-horizon-core = { path = "../../../crates/chiron-horizon-core", default-features = false, features = ["duckdb-sidecar"] }
 sysinfo = "0.32"
 tokio-util = "0.7"
 uuid = { version = "1", features = ["v4"] }

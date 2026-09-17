@@ -43,7 +43,7 @@ export function useTauriEvents(deps: {
             }
             focusCurrentWindow();
           } catch (e) {
-            console.error("[DBX] mcp-open-table error:", e);
+            console.error("[Chiron Horizon] mcp-open-table error:", e);
           }
         }).then((unlisten) => unlistenHandles.push(unlisten));
 
@@ -51,7 +51,7 @@ export function useTauriEvents(deps: {
           try {
             await connectionStore.initFromDisk();
           } catch (e) {
-            console.error("[DBX] mcp-reload-connections error:", e);
+            console.error("[Chiron Horizon] mcp-reload-connections error:", e);
           }
         }).then((unlisten) => unlistenHandles.push(unlisten));
 
@@ -70,55 +70,55 @@ export function useTauriEvents(deps: {
             queryStore.showExecutedQueryResults(connection_id, database, sql, results);
             focusCurrentWindow();
           } catch (e) {
-            console.error("[DBX] mcp-execute-query error:", e);
+            console.error("[Chiron Horizon] mcp-execute-query error:", e);
           }
         }).then((unlisten) => unlistenHandles.push(unlisten));
 
-        listen<string[]>("dbx-open-sql-files", async (event) => {
+        listen<string[]>("chiron-horizon-open-sql-files", async (event) => {
           try {
             for (const path of event.payload) {
               await deps.openSqlFilePath(path);
             }
             focusCurrentWindow();
           } catch (e) {
-            console.error("[DBX] dbx-open-sql-files error:", e);
+            console.error("[Chiron Horizon] chiron-horizon-open-sql-files error:", e);
           }
         }).then((unlisten) => unlistenHandles.push(unlisten));
 
-        listen<string[]>("dbx-open-db-files", async (event) => {
+        listen<string[]>("chiron-horizon-open-db-files", async (event) => {
           try {
             for (const path of event.payload) {
               await deps.openDbFilePath(path);
             }
             focusCurrentWindow();
           } catch (e) {
-            console.error("[DBX] dbx-open-db-files error:", e);
+            console.error("[Chiron Horizon] chiron-horizon-open-db-files error:", e);
           }
         }).then((unlisten) => unlistenHandles.push(unlisten));
 
-        listen<string[]>("dbx-open-connection-links", async (event) => {
+        listen<string[]>("chiron-horizon-open-connection-links", async (event) => {
           try {
             for (const url of event.payload) {
               await deps.openConnectionDeepLink(url);
             }
             focusCurrentWindow();
           } catch (e) {
-            console.error("[DBX] dbx-open-connection-links error:", e);
+            console.error("[Chiron Horizon] chiron-horizon-open-connection-links error:", e);
           }
         }).then((unlisten) => unlistenHandles.push(unlisten));
 
-        listen<string[]>("dbx-open-ai-config-links", async (event) => {
+        listen<string[]>("chiron-horizon-open-ai-config-links", async (event) => {
           try {
             for (const url of event.payload) {
               await deps.openAiConfigDeepLink(url);
             }
             focusCurrentWindow();
           } catch (e) {
-            console.error("[DBX] dbx-open-ai-config-links error:", e);
+            console.error("[Chiron Horizon] chiron-horizon-open-ai-config-links error:", e);
           }
         }).then((unlisten) => unlistenHandles.push(unlisten));
 
-        listen("dbx-close-active-tab", () => {
+        listen("chiron-horizon-close-active-tab", () => {
           deps.closeActiveSurface();
         }).then((unlisten) => unlistenHandles.push(unlisten));
       })

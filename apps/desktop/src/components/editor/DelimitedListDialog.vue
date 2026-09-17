@@ -22,7 +22,7 @@ const emit = defineEmits<{
   confirm: [result: string];
 }>();
 
-const STORAGE_KEY = "dbx:delimited-list-settings";
+const STORAGE_KEY = "chiron-horizon:delimited-list-settings";
 
 interface DelimitedListSettings {
   columnDelimiter: string;

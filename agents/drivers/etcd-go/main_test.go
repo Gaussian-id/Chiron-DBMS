@@ -621,7 +621,7 @@ func TestNormalizeReadRangesKeepsOnlyOutermostReadableScopes(t *testing.T) {
 
 func TestIntersectReadRangesLimitsBroadPrefixToGrantedScopes(t *testing.T) {
 	granted := []etcdReadRange{
-		{start: "/dbx", end: "/dby"},
+		{start: "/chiron-horizon", end: "/dby"},
 		{start: "/team/secret", end: "/team/secret\x00"},
 	}
 
@@ -630,8 +630,8 @@ func TestIntersectReadRangesLimitsBroadPrefixToGrantedScopes(t *testing.T) {
 		t.Fatalf("broad prefix intersections = %#v, want %#v", broad, granted)
 	}
 
-	narrow := intersectReadRanges(granted, "/dbx/config/", "/dbx/config0")
-	if len(narrow) != 1 || narrow[0].start != "/dbx/config/" || narrow[0].end != "/dbx/config0" {
+	narrow := intersectReadRanges(granted, "/chiron-horizon/config/", "/chiron-horizon/config0")
+	if len(narrow) != 1 || narrow[0].start != "/chiron-horizon/config/" || narrow[0].end != "/chiron-horizon/config0" {
 		t.Fatalf("narrow prefix intersection = %#v", narrow)
 	}
 
@@ -640,7 +640,7 @@ func TestIntersectReadRangesLimitsBroadPrefixToGrantedScopes(t *testing.T) {
 		t.Fatalf("disjoint prefix intersections = %#v, want none", disjoint)
 	}
 
-	unbounded := intersectReadRanges([]etcdReadRange{{start: "/dbx", end: unboundedRangeEnd}}, "/dbx", unboundedRangeEnd)
+	unbounded := intersectReadRanges([]etcdReadRange{{start: "/chiron-horizon", end: unboundedRangeEnd}}, "/chiron-horizon", unboundedRangeEnd)
 	if len(unbounded) != 1 || unbounded[0].end != unboundedRangeEnd {
 		t.Fatalf("unbounded prefix intersection = %#v", unbounded)
 	}

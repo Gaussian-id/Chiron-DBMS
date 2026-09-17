@@ -1,14 +1,14 @@
 import type { Theme } from "@tauri-apps/api/window";
 
-export const APP_THEME_STORAGE_KEY = "dbx-theme";
-export const APP_THEME_PALETTE_STORAGE_KEY = "dbx-theme-palette";
-export const APP_CUSTOM_UI_STORAGE_KEY = "dbx-theme-custom-ui";
-export const APP_CUSTOM_UI_DARK_STORAGE_KEY = "dbx-theme-custom-ui-dark";
-export const APP_CORNER_STYLE_STORAGE_KEY = "dbx-corner-style";
+export const APP_THEME_STORAGE_KEY = "chiron-horizon-theme";
+export const APP_THEME_PALETTE_STORAGE_KEY = "chiron-horizon-theme-palette";
+export const APP_CUSTOM_UI_STORAGE_KEY = "chiron-horizon-theme-custom-ui";
+export const APP_CUSTOM_UI_DARK_STORAGE_KEY = "chiron-horizon-theme-custom-ui-dark";
+export const APP_CORNER_STYLE_STORAGE_KEY = "chiron-horizon-corner-style";
 
 export type AppThemeMode = "light" | "dark" | "system";
 export type AppThemeAppearance = "light" | "dark";
-export type AppThemePalette = "gaussian" | "pearl" | "mist" | "graphite" | "cobalt" | "sage" | "amber" | "blush" | "vscode" | "idea" | "xcode" | "jetbrains" | "cursor" | "claude" | "custom";
+export type AppThemePalette = "chiron" | "pearl" | "mist" | "graphite" | "cobalt" | "sage" | "amber" | "blush" | "vscode" | "idea" | "xcode" | "jetbrains" | "cursor" | "claude" | "custom";
 export type AppCornerStyle = "none" | "small" | "large";
 
 export interface AppCustomUiColors {
@@ -45,7 +45,7 @@ export interface AppCustomUiColorDef {
 export const APP_CUSTOM_UI_COLOR_DEFS: readonly AppCustomUiColorDef[] = [
   { key: "background", varName: "--background", labelKey: "settings.customUiBackground" },
   { key: "foreground", varName: "--foreground", labelKey: "settings.customUiForeground" },
-  { key: "primary", varName: "--primary", rgbVarName: "--dbx-primary-rgb", labelKey: "settings.customUiPrimary" },
+  { key: "primary", varName: "--primary", rgbVarName: "--chiron-horizon-primary-rgb", labelKey: "settings.customUiPrimary" },
   { key: "border", varName: "--border", labelKey: "settings.customUiBorder" },
   { key: "sidebar", varName: "--sidebar", labelKey: "settings.customUiSidebar" },
 ];
@@ -76,12 +76,12 @@ export const APP_CUSTOM_UI_DERIVED_VAR_NAMES: readonly string[] = [
   "--sidebar-ring",
   "--input",
   "--ring",
-  "--dbx-chrome",
-  "--dbx-chrome-muted",
-  "--dbx-content",
-  "--dbx-editor-toolbar",
-  "--dbx-gutter",
-  "--dbx-sidebar-header",
+  "--chiron-horizon-chrome",
+  "--chiron-horizon-chrome-muted",
+  "--chiron-horizon-content",
+  "--chiron-horizon-editor-toolbar",
+  "--chiron-horizon-gutter",
+  "--chiron-horizon-sidebar-header",
 ];
 
 export function mixHex(a: string, b: string, weight: number): string {
@@ -142,12 +142,12 @@ export function deriveCustomUiColors(colors: AppCustomUiColors): Record<string, 
     "--sidebar-ring": rgbValue(primary),
     "--input": rgbValue(border),
     "--ring": rgbValue(primary),
-    "--dbx-chrome": chrome,
-    "--dbx-chrome-muted": chromeMuted,
-    "--dbx-content": rgbValue(background),
-    "--dbx-editor-toolbar": toolbar,
-    "--dbx-gutter": gutter,
-    "--dbx-sidebar-header": sidebarHeader,
+    "--chiron-horizon-chrome": chrome,
+    "--chiron-horizon-chrome-muted": chromeMuted,
+    "--chiron-horizon-content": rgbValue(background),
+    "--chiron-horizon-editor-toolbar": toolbar,
+    "--chiron-horizon-gutter": gutter,
+    "--chiron-horizon-sidebar-header": sidebarHeader,
   };
 }
 
@@ -159,7 +159,7 @@ export type AppThemePaletteOption = {
 };
 
 export const APP_THEME_PALETTES: AppThemePaletteOption[] = [
-  { value: "gaussian", labelKey: "settings.themePaletteGaussian", className: "theme-gaussian", previewColor: "#1456c7" },
+  { value: "chiron", labelKey: "settings.themePaletteChiron", className: "theme-chiron", previewColor: "#1456c7" },
   { value: "pearl", labelKey: "settings.themePalettePearl", className: null, previewColor: "#ffffff" },
   { value: "mist", labelKey: "settings.themePaletteMist", className: "theme-soft", previewColor: "#e4eaf2" },
   { value: "graphite", labelKey: "settings.themePaletteGraphite", className: "theme-graphite", previewColor: "#d8dce4" },
@@ -188,7 +188,7 @@ export function normalizeAppThemeMode(value: string | null): AppThemeMode {
 
 export function normalizeAppThemePalette(value: string | null): AppThemePalette {
   if (
-    value === "gaussian" ||
+    value === "chiron" ||
     value === "mist" ||
     value === "graphite" ||
     value === "cobalt" ||
@@ -205,7 +205,7 @@ export function normalizeAppThemePalette(value: string | null): AppThemePalette 
     value === "pearl"
   )
     return value;
-  return "gaussian";
+  return "chiron";
 }
 
 export function normalizeAppCustomUiColors(value: unknown): AppCustomUiColors {

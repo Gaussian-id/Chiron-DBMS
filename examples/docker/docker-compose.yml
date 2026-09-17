@@ -1,16 +1,16 @@
 services:
-  dbx:
-    image: t8y2/dbx
+  chiron-horizon:
+    image: Gaussian-id/Gauss-Horizon
     ports:
       - "4224:4224"
     environment:
-      # Change this before exposing DBX to a network.
-      - DBX_PASSWORD=changeme
-      # Uncomment when serving DBX behind a reverse-proxy subpath.
-      # - DBX_PUBLIC_BASE_PATH=/dbx
+      # Change this before exposing Chiron Horizon to a network.
+      - CHIRON_HORIZON_PASSWORD=changeme
+      # Uncomment when serving Chiron Horizon behind a reverse-proxy subpath.
+      # - CHIRON_HORIZON_PUBLIC_BASE_PATH=/chiron-horizon
     volumes:
-      - dbx-data:/app/data
+      - chiron-horizon-data:/app/data
     restart: unless-stopped
 
 volumes:
-  dbx-data:
+  chiron-horizon-data:

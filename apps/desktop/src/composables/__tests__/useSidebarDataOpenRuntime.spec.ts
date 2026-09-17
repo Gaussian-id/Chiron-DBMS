@@ -586,7 +586,7 @@ describe("useSidebarDataOpenRuntime", () => {
         tableName: "users",
         tableType: "TABLE",
         columns: [{ name: "id", data_type: "bigint", is_nullable: false, column_default: null, is_primary_key: false, extra: null }],
-        primaryKeys: ["__DBX_ROWID"],
+        primaryKeys: ["__CHIRON_HORIZON_ROWID"],
       },
       tableMetaUpdatedAt: Date.now(),
       tableMetaGeneration: 0,
@@ -681,7 +681,7 @@ describe("useSidebarDataOpenRuntime", () => {
     expect(mocks.tabs[0]?.tableMeta?.columns.map((column) => column.name)).toEqual(["id"]);
     expect(mocks.tabs[0]?.tableMetaUpdatedAt).toBeDefined();
 
-    // 外部 ALTER TABLE ... ADD age：DBX 断开→重连。断开时 connectionStore 会
+    // 外部 ALTER TABLE ... ADD age：Chiron Horizon 断开→重连。断开时 connectionStore 会
     // 清掉该连接下数据标签页的 freshness 戳（staleConnectionDataTabMetadata），
     // 此处等价模拟该生命周期边界。
     mocks.tabs[0]!.tableMetaUpdatedAt = undefined;

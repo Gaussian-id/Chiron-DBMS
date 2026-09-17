@@ -189,7 +189,7 @@ export interface GeneratorParams {
 }
 
 export interface GeneratedSqlExpression {
-  __dbxGeneratedSqlExpression: true;
+  __chironHorizonGeneratedSqlExpression: true;
   sql: string;
   display: string;
 }
@@ -235,11 +235,11 @@ export function randDecimal(min: number, max: number, decimals: number): number 
 }
 
 export function isGeneratedSqlExpression(value: unknown): value is GeneratedSqlExpression {
-  return !!value && typeof value === "object" && (value as GeneratedSqlExpression).__dbxGeneratedSqlExpression === true;
+  return !!value && typeof value === "object" && (value as GeneratedSqlExpression).__chironHorizonGeneratedSqlExpression === true;
 }
 
 function generatedSqlExpression(sql: string, display = sql): GeneratedSqlExpression {
-  return { __dbxGeneratedSqlExpression: true, sql, display };
+  return { __chironHorizonGeneratedSqlExpression: true, sql, display };
 }
 
 function trimColumnDefault(defaultValue: string | null | undefined): string | null {
@@ -374,7 +374,7 @@ function formatLocalDate(d: Date): string {
 
 function ensureRange(start: Date, end: Date): [Date, Date] {
   if (start.getTime() > end.getTime()) {
-    console.warn("[dbx] date range reversed, swapping start/end", start, end);
+    console.warn("[chiron-horizon] date range reversed, swapping start/end", start, end);
     return [end, start];
   }
   return [start, end];
@@ -1559,7 +1559,7 @@ export function generateValue(columnName: string, dataType: string, generatorKey
 
   const key = generatorKey ?? findGeneratorKey(columnName, dataType);
   if ((key === "date" || key === "datetime") && rowIndex === 0) {
-    console.log("[dbx:gen] col=%s key=%s start=%j end=%j allDay=%j", columnName, key, params?.start, params?.end, params?.allDay);
+    console.log("[chiron-horizon:gen] col=%s key=%s start=%j end=%j allDay=%j", columnName, key, params?.start, params?.end, params?.allDay);
   }
 
   if (key === "number") {
@@ -1824,7 +1824,7 @@ function isTdengineStableGenerate(config: TableGenerateConfig, databaseType?: Da
 
 function generateTdengineChildTableName(): string {
   const randomSuffix = Math.random().toString(36).slice(2, 8).padEnd(6, "0");
-  return `dbx_gen_${Date.now().toString(36)}_${randomSuffix}`;
+  return `chiron_horizon_gen_${Date.now().toString(36)}_${randomSuffix}`;
 }
 
 /**

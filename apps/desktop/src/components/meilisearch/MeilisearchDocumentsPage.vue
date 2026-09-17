@@ -164,7 +164,7 @@ function stripSearchMarks(value: unknown): unknown {
   return value;
 }
 
-/** The user payload exactly as returned by the search — already free of dbx/Meilisearch metadata. */
+/** The user payload exactly as returned by the search — already free of chiron-horizon/Meilisearch metadata. */
 function rawDocument(hit: Hit): Record<string, unknown> {
   return { ...hit.document };
 }
@@ -795,7 +795,7 @@ onBeforeUnmount(() => {
 .meilisearch-results :deep(mark) {
   background: color-mix(in srgb, var(--primary) 20%, transparent);
   color: var(--foreground);
-  border-radius: var(--dbx-radius-sm);
+  border-radius: var(--chiron-horizon-radius-sm);
   padding-inline: 0.125rem;
 }
 </style>

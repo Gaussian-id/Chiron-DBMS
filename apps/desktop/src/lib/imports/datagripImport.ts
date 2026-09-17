@@ -38,7 +38,7 @@ type DriverProfile = {
   user: string;
 };
 
-// driver-ref prefix → dbx profile
+// driver-ref prefix → chiron-horizon profile
 const driverRefMap: Record<string, DriverProfile> = {
   mysql: { dbType: "mysql", profile: "mysql", label: "MySQL", port: 3306, user: "root" },
   mariadb: { dbType: "mysql", profile: "mariadb", label: "MariaDB", port: 3306, user: "root" },
@@ -67,7 +67,7 @@ const driverRefMap: Record<string, DriverProfile> = {
   kingbase8: { dbType: "kingbase", profile: "kingbase", label: "KingbaseES", port: 54321, user: "SYSTEM" },
 };
 
-// product name from <database-info product="..."> → dbx profile
+// product name from <database-info product="..."> → chiron-horizon profile
 const productMap: Record<string, DriverProfile> = {
   mysql: { dbType: "mysql", profile: "mysql", label: "MySQL", port: 3306, user: "root" },
   mariadb: { dbType: "mysql", profile: "mariadb", label: "MariaDB", port: 3306, user: "root" },
@@ -89,7 +89,7 @@ const productMap: Record<string, DriverProfile> = {
   kingbase: { dbType: "kingbase", profile: "kingbase", label: "KingbaseES", port: 54321, user: "SYSTEM" },
 };
 
-// JDBC subprotocol → dbx profile (fallback when driver-ref and product are unknown)
+// JDBC subprotocol → chiron-horizon profile (fallback when driver-ref and product are unknown)
 const subprotocolMap: Record<string, DriverProfile> = {
   mysql: { dbType: "mysql", profile: "mysql", label: "MySQL", port: 3306, user: "root" },
   mariadb: { dbType: "mysql", profile: "mariadb", label: "MariaDB", port: 3306, user: "root" },

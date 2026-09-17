@@ -86,10 +86,10 @@ export interface AgentDownloadCatalog {
   nativeAgents: NativeAgentDisplayEntry[];
 }
 
-const JDBC_PLUGIN_DOWNLOAD_URL = "https://dl.dbxio.com/releases/latest/dbx-jdbc-plugin-latest.zip";
-const GITHUB_RELEASE_DOWNLOAD_PREFIX = "https://github.com/t8y2/dbx/releases/download/";
-const CNB_RELEASE_DOWNLOAD_PREFIX = "https://cnb.cool/dbxio.com/dbx/-/releases/download/";
-const MIN_APP_VERSION = "0.6.0";
+const JDBC_PLUGIN_DOWNLOAD_URL = "https://github.com/Gaussian-id/Gauss-Horizon/releases/download/v0.1.0/chiron-horizon-jdbc-plugin-0.1.0.zip";
+const GITHUB_RELEASE_DOWNLOAD_PREFIX = "https://github.com/Gaussian-id/Gauss-Horizon/releases/download/";
+const CNB_RELEASE_DOWNLOAD_PREFIX = "https://distribution-disabled.invalid/-/releases/download/";
+const MIN_APP_VERSION = "0.1.0";
 const driverVersionMap = driverVersions as Record<string, string>;
 
 const platformLabels: Record<string, string> = {
@@ -197,20 +197,20 @@ function registryReleaseAssets(registry: AgentRegistry): GitHubReleaseAsset[] {
 
   for (const [jreKey, jre] of Object.entries(registry.jres ?? {})) {
     for (const [platformKey, artifact] of Object.entries(jre.platforms ?? {})) {
-      addArtifact(artifact, `dbx-jre-${jreKey}-${platformKey}.tar.zst`);
+      addArtifact(artifact, `chiron-horizon-jre-${jreKey}-${platformKey}.tar.zst`);
     }
   }
 
   for (const [driverKey, driver] of Object.entries(registry.drivers ?? {})) {
-    addArtifact(driver.jar, `dbx-agent-${driverKey}-${driver.version ?? "latest"}.tar.zst`);
+    addArtifact(driver.jar, `chiron-horizon-agent-${driverKey}-${driver.version ?? "latest"}.tar.zst`);
     for (const [platformKey, artifact] of Object.entries(driver.native ?? {})) {
-      addArtifact(artifact, `dbx-agent-${driverKey}-${driver.version ?? "latest"}-${platformKey}.tar.zst`);
+      addArtifact(artifact, `chiron-horizon-agent-${driverKey}-${driver.version ?? "latest"}-${platformKey}.tar.zst`);
     }
   }
 
   if (releaseAssetUrl) {
     for (const platformKey of Object.keys(registry.jres?.["21"]?.platforms ?? {})) {
-      const name = `dbx-agents-offline-${platformKey}.zip`;
+      const name = `chiron-horizon-agents-offline-${platformKey}.zip`;
       assets.set(name, {
         name,
         size: 0,
@@ -222,15 +222,7 @@ function registryReleaseAssets(registry: AgentRegistry): GitHubReleaseAsset[] {
   return Array.from(assets.values());
 }
 
-export function downloadLinksFor(url: string): DownloadLink[] {
-  const releasePath = url.startsWith(GITHUB_RELEASE_DOWNLOAD_PREFIX) ? url.slice(GITHUB_RELEASE_DOWNLOAD_PREFIX.length) : null;
-  if (!releasePath) return [{ source: "official", url }];
-
-  return [
-    { source: "github", url },
-    { source: "cnb", url: `${CNB_RELEASE_DOWNLOAD_PREFIX}${releasePath}` },
-  ];
-}
+export function downloadLinksFor(_url: string): DownloadLink[] { return []; }
 
 function assetMap(assets: GitHubReleaseAsset[]): Map<string, GitHubReleaseAsset> {
   return new Map(assets.map((asset) => [asset.name, asset]));
@@ -259,8 +251,8 @@ export function buildAgentDownloadCatalog(assets: GitHubReleaseAsset[]): AgentDo
 
 export function buildJdbcPluginDownloadEntry(): JdbcPluginDownloadEntry {
   return {
-    label: "DBX JDBC Plugin",
-    filename: "dbx-jdbc-plugin-latest.zip",
+    label: "Chiron Horizon JDBC Plugin",
+    filename: "chiron-horizon-jdbc-plugin-0.1.0.zip",
     url: JDBC_PLUGIN_DOWNLOAD_URL,
   };
 }
@@ -268,7 +260,7 @@ export function buildJdbcPluginDownloadEntry(): JdbcPluginDownloadEntry {
 export function buildJreEntries(assets: GitHubReleaseAsset[]): JreDisplayEntry[] {
   return assets
     .map((asset) => {
-      const match = /^dbx-jre-(\d+)-(.+)\.tar\.(?:zst|gz)$/.exec(asset.name);
+      const match = /^chiron-horizon-jre-(\d+)-(.+)\.tar\.(?:zst|gz)$/.exec(asset.name);
       if (!match) return null;
 
       const [, jreKey, platformKey] = match;
@@ -292,7 +284,7 @@ export function buildDriverEntries(assets: GitHubReleaseAsset[]): DriverDisplayE
   return currentDriverKeys
     .map((key) => {
       const version = driverVersionMap[key] ?? "";
-      const asset = byName.get(`dbx-agent-${key}-${version}.tar.zst`) ?? byName.get(`dbx-agent-${key}-${version}.zip`) ?? byName.get(`dbx-agent-${key}-${version}.jar`) ?? byName.get(`dbx-agent-${key}.jar`);
+      const asset = byName.get(`chiron-horizon-agent-${key}-${version}.tar.zst`) ?? byName.get(`chiron-horizon-agent-${key}-${version}.zip`) ?? byName.get(`chiron-horizon-agent-${key}-${version}.jar`) ?? byName.get(`chiron-horizon-agent-${key}.jar`);
       if (!asset) return null;
 
       return {
@@ -331,9 +323,9 @@ export function buildNativeAgentEntries(assets: GitHubReleaseAsset[]): NativeAge
   const platforms = "macos-aarch64|macos-x64|linux-aarch64|linux-x64|windows-aarch64|windows-x64";
 
   for (const asset of assets) {
-    const packageMatch = new RegExp(`^dbx-agent-(${currentDriverKeyPattern})-(.+)-(${platforms})\\.(?:tar\\.zst|zip)$`).exec(asset.name);
-    const versionedMatch = new RegExp(`^dbx-agent-(${currentDriverKeyPattern})-(.+)-(${platforms})(?:\\.exe)?$`).exec(asset.name);
-    const legacyMatch = new RegExp(`^dbx-agent-(${currentDriverKeyPattern})-(${platforms})(?:\\.exe)?$`).exec(asset.name);
+    const packageMatch = new RegExp(`^chiron-horizon-agent-(${currentDriverKeyPattern})-(.+)-(${platforms})\\.(?:tar\\.zst|zip)$`).exec(asset.name);
+    const versionedMatch = new RegExp(`^chiron-horizon-agent-(${currentDriverKeyPattern})-(.+)-(${platforms})(?:\\.exe)?$`).exec(asset.name);
+    const legacyMatch = new RegExp(`^chiron-horizon-agent-(${currentDriverKeyPattern})-(${platforms})(?:\\.exe)?$`).exec(asset.name);
     const match = packageMatch ?? versionedMatch ?? legacyMatch;
     if (!match) continue;
 
@@ -364,7 +356,7 @@ export function buildNativeAgentEntries(assets: GitHubReleaseAsset[]): NativeAge
 export function buildOfflineBundleEntries(assets: GitHubReleaseAsset[]): OfflineBundleEntry[] {
   return assets
     .map((asset) => {
-      const match = /^dbx-agents-offline-(.+)\.zip$/.exec(asset.name);
+      const match = /^chiron-horizon-agents-offline-(.+)\.zip$/.exec(asset.name);
       if (!match) return null;
       const platformKey = match[1];
       return {

@@ -5,7 +5,7 @@ import { mkdirSync, rmSync, writeFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
-const REPO = "t8y2/dbx";
+const REPO = "Gaussian-id/Gauss-Horizon";
 const GITHUB_TOKEN = process.env.GITHUB_TOKEN || "";
 const DEEPSEEK_API_KEY = process.env.DEEPSEEK_API_KEY || "";
 const OUT_CN = "releases-cn.json";
@@ -16,7 +16,7 @@ const RELEASES_CN_DIR = "releases-cn";
 const RELEASES_EN_DIR = "releases-en";
 const LATEST_EN_OUT = "latest-en.json";
 const LATEST_NOTES_OUT = "latest-notes.json";
-const EN_CACHE_URL = process.env.CHANGELOG_EN_CACHE_URL || "https://dl.dbxio.com/changelog/releases-en.json";
+const EN_CACHE_URL = process.env.CHANGELOG_EN_CACHE_URL || "https://distribution-disabled.invalid/changelog/releases-en.json";
 const APP_RELEASE_TAG_PATTERN = /^v[0-9]+[.][0-9]+[.][0-9]+(?:[.-][0-9A-Za-z.-]+)?$/;
 
 const SECTION_MAP = {

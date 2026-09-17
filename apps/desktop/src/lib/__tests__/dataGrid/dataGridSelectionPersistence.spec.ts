@@ -178,12 +178,12 @@ describe("data grid selection persistence", () => {
   it("uses the hidden row identifier when it is the declared key", () => {
     const snapshot = captureDataGridSelection(
       baseOptions({
-        columns: ["name", "__DBX_ROWID"],
+        columns: ["name", "__CHIRON_HORIZON_ROWID"],
         rows: [
           ["Ada", "AAA1"],
           ["Grace", "AAA2"],
         ],
-        primaryKeys: ["__DBX_ROWID"],
+        primaryKeys: ["__CHIRON_HORIZON_ROWID"],
         visibleColumnIndexes: [0],
         displayItems: [
           { id: 0, sourceIndex: 0 },
@@ -197,7 +197,7 @@ describe("data grid selection persistence", () => {
     expect(
       restoreDataGridSelection({
         snapshot,
-        columns: ["name", "__DBX_ROWID"],
+        columns: ["name", "__CHIRON_HORIZON_ROWID"],
         rows: [
           ["Grace changed", "AAA2"],
           ["Ada", "AAA1"],

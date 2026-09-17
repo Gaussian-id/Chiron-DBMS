@@ -3,7 +3,7 @@ import i18n from "@/i18n";
 
 const blockers = new Set<() => string | undefined>();
 let barrierDepth = 0;
-export const UPDATE_RESTORE_KEY = "dbx-update-restore-tabs";
+export const UPDATE_RESTORE_KEY = "chiron-horizon-update-restore-tabs";
 
 /** Editors with non-durable drafts must explicitly veto a restart. */
 export function useUpdateBlocker(blocker: () => string | undefined): void {
@@ -110,7 +110,7 @@ export async function setupUpdatePreparation(participant: UpdatePreparationParti
     held.delete(id);
   };
   const unlisteners = [
-    await listen<{ id: string; owner: string }>("dbx:update-prepare", async ({ payload }) => {
+    await listen<{ id: string; owner: string }>("chiron-horizon:update-prepare", async ({ payload }) => {
       if (payload.owner === label) return;
       let error: string | undefined;
       try {
@@ -119,10 +119,10 @@ export async function setupUpdatePreparation(participant: UpdatePreparationParti
         error = String(cause);
         release(payload.id);
       }
-      await emitTo(payload.owner, "dbx:update-prepared", { id: payload.id, label, error });
+      await emitTo(payload.owner, "chiron-horizon:update-prepared", { id: payload.id, label, error });
     }),
-    await listen<{ id: string; label: string; error?: string }>("dbx:update-prepared", ({ payload }) => pending.get(payload.id)?.(payload)),
-    await listen<{ id: string }>("dbx:update-release", ({ payload }) => release(payload.id)),
+    await listen<{ id: string; label: string; error?: string }>("chiron-horizon:update-prepared", ({ payload }) => pending.get(payload.id)?.(payload)),
+    await listen<{ id: string }>("chiron-horizon:update-release", ({ payload }) => release(payload.id)),
   ];
   return {
     async prepare() {
@@ -147,7 +147,7 @@ export async function setupUpdatePreparation(participant: UpdatePreparationParti
       const timeout = new Promise<never>((_, reject) => {
         timer = setTimeout(() => reject(new Error(message("preparationTimeout", "A window did not save its drafts within 5 seconds. Please retry."))), 5000);
       });
-      const work = Promise.race([Promise.all([acknowledgements, prepareLocal(id), emit("dbx:update-prepare", { id, owner: label })]), timeout]);
+      const work = Promise.race([Promise.all([acknowledgements, prepareLocal(id), emit("chiron-horizon:update-prepare", { id, owner: label })]), timeout]);
       try {
         await work;
         const current = (await getAllWebviewWindows()).map((item) => item.label).sort();
@@ -156,11 +156,11 @@ export async function setupUpdatePreparation(participant: UpdatePreparationParti
         assertUpdateSafe();
         return () => {
           release(id);
-          void emit("dbx:update-release", { id });
+          void emit("chiron-horizon:update-release", { id });
         };
       } catch (error) {
         release(id);
-        await emit("dbx:update-release", { id });
+        await emit("chiron-horizon:update-release", { id });
         throw error;
       } finally {
         clearTimeout(timer);

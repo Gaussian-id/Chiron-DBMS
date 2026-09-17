@@ -92,7 +92,7 @@ function createOptions(): UseDataGridExportOptions {
     })),
     databaseType: computed(() => "mysql"),
     connectionId: computed(() => "connection-1"),
-    database: computed(() => "dbx"),
+    database: computed(() => "chiron-horizon"),
     context: computed(() => "results"),
     sourceColumns: computed(() => ["id"]),
     columnTypes: computed(() => ["int"]),

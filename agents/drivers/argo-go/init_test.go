@@ -8,7 +8,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/t8y2/dbx/agents/go-common/gohive"
+	"github.com/Gaussian-id/Gauss-Horizon/agents/go-common/gohive"
 )
 
 func TestRunHiveInitStatementsExecutesAndDrainsResults(t *testing.T) {

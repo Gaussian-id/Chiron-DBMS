@@ -1,20 +1,20 @@
 [package]
-name = "dbx-plugin-packager"
+name = "chiron-horizon-plugin-packager"
 version = "0.1.0"
 edition = "2021"
 license = "Apache-2.0"
-description = "Build .dbxp archives for DBX plugins"
+description = "Build .chiron-horizonp archives for Chiron Horizon plugins"
 autobins = false
 
 [workspace]
 
 [lib]
-name = "dbx_plugin_packager"
+name = "chiron_horizon_plugin_packager"
 path = "src/main.rs"
 
 [[bin]]
-name = "dbx-plugin-packager"
-path = "src/bin/dbx-plugin-packager.rs"
+name = "chiron-horizon-plugin-packager"
+path = "src/bin/chiron-horizon-plugin-packager.rs"
 
 [dependencies]
 base64 = "0.22"

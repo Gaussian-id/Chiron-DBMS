@@ -10,19 +10,19 @@ use super::{
     update_cache::{self, CacheRecord},
     update_portable,
 };
-pub use dbx_core::update::UpdateInfo;
+pub use chiron_horizon_core::update::UpdateInfo;
 use semver::Version;
 use serde::{Deserialize, Serialize};
 use tauri::{AppHandle, Emitter, Manager};
 use tauri_plugin_updater::{Update, UpdaterExt};
 
 const OFFICIAL_UPDATE_ENDPOINTS: [&str; 2] = [
-    "https://dl.dbxio.com/releases/latest/latest.json",
-    "https://github.com/t8y2/dbx/releases/latest/download/latest.json",
+    "https://distribution-disabled.invalid/releases/latest/latest.json",
+    "https://github.com/Gaussian-id/Gauss-Horizon/releases/latest/download/latest.json",
 ];
-const R2_LATEST_RELEASE_DOWNLOAD_PREFIX: &str = "https://dl.dbxio.com/releases/latest/";
-const CNB_RELEASE_DOWNLOAD_PREFIX: &str = "https://cnb.cool/dbxio.com/dbx/-/releases/download/";
-const GITHUB_RELEASE_DOWNLOAD_PREFIX: &str = "https://github.com/t8y2/dbx/releases/download/";
+const R2_LATEST_RELEASE_DOWNLOAD_PREFIX: &str = "https://distribution-disabled.invalid/releases/latest/";
+const CNB_RELEASE_DOWNLOAD_PREFIX: &str = "https://distribution-disabled.invalid/-/releases/download/";
+const GITHUB_RELEASE_DOWNLOAD_PREFIX: &str = "https://github.com/Gaussian-id/Gauss-Horizon/releases/download/";
 const UPDATE_DOWNLOAD_PROGRESS_EVENT: &str = "update-download-progress";
 const DOWNLOAD_CANCELED_ERROR: &str = "Download canceled by user.";
 const DOWNLOAD_STALL_TIMEOUT: Duration = Duration::from_secs(15);
@@ -355,12 +355,13 @@ fn tag_version(version: &str) -> String {
 #[tauri::command]
 pub async fn check_for_updates(
     locale: Option<String>,
-    source: Option<dbx_core::DownloadSource>,
+    source: Option<chiron_horizon_core::DownloadSource>,
 ) -> Result<UpdateInfo, String> {
+    chiron_horizon_core::distribution::ensure_enabled()?;
     let locale = locale.unwrap_or_else(|| "zh-CN".to_string());
-    let release = dbx_core::update::fetch_latest_release(&locale, source.unwrap_or_default()).await?;
+    let release = chiron_horizon_core::update::fetch_latest_release(&locale, source.unwrap_or_default()).await?;
     let current_version = env!("CARGO_PKG_VERSION");
-    let mut info = dbx_core::update::build_update_info(release, current_version);
+    let mut info = chiron_horizon_core::update::build_update_info(release, current_version);
     info.portable_mode = crate::data_dir::is_portable_mode();
     info.manual_update_only = requires_manual_update(IS_WINDOWS_7_TARGET);
     Ok(info)
@@ -371,14 +372,14 @@ fn requires_manual_update(is_windows_7_target: bool) -> bool {
 }
 
 #[tauri::command]
-pub async fn fetch_changelog(lang: Option<String>) -> Result<dbx_core::changelog::ChangelogData, String> {
+pub async fn fetch_changelog(lang: Option<String>) -> Result<chiron_horizon_core::changelog::ChangelogData, String> {
     let lang = lang.unwrap_or_else(|| "en".to_string());
-    dbx_core::changelog::fetch_changelog(&lang).await
+    chiron_horizon_core::changelog::fetch_changelog(&lang).await
 }
 
 #[tauri::command]
 pub async fn get_system_proxy_url() -> Option<String> {
-    tauri::async_runtime::spawn_blocking(dbx_core::update::system_proxy_url).await.ok().flatten()
+    tauri::async_runtime::spawn_blocking(chiron_horizon_core::update::system_proxy_url).await.ok().flatten()
 }
 
 #[tauri::command]
@@ -450,6 +451,7 @@ pub fn get_downloaded_update(
     app: AppHandle,
     state: tauri::State<'_, PendingUpdateState>,
 ) -> Result<Option<DownloadedUpdate>, String> {
+    chiron_horizon_core::distribution::ensure_enabled()?;
     let mut pending = state.pending.lock().map_err(|_| "Update state is unavailable.")?;
     match pending.as_ref() {
         Some(PendingUpdate::Ready(cached)) => return Ok(Some(cached.record.info.clone())),
@@ -465,7 +467,7 @@ pub fn get_downloaded_update(
         }
         Ok(None) => Ok(None),
         Err(error) => {
-            eprintln!("[DBX updater] discarded invalid cache: {error}");
+            eprintln!("[Chiron Horizon updater] discarded invalid cache: {error}");
             Ok(None)
         }
     }
@@ -489,6 +491,7 @@ pub async fn download_update(
     attempt_id: String,
     release_notes: Option<String>,
 ) -> Result<DownloadedUpdate, String> {
+    chiron_horizon_core::distribution::ensure_enabled()?;
     let portable_mode = crate::data_dir::is_portable_mode();
     if requires_manual_update(IS_WINDOWS_7_TARGET) {
         return Err("Windows 7 builds must be updated with the dedicated Windows 7 offline installer.".to_string());
@@ -515,7 +518,7 @@ pub async fn download_update(
             cache_id: uuid::Uuid::new_v4().to_string(),
             version: version.to_string(),
             portable_mode,
-            release_url: format!("https://github.com/t8y2/dbx/releases/tag/v{version}"),
+            release_url: format!("https://github.com/Gaussian-id/Gauss-Horizon/releases/tag/v{version}"),
             release_notes: release_notes.unwrap_or(notes),
             downloaded_at: std::time::SystemTime::now()
                 .duration_since(std::time::UNIX_EPOCH)
@@ -558,7 +561,7 @@ async fn download_update_inner(
     cancellation: &Arc<DownloadCancellation>,
 ) -> Result<(Update, Vec<u8>), String> {
     let endpoint_urls = source.endpoints(latest_version)?;
-    println!("[DBX updater] checking from {} endpoints: {}", source.label(), endpoint_urls.join(", "));
+    println!("[Chiron Horizon updater] checking from {} endpoints: {}", source.label(), endpoint_urls.join(", "));
     let mut endpoints = Vec::with_capacity(endpoint_urls.len());
     for endpoint_url in endpoint_urls {
         endpoints.push(endpoint_url.parse().map_err(|e| format!("Invalid update endpoint: {e}"))?);
@@ -566,7 +569,7 @@ async fn download_update_inner(
     let mut builder =
         app.updater_builder().endpoints(endpoints).map_err(|e| format!("Failed to configure updater endpoint: {e}"))?;
 
-    if let Some(proxy_url) = dbx_core::update::system_proxy_url() {
+    if let Some(proxy_url) = chiron_horizon_core::update::system_proxy_url() {
         let proxy = proxy_url.parse().map_err(|e| format!("Invalid system proxy URL: {e}"))?;
         builder = builder.proxy(proxy);
     }
@@ -588,7 +591,7 @@ async fn download_update_inner(
         return Err("Update version changed; check for updates again.".into());
     }
     let candidates = source.installer_asset_candidates(update.download_url.as_str(), latest_version);
-    println!("[DBX updater] candidates for installer download: {:?}", candidates);
+    println!("[Chiron Horizon updater] candidates for installer download: {:?}", candidates);
 
     let mut failures = Vec::new();
 
@@ -596,7 +599,7 @@ async fn download_update_inner(
         if cancellation.is_canceled() {
             return Err(DOWNLOAD_CANCELED_ERROR.to_string());
         }
-        println!("[DBX updater] downloading installer update from {candidate_url}");
+        println!("[Chiron Horizon updater] downloading installer update from {candidate_url}");
         let parsed_url = match reqwest::Url::parse(&candidate_url) {
             Ok(url) => url,
             Err(e) => {
@@ -671,7 +674,7 @@ async fn download_update_inner(
                 if cancellation.is_canceled() || error.contains("canceled") {
                     return Err(DOWNLOAD_CANCELED_ERROR.to_string());
                 }
-                println!("[DBX updater] installer candidate failed ({candidate_url}): {error}");
+                println!("[Chiron Horizon updater] installer candidate failed ({candidate_url}): {error}");
                 failures.push(format!("{candidate_url}: {error}"));
             }
         }
@@ -696,7 +699,7 @@ async fn download_portable_update_inner(
         if cancellation.is_canceled() {
             return Err(DOWNLOAD_CANCELED_ERROR.to_string());
         }
-        println!("[DBX updater] downloading portable update from {}", candidate.archive_url);
+        println!("[Chiron Horizon updater] downloading portable update from {}", candidate.archive_url);
         let result = async {
             let signature = download_bounded_bytes(
                 &client,
@@ -731,7 +734,7 @@ async fn download_portable_update_inner(
                 if cancellation.is_canceled() || error.contains("canceled") {
                     return Err(DOWNLOAD_CANCELED_ERROR.to_string());
                 }
-                println!("[DBX updater] portable update candidate failed: {error}");
+                println!("[Chiron Horizon updater] portable update candidate failed: {error}");
                 failures.push(format!("{}: {error}", candidate.archive_url));
             }
         }
@@ -745,7 +748,7 @@ fn portable_update_http_client() -> Result<reqwest::Client, String> {
         .connect_timeout(Duration::from_secs(15))
         .read_timeout(Duration::from_secs(15))
         .timeout(Duration::from_secs(15 * 60));
-    if let Some(proxy_url) = dbx_core::update::system_proxy_url() {
+    if let Some(proxy_url) = chiron_horizon_core::update::system_proxy_url() {
         let proxy = reqwest::Proxy::all(&proxy_url).map_err(|error| format!("Invalid system proxy URL: {error}"))?;
         builder = builder.proxy(proxy);
     }
@@ -883,6 +886,7 @@ pub fn install_downloaded_update(
     cache_id: String,
     expected_version: String,
 ) -> Result<(), String> {
+    chiron_horizon_core::distribution::ensure_enabled()?;
     let cached = state.take_ready(&cache_id, &expected_version)?;
     // Read and reverify disk bytes immediately before installation; never trust memory alone.
     let refreshed = match restore_cached(&app) {
@@ -1047,16 +1051,21 @@ mod tests {
     #[test]
     fn rewrites_github_asset_url_to_cnb() {
         let download_url = UpdateDownloadSource::Cnb
-            .rewrite_download_url("https://github.com/t8y2/dbx/releases/download/v0.5.39/DBX_0.5.39_aarch64.dmg")
+            .rewrite_download_url("https://github.com/Gaussian-id/Gauss-Horizon/releases/download/v0.5.39/CHIRON_HORIZON_0.5.39_aarch64.dmg")
             .unwrap()
             .unwrap();
-        assert_eq!(download_url, "https://cnb.cool/dbxio.com/dbx/-/releases/download/v0.5.39/DBX_0.5.39_aarch64.dmg");
+        assert_eq!(
+            download_url,
+            "https://distribution-disabled.invalid/-/releases/download/v0.5.39/CHIRON_HORIZON_0.5.39_aarch64.dmg"
+        );
     }
 
     #[test]
     fn accepts_existing_cnb_asset_url() {
         let download_url = UpdateDownloadSource::Cnb
-            .rewrite_download_url("https://cnb.cool/dbxio.com/dbx/-/releases/download/v0.5.39/DBX_0.5.39_aarch64.dmg")
+            .rewrite_download_url(
+                "https://distribution-disabled.invalid/-/releases/download/v0.5.39/CHIRON_HORIZON_0.5.39_aarch64.dmg",
+            )
             .unwrap();
         assert_eq!(download_url, None);
     }
@@ -1067,11 +1076,11 @@ mod tests {
         assert_eq!(candidates.len(), 2);
         assert_eq!(
             candidates[0].archive_url,
-            format!("{R2_LATEST_RELEASE_DOWNLOAD_PREFIX}DBX_0.5.64_x64-portable.zip")
+            format!("{R2_LATEST_RELEASE_DOWNLOAD_PREFIX}CHIRON_HORIZON_0.5.64_x64-portable.zip")
         );
         assert_eq!(
             candidates[1].archive_url,
-            format!("{GITHUB_RELEASE_DOWNLOAD_PREFIX}v0.5.64/DBX_0.5.64_x64-portable.zip")
+            format!("{GITHUB_RELEASE_DOWNLOAD_PREFIX}v0.5.64/CHIRON_HORIZON_0.5.64_x64-portable.zip")
         );
         assert!(candidates.iter().all(|candidate| candidate.signature_url == format!("{}.sig", candidate.archive_url)));
     }
@@ -1081,35 +1090,44 @@ mod tests {
         let candidates = UpdateDownloadSource::Cnb.portable_asset_candidates("v0.5.64", "aarch64").unwrap();
         assert_eq!(
             candidates[0].archive_url,
-            format!("{CNB_RELEASE_DOWNLOAD_PREFIX}v0.5.64/DBX_0.5.64_arm64-portable.zip")
+            format!("{CNB_RELEASE_DOWNLOAD_PREFIX}v0.5.64/CHIRON_HORIZON_0.5.64_arm64-portable.zip")
         );
         assert_eq!(
             candidates[1].archive_url,
-            format!("{R2_LATEST_RELEASE_DOWNLOAD_PREFIX}DBX_0.5.64_arm64-portable.zip")
+            format!("{R2_LATEST_RELEASE_DOWNLOAD_PREFIX}CHIRON_HORIZON_0.5.64_arm64-portable.zip")
         );
     }
 
     #[test]
     fn builds_installer_asset_candidates_for_cnb_source() {
         let candidates = UpdateDownloadSource::Cnb.installer_asset_candidates(
-            "https://github.com/t8y2/dbx/releases/download/v0.5.64/DBX_0.5.64_aarch64.dmg",
+            "https://github.com/Gaussian-id/Gauss-Horizon/releases/download/v0.5.64/CHIRON_HORIZON_0.5.64_aarch64.dmg",
             Some("0.5.64"),
         );
         assert_eq!(candidates.len(), 3);
-        assert_eq!(candidates[0], "https://cnb.cool/dbxio.com/dbx/-/releases/download/v0.5.64/DBX_0.5.64_aarch64.dmg");
-        assert_eq!(candidates[1], format!("{R2_LATEST_RELEASE_DOWNLOAD_PREFIX}DBX_0.5.64_aarch64.dmg"));
-        assert_eq!(candidates[2], "https://github.com/t8y2/dbx/releases/download/v0.5.64/DBX_0.5.64_aarch64.dmg");
+        assert_eq!(
+            candidates[0],
+            "https://distribution-disabled.invalid/-/releases/download/v0.5.64/CHIRON_HORIZON_0.5.64_aarch64.dmg"
+        );
+        assert_eq!(candidates[1], format!("{R2_LATEST_RELEASE_DOWNLOAD_PREFIX}CHIRON_HORIZON_0.5.64_aarch64.dmg"));
+        assert_eq!(
+            candidates[2],
+            "https://github.com/Gaussian-id/Gauss-Horizon/releases/download/v0.5.64/CHIRON_HORIZON_0.5.64_aarch64.dmg"
+        );
     }
 
     #[test]
     fn builds_installer_asset_candidates_for_official_source() {
         let candidates = UpdateDownloadSource::Official.installer_asset_candidates(
-            "https://github.com/t8y2/dbx/releases/download/v0.5.64/DBX_0.5.64_aarch64.dmg",
+            "https://github.com/Gaussian-id/Gauss-Horizon/releases/download/v0.5.64/CHIRON_HORIZON_0.5.64_aarch64.dmg",
             Some("0.5.64"),
         );
         assert_eq!(candidates.len(), 2);
-        assert_eq!(candidates[0], format!("{R2_LATEST_RELEASE_DOWNLOAD_PREFIX}DBX_0.5.64_aarch64.dmg"));
-        assert_eq!(candidates[1], "https://github.com/t8y2/dbx/releases/download/v0.5.64/DBX_0.5.64_aarch64.dmg");
+        assert_eq!(candidates[0], format!("{R2_LATEST_RELEASE_DOWNLOAD_PREFIX}CHIRON_HORIZON_0.5.64_aarch64.dmg"));
+        assert_eq!(
+            candidates[1],
+            "https://github.com/Gaussian-id/Gauss-Horizon/releases/download/v0.5.64/CHIRON_HORIZON_0.5.64_aarch64.dmg"
+        );
         assert!(!candidates.iter().any(|url| url.contains("cnb.cool")));
     }
 

@@ -1,6 +1,7 @@
+import { LEGACY_SQLSERVER_LINKED_SCHEMA_PREFIX } from "@/lib/compat/legacyProfile";
 import type { TreeNode } from "@/types/database";
 
-const SQLSERVER_LINKED_SCHEMA_PREFIX = "__dbx_sqlserver_linked__:";
+const SQLSERVER_LINKED_SCHEMA_PREFIX = "__chiron_horizon_sqlserver_linked__:";
 
 export interface SqlServerLinkedSchemaRef {
   server: string;
@@ -13,8 +14,10 @@ export function encodeSqlServerLinkedSchema(ref: SqlServerLinkedSchemaRef): stri
 }
 
 export function parseSqlServerLinkedSchema(schema: string | undefined): SqlServerLinkedSchemaRef | null {
-  if (!schema?.startsWith(SQLSERVER_LINKED_SCHEMA_PREFIX)) return null;
-  const parts = schema.slice(SQLSERVER_LINKED_SCHEMA_PREFIX.length).split("|").map(decodeURIComponent);
+  if (!schema) return null;
+  const prefix = [SQLSERVER_LINKED_SCHEMA_PREFIX, LEGACY_SQLSERVER_LINKED_SCHEMA_PREFIX].find((p) => schema.startsWith(p));
+  if (!prefix) return null;
+  const parts = schema.slice(prefix.length).split("|").map(decodeURIComponent);
   if (parts.length !== 3 || parts.some((part) => !part.trim())) return null;
   return { server: parts[0], catalog: parts[1], schema: parts[2] };
 }

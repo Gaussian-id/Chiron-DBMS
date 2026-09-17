@@ -159,14 +159,14 @@ describe("data grid structured filter persistence", () => {
   });
 
   it("ignores corrupt stored payloads", () => {
-    localStorage.setItem("dbx-data-grid-structured-filters", "{not json");
+    localStorage.setItem("chiron-horizon-data-grid-structured-filters", "{not json");
     dropDataGridStructuredFilterMemoryCache();
     expect(loadDataGridStructuredFilterState(cacheKey, scopeKey)).toBeUndefined();
   });
 
   it("keeps valid filter rules when a stored rule is invalid", () => {
     localStorage.setItem(
-      "dbx-data-grid-structured-filters",
+      "chiron-horizon-data-grid-structured-filters",
       JSON.stringify({
         version: 1,
         entries: [

@@ -6,7 +6,7 @@ import { buildSettingsTransferFilename, collectTransferCategories, parseSettings
 function fileWith(editor: Record<string, unknown>, overrides: Record<string, unknown> = {}): string {
   return JSON.stringify({
     formatVersion: SETTINGS_TRANSFER_FORMAT_VERSION,
-    app: { name: "dbx", version: "1.2.3" },
+    app: { name: "chiron-horizon", version: "1.2.3" },
     exportedAt: "2026-09-06T00:00:00.000Z",
     settings: { editor },
     ...overrides,
@@ -15,7 +15,7 @@ function fileWith(editor: Record<string, unknown>, overrides: Record<string, unk
 
 describe("settingsTransfer", () => {
   it("builds a dated transfer filename", () => {
-    expect(buildSettingsTransferFilename(new Date(2026, 8, 6))).toBe("dbx-settings-2026-09-06.json");
+    expect(buildSettingsTransferFilename(new Date(2026, 8, 6))).toBe("Chiron Horizon-settings-2026-09-06.json");
   });
 
   it("round-trips the default settings through serialize and parse", () => {

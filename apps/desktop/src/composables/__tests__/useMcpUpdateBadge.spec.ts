@@ -79,7 +79,7 @@ describe("useMcpUpdateBadge", () => {
     const badge = makeBadge(true);
     badge.applyMcpStatus(true);
     expect(badge.mcpUpdateAvailable.value).toBe(true);
-    badge.handleMcpStatusChanged(new CustomEvent("dbx:mcp-status-changed", { detail: { updateAvailable: false } }));
+    badge.handleMcpStatusChanged(new CustomEvent("chiron-horizon:mcp-status-changed", { detail: { updateAvailable: false } }));
     expect(badge.mcpUpdateAvailable.value).toBe(false);
   });
 
@@ -89,7 +89,7 @@ describe("useMcpUpdateBadge", () => {
     const badge = makeBadge(true);
     const refreshA = badge.refreshMcpUpdateStatus();
     // 用户升级，事件回传 false，使在途的请求 A 失效
-    badge.handleMcpStatusChanged(new CustomEvent("dbx:mcp-status-changed", { detail: { updateAvailable: false } }));
+    badge.handleMcpStatusChanged(new CustomEvent("chiron-horizon:mcp-status-changed", { detail: { updateAvailable: false } }));
     expect(badge.mcpUpdateAvailable.value).toBe(false);
     // 旧请求 A 晚返回 true（升级前的状态），必须被忽略
     pending.resolve(makeStatus(true));
@@ -104,7 +104,7 @@ describe("useMcpUpdateBadge", () => {
     const badge = makeBadge(true);
     const refresh = badge.refreshMcpUpdateStatus();
 
-    badge.handleMcpStatusChanged(new CustomEvent("dbx-mcp-status-changed", { detail: { updateAvailable: true, requestId: settingsRequestId } }));
+    badge.handleMcpStatusChanged(new CustomEvent("chiron-horizon-mcp-status-changed", { detail: { updateAvailable: true, requestId: settingsRequestId } }));
     expect(badge.mcpUpdateAvailable.value).toBe(false);
 
     pending.resolve(makeStatus(true));
@@ -132,7 +132,7 @@ describe("useMcpUpdateBadge", () => {
   it("无 payload 的事件回退到重新检查", async () => {
     mockedCheck.mockResolvedValue(makeStatus(true));
     const badge = makeBadge(true);
-    badge.handleMcpStatusChanged(new CustomEvent("dbx:mcp-status-changed"));
+    badge.handleMcpStatusChanged(new CustomEvent("chiron-horizon:mcp-status-changed"));
     await vi.waitFor(() => expect(badge.mcpUpdateAvailable.value).toBe(true));
   });
 });

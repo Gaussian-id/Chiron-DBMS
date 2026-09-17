@@ -48,7 +48,7 @@ describe("appendQueryResultSegment spatial merge", () => {
       rows: [["legacy row text"]],
       error: {
         version: 1 as const,
-        code: "DBX-JDBC-4001",
+        code: "Chiron Horizon-JDBC-4001",
         messageKey: "backendErrors.jdbc.sqlFailed",
         messageParams: { stage: "execute" },
         source: "jdbcAgent" as const,

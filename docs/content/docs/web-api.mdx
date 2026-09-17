@@ -1,29 +1,29 @@
 ---
 title: Web API Reference
-description: Internal HTTP APIs used by the DBX Web and Docker UI, including authentication, queries, background jobs, uploads, and downloads.
+description: Internal HTTP APIs used by the Chiron Horizon Web and Docker UI, including authentication, queries, background jobs, uploads, and downloads.
 ---
 
-<Callout type="warn">This API powers the DBX Web UI and internal tooling such as the MCP Web backend. It is not a separate public integration contract. Endpoints and payloads may change between releases. For scripting and agent workflows, prefer [@dbx-app/cli](/en/docs/cli) or [@dbx-app/mcp-server](/en/docs/mcp) when possible.</Callout>
+<Callout type="warn">This API powers the Chiron Horizon Web UI and internal tooling such as the MCP Web backend. It is not a separate public integration contract. Endpoints and payloads may change between releases. For scripting and agent workflows, prefer [@chiron-horizon/cli](/en/docs/cli) or [@chiron-horizon/mcp-server](/en/docs/mcp) when possible.</Callout>
 
 ## Base URL
 
-By default, DBX Web listens on port `4224`:
+By default, Chiron Horizon Web listens on port `4224`:
 
 ```text
 http://localhost:4224
 ```
 
-When deployed behind a reverse-proxy subpath, set `DBX_PUBLIC_BASE_PATH` and prefix every route. For example, with `/dbx`:
+When deployed behind a reverse-proxy subpath, set `CHIRON_HORIZON_PUBLIC_BASE_PATH` and prefix every route. For example, with `/chiron-horizon`:
 
 ```text
-https://example.com/dbx/api/auth/check
+https://example.com/chiron-horizon/api/auth/check
 ```
 
 All API routes are under `/api`.
 
 ## Authentication
 
-Protected routes require a session cookie named `dbx_session`.
+Protected routes require a session cookie named `chiron_horizon_session`.
 
 ### Check Auth State
 
@@ -69,29 +69,29 @@ Content-Type: application/json
 }
 ```
 
-On success, the response sets `Set-Cookie: dbx_session=...`. Reuse that cookie on later requests.
+On success, the response sets `Set-Cookie: chiron_horizon_session=...`. Reuse that cookie on later requests.
 
-Five consecutive login failures trigger an approximately 60-second lockout. Sessions live in the current Web process and require login again after restart. The cookie is `HttpOnly`, uses `SameSite=Lax`, and follows `DBX_PUBLIC_BASE_PATH` for its path.
+Five consecutive login failures trigger an approximately 60-second lockout. Sessions live in the current Web process and require login again after restart. The cookie is `HttpOnly`, uses `SameSite=Lax`, and follows `CHIRON_HORIZON_PUBLIC_BASE_PATH` for its path.
 
 ### Logout
 
 ```http
 POST /api/auth/logout
-Cookie: dbx_session=...
+Cookie: chiron_horizon_session=...
 ```
 
 ### Environment Variables
 
 | Variable | Purpose |
 | --- | --- |
-| `DBX_PASSWORD` | Set an initial password at container startup |
-| `DBX_DISABLE_PASSWORD=1` | Disable password protection entirely |
-| `DBX_PORT` | Change the listen port (default `4224`) |
-| `DBX_DATA_DIR` | Data directory containing `dbx.db` |
-| `DBX_PUBLIC_BASE_PATH` | Serve DBX under a subpath such as `/dbx` |
-| `DBX_MAX_UPLOAD_MB` | Override the general request and uploaded-file limit; default 1024 MB. Multipart routes reserve fixed protocol overhead (set at least `4096` for a 4 GiB file) |
-| `DBX_AGENT_DIR` | Override the Web Agent/driver directory; defaults to `agents` under the data directory |
-| `DBX_STATIC_DIR` | Override the Web static asset directory |
+| `CHIRON_HORIZON_PASSWORD` | Set an initial password at container startup |
+| `CHIRON_HORIZON_DISABLE_PASSWORD=1` | Disable password protection entirely |
+| `CHIRON_HORIZON_PORT` | Change the listen port (default `4224`) |
+| `CHIRON_HORIZON_DATA_DIR` | Data directory containing `chiron-horizon.db` |
+| `CHIRON_HORIZON_PUBLIC_BASE_PATH` | Serve Chiron Horizon under a subpath such as `/chiron-horizon` |
+| `CHIRON_HORIZON_MAX_UPLOAD_MB` | Override the general request and uploaded-file limit; default 1024 MB. Multipart routes reserve fixed protocol overhead (set at least `4096` for a 4 GiB file) |
+| `CHIRON_HORIZON_AGENT_DIR` | Override the Web Agent/driver directory; defaults to `agents` under the data directory |
+| `CHIRON_HORIZON_STATIC_DIR` | Override the Web static asset directory |
 
 ## Request Format
 
@@ -100,7 +100,7 @@ Cookie: dbx_session=...
 - Errors usually return JSON with an `error` field and an HTTP status code.
 - Long-running export, import, transfer, SQL-file, and AI operations commonly use a start request plus SSE progress and cancel/download routes rather than one synchronous response.
 
-Only the data-grid extractor currently exposes a tested, scoped OpenAPI document at `/api/query/data-grid-extractor-openapi.json`. It does not cover the complete DBX Web API or version the other routes.
+Only the data-grid extractor currently exposes a tested, scoped OpenAPI document at `/api/query/data-grid-extractor-openapi.json`. It does not cover the complete Chiron Horizon Web API or version the other routes.
 
 ## Connection APIs
 
@@ -108,7 +108,7 @@ Only the data-grid extractor currently exposes a tested, scoped OpenAPI document
 
 ```http
 GET /api/connection/list
-Cookie: dbx_session=...
+Cookie: chiron_horizon_session=...
 ```
 
 Returns saved connection profiles. Secrets such as passwords are stored separately from the returned JSON.
@@ -118,7 +118,7 @@ Returns saved connection profiles. Secrets such as passwords are stored separate
 ```http
 POST /api/connection/save
 Content-Type: application/json
-Cookie: dbx_session=...
+Cookie: chiron_horizon_session=...
 
 {
   "configs": [
@@ -190,14 +190,14 @@ Content-Type: application/json
 
 ```http
 GET /api/schema/tables?connection_id=CONNECTION_ID&database=app&schema=
-Cookie: dbx_session=...
+Cookie: chiron_horizon_session=...
 ```
 
 ### List Columns
 
 ```http
 GET /api/schema/columns?connection_id=CONNECTION_ID&database=app&schema=&table=users
-Cookie: dbx_session=...
+Cookie: chiron_horizon_session=...
 ```
 
 Other schema routes include:
@@ -301,23 +301,23 @@ Other MongoDB routes include `aggregate-documents`, `insert-documents`, `update-
 
 For automation, these packages are usually easier to maintain than calling the Web API directly:
 
-- MCP: [@dbx-app/mcp-server](/en/docs/mcp)
-- CLI: [@dbx-app/cli](/en/docs/cli)
+- MCP: [@chiron-horizon/mcp-server](/en/docs/mcp)
+- CLI: [@chiron-horizon/cli](/en/docs/cli)
 
 When MCP runs against a deployed Web instance, set:
 
 ```json
 {
   "env": {
-    "DBX_WEB_URL": "http://localhost:4224",
-    "DBX_WEB_PASSWORD": "your-password"
+    "CHIRON_HORIZON_WEB_URL": "http://localhost:4224",
+    "CHIRON_HORIZON_WEB_PASSWORD": "your-password"
   }
 }
 ```
 
 The MCP server handles login and session cookies for you.
 
-CLI supports the same `DBX_WEB_URL` and `DBX_WEB_PASSWORD` variables. Both integrations reuse server-side connections, drivers, read-only protection, production protection, and database privileges, making them easier to maintain across DBX upgrades than copied internal route payloads.
+CLI supports the same `CHIRON_HORIZON_WEB_URL` and `CHIRON_HORIZON_WEB_PASSWORD` variables. Both integrations reuse server-side connections, drivers, read-only protection, production protection, and database privileges, making them easier to maintain across Chiron Horizon upgrades than copied internal route payloads.
 
 ## Writes, Safety, and File Boundaries
 
@@ -331,9 +331,9 @@ CLI supports the same `DBX_WEB_URL` and `DBX_WEB_PASSWORD` variables. Both integ
 
 See the repository examples:
 
-- [examples/web-api/automation.sh](https://github.com/t8y2/dbx/tree/main/examples/web-api/automation.sh)
-- [examples/docker/docker-compose.yml](https://github.com/t8y2/dbx/tree/main/examples/docker/docker-compose.yml)
-- [examples/cli/basic-workflow.sh](https://github.com/t8y2/dbx/tree/main/examples/cli/basic-workflow.sh)
+- [examples/web-api/automation.sh](https://github.com/Gaussian-id/Gauss-Horizon/tree/main/examples/web-api/automation.sh)
+- [examples/docker/docker-compose.yml](https://github.com/Gaussian-id/Gauss-Horizon/tree/main/examples/docker/docker-compose.yml)
+- [examples/cli/basic-workflow.sh](https://github.com/Gaussian-id/Gauss-Horizon/tree/main/examples/cli/basic-workflow.sh)
 
 ## Route Groups
 
@@ -346,4 +346,4 @@ The Web backend exposes many more routes for the UI, including:
 - `/api/agents/*` and `/api/jdbc/*` for driver management
 - `/api/history/*` and `/api/saved-sql/*` for editor state
 
-Browse `crates/dbx-web/src/main.rs` in the repository for the full route list.
+Browse `crates/chiron-horizon-web/src/main.rs` in the repository for the full route list.

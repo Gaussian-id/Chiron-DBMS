@@ -1,4 +1,4 @@
-rootProject.name = 'dbx-agents'
+rootProject.name = 'chiron-horizon-agents'
 
 def infrastructureModules = ['common', 'test-support']
 def driverModules = [

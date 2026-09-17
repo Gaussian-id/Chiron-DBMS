@@ -46,10 +46,8 @@ export function buildSiteStructuredData() {
       description: DEFAULT_DESCRIPTION,
       logo: `${SITE_URL}/logo.png`,
       sameAs: [
-        "https://github.com/t8y2/dbx",
-        "https://www.npmjs.com/package/@dbx-app/mcp-server",
-        "https://cnb.cool/dbxio.com/dbx",
-        "https://atomgit.com/t8y2/dbx",
+        "https://github.com/Gaussian-id/Gauss-Horizon",
+        "https://www.npmjs.com/package/@chiron-horizon/mcp-server",
       ],
     },
   ] as const;
@@ -71,10 +69,9 @@ export function buildSoftwareApplicationStructuredData(lang: DocsLang, version: 
     softwareVersion: version,
     isAccessibleForFree: true,
     inLanguage: language,
-    codeRepository: "https://github.com/t8y2/dbx",
-    downloadUrl: "https://github.com/t8y2/dbx/releases/latest",
+    codeRepository: "https://github.com/Gaussian-id/Gauss-Horizon",
     releaseNotes: `${SITE_URL}/${lang}/changelog`,
-    license: "https://github.com/t8y2/dbx/blob/main/LICENSE",
+    license: "https://github.com/Gaussian-id/Gauss-Horizon/blob/main/LICENSE",
     screenshot: [
       `${SITE_URL}/screenshot-dark.png`,
       `${SITE_URL}/screenshot-er.png`,
@@ -90,8 +87,8 @@ export function buildSoftwareApplicationStructuredData(lang: DocsLang, version: 
     author: { "@id": `${SITE_URL}/#organization` },
     publisher: { "@id": `${SITE_URL}/#organization` },
     sameAs: [
-      "https://github.com/t8y2/dbx",
-      "https://www.npmjs.com/package/@dbx-app/mcp-server",
+      "https://github.com/Gaussian-id/Gauss-Horizon",
+      "https://www.npmjs.com/package/@chiron-horizon/mcp-server",
     ],
   } as const;
 }

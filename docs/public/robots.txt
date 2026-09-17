@@ -29,4 +29,4 @@ Allow: /
 User-agent: CCBot
 Allow: /
 
-Sitemap: https://dbxio.com/sitemap.xml
+Sitemap: https://distribution-disabled.invalid/sitemap.xml

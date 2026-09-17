@@ -157,7 +157,7 @@ function mountGrid(initialResult = largeValueResult(), onReload?: () => void) {
                 result: result.value,
                 databaseType: "mysql",
                 connectionId: "connection-1",
-                database: "dbx",
+                database: "chiron-horizon",
                 context: "table-data",
                 editable: true,
                 tableMeta: {
@@ -205,13 +205,13 @@ async function settle() {
 }
 
 function contextMenuButton(label: string): HTMLButtonElement {
-  const button = [...document.querySelectorAll<HTMLButtonElement>("[data-dbx-context-menu] button")].find((candidate) => candidate.textContent?.trim() === label);
+  const button = [...document.querySelectorAll<HTMLButtonElement>("[data-chiron-horizon-context-menu] button")].find((candidate) => candidate.textContent?.trim() === label);
   if (!button) throw new Error(`Context menu item not found: ${label}`);
   return button;
 }
 
 function contextMenuLabels(): string[] {
-  return [...document.querySelectorAll<HTMLButtonElement>("[data-dbx-context-menu] button")].map((button) => button.textContent?.trim() ?? "");
+  return [...document.querySelectorAll<HTMLButtonElement>("[data-chiron-horizon-context-menu] button")].map((button) => button.textContent?.trim() ?? "");
 }
 
 function columnHeader(host: HTMLElement, index: number): HTMLElement {
@@ -257,7 +257,7 @@ afterEach(() => {
     app.unmount();
     host.remove();
   }
-  document.querySelectorAll("[data-dbx-context-menu]").forEach((menu) => menu.remove());
+  document.querySelectorAll("[data-chiron-horizon-context-menu]").forEach((menu) => menu.remove());
 });
 
 describe("DataGrid context menu target lifecycle", () => {
@@ -340,7 +340,7 @@ describe("DataGrid context menu target lifecycle", () => {
     await settle();
 
     expect(event.defaultPrevented).toBe(false);
-    expect(document.querySelector("[data-dbx-context-menu]")).toBeNull();
+    expect(document.querySelector("[data-chiron-horizon-context-menu]")).toBeNull();
   });
 
   it("keeps the DataGrid context menu for a regular cell", async () => {
@@ -391,7 +391,7 @@ describe("DataGrid context menu target lifecycle", () => {
     // The item renders its label plus the Mod+R shortcut keys, so match by prefix.
     const refreshLabels = contextMenuLabels().filter((label) => label.startsWith("Refresh"));
     expect(refreshLabels.length).toBe(1);
-    const refreshButton = [...document.querySelectorAll<HTMLButtonElement>("[data-dbx-context-menu] button")].find((button) => button.textContent?.trim().startsWith("Refresh"));
+    const refreshButton = [...document.querySelectorAll<HTMLButtonElement>("[data-chiron-horizon-context-menu] button")].find((button) => button.textContent?.trim().startsWith("Refresh"));
     refreshButton!.click();
     await settle();
     expect(onReload).toHaveBeenCalledTimes(1);
@@ -476,7 +476,7 @@ describe("DataGrid context filter lifecycle", () => {
 
     await startEqualsFilter(host);
     await vi.waitFor(() => expect(fullHydrationCallCount()).toBe(1));
-    expect(document.querySelector("[data-dbx-context-menu]")).toBeNull();
+    expect(document.querySelector("[data-chiron-horizon-context-menu]")).toBeNull();
 
     hydration.resolve([hydratedResult(1, "full original value")]);
     await vi.waitFor(() => expect(onExecuteSql).toHaveBeenCalledTimes(1));

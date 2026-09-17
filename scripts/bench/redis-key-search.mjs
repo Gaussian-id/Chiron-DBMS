@@ -4,7 +4,7 @@ import { performance } from "node:perf_hooks";
 
 const DEFAULTS = {
   apiBase: "http://127.0.0.1:4224/api",
-  container: "dbx_bench_redis_key_search",
+  container: "chiron_horizon_bench_redis_key_search",
   image: "redis:7-alpine",
   host: "127.0.0.1",
   port: 16151,
@@ -76,18 +76,18 @@ Usage:
   pnpm bench:redis-key-search [options]
 
 Options:
-  --api-base=http://127.0.0.1:4224/api  DBX Web API base URL
-  --container=dbx_bench_redis_key_search Redis Docker container name
+  --api-base=http://127.0.0.1:4224/api  Chiron Horizon Web API base URL
+  --container=chiron_horizon_bench_redis_key_search Redis Docker container name
   --port=16151                              Host port for Redis
   --key-count=1000000                       Number of generated keys
   --pattern=user:*                          SCAN MATCH pattern
-  --scan-count=10000                        DBX SCAN COUNT value
-  --max-iterations=15                       DBX server-side SCAN iterations per API call
-  --typed=false                             Skip DBX includeTypes=true comparison
+  --scan-count=10000                        Chiron Horizon SCAN COUNT value
+  --max-iterations=15                       Chiron Horizon server-side SCAN iterations per API call
+  --typed=false                             Skip Chiron Horizon includeTypes=true comparison
   --json                                    Print JSON only
 
-Before running this benchmark, start DBX Web separately, for example:
-  DBX_DATA_DIR=/tmp/dbx-bench DBX_PORT=4224 DBX_DISABLE_PASSWORD=1 cargo run -p dbx-web
+Before running this benchmark, start Chiron Horizon Web separately, for example:
+  CHIRON_HORIZON_DATA_DIR=/tmp/chiron-horizon-bench CHIRON_HORIZON_PORT=4224 CHIRON_HORIZON_DISABLE_PASSWORD=1 cargo run -p chiron-horizon-web
 `);
 }
 
@@ -244,7 +244,7 @@ async function postJsonText(url, body) {
   return { text, json: JSON.parse(text) };
 }
 
-async function ensureDbxConnection(options) {
+async function ensureChironHorizonConnection(options) {
   const connectionId = `bench-redis-key-search-${options.port}`;
   const config = {
     id: connectionId,
@@ -267,7 +267,7 @@ async function ensureDbxConnection(options) {
   return connectionId;
 }
 
-async function measureDbxScan(options, connectionId, includeTypes) {
+async function measureChironHorizonScan(options, connectionId, includeTypes) {
   let cursor = 0;
   let calls = 0;
   let keys = 0;
@@ -291,7 +291,7 @@ async function measureDbxScan(options, connectionId, includeTypes) {
   } while (cursor !== 0);
 
   return {
-    label: includeTypes ? "DBX scan-keys-batch includeTypes=true" : "DBX scan-keys-batch includeTypes=false",
+    label: includeTypes ? "Chiron Horizon scan-keys-batch includeTypes=true" : "Chiron Horizon scan-keys-batch includeTypes=false",
     keys,
     calls,
     payloadBytes,
@@ -322,8 +322,8 @@ function printReport(result) {
   console.log(`- Redis: ${result.config.container} on ${result.config.host}:${result.config.port}`);
   console.log(`- Keys: ${result.config.keyCount}`);
   console.log(`- Pattern: ${result.config.pattern}`);
-  console.log(`- DBX scan count: ${result.config.scanCount}`);
-  console.log(`- DBX max iterations: ${result.config.maxIterations}`);
+  console.log(`- Chiron Horizon scan count: ${result.config.scanCount}`);
+  console.log(`- Chiron Horizon max iterations: ${result.config.maxIterations}`);
   console.log(`- Seed: ${result.seed.skipped ? "reused existing dataset" : `loaded in ${formatMs(result.seed.elapsedMs)}`}`);
   console.log("");
   console.log("| Case | Keys | Calls | Payload | Time |");
@@ -347,15 +347,15 @@ async function main() {
   const seed = await seedRedis(options);
 
   if (!options.json) {
-    console.log("Connecting DBX Web API...");
+    console.log("Connecting Chiron Horizon Web API...");
   }
-  const connectionId = await ensureDbxConnection(options);
+  const connectionId = await ensureChironHorizonConnection(options);
 
   const measurements = [];
   measurements.push(await measureRedisCliScan(options));
-  measurements.push(await measureDbxScan(options, connectionId, false));
+  measurements.push(await measureChironHorizonScan(options, connectionId, false));
   if (options.includeTyped) {
-    measurements.push(await measureDbxScan(options, connectionId, true));
+    measurements.push(await measureChironHorizonScan(options, connectionId, true));
   }
 
   const result = {

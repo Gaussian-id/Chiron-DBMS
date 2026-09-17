@@ -50,31 +50,31 @@ const oraclePlSqlFixture = `DECLARE
   v_order_count NUMBER;
 BEGIN
   SELECT COUNT(*) INTO v_order_count
-  FROM "DBX_TEST"."ORDERS_10K";
+  FROM "CHIRON_HORIZON_TEST"."ORDERS_10K";
 
   IF v_order_count = 0 THEN
-    INSERT INTO "DBX_TEST"."STORES"
+    INSERT INTO "CHIRON_HORIZON_TEST"."STORES"
       ("ID", "STORE_CODE", "STORE_NAME", "CITY", "OPENED_AT")
     SELECT 10001, 'TEST_STORE_001', '测试门店', '上海', SYSDATE
     FROM DUAL
     WHERE NOT EXISTS (
-      SELECT 1 FROM "DBX_TEST"."STORES" WHERE "ID" = 10001
+      SELECT 1 FROM "CHIRON_HORIZON_TEST"."STORES" WHERE "ID" = 10001
     );
 
-    INSERT INTO "DBX_TEST"."PRODUCTS"
+    INSERT INTO "CHIRON_HORIZON_TEST"."PRODUCTS"
       ("ID", "SKU", "PRODUCT_NAME", "CATEGORY", "PRICE")
     SELECT 10001, 'TEST_SKU_001', '测试商品', '测试分类', 99.90
     FROM DUAL
     WHERE NOT EXISTS (
-      SELECT 1 FROM "DBX_TEST"."PRODUCTS" WHERE "ID" = 10001
+      SELECT 1 FROM "CHIRON_HORIZON_TEST"."PRODUCTS" WHERE "ID" = 10001
     );
 
-    INSERT INTO "DBX_TEST"."ORDERS_10K"
+    INSERT INTO "CHIRON_HORIZON_TEST"."ORDERS_10K"
       ("ID", "ORDER_NO", "STORE_ID", "PRODUCT_ID", "CUSTOMER_NAME", "QUANTITY", "AMOUNT", "ORDER_STATUS", "CREATED_AT")
     SELECT 10001, 'TEST_ORDER_001', 10001, 10001, '测试客户', 2, 199.80, 'PAID', SYSDATE
     FROM DUAL
     WHERE NOT EXISTS (
-      SELECT 1 FROM "DBX_TEST"."ORDERS_10K" WHERE "ORDER_NO" = 'TEST_ORDER_001'
+      SELECT 1 FROM "CHIRON_HORIZON_TEST"."ORDERS_10K" WHERE "ORDER_NO" = 'TEST_ORDER_001'
     );
 
     COMMIT;
@@ -89,7 +89,7 @@ BEGIN
    SELECT 1 + 2 INTO PRE_TRD_DATE FROM DUAL;
 END;`;
 
-const oracleConsecutiveNestedBlocks = `CREATE OR REPLACE PROCEDURE dbx_consecutive_blocks AS
+const oracleConsecutiveNestedBlocks = `CREATE OR REPLACE PROCEDURE chiron_horizon_consecutive_blocks AS
 BEGIN
   BEGIN
     NULL;
@@ -100,7 +100,7 @@ BEGIN
   NULL;
 END;`;
 
-const gaussDbNestedProcedure = `CREATE OR REPLACE PROCEDURE public.dbx_issue_4318()
+const gaussDbNestedProcedure = `CREATE OR REPLACE PROCEDURE public.chiron_horizon_issue_4318()
 AS
 BEGIN
   BEGIN
@@ -137,9 +137,9 @@ BEGIN
   );
 END;`;
 
-const gaussDbDollarQuotedFunctionScript = `DROP FUNCTION IF EXISTS dbx_issue_4572_tmp_md5_uuid;
+const gaussDbDollarQuotedFunctionScript = `DROP FUNCTION IF EXISTS chiron_horizon_issue_4572_tmp_md5_uuid;
 
-CREATE OR REPLACE FUNCTION dbx_issue_4572_tmp_md5_uuid (v_str IN TEXT) RETURNS varchar(36) LANGUAGE PLPGSQL IMMUTABLE AS $function$
+CREATE OR REPLACE FUNCTION chiron_horizon_issue_4572_tmp_md5_uuid (v_str IN TEXT) RETURNS varchar(36) LANGUAGE PLPGSQL IMMUTABLE AS $function$
 DECLARE
     str1 TEXT;
 BEGIN
@@ -147,7 +147,7 @@ BEGIN
     RETURN CAST(str1 AS varchar(36));
 END$function$;
 
-DROP FUNCTION IF EXISTS dbx_issue_4572_tmp_missing;`;
+DROP FUNCTION IF EXISTS chiron_horizon_issue_4572_tmp_missing;`;
 
 const gaussDbIssue4573Script = `CREATE OR REPLACE PROCEDURE createIndex (
   dbName IN VARCHAR(32),
@@ -181,67 +181,67 @@ SELECT 1 AS after_procedure;
 SELECT 2 AS final_statement;`;
 
 const xuguProgrammableObjectFixtures = [
-  `CREATE OR REPLACE PROCEDURE dbx_xugu_procedure AS
+  `CREATE OR REPLACE PROCEDURE chiron_horizon_xugu_procedure AS
   v_value INTEGER;
 BEGIN
   v_value := 1;
 END;`,
-  `CREATE PROCEDURE dbx_xugu_procedure_without_replace AS
+  `CREATE PROCEDURE chiron_horizon_xugu_procedure_without_replace AS
   v_value INTEGER;
 BEGIN
   v_value := 1;
 END;`,
-  `CREATE OR REPLACE FUNCTION dbx_xugu_function RETURN INTEGER AS
+  `CREATE OR REPLACE FUNCTION chiron_horizon_xugu_function RETURN INTEGER AS
 BEGIN
   RETURN 1;
 END;`,
-  `CREATE FUNCTION dbx_xugu_function_without_replace RETURN INTEGER AS
+  `CREATE FUNCTION chiron_horizon_xugu_function_without_replace RETURN INTEGER AS
 BEGIN
   RETURN 1;
 END;`,
-  `CREATE OR REPLACE TRIGGER dbx_xugu_trigger
-BEFORE INSERT ON dbx_xugu_events
+  `CREATE OR REPLACE TRIGGER chiron_horizon_xugu_trigger
+BEFORE INSERT ON chiron_horizon_xugu_events
 FOR EACH ROW
 BEGIN
   NULL;
 END;`,
-  `CREATE TRIGGER dbx_xugu_trigger_without_replace
-BEFORE INSERT ON dbx_xugu_events
+  `CREATE TRIGGER chiron_horizon_xugu_trigger_without_replace
+BEFORE INSERT ON chiron_horizon_xugu_events
 FOR EACH ROW
 BEGIN
   NULL;
 END;`,
-  `CREATE OR REPLACE PACKAGE BODY dbx_xugu_package AS
+  `CREATE OR REPLACE PACKAGE BODY chiron_horizon_xugu_package AS
   PROCEDURE ping AS
   BEGIN
     NULL;
   END ping;
-END dbx_xugu_package;`,
-  `CREATE PACKAGE BODY dbx_xugu_package_without_replace AS
+END chiron_horizon_xugu_package;`,
+  `CREATE PACKAGE BODY chiron_horizon_xugu_package_without_replace AS
   PROCEDURE ping AS
   BEGIN
     NULL;
   END ping;
-END dbx_xugu_package_without_replace;`,
-  `CREATE OR REPLACE FORCE PACKAGE BODY dbx_xugu_force_package AS
+END chiron_horizon_xugu_package_without_replace;`,
+  `CREATE OR REPLACE FORCE PACKAGE BODY chiron_horizon_xugu_force_package AS
   PROCEDURE ping AS
   BEGIN
     NULL;
   END ping;
-END dbx_xugu_force_package;`,
-  `CREATE OR REPLACE NOFORCE PACKAGE BODY dbx_xugu_noforce_package AS
+END chiron_horizon_xugu_force_package;`,
+  `CREATE OR REPLACE NOFORCE PACKAGE BODY chiron_horizon_xugu_noforce_package AS
   PROCEDURE ping AS
   BEGIN
     NULL;
   END ping;
-END dbx_xugu_noforce_package;`,
-  `CREATE OR REPLACE TYPE BODY dbx_xugu_type AS
+END chiron_horizon_xugu_noforce_package;`,
+  `CREATE OR REPLACE TYPE BODY chiron_horizon_xugu_type AS
   MEMBER PROCEDURE ping IS
   BEGIN
     NULL;
   END;
 END;`,
-  `CREATE TYPE BODY dbx_xugu_type_without_replace AS
+  `CREATE TYPE BODY chiron_horizon_xugu_type_without_replace AS
   MEMBER PROCEDURE ping IS
   BEGIN
     NULL;
@@ -539,7 +539,7 @@ describe("splitSqlStatementRanges", () => {
     ["LOOP", "LOOP\n    EXIT;\n  END LOOP;"],
     ["CASE", "CASE WHEN 1 = 1 THEN\n    NULL;\n  END CASE;"],
   ])("treats %s after a semicolon as a new Oracle scope", (_starter, scope) => {
-    const procedure = `CREATE OR REPLACE PROCEDURE dbx_delimited_scope AS
+    const procedure = `CREATE OR REPLACE PROCEDURE chiron_horizon_delimited_scope AS
 BEGIN
   BEGIN
     NULL;
@@ -580,9 +580,9 @@ END big_pkg;`;
   it("separates GaussDB dollar-quoted functions from surrounding statements", () => {
     const ranges = splitSqlStatementRanges(gaussDbDollarQuotedFunctionScript, "gaussdb");
     expect(rangeSqlTexts(ranges)).toEqual([
-      "DROP FUNCTION IF EXISTS dbx_issue_4572_tmp_md5_uuid",
+      "DROP FUNCTION IF EXISTS chiron_horizon_issue_4572_tmp_md5_uuid",
       gaussDbDollarQuotedFunctionScript.slice(gaussDbDollarQuotedFunctionScript.indexOf("CREATE"), gaussDbDollarQuotedFunctionScript.lastIndexOf(";\n\nDROP")),
-      "DROP FUNCTION IF EXISTS dbx_issue_4572_tmp_missing",
+      "DROP FUNCTION IF EXISTS chiron_horizon_issue_4572_tmp_missing",
     ]);
   });
 
@@ -632,11 +632,11 @@ END packageName;`;
   });
 
   it("keeps Oracle-style CASE expressions inside Xugu and Oracle routines", () => {
-    const routine = `CREATE OR REPLACE FUNCTION dbx_case_expr RETURN NUMBER AS
+    const routine = `CREATE OR REPLACE FUNCTION chiron_horizon_case_expr RETURN NUMBER AS
 BEGIN
   RETURN CASE WHEN 1 = 1 THEN CASE WHEN 2 = 2 THEN 1 ELSE 2 END ELSE 0 END;
 END;`;
-    const caseStatementRoutine = `CREATE OR REPLACE PROCEDURE dbx_case_statement AS
+    const caseStatementRoutine = `CREATE OR REPLACE PROCEDURE chiron_horizon_case_statement AS
 BEGIN
   CASE WHEN 1 = 1 THEN NULL; ELSE NULL; END CASE;
 END;`;

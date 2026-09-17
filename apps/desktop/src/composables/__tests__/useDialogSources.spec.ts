@@ -71,6 +71,16 @@ async function mountDialogs() {
 }
 
 describe("useDialogSources", () => {
+  it.each(["showTransferDialog", "showSchemaDiffDialog", "showDataCompareDialog", "showSqlFileDialog", "showDiagramDialog", "showDocsDialog", "showTableImportDialog", "showTableDataGenerateDialog", "showFieldLineageDialog"] as const)("allows opening and closing %s", async (name) => {
+    const dialogs = await mountDialogs();
+    dialogs[name].value = true;
+    await nextTick();
+    expect(dialogs[name].value).toBe(true);
+    expect(mocks.toast).not.toHaveBeenCalled();
+    dialogs[name].value = false;
+    expect(dialogs[name].value).toBe(false);
+  });
+
   it("runs the final import confirmation as a single flight", async () => {
     let resolveApply!: (value: { count: number }) => void;
     const applyPromise = new Promise<{ count: number }>((resolve) => {
@@ -81,7 +91,7 @@ describe("useDialogSources", () => {
     mocks.store.applyConnectionsImport.mockReturnValue(applyPromise);
 
     const dialogs = await mountDialogs();
-    await dialogs.onImportClick("dbx");
+    await dialogs.onImportClick("chiron-horizon");
     dialogs.onConfigConnectionSelectConfirm(["imported"]);
     dialogs.onConfigConnectionSelectConfirm(["imported"]);
 

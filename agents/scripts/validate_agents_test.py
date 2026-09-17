@@ -52,7 +52,7 @@ class ValidateAgentsTest(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             repo = Path(tmp)
             root = repo / "agents"
-            crate = repo / "crates" / "dbx-sqlite-worker"
+            crate = repo / "crates" / "chiron-horizon-sqlite-worker"
             root.mkdir()
             crate.mkdir(parents=True)
             (root / "settings.gradle").write_text(
@@ -69,7 +69,7 @@ class ValidateAgentsTest(unittest.TestCase):
     def test_source_scan_rejects_old_execute_query_patterns(self):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
-            source = root / "h2/src/main/java/com/dbx/agent/h2/H2Agent.java"
+            source = root / "h2/src/main/java/com/chiron/horizon/agent/h2/H2Agent.java"
             source.parent.mkdir(parents=True)
             source.write_text(
                 textwrap.dedent(
@@ -88,8 +88,8 @@ class ValidateAgentsTest(unittest.TestCase):
 
             self.assertEqual(
                 [
-                    "h2/src/main/java/com/dbx/agent/h2/H2Agent.java:2: forbidden local SQL prefix classifier",
-                    "h2/src/main/java/com/dbx/agent/h2/H2Agent.java:5: forbidden executeUpdate(trimmedSql) in query execution",
+                    "h2/src/main/java/com/chiron/horizon/agent/h2/H2Agent.java:2: forbidden local SQL prefix classifier",
+                    "h2/src/main/java/com/chiron/horizon/agent/h2/H2Agent.java:5: forbidden executeUpdate(trimmedSql) in query execution",
                 ],
                 problems,
             )
@@ -98,7 +98,7 @@ class ValidateAgentsTest(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
             module = root / "example"
-            source = module / "src/main/java/com/dbx/agent/example/ExampleAgent.java"
+            source = module / "src/main/java/com/chiron/horizon/agent/example/ExampleAgent.java"
             source.parent.mkdir(parents=True)
             (module / "build.gradle").write_text(
                 textwrap.dedent(
@@ -107,7 +107,7 @@ class ValidateAgentsTest(unittest.TestCase):
                         manifest {
                             attributes(
                                 'Agent-Label': 'Example',
-                                'Main-Class': 'com.dbx.agent.example.ExampleAgent'
+                                'Main-Class': 'com.chiron.horizon.agent.example.ExampleAgent'
                             )
                         }
                     }
@@ -118,9 +118,9 @@ class ValidateAgentsTest(unittest.TestCase):
             source.write_text(
                 textwrap.dedent(
                     """
-                    package com.dbx.agent.example;
+                    package com.chiron.horizon.agent.example;
 
-                    import com.dbx.agent.BaseDatabaseAgent;
+                    import com.chiron.horizon.agent.BaseDatabaseAgent;
                     import java.sql.DriverManager;
 
                     public final class ExampleAgent extends BaseDatabaseAgent {
@@ -138,9 +138,9 @@ class ValidateAgentsTest(unittest.TestCase):
 
             self.assertEqual(
                 [
-                    "example/src/main/java/com/dbx/agent/example/ExampleAgent.java: JDBC agents must extend AbstractJdbcAgent, ConfiguredJdbcAgent, or PostgresLikeAgent",
-                    "example/src/main/java/com/dbx/agent/example/ExampleAgent.java:9: copied driver loading; use shared JDBC foundation",
-                    "example/src/main/java/com/dbx/agent/example/ExampleAgent.java:10: copied JDBC connection creation; use shared JDBC foundation",
+                    "example/src/main/java/com/chiron/horizon/agent/example/ExampleAgent.java: JDBC agents must extend AbstractJdbcAgent, ConfiguredJdbcAgent, or PostgresLikeAgent",
+                    "example/src/main/java/com/chiron/horizon/agent/example/ExampleAgent.java:9: copied driver loading; use shared JDBC foundation",
+                    "example/src/main/java/com/chiron/horizon/agent/example/ExampleAgent.java:10: copied JDBC connection creation; use shared JDBC foundation",
                 ],
                 problems,
             )
@@ -180,13 +180,13 @@ class ValidateAgentsTest(unittest.TestCase):
     def test_authoring_template_must_use_shared_foundation(self):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
-            template = root / "docs/examples/jdbc-agent-template/src/main/java/com/dbx/agent/template/TemplateAgent.java"
+            template = root / "docs/examples/jdbc-agent-template/src/main/java/com/chiron/horizon/agent/template/TemplateAgent.java"
             template.parent.mkdir(parents=True)
             template.write_text(
                 textwrap.dedent(
                     """
-                    package com.dbx.agent.template;
-                    import com.dbx.agent.BaseDatabaseAgent;
+                    package com.chiron.horizon.agent.template;
+                    import com.chiron.horizon.agent.BaseDatabaseAgent;
                     import java.sql.DriverManager;
                     public final class TemplateAgent extends BaseDatabaseAgent {
                         void connect() throws Exception {
@@ -200,8 +200,8 @@ class ValidateAgentsTest(unittest.TestCase):
 
             self.assertEqual(
                 [
-                    "docs/examples/jdbc-agent-template/src/main/java/com/dbx/agent/template/TemplateAgent.java: template must use shared JDBC foundation",
-                    "docs/examples/jdbc-agent-template/src/main/java/com/dbx/agent/template/TemplateAgent.java: template contains copied JDBC connection creation",
+                    "docs/examples/jdbc-agent-template/src/main/java/com/chiron/horizon/agent/template/TemplateAgent.java: template must use shared JDBC foundation",
+                    "docs/examples/jdbc-agent-template/src/main/java/com/chiron/horizon/agent/template/TemplateAgent.java: template contains copied JDBC connection creation",
                 ],
                 validate_agents.validate_authoring_template(root),
             )
@@ -242,7 +242,7 @@ class ValidateAgentsTest(unittest.TestCase):
                     """
                     configure(agentProjects) {
                         tasks.named('shadowJar') {
-                            archiveBaseName = "dbx-agent-${project.name}"
+                            archiveBaseName = "chiron-horizon-agent-${project.name}"
                         }
                     }
                     """
@@ -277,7 +277,7 @@ class ValidateAgentsTest(unittest.TestCase):
             module = root / "h2"
             module.mkdir()
             (root / "build.gradle").write_text(
-                'archiveBaseName = "dbx-agent-${project.name}"\n',
+                'archiveBaseName = "chiron-horizon-agent-${project.name}"\n',
                 encoding="utf-8",
             )
             (module / "build.gradle").write_text(
@@ -287,7 +287,7 @@ class ValidateAgentsTest(unittest.TestCase):
                         manifest {
                             attributes(
                                 'Agent-Label': 'H2',
-                                'Main-Class': 'com.dbx.agent.h2.H2Agent'
+                                'Main-Class': 'com.chiron.horizon.agent.h2.H2Agent'
                             )
                         }
                     }
@@ -299,13 +299,13 @@ class ValidateAgentsTest(unittest.TestCase):
             problems = validate_agents.validate_manifest_fields(root, {"h2"})
 
             self.assertEqual(
-                ["h2/build.gradle: Main-Class source not found: h2/src/main/java/com/dbx/agent/h2/H2Agent.java"],
+                ["h2/build.gradle: Main-Class source not found: h2/src/main/java/com/chiron/horizon/agent/h2/H2Agent.java"],
                 problems,
             )
 
-            source = module / "src/main/java/com/dbx/agent/h2/H2Agent.java"
+            source = module / "src/main/java/com/chiron/horizon/agent/h2/H2Agent.java"
             source.parent.mkdir(parents=True)
-            source.write_text("package com.dbx.agent.h2; public final class H2Agent {}", encoding="utf-8")
+            source.write_text("package com.chiron.horizon.agent.h2; public final class H2Agent {}", encoding="utf-8")
 
             self.assertEqual([], validate_agents.validate_manifest_fields(root, {"h2"}))
 
@@ -313,11 +313,11 @@ class ValidateAgentsTest(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
             module = root / "drivers/h2"
-            source = module / "src/main/java/com/dbx/agent/h2/H2Agent.java"
+            source = module / "src/main/java/com/chiron/horizon/agent/h2/H2Agent.java"
             source.parent.mkdir(parents=True)
-            source.write_text("package com.dbx.agent.h2; public final class H2Agent {}", encoding="utf-8")
+            source.write_text("package com.chiron.horizon.agent.h2; public final class H2Agent {}", encoding="utf-8")
             (root / "build.gradle").write_text(
-                'archiveBaseName = "dbx-agent-${project.name}"\n',
+                'archiveBaseName = "chiron-horizon-agent-${project.name}"\n',
                 encoding="utf-8",
             )
             (module / "build.gradle").write_text(
@@ -327,7 +327,7 @@ class ValidateAgentsTest(unittest.TestCase):
                         manifest {
                             attributes(
                                 'Agent-Label': 'H2',
-                                'Main-Class': 'com.dbx.agent.h2.H2Agent'
+                                'Main-Class': 'com.chiron.horizon.agent.h2.H2Agent'
                             )
                         }
                     }
@@ -341,7 +341,7 @@ class ValidateAgentsTest(unittest.TestCase):
     def test_kotlin_residue_scan_rejects_kt_and_kts_files_outside_build_dirs(self):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
-            forbidden_source = root / "h2/src/main/kotlin/com/dbx/agent/h2/H2Agent.kt"
+            forbidden_source = root / "h2/src/main/kotlin/com/chiron/horizon/agent/h2/H2Agent.kt"
             forbidden_build = root / "settings.gradle.kts"
             ignored_build_output = root / "h2/build/tmp/Generated.kt"
             ignored_gradle_cache = root / ".gradle/caches/init.gradle.kts"
@@ -358,7 +358,7 @@ class ValidateAgentsTest(unittest.TestCase):
 
             self.assertEqual(
                 [
-                    "h2/src/main/kotlin/com/dbx/agent/h2/H2Agent.kt: forbidden Kotlin file",
+                    "h2/src/main/kotlin/com/chiron/horizon/agent/h2/H2Agent.kt: forbidden Kotlin file",
                     "settings.gradle.kts: forbidden Kotlin file",
                 ],
                 problems,
@@ -395,7 +395,7 @@ class ValidateAgentsTest(unittest.TestCase):
                       }
                     }
                     EOF
-                    legacy_jar_url="https://github.com/${REPO}/releases/download/${TAG}/dbx-agent-${name}-legacy-placeholder.jar"
+                    legacy_jar_url="https://github.com/${REPO}/releases/download/${TAG}/chiron-horizon-agent-${name}-legacy-placeholder.jar"
                     '''
                 ),
                 encoding="utf-8",
@@ -439,7 +439,7 @@ class ValidateAgentsTest(unittest.TestCase):
                     "release workflow JRE must include jdk.security.jgss for Kafka GSSAPI SASL support",
                     "release workflow JRE must include jdk.crypto.ec for Kafka EC TLS support",
                     "release workflow must build the managed JRE for windows-aarch64",
-                    "native-only registry entries must publish a legacy jar placeholder for older DBX clients",
+                    "native-only registry entries must publish a legacy jar placeholder for older Chiron Horizon clients",
                     "release workflow must not build Java 21 under JRE key 17",
                     "agents must not use JRE key 17",
                     "registry must not publish Java 21 under JRE key 17",
@@ -450,39 +450,39 @@ class ValidateAgentsTest(unittest.TestCase):
     def test_agent_jar_validation_requires_main_class_entry(self):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
-            jar = root / "h2/build/libs/dbx-agent-h2.jar"
+            jar = root / "h2/build/libs/chiron-horizon-agent-h2.jar"
             jar.parent.mkdir(parents=True)
             with zipfile.ZipFile(jar, "w") as archive:
                 archive.writestr(
                     "META-INF/MANIFEST.MF",
                     "Manifest-Version: 1.0\n"
                     "Agent-Label: H2\n"
-                    "Main-Class: com.dbx.agent.h2.H2Agent\n\n",
+                    "Main-Class: com.chiron.horizon.agent.h2.H2Agent\n\n",
                 )
 
             self.assertEqual(
-                ["h2/build/libs/dbx-agent-h2.jar: Main-Class class not found: com/dbx/agent/h2/H2Agent.class"],
+                ["h2/build/libs/chiron-horizon-agent-h2.jar: Main-Class class not found: com/chiron/horizon/agent/h2/H2Agent.class"],
                 validate_agent_jars.validate_agent_jars(root),
             )
 
             with zipfile.ZipFile(jar, "a") as archive:
-                archive.writestr("com/dbx/agent/h2/H2Agent.class", b"class-bytes")
+                archive.writestr("com/chiron/horizon/agent/h2/H2Agent.class", b"class-bytes")
 
             self.assertEqual([], validate_agent_jars.validate_agent_jars(root))
 
     def test_agent_jar_validation_supports_drivers_directory(self):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
-            jar = root / "drivers/h2/build/libs/dbx-agent-h2.jar"
+            jar = root / "drivers/h2/build/libs/chiron-horizon-agent-h2.jar"
             jar.parent.mkdir(parents=True)
             with zipfile.ZipFile(jar, "w") as archive:
                 archive.writestr(
                     "META-INF/MANIFEST.MF",
                     "Manifest-Version: 1.0\n"
                     "Agent-Label: H2\n"
-                    "Main-Class: com.dbx.agent.h2.H2Agent\n\n",
+                    "Main-Class: com.chiron.horizon.agent.h2.H2Agent\n\n",
                 )
-                archive.writestr("com/dbx/agent/h2/H2Agent.class", b"class-bytes")
+                archive.writestr("com/chiron/horizon/agent/h2/H2Agent.class", b"class-bytes")
 
             self.assertEqual([], validate_agent_jars.validate_agent_jars(root))
 

@@ -108,7 +108,7 @@ const keyItem = {
 };
 
 beforeEach(() => {
-  localStorage.removeItem("dbx:meilisearch:key-columns:v1");
+  localStorage.removeItem("chiron-horizon:meilisearch:key-columns:v1");
   mocks.listKeys.mockResolvedValue({ results: [keyItem], total: 1, offset: 0, limit: 20 });
   mocks.listIndexes.mockResolvedValue(["wiki", "movies"]);
   mocks.createKey.mockResolvedValue({ uid: "new-uid", key: "secret" });
@@ -192,7 +192,7 @@ describe("MeilisearchKeysPage", () => {
     const checkboxes = container.querySelectorAll<HTMLInputElement>('input[type="checkbox"]');
     expect(checkboxes).toHaveLength(6);
     checkboxes[1].click();
-    const stored = JSON.parse(localStorage.getItem("dbx:meilisearch:key-columns:v1") || "null");
+    const stored = JSON.parse(localStorage.getItem("chiron-horizon:meilisearch:key-columns:v1") || "null");
     expect(stored.visible).not.toContain("key");
   });
 

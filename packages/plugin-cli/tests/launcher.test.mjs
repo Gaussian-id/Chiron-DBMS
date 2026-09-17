@@ -6,7 +6,7 @@ import { fileURLToPath } from "node:url";
 import test from "node:test";
 
 const packageRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
-const launcher = join(packageRoot, "bin", "dbx-plugin.js");
+const launcher = join(packageRoot, "bin", "chiron-horizon-plugin.js");
 const stageSdk = join(packageRoot, "scripts", "stage-sdk.mjs");
 const sdkRoot = join(packageRoot, "sdk-root");
 
@@ -16,20 +16,20 @@ test("forwards arguments and provides the bundled SDK root", () => {
   try {
     const result = spawnSync(
       process.execPath,
-      [launcher, "-e", "process.stdout.write(process.env.DBX_PLUGIN_SDK_ROOT || '')"],
+      [launcher, "-e", "process.stdout.write(process.env.CHIRON_HORIZON_PLUGIN_SDK_ROOT || '')"],
       {
         encoding: "utf8",
         env: {
           ...process.env,
-          DBX_PLUGIN_CLI_BINARY: process.execPath,
-          DBX_PLUGIN_SDK_ROOT: "",
+          CHIRON_HORIZON_PLUGIN_CLI_BINARY: process.execPath,
+          CHIRON_HORIZON_PLUGIN_SDK_ROOT: "",
         },
       },
     );
     assert.equal(result.status, 0, result.stderr);
     assert.equal(result.stdout, sdkRoot);
-    assert.ok(existsSync(join(sdkRoot, "plugins", "sdk", "rust", "dbx-plugin-sdk", "Cargo.toml")));
-    assert.ok(existsSync(join(sdkRoot, "plugins", "sdk", "go", "dbx-plugin-sdk", "go.mod")));
+    assert.ok(existsSync(join(sdkRoot, "plugins", "sdk", "rust", "chiron-horizon-plugin-sdk", "Cargo.toml")));
+    assert.ok(existsSync(join(sdkRoot, "plugins", "sdk", "go", "chiron-horizon-plugin-sdk", "go.mod")));
   } finally {
     rmSync(sdkRoot, { recursive: true, force: true });
   }
@@ -38,26 +38,26 @@ test("forwards arguments and provides the bundled SDK root", () => {
 test("preserves an explicit SDK root", () => {
   const result = spawnSync(
     process.execPath,
-    [launcher, "-e", "process.stdout.write(process.env.DBX_PLUGIN_SDK_ROOT || '')"],
+    [launcher, "-e", "process.stdout.write(process.env.CHIRON_HORIZON_PLUGIN_SDK_ROOT || '')"],
     {
       encoding: "utf8",
       env: {
         ...process.env,
-        DBX_PLUGIN_CLI_BINARY: process.execPath,
-        DBX_PLUGIN_SDK_ROOT: "/custom/dbx-plugin-sdk",
+        CHIRON_HORIZON_PLUGIN_CLI_BINARY: process.execPath,
+        CHIRON_HORIZON_PLUGIN_SDK_ROOT: "/custom/chiron-horizon-plugin-sdk",
       },
     },
   );
   assert.equal(result.status, 0, result.stderr);
-  assert.equal(result.stdout, "/custom/dbx-plugin-sdk");
+  assert.equal(result.stdout, "/custom/chiron-horizon-plugin-sdk");
 });
 
 test("rejects a missing binary override", () => {
-  const missing = join(packageRoot, "missing-dbx-plugin-binary");
+  const missing = join(packageRoot, "missing-chiron-horizon-plugin-binary");
   const result = spawnSync(process.execPath, [launcher, "--version"], {
     encoding: "utf8",
-    env: { ...process.env, DBX_PLUGIN_CLI_BINARY: missing },
+    env: { ...process.env, CHIRON_HORIZON_PLUGIN_CLI_BINARY: missing },
   });
   assert.equal(result.status, 1);
-  assert.match(result.stderr, /DBX_PLUGIN_CLI_BINARY does not exist/);
+  assert.match(result.stderr, /CHIRON_HORIZON_PLUGIN_CLI_BINARY does not exist/);
 });

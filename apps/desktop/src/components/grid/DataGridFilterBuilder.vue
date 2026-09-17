@@ -12,7 +12,7 @@ import type { DataGridContextFilterMode } from "@/lib/dataGrid/dataGridSql";
 import type { DataGridStructuredFilterRule } from "@/composables/useDataGridFilterBuilder";
 
 const { t } = useI18n();
-const VALUE_SHORTCUT_HINT_STORAGE_KEY = "dbx-filter-builder-value-shortcut-hint-days";
+const VALUE_SHORTCUT_HINT_STORAGE_KEY = "chiron-horizon-filter-builder-value-shortcut-hint-days";
 const VALUE_SHORTCUT_HINT_MAX_DAYS = 3;
 const VALUE_SHORTCUT_HINT_MAX_PER_DAY = 2;
 const IME_COMPOSITION_END_GRACE_MS = 120;

@@ -16,7 +16,7 @@ describe("Nacos service management state reconciliation", () => {
   });
 
   it("compares metadata independently of object key order", () => {
-    expect(nacosJsonObjectMatches({ owner: "dbx", nested: { b: 2, a: 1 } }, { nested: { a: 1, b: 2 }, owner: "dbx" })).toBe(true);
+    expect(nacosJsonObjectMatches({ owner: "chiron-horizon", nested: { b: 2, a: 1 } }, { nested: { a: 1, b: 2 }, owner: "chiron-horizon" })).toBe(true);
   });
 
   it("verifies only fields present in an instance patch", () => {
@@ -27,8 +27,8 @@ describe("Nacos service management state reconciliation", () => {
   });
 
   it("treats Nacos none selectors as the UI's unconfigured selector", () => {
-    const expected = { serviceName: "api", metadata: { owner: "dbx" }, protectThreshold: 0.5 };
-    expect(nacosServiceDetailMatches({ serviceName: "api", metadata: { owner: "dbx" }, protectThreshold: 0.5, selector: { type: "NoneSelector", contextType: "NONE" } }, expected)).toBe(true);
-    expect(nacosServiceDetailMatches({ serviceName: "api", metadata: { owner: "dbx" } }, expected)).toBe(false);
+    const expected = { serviceName: "api", metadata: { owner: "chiron-horizon" }, protectThreshold: 0.5 };
+    expect(nacosServiceDetailMatches({ serviceName: "api", metadata: { owner: "chiron-horizon" }, protectThreshold: 0.5, selector: { type: "NoneSelector", contextType: "NONE" } }, expected)).toBe(true);
+    expect(nacosServiceDetailMatches({ serviceName: "api", metadata: { owner: "chiron-horizon" } }, expected)).toBe(false);
   });
 });

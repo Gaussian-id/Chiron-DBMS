@@ -15,7 +15,7 @@ COPY apps/desktop/ apps/desktop/
 # regenerates the manifest and generated TS types in place.
 COPY scripts/ scripts/
 COPY plugins/ plugins/
-COPY crates/dbx-core/assets/database-drivers.manifest.json crates/dbx-core/assets/database-drivers.manifest.json
+COPY crates/chiron-horizon-core/assets/database-drivers.manifest.json crates/chiron-horizon-core/assets/database-drivers.manifest.json
 RUN pnpm build
 
 # Stage 2: Cross-compile Rust backend for the requested platform (native, no emulation)
@@ -34,18 +34,18 @@ RUN dpkg --add-architecture arm64 \
 # Copy dependency manifests only and create dummy sources to pre-compile dependencies.
 # This layer is cached by GHA as long as Cargo.toml/Cargo.lock don't change.
 COPY Cargo.toml Cargo.lock ./
-COPY crates/dbx-core/Cargo.toml crates/dbx-core/
-COPY crates/dbx-web/Cargo.toml crates/dbx-web/
-COPY crates/dbx-mcp/Cargo.toml crates/dbx-mcp/
-COPY crates/dbx-cli/Cargo.toml crates/dbx-cli/
+COPY crates/chiron-horizon-core/Cargo.toml crates/chiron-horizon-core/
+COPY crates/chiron-horizon-web/Cargo.toml crates/chiron-horizon-web/
+COPY crates/chiron-horizon-mcp/Cargo.toml crates/chiron-horizon-mcp/
+COPY crates/chiron-horizon-cli/Cargo.toml crates/chiron-horizon-cli/
 COPY src-tauri/Cargo.toml src-tauri/
 # Copy every vendored crate: root Cargo.toml [patch.crates-io] points at
 # vendor/{ctor,rumqttc,dirs-sys,pageant,wry}; omitting any breaks the offline build.
 COPY vendor/ vendor/
-RUN mkdir -p crates/dbx-core/src && echo '' > crates/dbx-core/src/lib.rs \
-    && mkdir -p crates/dbx-web/src && echo 'fn main() {}' > crates/dbx-web/src/main.rs \
-    && mkdir -p crates/dbx-mcp/src && echo '' > crates/dbx-mcp/src/lib.rs && echo 'fn main() {}' > crates/dbx-mcp/src/main.rs \
-    && mkdir -p crates/dbx-cli/src && echo 'fn main() {}' > crates/dbx-cli/src/main.rs \
+RUN mkdir -p crates/chiron-horizon-core/src && echo '' > crates/chiron-horizon-core/src/lib.rs \
+    && mkdir -p crates/chiron-horizon-web/src && echo 'fn main() {}' > crates/chiron-horizon-web/src/main.rs \
+    && mkdir -p crates/chiron-horizon-mcp/src && echo '' > crates/chiron-horizon-mcp/src/lib.rs && echo 'fn main() {}' > crates/chiron-horizon-mcp/src/main.rs \
+    && mkdir -p crates/chiron-horizon-cli/src && echo 'fn main() {}' > crates/chiron-horizon-cli/src/main.rs \
     && mkdir -p src-tauri/src && echo 'fn main() {}' > src-tauri/src/main.rs && echo 'pub fn run() {}' > src-tauri/src/lib.rs
 
 COPY src-tauri/build.rs src-tauri/
@@ -60,11 +60,11 @@ RUN case "$TARGETARCH" in \
     PKG_CONFIG_PATH="/usr/lib/$lib_arch/pkgconfig" \
     PKG_CONFIG_SYSROOT_DIR="/" \
     RUSTFLAGS="-L native=/usr/lib/$lib_arch" \
-    cargo zigbuild --release -p dbx-web --target "$rust_target" || true
+    cargo zigbuild --release -p chiron-horizon-web --target "$rust_target" || true
 
 # Copy real sources and rebuild (only application code recompiles)
 COPY crates/ crates/
-# dbx-core's build.rs embeds plugins/dialects (SQL dialects) and
+# chiron-horizon-core's build.rs embeds plugins/dialects (SQL dialects) and
 # plugins/connection-types (database manifest + DatabaseType enum);
 # either directory missing makes the build script panic.
 COPY plugins/dialects/ plugins/dialects/
@@ -84,9 +84,9 @@ RUN case "$TARGETARCH" in \
     PKG_CONFIG_PATH="/usr/lib/$lib_arch/pkgconfig" \
     PKG_CONFIG_SYSROOT_DIR="/" \
     RUSTFLAGS="-L native=/usr/lib/$lib_arch" \
-    cargo zigbuild --release -p dbx-web --target "$rust_target" && \
+    cargo zigbuild --release -p chiron-horizon-web --target "$rust_target" && \
     mkdir -p "/out/linux/$TARGETARCH" && \
-    cp "/app/target/$rust_target/release/dbx-web" "/out/linux/$TARGETARCH/"
+    cp "/app/target/$rust_target/release/chiron-horizon-web" "/out/linux/$TARGETARCH/"
 
 # Stage 3: Final image
 FROM debian:bookworm-slim
@@ -99,10 +99,10 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libssl3 \
     openjdk-17-jre-headless \
     && rm -rf /var/lib/apt/lists/*
-COPY --from=backend /out/${TARGETPLATFORM}/dbx-web /usr/local/bin/
+COPY --from=backend /out/${TARGETPLATFORM}/chiron-horizon-web /usr/local/bin/
 COPY --from=frontend /app/dist /app/static
-ENV DBX_STATIC_DIR=/app/static
-ENV DBX_DATA_DIR=/app/data
-ENV DBX_JAVA_BIN=/usr/bin/java
+ENV CHIRON_HORIZON_STATIC_DIR=/app/static
+ENV CHIRON_HORIZON_DATA_DIR=/app/data
+ENV CHIRON_HORIZON_JAVA_BIN=/usr/bin/java
 EXPOSE 4224
-CMD ["dbx-web"]
+CMD ["chiron-horizon-web"]

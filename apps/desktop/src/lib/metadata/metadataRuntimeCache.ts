@@ -7,7 +7,7 @@ export const METADATA_CACHE_HARD_MAX_MEMORY_MB = 512;
 export const METADATA_CACHE_MAX_ENTRY_BYTES = 1024 * 1024;
 
 const METADATA_CACHE_CONNECTION_SHARE = 0.25;
-const METADATA_CACHE_KEY_PREFIX = "dbx-metadata-cache:";
+const METADATA_CACHE_KEY_PREFIX = "chiron-horizon-metadata-cache:";
 
 interface RuntimeCacheEntry<T = unknown> {
   key: string;
@@ -106,7 +106,7 @@ function cacheLogContext(key: string, fallbackConnectionId = ""): MetadataCacheL
 }
 
 function logCacheMetric(metric: string, key: string, details: Record<string, unknown> = {}, fallbackConnectionId = ""): void {
-  appendDebugLog("debug", "[DBX][metadata-cache]", {
+  appendDebugLog("debug", "[Chiron Horizon][metadata-cache]", {
     metric,
     ...cacheLogContext(key, fallbackConnectionId),
     ...details,

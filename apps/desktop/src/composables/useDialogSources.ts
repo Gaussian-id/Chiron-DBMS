@@ -1,5 +1,4 @@
 import { ref, watch } from "vue";
-import { relationalComingSoonPanel } from "@/lib/app/relationalComingSoon";
 import { useI18n } from "vue-i18n";
 import { useConnectionStore } from "@/stores/connectionStore";
 import { useToast } from "@/composables/useToast";
@@ -8,16 +7,16 @@ import { hasSidebarLayoutEntries } from "@/lib/sidebar/sidebarLayout";
 import type { ConnectionConfigBundle } from "@/lib/connection/connectionConfigTransfer";
 import type { ConnectionConfig, SidebarLayout } from "@/types/database";
 
-const showTransferDialog = relationalComingSoonPanel();
-const showSchemaDiffDialog = relationalComingSoonPanel();
-const showDataCompareDialog = relationalComingSoonPanel();
-const showSqlFileDialog = relationalComingSoonPanel();
-const showDiagramDialog = relationalComingSoonPanel();
-const showDocsDialog = relationalComingSoonPanel();
-const showTableImportDialog = relationalComingSoonPanel();
+const showTransferDialog = ref(false);
+const showSchemaDiffDialog = ref(false);
+const showDataCompareDialog = ref(false);
+const showSqlFileDialog = ref(false);
+const showDiagramDialog = ref(false);
+const showDocsDialog = ref(false);
+const showTableImportDialog = ref(false);
 const showMongoImportDialog = ref(false);
-const showTableDataGenerateDialog = relationalComingSoonPanel();
-const showFieldLineageDialog = relationalComingSoonPanel();
+const showTableDataGenerateDialog = ref(false);
+const showFieldLineageDialog = ref(false);
 const showDatabaseSearchDialog = ref(false);
 const showDatabaseExportDialog = ref(false);
 const showImportLayoutConfirm = ref(false);
@@ -33,7 +32,7 @@ const configConnectionSelectMode = ref<"export" | "import">("export");
 const configConnectionSelectList = ref<ConnectionConfig[]>([]);
 const pendingExportConnectionIds = ref<string[]>([]);
 const pendingImportPreview = ref<ConnectionConfigBundle | null>(null);
-const pendingImportSource = ref<"dbx" | "navicat" | "dbeaver" | "datagrip">("dbx");
+const pendingImportSource = ref<"chiron-horizon" | "navicat" | "dbeaver" | "datagrip">("chiron-horizon");
 const applyingImportSelection = ref(false);
 
 const transferPrefillConnectionId = ref("");
@@ -326,7 +325,7 @@ export function useDialogSources() {
   function clearPendingImportState() {
     pendingImportContent.value = "";
     pendingImportPreview.value = null;
-    pendingImportSource.value = "dbx";
+    pendingImportSource.value = "chiron-horizon";
     configConnectionSelectList.value = [];
     configPassphraseError.value = "";
   }
@@ -343,7 +342,7 @@ export function useDialogSources() {
     showConfigConnectionSelectDialog.value = true;
   }
 
-  function importSuccessMessage(source: "dbx" | "navicat" | "dbeaver" | "datagrip", count: number, keychainFilled = 0) {
+  function importSuccessMessage(source: "chiron-horizon" | "navicat" | "dbeaver" | "datagrip", count: number, keychainFilled = 0) {
     if (count <= 0) return t("configExport.importNone");
     if (source === "navicat") return t("configExport.importNavicatSuccess", { count });
     if (source === "dbeaver") return t("configExport.importDbeaverSuccess", { count });
@@ -351,12 +350,12 @@ export function useDialogSources() {
     return t("configExport.importSuccess", { count });
   }
 
-  async function finishImport(source: "dbx" | "navicat" | "dbeaver" | "datagrip", count: number, layout?: SidebarLayout) {
+  async function finishImport(source: "chiron-horizon" | "navicat" | "dbeaver" | "datagrip", count: number, layout?: SidebarLayout) {
     let keychainFilled = 0;
     if (source === "datagrip" && count > 0) {
       keychainFilled = await connectionStore.applyDataGripKeychainPasswords();
     }
-    toast(importSuccessMessage(source, count, keychainFilled), source === "dbx" ? 2000 : 4000);
+    toast(importSuccessMessage(source, count, keychainFilled), source === "chiron-horizon" ? 2000 : 4000);
     if (hasSidebarLayoutEntries(layout)) {
       pendingImportLayout.value = layout;
       showImportLayoutConfirm.value = true;
@@ -432,7 +431,7 @@ export function useDialogSources() {
     if (!open) showConfigPassphraseDialog.value = true;
   }
 
-  async function onImportClick(source: "dbx" | "navicat" | "dbeaver" | "datagrip" = "dbx") {
+  async function onImportClick(source: "chiron-horizon" | "navicat" | "dbeaver" | "datagrip" = "chiron-horizon") {
     try {
       const result = await connectionStore.readImportFile(source);
       if (!result) return;
@@ -447,7 +446,7 @@ export function useDialogSources() {
       }
       const preview = await connectionStore.parseConnectionsImport(result.content, null);
       pendingImportPreview.value = preview;
-      if (source === "dbx") {
+      if (source === "chiron-horizon") {
         openConnectionSelect("import", preview.connections);
         return;
       }

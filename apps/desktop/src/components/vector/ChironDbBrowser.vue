@@ -1,11 +1,12 @@
 <script setup lang="ts">
 import { computed, defineAsyncComponent, onBeforeUnmount, onMounted, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
-import { Play, RefreshCcw } from "@lucide/vue";
+import { Play, RefreshCcw, Square } from "@lucide/vue";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import ErrorBanner from "@/components/ui/ErrorBanner.vue";
 import ChironQueryEditor from "./ChironQueryEditor.vue";
+import { ChironScriptRun, type ChironScriptResult } from "@/lib/chiron/script";
 import * as api from "@/lib/backend/api";
 import { useTabUiState } from "@/lib/tabs/tabUiState";
 import type { ChironDbReply, ChironDbRequest } from "@/types/chirondb";
@@ -26,6 +27,20 @@ const metadataError = ref("");
 const reply = ref<ChironDbReply>();
 const browseResult = ref(false);
 const pending = ref<{ request: ChironDbRequest; message: string }>();
+const queryEditor = ref<InstanceType<typeof ChironQueryEditor>>();
+const scriptResults = ref<ChironScriptResult[]>([]);
+let activeRun: ChironScriptRun | undefined;
+let approvalResolver: ((approved: boolean) => void) | undefined;
+function stopRun() {
+  activeRun?.stop();
+  approvalResolver?.(false);
+  approvalResolver = undefined;
+  pending.value = undefined;
+}
+function selectResult(item: ChironScriptResult) {
+  reply.value = item.reply;
+  browseResult.value = false;
+}
 let generation = 0;
 let mounted = true;
 
@@ -43,6 +58,7 @@ watch(collection, () => {
 });
 watch(busy, (value) => emit("update:busy", value));
 onBeforeUnmount(() => {
+  stopRun();
   mounted = false;
   generation++;
   emit("update:busy", false);
@@ -50,7 +66,9 @@ onBeforeUnmount(() => {
 watch(
   () => props.connectionId,
   () => {
+    stopRun();
     generation++;
+    scriptResults.value = [];
     pending.value = undefined;
     reply.value = undefined;
     error.value = "";
@@ -126,15 +144,61 @@ async function submit(request: ChironDbRequest) {
   }
 }
 
-function execute() {
-  return submit({ operation: "execute", query: query.value, collection: collection.value || null, trace: trace.value, confirm: false, allow_destructive: false });
+async function execute() {
+  if (busy.value || pending.value) return;
+  const current = ++generation;
+  error.value = "";
+  reply.value = undefined;
+  browseResult.value = false;
+  busy.value = true;
+  const run = new ChironScriptRun({
+    source: queryEditor.value?.getSelectedOrAll?.() ?? query.value,
+    connectionId: props.connectionId,
+    collection: collection.value || null,
+    trace: trace.value,
+    request: api.chirondbRequest,
+    approve: (request, message) =>
+      new Promise<boolean>((resolve) => {
+        if (!mounted || current !== generation) {
+          resolve(false);
+          return;
+        }
+        pending.value = { request: { ...request }, message: `Connection: ${props.connectionId}\nCollection: ${request.collection ?? "Explicit query target"}\n${message}` };
+        approvalResolver = resolve;
+      }),
+    changed: (results) => {
+      if (!mounted || current !== generation) return;
+      scriptResults.value = results;
+      const latest = results.filter((r) => r.reply).slice(-1)[0];
+      if (latest) reply.value = latest.reply;
+      const failure = results.find((r) => r.status === "failed" || r.status === "uncertain");
+      if (failure) error.value = failure.message ?? "Run failed.";
+    },
+  });
+  activeRun = run;
+  try {
+    await run.execute();
+  } catch (cause) {
+    if (current === generation) error.value = String(cause);
+  } finally {
+    if (current === generation) {
+      activeRun = undefined;
+      approvalResolver = undefined;
+      pending.value = undefined;
+      busy.value = false;
+      void refreshCollections();
+    }
+  }
 }
 function browse(offset: string | null = null) {
+  scriptResults.value = [];
   return submit({ operation: "browse", collection: collection.value, offset, limit: 100 });
 }
 function approve() {
-  const snapshot = pending.value;
-  if (snapshot) void submit(snapshot.request);
+  const resolve = approvalResolver;
+  approvalResolver = undefined;
+  pending.value = undefined;
+  resolve?.(true);
 }
 function editorKeydown(event: KeyboardEvent) {
   if ((event.ctrlKey || event.metaKey) && event.key === "Enter") {
@@ -171,11 +235,22 @@ onMounted(async () => {
     <p class="border-b px-3 py-2 text-xs text-muted-foreground">{{ t("chiron.sessionHint") }}</p>
     <ErrorBanner v-if="metadataError" :message="metadataError" />
     <div class="flex min-h-36 shrink-0 flex-col border-b">
-      <ChironQueryEditor v-model="query" :read-only="busy || !!pending" :label="t('chiron.query')" @keydown.capture="editorKeydown" />
+      <ChironQueryEditor ref="queryEditor" v-model="query" :read-only="busy || !!pending" :label="t('chiron.query')" @keydown.capture="editorKeydown" />
       <div class="flex items-center justify-between gap-3 bg-muted/30 px-3 py-2">
         <label class="flex items-center gap-2 text-xs"><input v-model="trace" type="checkbox" :disabled="busy || !!pending" />{{ t("chiron.trace") }}</label>
+        <Button v-if="busy" variant="outline" size="sm" @click="stopRun"><Square class="mr-1 h-3 w-3" />Stop</Button>
         <Button size="sm" :disabled="busy || !query.trim() || !!pending" @click="execute"><Play class="mr-1.5 h-3.5 w-3.5" />{{ busy ? t("chiron.running") : t("chiron.run") }}</Button>
       </div>
+    </div>
+    <div v-if="scriptResults.length" class="max-h-48 shrink-0 overflow-auto border-b px-3 py-2 text-xs" aria-label="Statement results" aria-live="polite">
+      <button v-for="(item, index) in scriptResults" :key="index" class="my-1 block w-full rounded border p-2 text-left hover:bg-muted" @click="selectResult(item)">
+        <span class="font-semibold">{{ index + 1 }} · {{ item.status }} · {{ item.collection || "Explicit query target" }}</span>
+        <code class="block max-h-16 overflow-auto whitespace-pre-wrap">{{ item.query }}</code>
+        <span v-if="item.reply?.body.query_id">{{ item.reply.body.query_id }} · </span>
+        <span v-if="item.reply?.body.stats?.affected != null">Affected: {{ item.reply.body.stats.affected }} · </span>
+        <span v-if="item.reply?.body.rows">Rows: {{ item.reply.body.rows.length }}</span>
+        <span v-if="item.message" class="block whitespace-pre-wrap">{{ item.message }}</span>
+      </button>
     </div>
     <ErrorBanner v-if="error" :message="error" copy-mode="label" />
     <div v-if="reply" class="flex flex-wrap items-center gap-3 border-b px-3 py-2 text-xs" aria-live="polite">
@@ -194,7 +269,7 @@ onMounted(async () => {
       <summary class="cursor-pointer">{{ t("chiron.diagnostics") }}</summary>
       <pre class="mt-2 max-h-48 overflow-auto whitespace-pre-wrap font-mono">{{ diagnostics }}</pre>
     </details>
-    <Dialog :open="!!pending" @update:open="!$event && (pending = undefined)">
+    <Dialog :open="!!pending" @update:open="!$event && stopRun()">
       <DialogContent>
         <DialogHeader
           ><DialogTitle>{{ t("chiron.confirmTitle") }}</DialogTitle
@@ -203,7 +278,7 @@ onMounted(async () => {
         <pre class="max-h-40 overflow-auto whitespace-pre-wrap text-xs">{{ pending?.message }}</pre>
         <pre class="max-h-40 overflow-auto whitespace-pre-wrap rounded-md border bg-muted p-3 font-mono text-xs">{{ pending?.request.operation === "execute" ? pending.request.query : "" }}</pre>
         <DialogFooter
-          ><Button variant="outline" @click="pending = undefined">{{ t("chiron.cancel") }}</Button
+          ><Button variant="outline" @click="stopRun">{{ t("chiron.cancel") }}</Button
           ><Button variant="destructive" @click="approve">{{ t("chiron.confirm") }}</Button></DialogFooter
         >
       </DialogContent>

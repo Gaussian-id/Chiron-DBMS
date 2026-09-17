@@ -1,8 +1,10 @@
-# ChironDBM by Gaussian
+# Chiron Horizon
 
 A cross-platform database manager for SQL, NoSQL, and vector databases, with a native ChironDB workspace, an AI assistant, and tools for exploring and managing data.
 
-ChironDBM is developed by [Gaussian](https://github.com/Gaussian-id). This repository is currently named `Gauss-DBM` on GitHub.
+Chiron Horizon is an open-source database workbench for desktop and self-hosted web use.
+
+Read the practical [Chiron Horizon User Guide](docs/content/docs/user-guide.mdx) for connections, query workspaces, AI, attachments, export/import, and MCP.
 
 ## Features
 
@@ -20,10 +22,10 @@ Feature availability varies by database engine. The ChironDB connector currently
 
 ## ChironDB
 
-[ChironDB](https://github.com/Gaussian-id/ChironDB) is Gaussian's vector database. ChironDBM provides a dedicated interface for working with its collections and query language.
+[ChironDB](https://github.com/Gaussian-id/ChironDB) is a vector database. Chiron Horizon provides a dedicated interface for working with its collections and query language.
 
 1. Start your ChironDB server.
-2. Create a connection in ChironDBM and select **ChironDB**.
+2. Create a connection in Chiron Horizon and select **ChironDB**.
 3. Enter the server host, HTTP port (default: `7401`), and any required credentials.
 4. Open the connection to browse collections or run ChironQL.
 
@@ -53,8 +55,8 @@ sudo apt-get install -y build-essential pkg-config libwebkit2gtk-4.1-dev libgtk-
 ### Run the desktop app
 
 ```bash
-git clone https://github.com/Gaussian-id/Gauss-DBM.git
-cd Gauss-DBM
+git clone https://github.com/Gaussian-id/Gauss-Horizon.git Chiron-Horizon
+cd Chiron-Horizon
 pnpm install --frozen-lockfile
 pnpm dev:tauri
 ```
@@ -106,19 +108,19 @@ For Rust checks with the lighter feature configuration, use `make cargo-check-fa
 | `deploy/` | Deployment configuration and database test environments |
 | `docs/` | Documentation source |
 
-Some internal package names, configuration keys, and supporting documentation retain upstream naming. Use the identifiers defined in the source when building or configuring the application.
+Package names, configuration keys, and documentation use the Chiron Horizon identity.
 
 ## Contributing
 
-Report bugs and request features in [this repository's issue tracker](https://github.com/Gaussian-id/Gauss-DBM/issues). Include the application version, operating system, database engine, and steps to reproduce when reporting a problem.
+Report bugs and request features in [this repository's issue tracker](https://github.com/Gaussian-id/Gauss-Horizon/issues). Include the application version, operating system, database engine, and steps to reproduce when reporting a problem.
 
-Contributions are welcome through [pull requests](https://github.com/Gaussian-id/Gauss-DBM/pulls). Include a description of the change and the checks you ran.
+Contributions are welcome through [pull requests](https://github.com/Gaussian-id/Gauss-Horizon/pulls). Include a description of the change and the checks you ran.
 
 ## Acknowledgments
 
-ChironDBM is a fork of [DBX](https://github.com/t8y2/dbx), originally created by [t8y2](https://github.com/t8y2) and its contributors. We thank the upstream maintainers and community for the database tooling and architecture that form the foundation of this project.
+Chiron Horizon is a fork of [DBX](https://github.com/t8y2/dbx), originally created by [t8y2](https://github.com/t8y2) and its contributors. We thank the upstream maintainers and community for the database tooling and architecture that form the foundation of this project.
 
-Gaussian develops this fork with ChironDB integration and its own branding and interface. Upstream copyright and license notices are retained.
+Chiron Horizon adds ChironDB integration and its own branding and interface. Upstream copyright and license notices are retained.
 
 ## License
 

@@ -1,5 +1,5 @@
 // Unit tests for the local table search index loading helper introduced for
-// t8y2/dbx #6190.
+// Gaussian-id/Gauss-Horizon #6190.
 //
 // Pre-fix behavior: local-mode first search only read the persisted index
 // (loadSidebarTableSearchIndex). When it had never been built (null), the UI

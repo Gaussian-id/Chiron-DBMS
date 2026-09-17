@@ -49,7 +49,7 @@ if ($signature.Status -ne [System.Management.Automation.SignatureStatus]::Valid 
   throw "WebView2 fixed runtime does not have a valid Microsoft signature."
 }
 
-$extractDirectory = Join-Path $DownloadDirectory "dbx-webview2-fixed-runtime-$runtimeVersion"
+$extractDirectory = Join-Path $DownloadDirectory "chiron-horizon-webview2-fixed-runtime-$runtimeVersion"
 if (Test-Path $extractDirectory) {
   Remove-Item -LiteralPath $extractDirectory -Recurse -Force
 }

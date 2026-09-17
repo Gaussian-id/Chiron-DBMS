@@ -8,16 +8,16 @@ import (
 )
 
 func TestLiveNeo4jAgent(t *testing.T) {
-	if os.Getenv("DBX_NEO4J_LIVE") != "1" {
-		t.Skip("set DBX_NEO4J_LIVE=1 to run against a real Neo4j server")
+	if os.Getenv("CHIRON_HORIZON_NEO4J_LIVE") != "1" {
+		t.Skip("set CHIRON_HORIZON_NEO4J_LIVE=1 to run against a real Neo4j server")
 	}
 	params := connectParams{
-		Host:      envOr("DBX_NEO4J_HOST", "127.0.0.1"),
-		Port:      envIntOr("DBX_NEO4J_PORT", defaultNeo4jPort),
-		Database:  envOr("DBX_NEO4J_DATABASE", defaultDatabase),
-		Username:  envOr("DBX_NEO4J_USER", "neo4j"),
-		Password:  os.Getenv("DBX_NEO4J_PASSWORD"),
-		URLParams: "scheme=" + envOr("DBX_NEO4J_SCHEME", "bolt"),
+		Host:      envOr("CHIRON_HORIZON_NEO4J_HOST", "127.0.0.1"),
+		Port:      envIntOr("CHIRON_HORIZON_NEO4J_PORT", defaultNeo4jPort),
+		Database:  envOr("CHIRON_HORIZON_NEO4J_DATABASE", defaultDatabase),
+		Username:  envOr("CHIRON_HORIZON_NEO4J_USER", "neo4j"),
+		Password:  os.Getenv("CHIRON_HORIZON_NEO4J_PASSWORD"),
+		URLParams: "scheme=" + envOr("CHIRON_HORIZON_NEO4J_SCHEME", "bolt"),
 	}
 	runtime, err := newConnectionRuntime(params)
 	if err != nil {
@@ -38,7 +38,7 @@ func TestLiveNeo4jAgent(t *testing.T) {
 		t.Fatalf("unexpected query result: %#v", result)
 	}
 	transaction, err := server.executeTransaction(rawParams(map[string]any{
-		"statements": []string{"CREATE (n:DBXNeo4jGoAgentSmoke {createdAt: datetime()})", "MATCH (n:DBXNeo4jGoAgentSmoke) DELETE n"},
+		"statements": []string{"CREATE (n:ChironHorizonNeo4jGoAgentSmoke {createdAt: datetime()})", "MATCH (n:ChironHorizonNeo4jGoAgentSmoke) DELETE n"},
 	}))
 	if err != nil || transaction.AffectedRows != 0 {
 		t.Fatalf("unexpected transaction result: %#v, %v", transaction, err)

@@ -1,4 +1,4 @@
-export const LEGACY_WEBVIEW_CLASS = "dbx-legacy-webview";
+export const LEGACY_WEBVIEW_CLASS = "chiron-horizon-legacy-webview";
 
 type CssSupportCheck = {
   name: string;

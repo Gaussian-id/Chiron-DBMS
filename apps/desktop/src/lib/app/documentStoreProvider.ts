@@ -1,5 +1,5 @@
 import type { ComposerTranslation } from "vue-i18n";
-import { normalizeJsonArgument } from "@dbx-app/mongo-shell";
+import { normalizeJsonArgument } from "@chiron-horizon/mongo-shell";
 import { isElasticsearchCompatibleDatabaseType, isMeilisearchDatabaseType, type DatabaseType } from "@/types/database";
 import { quoteUnquotedObjectKeys } from "@/lib/mongo/mongoShellCommand";
 import { formatMongoShellLiteral } from "@/lib/mongo/mongoDocumentValues";
@@ -140,7 +140,7 @@ const meilisearchDocumentProvider: DocumentStoreProvider = {
   sortInputLabel: "sort",
   documentsLabel: ({ total }) => `${total} Documents`,
   queryPreview: ({ collection, filterJson, sortJson, skip, limit }) => {
-    const lines = ["DBX MEILISEARCH FETCH DOCUMENTS", `index: ${JSON.stringify(collection)}`, `offset: ${skip}`, `limit: ${limit}`];
+    const lines = ["Chiron Horizon MEILISEARCH FETCH DOCUMENTS", `index: ${JSON.stringify(collection)}`, `offset: ${skip}`, `limit: ${limit}`];
     const filter = documentStorePreviewJson(filterJson);
     if (filter) lines.push("filter:", filter);
     const sort = documentStorePreviewJson(sortJson);
@@ -159,7 +159,7 @@ const dynamodbDocumentProvider: DocumentStoreProvider = {
     const filter = documentStorePreviewJson(filterJson);
     const sort = documentStorePreviewJson(sortJson);
     const operation = filterJson?.includes('"$index"') || (filterJson && filterJson !== "{}") ? "QUERY / SCAN" : "SCAN";
-    const lines = [`DBX DYNAMODB ${operation}`, `table: ${JSON.stringify(collection)}`, `limit: ${limit}`];
+    const lines = [`Chiron Horizon DYNAMODB ${operation}`, `table: ${JSON.stringify(collection)}`, `limit: ${limit}`];
     if (filter) lines.push("filter:", filter);
     if (sort) lines.push("sort:", sort);
     return lines.join("\n");

@@ -27,10 +27,10 @@ func TestKingbaseIntegration(t *testing.T) {
 		database = "test"
 	}
 	suffix := strconv.FormatInt(time.Now().UnixNano(), 36)
-	parent := "dbx_go_parent_" + suffix
-	child := "dbx_go_child_" + suffix
-	view := "dbx_go_view_" + suffix
-	function := "dbx_go_fn_" + suffix
+	parent := "chiron_horizon_go_parent_" + suffix
+	child := "chiron_horizon_go_child_" + suffix
+	view := "chiron_horizon_go_view_" + suffix
+	function := "chiron_horizon_go_fn_" + suffix
 
 	server := newServer()
 	cp := connectParams{
@@ -65,7 +65,7 @@ func TestKingbaseIntegration(t *testing.T) {
 	mustExecute(t, server, "CREATE TABLE "+qualifiedSchema+"."+quoteIdentifier(child)+" (id integer PRIMARY KEY, parent_id integer REFERENCES "+qualifiedSchema+"."+quoteIdentifier(parent)+"(id))")
 	mustExecute(t, server, "CREATE INDEX "+quoteIdentifier(child+"_parent_idx")+" ON "+qualifiedSchema+"."+quoteIdentifier(child)+"(parent_id)")
 	mustExecute(t, server, "CREATE VIEW "+qualifiedSchema+"."+quoteIdentifier(view)+" AS SELECT id, name FROM "+qualifiedSchema+"."+quoteIdentifier(parent))
-	mustExecute(t, server, "CREATE FUNCTION "+qualifiedSchema+"."+quoteIdentifier(function)+"() RETURNS text AS $$ SELECT 'dbx'; $$ LANGUAGE SQL")
+	mustExecute(t, server, "CREATE FUNCTION "+qualifiedSchema+"."+quoteIdentifier(function)+"() RETURNS text AS $$ SELECT 'chiron-horizon'; $$ LANGUAGE SQL")
 
 	tables, err := server.listTables(schema, metadataListConstraints{Filter: suffix})
 	if err != nil || len(tables) < 3 {
@@ -181,7 +181,7 @@ func TestKingbaseConstraintsIntegration(t *testing.T) {
 		database = "test"
 	}
 	suffix := strconv.FormatInt(time.Now().UnixNano(), 36)
-	schema := "dbx_constraints_" + suffix
+	schema := "chiron_horizon_constraints_" + suffix
 	schemaIdent := quoteIdentifier(schema)
 	parent := "parent"
 	child := "child"
@@ -309,7 +309,7 @@ func TestKingbaseCustomTypesIntegration(t *testing.T) {
 		database = "test"
 	}
 	suffix := strconv.FormatInt(time.Now().UnixNano(), 36)
-	schema := "dbx_types_" + suffix
+	schema := "chiron_horizon_types_" + suffix
 	schemaIdent := quoteIdentifier(schema)
 	statusType := schemaIdent + "." + quoteIdentifier("status")
 	emailDomain := schemaIdent + "." + quoteIdentifier("email")
@@ -467,7 +467,7 @@ func TestKingbaseCustomTypeDetailsIntegration(t *testing.T) {
 		database = "test"
 	}
 	suffix := strconv.FormatInt(time.Now().UnixNano(), 36)
-	schema := "dbx_details_" + suffix
+	schema := "chiron_horizon_details_" + suffix
 	schemaIdent := quoteIdentifier(schema)
 	statusType := schemaIdent + "." + quoteIdentifier("status")
 	emailDomain := schemaIdent + "." + quoteIdentifier("email")
@@ -579,7 +579,7 @@ func TestKingbaseTimezoneLessDateTimeIsReturnedWithoutOffset(t *testing.T) {
 	if database == "" {
 		database = "test"
 	}
-	table := "dbx_go_tzless_" + strconv.FormatInt(time.Now().UnixNano(), 36)
+	table := "chiron_horizon_go_tzless_" + strconv.FormatInt(time.Now().UnixNano(), 36)
 
 	server := newServer()
 	cp := connectParams{

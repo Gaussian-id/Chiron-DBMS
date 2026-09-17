@@ -35,7 +35,7 @@ const URL_COPY_UNSUPPORTED_DB_TYPES = new Set<DatabaseType>(["bigquery", "spanne
 
 /**
  * Standard (non-JDBC) URL schemes keyed by db_type. Values intentionally match
- * what real client libraries accept, not necessarily DBX's own display scheme.
+ * what real client libraries accept, not necessarily Chiron Horizon's own display scheme.
  */
 const STANDARD_URL_SCHEMES: Partial<Record<DatabaseType, string>> = {
   mysql: "mysql",

@@ -28,7 +28,7 @@ const (
 	defaultAuthScheme          = "digest"
 	saslDigestAuthScheme       = "sasl_digest"
 	maxBufferSizeParam         = "max_buffer_size"
-	statLookupConcurrencyEnv   = "DBX_ZOOKEEPER_STAT_LOOKUP_CONCURRENCY"
+	statLookupConcurrencyEnv   = "CHIRON_HORIZON_ZOOKEEPER_STAT_LOOKUP_CONCURRENCY"
 	defaultStatLookupWorkers   = 16
 	minimumStatLookupWorkers   = 1
 	maximumStatLookupWorkers   = 64

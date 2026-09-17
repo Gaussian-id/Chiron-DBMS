@@ -12,7 +12,7 @@ import (
 	"github.com/go-zookeeper/zk"
 )
 
-const integrationConnectStringEnv = "DBX_ZOOKEEPER_TEST_CONNECT_STRING"
+const integrationConnectStringEnv = "CHIRON_HORIZON_ZOOKEEPER_TEST_CONNECT_STRING"
 
 func TestZooKeeperIntegration(t *testing.T) {
 	connectString := os.Getenv(integrationConnectStringEnv)
@@ -21,17 +21,17 @@ func TestZooKeeperIntegration(t *testing.T) {
 	}
 	service := &server{statLookupConcurrency: 4}
 	connection := map[string]any{"zookeeper_connect_string": connectString}
-	if authScheme := os.Getenv("DBX_ZOOKEEPER_TEST_AUTH_SCHEME"); authScheme != "" {
+	if authScheme := os.Getenv("CHIRON_HORIZON_ZOOKEEPER_TEST_AUTH_SCHEME"); authScheme != "" {
 		connection["auth_scheme"] = authScheme
-		connection["username"] = os.Getenv("DBX_ZOOKEEPER_TEST_USERNAME")
-		connection["password"] = os.Getenv("DBX_ZOOKEEPER_TEST_PASSWORD")
+		connection["username"] = os.Getenv("CHIRON_HORIZON_ZOOKEEPER_TEST_USERNAME")
+		connection["password"] = os.Getenv("CHIRON_HORIZON_ZOOKEEPER_TEST_PASSWORD")
 	}
 	params := mustJSON(map[string]any{"connection": connection})
 	if _, err := service.connect(params); err != nil {
 		t.Fatal(err)
 	}
 	t.Cleanup(service.closeClient)
-	root := fmt.Sprintf("/dbx-go-integration-%d", time.Now().UnixNano())
+	root := fmt.Sprintf("/chiron-horizon-go-integration-%d", time.Now().UnixNano())
 	if _, err := service.put(mustJSON(map[string]any{"key": root + "/parent/value", "value": map[string]string{"encoding": "utf8", "data": "first"}})); err != nil {
 		t.Fatal(err)
 	}
@@ -84,7 +84,7 @@ func TestZooKeeperLargeChildrenIntegration(t *testing.T) {
 		t.Fatal(err)
 	}
 	t.Cleanup(service.closeClient)
-	root := fmt.Sprintf("/dbx-go-large-children-%d", time.Now().UnixNano())
+	root := fmt.Sprintf("/chiron-horizon-go-large-children-%d", time.Now().UnixNano())
 	if _, err := service.activeClient.Create(root, nil, 0); err != nil {
 		t.Fatal(err)
 	}
@@ -137,7 +137,7 @@ func BenchmarkZooKeeperOperations(b *testing.B) {
 		b.Fatal(err)
 	}
 	b.Cleanup(service.closeClient)
-	root := fmt.Sprintf("/dbx-go-benchmark-%d", time.Now().UnixNano())
+	root := fmt.Sprintf("/chiron-horizon-go-benchmark-%d", time.Now().UnixNano())
 	if _, err := service.put(mustJSON(map[string]any{"key": root + "/value", "value": map[string]string{"data": "warmup"}})); err != nil {
 		b.Fatal(err)
 	}
@@ -173,13 +173,13 @@ func BenchmarkZooKeeperOperations(b *testing.B) {
 }
 
 func TestZooKeeperTLSIntegration(t *testing.T) {
-	connectString := os.Getenv("DBX_ZOOKEEPER_TLS_TEST_CONNECT_STRING")
+	connectString := os.Getenv("CHIRON_HORIZON_ZOOKEEPER_TLS_TEST_CONNECT_STRING")
 	if connectString == "" {
-		t.Skip("DBX_ZOOKEEPER_TLS_TEST_CONNECT_STRING is not set")
+		t.Skip("CHIRON_HORIZON_ZOOKEEPER_TLS_TEST_CONNECT_STRING is not set")
 	}
-	caCertPath := os.Getenv("DBX_ZOOKEEPER_TLS_TEST_CA_CERT_PATH")
+	caCertPath := os.Getenv("CHIRON_HORIZON_ZOOKEEPER_TLS_TEST_CA_CERT_PATH")
 	if caCertPath == "" {
-		t.Skip("DBX_ZOOKEEPER_TLS_TEST_CA_CERT_PATH is not set")
+		t.Skip("CHIRON_HORIZON_ZOOKEEPER_TLS_TEST_CA_CERT_PATH is not set")
 	}
 	service := &server{statLookupConcurrency: 4}
 	connection := map[string]any{
@@ -191,7 +191,7 @@ func TestZooKeeperTLSIntegration(t *testing.T) {
 		t.Fatalf("connect over TLS: %v", err)
 	}
 	t.Cleanup(service.closeClient)
-	root := fmt.Sprintf("/dbx-go-tls-integration-%d", time.Now().UnixNano())
+	root := fmt.Sprintf("/chiron-horizon-go-tls-integration-%d", time.Now().UnixNano())
 	if _, err := service.put(mustJSON(map[string]any{"key": root + "/value", "value": map[string]string{"encoding": "utf8", "data": "secret"}})); err != nil {
 		t.Fatal(err)
 	}

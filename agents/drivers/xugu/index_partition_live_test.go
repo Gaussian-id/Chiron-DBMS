@@ -36,14 +36,14 @@ func TestLiveXuguIndexPartitionDDL(t *testing.T) {
 	defer s.disconnect()
 
 	const (
-		ordinaryTable = "DBX_IDX_SCOPE_LIVE_ORD_T"
-		localTable    = "DBX_IDX_SCOPE_LIVE_LOC_T"
-		globalTable   = "DBX_IDX_SCOPE_LIVE_GLB_T"
-		subTable      = "DBX_IDX_SCOPE_LIVE_SUB_T"
-		ordinaryIndex = "DBX_IDX_SCOPE_LIVE_ORD_I"
-		localIndex    = "DBX_IDX_SCOPE_LIVE_LOC_I"
-		globalIndex   = "DBX_IDX_SCOPE_LIVE_GLB_I"
-		subIndex      = "DBX_IDX_SCOPE_LIVE_SUB_I"
+		ordinaryTable = "CHIRON_HORIZON_IDX_SCOPE_LIVE_ORD_T"
+		localTable    = "CHIRON_HORIZON_IDX_SCOPE_LIVE_LOC_T"
+		globalTable   = "CHIRON_HORIZON_IDX_SCOPE_LIVE_GLB_T"
+		subTable      = "CHIRON_HORIZON_IDX_SCOPE_LIVE_SUB_T"
+		ordinaryIndex = "CHIRON_HORIZON_IDX_SCOPE_LIVE_ORD_I"
+		localIndex    = "CHIRON_HORIZON_IDX_SCOPE_LIVE_LOC_I"
+		globalIndex   = "CHIRON_HORIZON_IDX_SCOPE_LIVE_GLB_I"
+		subIndex      = "CHIRON_HORIZON_IDX_SCOPE_LIVE_SUB_I"
 	)
 	tables := []string{ordinaryTable, localTable, globalTable, subTable}
 	for _, table := range tables {

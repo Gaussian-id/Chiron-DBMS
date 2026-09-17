@@ -5,7 +5,7 @@
     <link rel="icon" type="image/png" href="/favicon.png" />
     <link rel="stylesheet" href="/connection-dialog-legacy.css" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>ChironDBM by Gaussian</title>
+    <title>Chiron Horizon</title>
     <style>
       html,
       body,
@@ -18,10 +18,10 @@
       html.dark #root {
         background-color: rgb(19 20 22);
       }
-      html.theme-gaussian, html.theme-gaussian body, html.theme-gaussian #root { background-color: #fafbff; }
-      html.theme-gaussian.dark, html.theme-gaussian.dark body, html.theme-gaussian.dark #root { background-color: #070b16; }
+      html.theme-chiron, html.theme-chiron body, html.theme-chiron #root { background-color: #fafbff; }
+      html.theme-chiron.dark, html.theme-chiron.dark body, html.theme-chiron.dark #root { background-color: #070b16; }
     </style>
-    <script data-dbx-startup-theme>
+    <script data-chiron-horizon-startup-theme>
       (() => {
         const root = document.documentElement;
         let mode = null;
@@ -30,9 +30,9 @@
 
         // localStorage can throw when WebView storage is unavailable; keep the existing light fallback.
         try {
-          mode = localStorage.getItem("dbx-theme");
-          cornerStyle = localStorage.getItem("dbx-corner-style");
-          palette = localStorage.getItem("dbx-theme-palette");
+          mode = localStorage.getItem("chiron-horizon-theme");
+          cornerStyle = localStorage.getItem("chiron-horizon-corner-style");
+          palette = localStorage.getItem("chiron-horizon-theme-palette");
         } catch {}
 
         const followsSystem = mode === "system" || mode === "soft-system";
@@ -47,14 +47,14 @@
         }
 
         root.classList.toggle("dark", dark);
-        root.classList.toggle("theme-gaussian", palette === "gaussian" || (!palette && !String(mode).startsWith("soft-")));
+        root.classList.toggle("theme-chiron", palette === "chiron" || (!palette && !String(mode).startsWith("soft-")));
         root.dataset.cornerStyle = cornerStyle === "none" || cornerStyle === "small" ? cornerStyle : "large";
         root.style.colorScheme = dark ? "dark" : "light";
       })();
     </script>
-    <script data-dbx-startup-input-guard>
+    <script data-chiron-horizon-startup-input-guard>
       (() => {
-        const readyEvent = "dbx:startup-ready";
+        const readyEvent = "chiron-horizon:startup-ready";
         const preventStartupEscape = (event) => {
           if (event.key !== "Escape") return;
           event.preventDefault();

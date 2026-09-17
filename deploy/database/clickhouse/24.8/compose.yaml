@@ -1,12 +1,12 @@
 services:
   database:
     image: docker.cnb.cool/znb/images/clickhouse-server:24.8.14.39
-    container_name: dbx-clickhouse-24.8
+    container_name: chiron-horizon-clickhouse-24.8
     restart: always
     ports:
       - "${DB_BIND_ADDRESS:-127.0.0.1}:${DB_PORT:-10600}:8123"
     environment:
-      CLICKHOUSE_DB: dbx
+      CLICKHOUSE_DB: chiron-horizon
       CLICKHOUSE_USER: default
       CLICKHOUSE_PASSWORD: "${DB_PASSWORD:-123456}"
     volumes:

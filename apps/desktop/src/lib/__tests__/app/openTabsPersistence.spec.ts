@@ -120,10 +120,10 @@ describe("openTabsPersistence originalSql round-trip", () => {
   });
 
   it("preserves an external Doris catalog across tab restore", () => {
-    const [restored] = roundTrip([queryTab({ database: "dbx_catalog_completion", catalog: "dbx_mysql_catalog" })]);
+    const [restored] = roundTrip([queryTab({ database: "chiron_horizon_catalog_completion", catalog: "chiron_horizon_mysql_catalog" })]);
 
-    expect(restored.database).toBe("dbx_catalog_completion");
-    expect(restored.catalog).toBe("dbx_mysql_catalog");
+    expect(restored.database).toBe("chiron_horizon_catalog_completion");
+    expect(restored.catalog).toBe("chiron_horizon_mysql_catalog");
   });
 
   it("preserves external file versions and acknowledged state across tab restore", () => {
@@ -187,8 +187,8 @@ describe("openTabsPersistence originalSql round-trip", () => {
         database: "",
         mode: "plugin-workbench",
         pluginWorkbench: {
-          pluginId: "dbx.example.hello",
-          contributionId: "dbx.example.hello.main",
+          pluginId: "chiron.horizon.example.hello",
+          contributionId: "chiron.horizon.example.hello.main",
           context: {
             connectionId: "plugin-connection",
             providerId: "hello.connection",
@@ -200,8 +200,8 @@ describe("openTabsPersistence originalSql round-trip", () => {
 
     expect(restored.mode).toBe("plugin-workbench");
     expect(restored.pluginWorkbench).toEqual({
-      pluginId: "dbx.example.hello",
-      contributionId: "dbx.example.hello.main",
+      pluginId: "chiron.horizon.example.hello",
+      contributionId: "chiron.horizon.example.hello.main",
       context: {
         connectionId: "plugin-connection",
         providerId: "hello.connection",
@@ -219,8 +219,8 @@ describe("openTabsPersistence originalSql round-trip", () => {
         database: "",
         mode: "plugin-filesystem",
         pluginFilesystem: {
-          pluginId: "dbx.example.storage",
-          providerId: "dbx.example.storage.files",
+          pluginId: "chiron.horizon.example.storage",
+          providerId: "chiron.horizon.example.storage.files",
           rootUri: "s3://bucket/",
           currentUri: "s3://bucket/reports/",
         },
@@ -229,8 +229,8 @@ describe("openTabsPersistence originalSql round-trip", () => {
 
     expect(restored.mode).toBe("plugin-filesystem");
     expect(restored.pluginFilesystem).toEqual({
-      pluginId: "dbx.example.storage",
-      providerId: "dbx.example.storage.files",
+      pluginId: "chiron.horizon.example.storage",
+      providerId: "chiron.horizon.example.storage.files",
       rootUri: "s3://bucket/",
       currentUri: "s3://bucket/reports/",
     });

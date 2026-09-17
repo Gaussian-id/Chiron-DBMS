@@ -1,8 +1,8 @@
 {
   "mcpServers": {
-    "dbx": {
+    "chiron-horizon": {
       "command": "npx",
-      "args": ["-y", "@dbx-app/mcp-server"]
+      "args": ["-y", "@chiron-horizon/mcp-server"]
     }
   }
 }

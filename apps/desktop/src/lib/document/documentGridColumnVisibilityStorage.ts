@@ -1,7 +1,7 @@
 import { safeLocalStorageGet, safeLocalStorageRemove, safeLocalStorageSet } from "@/lib/backend/safeStorage";
 import { loadDataGridColumnLayout, saveDataGridColumnLayout } from "@/lib/dataGrid/dataGridColumnLayoutStorage";
 
-const STORAGE_PREFIX = "dbx-document-grid-column-visibility:v1:";
+const STORAGE_PREFIX = "chiron-horizon-document-grid-column-visibility:v1:";
 
 export interface DocumentGridColumnVisibilityScope {
   databaseType?: string;
@@ -23,7 +23,7 @@ export function loadDocumentGridHiddenColumnKeys(scopeKey: string): string[] {
     if (!Array.isArray(parsed)) return [];
     return [...new Set(parsed.filter((key): key is string => typeof key === "string"))];
   } catch (error) {
-    console.warn(`[DBX][document-grid-column-visibility:parse] ${scopeKey}`, error);
+    console.warn(`[Chiron Horizon][document-grid-column-visibility:parse] ${scopeKey}`, error);
     return [];
   }
 }

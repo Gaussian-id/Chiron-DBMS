@@ -137,7 +137,7 @@ function createEditor(...args: Parameters<typeof createEditorWithResult>) {
 }
 
 function beforeTabSwitchEvent(fromTabId: string, tabId = "next-tab") {
-  return new CustomEvent("dbx:before-tab-switch", { detail: { tabId, fromTabId } });
+  return new CustomEvent("chiron-horizon:before-tab-switch", { detail: { tabId, fromTabId } });
 }
 
 function setupTabSwitchScrollFixture() {
@@ -281,7 +281,7 @@ describe("useDataGridEditor result snapshots", () => {
     previousScroller.scrollTop = 6_400;
     previousScroller.scrollLeft = 24;
     previous.scrollerRef.value = previousScroller as unknown as NonNullable<typeof previous.scrollerRef.value>;
-    previous.onBeforeTabSwitch(new CustomEvent("dbx:before-tab-switch", { detail: { tabId: "next-tab" } }));
+    previous.onBeforeTabSwitch(new CustomEvent("chiron-horizon:before-tab-switch", { detail: { tabId: "next-tab" } }));
     previous.savePendingSnapshot(true, true);
 
     const remounted = createEditor(undefined, true, key, undefined, rows);
@@ -827,11 +827,11 @@ describe("useDataGridEditor saveChanges reload", () => {
     return { editor, emit, currentPage };
   }
 
-  // https://github.com/t8y2/dbx/issues/8321: without a primary key the row is
+  // https://github.com/Gaussian-id/Gauss-Horizon/issues/8321: without a primary key the row is
   // addressed by matching every column value, and the loaded page cannot show
   // whether another physical row matches the same condition.
   const keylessGuard = {
-    sql: "SELECT COUNT(*) AS dbx_keyless_row_matches FROM orders_test WHERE (status = 'pending')",
+    sql: "SELECT COUNT(*) AS chiron_horizon_keyless_row_matches FROM orders_test WHERE (status = 'pending')",
     maxMatchedRows: 1,
     message: "Cannot safely update or delete this row: more than one row matches.",
   };
@@ -842,7 +842,7 @@ describe("useDataGridEditor saveChanges reload", () => {
       rollbackStatements: [],
       keylessGuards: [keylessGuard],
     });
-    mocks.executeQuery.mockResolvedValue({ columns: ["dbx_keyless_row_matches"], rows: [[2]] });
+    mocks.executeQuery.mockResolvedValue({ columns: ["chiron_horizon_keyless_row_matches"], rows: [[2]] });
 
     const { editor } = createSaveTestEditor({ primaryKeys: [] });
     editor.dirtyRows.value.set(0, new Map([[1, "shipped"]]));
@@ -860,7 +860,7 @@ describe("useDataGridEditor saveChanges reload", () => {
       rollbackStatements: [],
       keylessGuards: [keylessGuard],
     });
-    mocks.executeQuery.mockResolvedValue({ columns: ["dbx_keyless_row_matches"], rows: [[1]] });
+    mocks.executeQuery.mockResolvedValue({ columns: ["chiron_horizon_keyless_row_matches"], rows: [[1]] });
     mocks.executeBatch.mockResolvedValue({ affected_rows: 1 });
 
     const { editor } = createSaveTestEditor({ primaryKeys: [] });
@@ -1014,7 +1014,7 @@ describe("useDataGridEditor saveChanges reload", () => {
     const sqlError = Object.assign(new Error("Duplicate entry '1' for key 'PRIMARY'"), {
       backendError: {
         version: 1,
-        code: "DBX-JDBC-4001",
+        code: "Chiron Horizon-JDBC-4001",
         messageKey: "backendErrors.jdbc.sqlFailed",
         messageParams: { stage: "execute" },
         source: "jdbc_agent",
@@ -1194,7 +1194,7 @@ describe("useDataGridEditor cell edit focus", () => {
 });
 
 describe("Mongo collection-grid clipboard round-trip", () => {
-  it.each([null, MONGO_DOCUMENT_GRID_NULL, "\u0000dbx:mongo-document-grid:string:literal", "NULL"])("preserves BSON value %j through paste and save", (bsonValue) => {
+  it.each([null, MONGO_DOCUMENT_GRID_NULL, "\u0000chiron-horizon:mongo-document-grid:string:literal", "NULL"])("preserves BSON value %j through paste and save", (bsonValue) => {
     const encoded = mongoDocumentGridValue(bsonValue) as string;
     const editor = createEditor(undefined, true, undefined, undefined, [["before", "", ""]], undefined, undefined, true);
     try {

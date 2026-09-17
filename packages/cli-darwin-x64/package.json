@@ -1,11 +1,11 @@
 {
-  "name": "@dbx-app/cli-darwin-x64",
-  "version": "0.4.86",
-  "description": "Precompiled DBX CLI binary for darwin x64",
+  "name": "@chiron-horizon/cli-darwin-x64",
+  "version": "0.1.0",
+  "description": "Precompiled Chiron Horizon CLI binary for darwin x64",
   "license": "Apache-2.0",
   "repository": {
     "type": "git",
-    "url": "https://github.com/t8y2/dbx",
+    "url": "https://github.com/Gaussian-id/Gauss-Horizon",
     "directory": "packages/cli-darwin-x64"
   },
   "os": [
@@ -15,7 +15,7 @@
     "x64"
   ],
   "bin": {
-    "dbx-native": "bin/dbx"
+    "chiron-horizon-native": "bin/chiron-horizon"
   },
   "files": [
     "bin"

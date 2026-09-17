@@ -1,0 +1,98 @@
+---
+title: User Guide
+description: Use Chiron Horizon connections, the query workspace, AI assistance, attachments, and MCP safely.
+---
+
+# Use Chiron Horizon
+
+Chiron Horizon is a database workbench. It stores connection settings, opens a workspace for the selected database, and keeps database access under the permissions of the account you configure. Version **0.1.0** is distributed through the [Chiron Horizon GitHub Releases](https://github.com/Gaussian-id/Gauss-Horizon/releases). npm packages are deferred for this release and application auto-update is disabled.
+
+## 1. Create and test a connection
+
+1. Select **New Connection** in the sidebar.
+2. Choose the database type, then enter the host, port, database, account, and any TLS, SSH, proxy, or driver settings it needs.
+3. Use **Test Connection** before saving. A successful save only stores the configuration; it does not change the database.
+4. Give production, staging, and development connections clear names and colors. Enable **Read-only** or production protection before opening a sensitive target.
+
+For ChironDB, select **ChironDB**, enter the server's HTTP endpoint and credentials if required, then choose a collection in the workspace. ChironDB is the database server; Chiron Horizon is the client. See [Getting Started](/en/docs/getting-started) for connection and server prerequisites.
+
+## 2. Work in the editor
+
+Open a connection from the sidebar to create a workspace. For SQL-capable connections, select a database/schema when appropriate. For ChironDB, choose the collection you intend to query.
+
+| Task | macOS | Windows / Linux |
+| --- | --- | --- |
+| Run the selected query or editor scope | `Cmd+Enter` | `Ctrl+Enter` |
+| Toggle line comments | `Cmd+/` | `Ctrl+/` |
+| Stop a run | Select **Stop** after Run changes state | Select **Stop** after Run changes state |
+
+ChironQL uses `--` line comments. The comment shortcut works on the active line or every selected line and preserves undo/redo. In ChironDB workspaces, Run executes the selection when one exists; otherwise it executes the editor content. Multiple ChironQL statements are processed in sequence. Semicolons inside strings and comments are not treated as statement boundaries, and a final semicolon is optional.
+
+Every statement has its own result card. A `USE collection;` statement affects only that Run; it does not silently change the workspace dropdown or create an HTTP session. Each write pauses for its own approval. An error, rejected approval, cancellation, timeout, or uncertain mutation stops later statements. Stop prevents later statements from being sent, although one already sent may still finish. Inspect the result and query ID before retrying an uncertain write.
+
+For SQL workspaces, execution scope, result tabs, plans, history, parameters, and the target picker are described in [Query Editor](/en/docs/query-editor). The effective shortcuts can be viewed or changed in **Settings → Shortcuts**.
+
+## 3. Save, import, and export connections
+
+Use **Export** in the sidebar to save selected connections. The desktop/browser default filename is `Chiron Horizon-connections.json`. Encrypted export uses a passphrase and is the recommended option. Plaintext export can contain database passwords, SSH credentials, and connection strings, so keep it only in a trusted location and delete it after a one-time migration.
+
+Use **Import** in the sidebar to restore connections. Chiron Horizon recognizes its encrypted/plain JSON formats and compatible older files by their contents, not by the filename. Review the connection list and test imported connections before using them. Driver packages and saved SQL are not part of a connection export.
+
+See [Config Export/Import](/en/docs/config-export) and [Connection Import](/en/docs/connection-import) for the exact scope and supported migrations from other tools.
+
+## 4. Use the AI assistant
+
+First configure an API provider/model in **Settings → AI**, test it, save it, then choose that model in the workspace assistant. OpenAI-compatible endpoints are supported alongside provider presets and selected local CLI providers.
+
+- **Ask** generates, explains, optimizes, repairs, or converts a query without running it.
+- **Agent** can run eligible reads when the request explicitly asks for real data. It must present an exact write proposal for approval, and production protections still apply.
+- The action menu offers ChironQL-specific actions for ChironDB. The template dropdown works for ChironDB too; create templates in **Settings → AI → Scenario Prompt Templates**.
+
+For Explain, Optimize, Fix Error, Convert Dialect, and Run & Explain, the current editor query is included with the request. Prompts, selected templates, and relevant query text are sent to the configured provider. Database results remain local unless you explicitly review and approve a data-sharing preview. A model response is a suggestion: review the target, filter, fields, and write scope before approving it.
+
+## 5. Attach files to a ChironDB AI request
+
+The **+** button accepts text-like files (CSV, TSV, TXT, Markdown, JSON, YAML, XML, and logs) and PNG/JPEG/GIF/WebP images. You can also drag/drop files or paste an image. The selected content is sent only with the current request to the configured AI provider as untrusted task data; it is not a command or execution approval.
+
+Limits are eight text files (12,000 UTF-16 characters each, 32,000 total) and four images (5 MiB each, 12 MiB total). Gemini does not accept GIF attachments. Attachment bytes are transient: history retains only the attachment reference, so attach the files again after reloading a conversation. File-only requests are supported.
+
+Do not attach secrets or data that the chosen provider is not authorized to receive. Attachment support was verified with a synthetic provider and disposable ChironDB data on macOS Apple Silicon; live-model interpretation remains provider-dependent.
+
+## 6. Use MCP with an AI client or automation
+
+The Chiron Horizon MCP server lets an MCP-capable client use the database connections you have explicitly exposed. It is separate from ChironDB's own server/protocol. Choose the connection allowlist, database scope, tool allowlist, and execution level in **Settings → MCP** before connecting a client.
+
+Start with **Read only**. The other levels are **Data read/write** and **Full access**, but neither can bypass the connection's own read-only flag, production protection, database scope, or database-account privileges. MCP has no per-operation desktop approval dialog, so scope and least-privilege database accounts matter.
+
+For a local client, use the desktop's **Settings → MCP → HTTP Service** to enable Streamable HTTP on the displayed loopback address and copy its current Bearer token into the client configuration. The standalone stdio server is suitable for clients that support stdio. Driver availability still follows the connection: native SQL, Redis, and MongoDB can execute directly, while Agent/JDBC databases need their matching local runtime.
+
+MongoDB MCP was end-to-end verified against MongoDB 8.0.30 on macOS Apple Silicon through stdio and authenticated HTTP, including discovery, reads, allowed CRUD, and policy denials. That is evidence for this tested configuration, not a certification for every database, topology, AI client, or operating system. See [MCP Integration](/en/docs/mcp) for client configuration and troubleshooting.
+
+## 7. Appearance, About, and support
+
+Use **Settings → Appearance** to choose the interface theme and logo variant. The supplied **Black** Chiron Horizon artwork is a logo choice independent of light/dark theme. **Settings → About** shows the local 0.1.0 changelog and its website link; the changelog remains available offline.
+
+When requesting support, include the app/server version, database type, sanitized endpoint, action, error text, and query ID. Do not include API keys, passwords, exported plaintext connection files, or sensitive result rows.
+
+## Troubleshooting
+
+| Symptom | What to check |
+| --- | --- |
+| Connection test fails | Confirm host/port, network/TLS/SSH requirements, credentials, and the matching driver/agent. |
+| Run is waiting | Review the statement target and accept or reject the exact write proposal. |
+| Mutation timed out | Treat the outcome as unknown; inspect the target before considering a manual retry. |
+| Attachment is unavailable | Wait for any active request or file read to finish; use a supported file type and the configured provider's capabilities. |
+| Template selector is empty | Create a template in **Settings → AI → Scenario Prompt Templates**, then select it in the assistant. |
+| MCP cannot see a connection | Add the connection/database/tool to **Settings → MCP**, then refresh the MCP client's tool list. |
+| MCP request is refused | Recheck the execution mode, connection read-only/protection state, database account privileges, and HTTP token if applicable. |
+
+## Verification scope
+
+The release workflow builds and smoke-tests macOS Apple Silicon and Intel, Windows x64, and Ubuntu 22.04+ x64 before creating the public tag. It verifies About 0.1.0, bundled changelog, the Black logo choice, restart behavior, and embedded frontend. macOS uses ad-hoc signing and the Windows installer is unsigned; expect the normal Gatekeeper or SmartScreen confirmation. The application updater and npm publication remain disabled.
+
+<Cards>
+  <Card title="Get started" href="/en/docs/getting-started">Install or run from source, then create the first connection.</Card>
+  <Card title="Query workspace" href="/en/docs/query-editor">Review execution scope, results, and editor behavior.</Card>
+  <Card title="AI Assistant" href="/en/docs/ai-assistant">Configure models, templates, Ask, and Agent.</Card>
+  <Card title="MCP Integration" href="/en/docs/mcp">Connect a local AI client under a central MCP policy.</Card>
+</Cards>

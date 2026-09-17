@@ -8,7 +8,7 @@ Set-StrictMode -Version Latest
 $ErrorActionPreference = "Stop"
 
 $installerPath = (Resolve-Path -LiteralPath $InstallerPath).Path
-$installDirectory = Join-Path ([System.IO.Path]::GetTempPath()) "dbx-win7-installer-audit"
+$installDirectory = Join-Path ([System.IO.Path]::GetTempPath()) "chiron-horizon-win7-installer-audit"
 if (Test-Path -LiteralPath $installDirectory) {
   Remove-Item -LiteralPath $installDirectory -Recurse -Force
 }
@@ -19,7 +19,7 @@ if ($installer.ExitCode -ne 0) {
 }
 
 $expectedFiles = @(
-  (Join-Path $installDirectory "dbx.exe"),
+  (Join-Path $installDirectory "chiron-horizon.exe"),
   (Join-Path $installDirectory "webview2-fixed-runtime\msedgewebview2.exe"),
   (Join-Path $installDirectory "uninstall.exe")
 )

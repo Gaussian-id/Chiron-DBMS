@@ -33,7 +33,7 @@ const SAMPLE_BODY = JSON.stringify({
                 time_in_nanos: 1234567,
                 breakdown: { build_scorer: 40000, next_doc: 300000 },
                 children: [
-                  { type: "TermQuery", description: "title:dbx", time_in_nanos: 500000, breakdown: { score: 250000 }, children: [] },
+                  { type: "TermQuery", description: "title:chiron-horizon", time_in_nanos: 500000, breakdown: { score: 250000 }, children: [] },
                   { type: "TermQuery", description: "description:profiler", time_in_nanos: 300000, children: [] },
                 ],
               },
@@ -45,7 +45,7 @@ const SAMPLE_BODY = JSON.stringify({
         id: "[node1][products][1]",
         searches: [
           {
-            query: [{ type: "TermQuery", description: "title:dbx", time_in_nanos: 900000, children: [] }],
+            query: [{ type: "TermQuery", description: "title:chiron-horizon", time_in_nanos: 900000, children: [] }],
           },
         ],
       },

@@ -449,7 +449,7 @@ describe("DocumentBrowser Elasticsearch field search", () => {
       database: "",
       collection: "orders",
     });
-    storedValues.set(`dbx-document-grid-column-visibility:v1:${legacyScopeKey}`, JSON.stringify(["title"]));
+    storedValues.set(`chiron-horizon-document-grid-column-visibility:v1:${legacyScopeKey}`, JSON.stringify(["title"]));
 
     app = createApp(DocumentBrowser, {
       connectionId: "connection-1",
@@ -596,7 +596,7 @@ describe("DocumentBrowser MongoDB filter value types", () => {
     });
 
     expect(preview).toHaveLength(1);
-    expect(preview[0]).toContain('DBX DYNAMODB INSERT ITEM\ntable: "orders"');
+    expect(preview[0]).toContain('Chiron Horizon DYNAMODB INSERT ITEM\ntable: "orders"');
     expect(preview[0]).toContain('"order_id": "ORD-new"');
   });
 
@@ -768,8 +768,8 @@ describe("DocumentBrowser MongoDB filter value types", () => {
       })
       .mockResolvedValueOnce({
         documents: [
-          { _id: { tenant_id: "tenant-a", order_id: "001" }, tenant_id: "tenant-a", order_id: "001", amount: { $dbxDynamoDb: { version: 1, type: "number", value: "9007199254740993" } } },
-          { _id: { tenant_id: "tenant-a", order_id: "002" }, tenant_id: "tenant-a", order_id: "002", tags: { $dbxDynamoDb: { version: 1, type: "stringSet", value: ["new", "paid"] } } },
+          { _id: { tenant_id: "tenant-a", order_id: "001" }, tenant_id: "tenant-a", order_id: "001", amount: { $chironHorizonDynamoDb: { version: 1, type: "number", value: "9007199254740993" } } },
+          { _id: { tenant_id: "tenant-a", order_id: "002" }, tenant_id: "tenant-a", order_id: "002", tags: { $chironHorizonDynamoDb: { version: 1, type: "stringSet", value: ["new", "paid"] } } },
         ],
         total: 3,
         total_is_exact: false,
@@ -798,8 +798,8 @@ describe("DocumentBrowser MongoDB filter value types", () => {
       [0, 2, "cursor-1"],
     ]);
     expect(result?.rows).toHaveLength(3);
-    expect(result?.rows[0]).toContain('{"$dbxDynamoDb":{"version":1,"type":"number","value":"9007199254740993"}}');
-    expect(result?.rows[1]).toContain('{"$dbxDynamoDb":{"version":1,"type":"stringSet","value":["new","paid"]}}');
+    expect(result?.rows[0]).toContain('{"$chironHorizonDynamoDb":{"version":1,"type":"number","value":"9007199254740993"}}');
+    expect(result?.rows[1]).toContain('{"$chironHorizonDynamoDb":{"version":1,"type":"stringSet","value":["new","paid"]}}');
     expect(progress).toHaveBeenLastCalledWith({ rowsExported: 3, totalRows: 3 });
   });
 
@@ -1184,7 +1184,7 @@ describe("DocumentBrowser MongoDB filter value types", () => {
     await flushUi();
 
     expect(backend.documentDeleteDocument).toHaveBeenCalledOnce();
-    expect(backend.documentDeleteDocument).toHaveBeenCalledWith("mongo-1", "test", "typed_ids", '__dbx_mongo_string_id__"document-1"', undefined, undefined);
+    expect(backend.documentDeleteDocument).toHaveBeenCalledWith("mongo-1", "test", "typed_ids", '__chiron_horizon_mongo_string_id__"document-1"', undefined, undefined);
   });
 
   it("waits for danger confirmation before deleting a document when confirmation is enabled", async () => {
@@ -1265,7 +1265,7 @@ describe("DocumentBrowser MongoDB filter value types", () => {
     expect(connectionId).toBe("meili-1");
     expect(collection).toBe("movies");
     expect(updates).toHaveLength(1);
-    expect(updates[0].id).toBe('__dbx_meilisearch_string_id__"001"');
+    expect(updates[0].id).toBe('__chiron_horizon_meilisearch_string_id__"001"');
     expect(JSON.parse(updates[0].docJson)).toEqual({ title: "One revised", rating: 1 });
     expect(deleteIds).toEqual(["3"]);
     expect(inserts.map((value: string) => JSON.parse(value))).toEqual([

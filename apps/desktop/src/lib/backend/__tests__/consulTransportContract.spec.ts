@@ -5,7 +5,7 @@ const tauri = readFileSync(new URL("../tauri.ts", import.meta.url), "utf8");
 const http = readFileSync(new URL("../http.ts", import.meta.url), "utf8");
 const api = readFileSync(new URL("../api.ts", import.meta.url), "utf8");
 const tauriRegistry = readFileSync(new URL("../../../../../../src-tauri/src/lib.rs", import.meta.url), "utf8");
-const webRegistry = readFileSync(new URL("../../../../../../crates/dbx-web/src/main.rs", import.meta.url), "utf8");
+const webRegistry = readFileSync(new URL("../../../../../../crates/chiron-horizon-web/src/main.rs", import.meta.url), "utf8");
 const operations = [...api.matchAll(/export const (consul\w+) = forward/g)].map((match) => match[1]);
 const expectedOperations = [
   "consulCapabilities",

@@ -1,11 +1,11 @@
 {
-  "name": "@dbx-app/mcp-linux-arm64-gnu",
-  "version": "0.4.86",
-  "description": "Precompiled DBX MCP Rust binary for linux arm64",
+  "name": "@chiron-horizon/mcp-linux-arm64-gnu",
+  "version": "0.1.0",
+  "description": "Precompiled Chiron Horizon MCP Rust binary for linux arm64",
   "license": "Apache-2.0",
   "repository": {
     "type": "git",
-    "url": "https://github.com/t8y2/dbx",
+    "url": "https://github.com/Gaussian-id/Gauss-Horizon",
     "directory": "packages/mcp-linux-arm64-gnu"
   },
   "os": [
@@ -18,7 +18,7 @@
     "glibc"
   ],
   "bin": {
-    "dbx-mcp-native": "bin/dbx-mcp"
+    "chiron-horizon-mcp-native": "bin/chiron-horizon-mcp"
   },
   "files": [
     "bin"

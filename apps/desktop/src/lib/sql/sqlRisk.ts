@@ -132,13 +132,13 @@ function classifyDynamoDbStatementRisk(sql: string, dialect?: DatabaseType | str
     .find((line) => line.trim())
     ?.trim()
     .toUpperCase();
-  if (header === "DBX DYNAMODB SCAN" || header === "DBX DYNAMODB QUERY / SCAN") {
-    return { risk: "read", firstKeyword: "dbx" };
+  if (header === "CHIRON HORIZON DYNAMODB SCAN" || header === "CHIRON HORIZON DYNAMODB QUERY / SCAN") {
+    return { risk: "read", firstKeyword: "chiron-horizon" };
   }
-  if (header === "DBX DYNAMODB INSERT ITEM" || header === "DBX DYNAMODB PUT ITEM" || header === "DBX DYNAMODB DELETE ITEM") {
-    return { risk: "write", firstKeyword: "dbx" };
+  if (header === "CHIRON HORIZON DYNAMODB INSERT ITEM" || header === "CHIRON HORIZON DYNAMODB PUT ITEM" || header === "CHIRON HORIZON DYNAMODB DELETE ITEM") {
+    return { risk: "write", firstKeyword: "chiron-horizon" };
   }
-  if (header?.startsWith("DBX DYNAMODB")) return { risk: "unknown", firstKeyword: "dbx" };
+  if (header?.startsWith("CHIRON HORIZON DYNAMODB")) return { risk: "unknown", firstKeyword: "chiron-horizon" };
   return null;
 }
 

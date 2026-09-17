@@ -4,18 +4,18 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { spawnSync } from "node:child_process";
 
-const rustBinary = process.env.DBX_CLI_RUST_BIN;
-const legacyBinary = process.env.DBX_CLI_LEGACY_BIN;
-const connection = process.env.DBX_CLI_TEST_CONNECTION;
+const rustBinary = process.env.CHIRON_HORIZON_CLI_RUST_BIN;
+const legacyBinary = process.env.CHIRON_HORIZON_CLI_LEGACY_BIN;
+const connection = process.env.CHIRON_HORIZON_CLI_TEST_CONNECTION;
 
 if (!rustBinary || !existsSync(rustBinary)) {
-  throw new Error("Set DBX_CLI_RUST_BIN to a release dbx binary before running this test.");
+  throw new Error("Set CHIRON_HORIZON_CLI_RUST_BIN to a release chiron-horizon binary before running this test.");
 }
 if (!legacyBinary || !existsSync(legacyBinary)) {
-  throw new Error("Set DBX_CLI_LEGACY_BIN to the legacy TypeScript dbx binary before running this test.");
+  throw new Error("Set CHIRON_HORIZON_CLI_LEGACY_BIN to the legacy TypeScript chiron-horizon binary before running this test.");
 }
 if (!connection) {
-  throw new Error("Set DBX_CLI_TEST_CONNECTION to a safe test connection name before running this test.");
+  throw new Error("Set CHIRON_HORIZON_CLI_TEST_CONNECTION to a safe test connection name before running this test.");
 }
 
 function run(binary, args, extraEnv = {}) {
@@ -51,8 +51,8 @@ assert.equal(run(legacyBinary, ["--version"]).status, 0);
 console.log("PASS version");
 
 assert.equal(run(rustBinary, ["--help"]).status, 0);
-assert.match(run(rustBinary, ["--help"]).stdout, /dbx query/);
-assert.match(run(legacyBinary, ["--help"]).stdout, /dbx query/);
+assert.match(run(rustBinary, ["--help"]).stdout, /chiron-horizon query/);
+assert.match(run(legacyBinary, ["--help"]).stdout, /chiron-horizon query/);
 console.log("PASS help");
 
 compareJsonCommand("capabilities", ["capabilities", "--json"], (legacy, rust) => {
@@ -84,15 +84,15 @@ compareJsonCommand("schema describe", ["schema", "describe", connection, table, 
   );
 });
 
-compareJsonCommand("query", ["query", connection, "select 1 as dbx_cli_migration_check", "--json"], (legacy, rust) => {
+compareJsonCommand("query", ["query", connection, "select 1 as chiron_horizon_cli_migration_check", "--json"], (legacy, rust) => {
   assert.deepEqual(rust.columns, legacy.columns);
   assert.deepEqual(normalizeRows(rust.rows), normalizeRows(legacy.rows));
   assert.equal(rust.row_count, legacy.row_count);
 });
 
-const temporaryDirectory = mkdtempSync(join(tmpdir(), "dbx-cli-migration-"));
+const temporaryDirectory = mkdtempSync(join(tmpdir(), "chiron-horizon-cli-migration-"));
 const sqlFile = join(temporaryDirectory, "query.sql");
-writeFileSync(sqlFile, "select 1 as dbx_cli_file_check", "utf8");
+writeFileSync(sqlFile, "select 1 as chiron_horizon_cli_file_check", "utf8");
 try {
   compareJsonCommand("file query", ["query", connection, "--file", sqlFile, "--json"], (legacy, rust) => {
     assert.deepEqual(rust.columns, legacy.columns);
@@ -109,17 +109,17 @@ assert.match(context.stdout, /Connection:/);
 assert.match(context.stdout, /## /);
 console.log("PASS context");
 
-const contextJson = jsonOutput(run(rustBinary, ["context", "--tables", table, "--json"], { DBX_CONNECTION: connection }));
+const contextJson = jsonOutput(run(rustBinary, ["context", "--tables", table, "--json"], { CHIRON_HORIZON_CONNECTION: connection }));
 assert.equal(contextJson.connection, connection);
 assert.equal(contextJson.tables.length, 1);
 assert.equal(contextJson.tables[0].name.toLowerCase(), table.toLowerCase());
 assert.equal(typeof contextJson.truncated, "boolean");
-console.log("PASS DBX_CONNECTION context");
+console.log("PASS CHIRON_HORIZON_CONNECTION context");
 
-const defaultConnectionQuery = jsonOutput(run(rustBinary, ["query", "select 1 as default_connection", "--json"], { DBX_CONNECTION: connection }));
+const defaultConnectionQuery = jsonOutput(run(rustBinary, ["query", "select 1 as default_connection", "--json"], { CHIRON_HORIZON_CONNECTION: connection }));
 assert.equal(defaultConnectionQuery.connection, connection);
 assert.equal(String(defaultConnectionQuery.rows[0].default_connection), "1");
-console.log("PASS DBX_CONNECTION query");
+console.log("PASS CHIRON_HORIZON_CONNECTION query");
 
 const formatAlias = jsonOutput(run(rustBinary, ["query", connection, "select 1 as format_alias", "--format", "json"]));
 assert.equal(String(formatAlias.rows[0].format_alias), "1");
@@ -164,12 +164,12 @@ for (const [name, args, code] of [
   console.log(`PASS ${name}`);
 }
 
-const missingDefault = run(rustBinary, ["query", "select 1", "--json"], { DBX_CONNECTION: null });
+const missingDefault = run(rustBinary, ["query", "select 1", "--json"], { CHIRON_HORIZON_CONNECTION: null });
 assert.equal(missingDefault.status, 1);
 assert.equal(JSON.parse(missingDefault.stderr).error.code, "INVALID_ARGUMENT");
 console.log("PASS missing default connection");
 
-const temporaryConflictDirectory = mkdtempSync(join(tmpdir(), "dbx-cli-migration-conflict-"));
+const temporaryConflictDirectory = mkdtempSync(join(tmpdir(), "chiron-horizon-cli-migration-conflict-"));
 const conflictFile = join(temporaryConflictDirectory, "query.sql");
 writeFileSync(conflictFile, "select 1", "utf8");
 try {

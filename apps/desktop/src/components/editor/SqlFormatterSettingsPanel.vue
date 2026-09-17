@@ -303,7 +303,7 @@ async function onImportFile(event: Event) {
 }
 
 async function exportConfig() {
-  await saveTextFile(serializeSqlFormatterConfig(settings.value), "dbx-sql-formatter.json", "JSON", "json");
+  await saveTextFile(serializeSqlFormatterConfig(settings.value), "chiron-horizon-sql-formatter.json", "JSON", "json");
 }
 
 async function copyJsonDraft() {
@@ -571,10 +571,10 @@ onBeforeUnmount(() => {
           <div class="space-y-2">
             <Label>{{ t("settings.sqlFormatterIndent") }}</Label>
             <div class="grid grid-cols-2 gap-2">
-              <Button type="button" variant="outline" class="justify-center" :class="!settings.useTabs ? 'dbx-choice-selected' : ''" @click="updateOption('useTabs', false)">
+              <Button type="button" variant="outline" class="justify-center" :class="!settings.useTabs ? 'chiron-horizon-choice-selected' : ''" @click="updateOption('useTabs', false)">
                 {{ t("settings.sqlFormatterIndentSpaces") }}
               </Button>
-              <Button type="button" variant="outline" class="justify-center" :class="settings.useTabs ? 'dbx-choice-selected' : ''" @click="updateOption('useTabs', true)">
+              <Button type="button" variant="outline" class="justify-center" :class="settings.useTabs ? 'chiron-horizon-choice-selected' : ''" @click="updateOption('useTabs', true)">
                 {{ t("settings.sqlFormatterIndentTabs") }}
               </Button>
             </div>

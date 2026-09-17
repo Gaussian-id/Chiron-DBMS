@@ -198,17 +198,17 @@ func TestKVOperationsAndPagination(t *testing.T) {
 		}
 		return result
 	}
-	put(`{"key":"/app/name","value":{"encoding":"utf8","data":"dbx"}}`)
+	put(`{"key":"/app/name","value":{"encoding":"utf8","data":"chiron-horizon"}}`)
 	put(`{"key":"/app/a","value":{"encoding":"base64","data":"/wA="},"writeMode":"create"}`)
 	sequential := put(`{"key":"/app/seq-","value":{"data":"v"},"writeMode":"create","createMode":"persistent_sequential"}`)
 	if !strings.HasPrefix(sequential["createdKey"].(string), "/app/seq-") {
 		t.Fatalf("sequential result = %#v", sequential)
 	}
 	got, err := service.get(json.RawMessage(`{"key":"app/name/"}`))
-	if err != nil || got["found"] != true || got["value"].(valueObject).Data != "dbx" {
+	if err != nil || got["found"] != true || got["value"].(valueObject).Data != "chiron-horizon" {
 		t.Fatalf("get=%#v err=%v", got, err)
 	}
-	put(`{"key":"/app/name","value":{"data":"dbx2"},"writeMode":"update"}`)
+	put(`{"key":"/app/name","value":{"data":"chiron-horizon2"},"writeMode":"update"}`)
 
 	recursive := true
 	first, err := service.listPrefix(mustJSON(listRequest{Prefix: "/", Recursive: &recursive, Limit: 2}))

@@ -56,7 +56,7 @@ const formQos = ref<MqttQoS>(restoredUiState.formQos ?? "atmostonce");
 const formNoLocal = ref(restoredUiState.formNoLocal ?? false);
 const formEnabled = ref(restoredUiState.formEnabled ?? true);
 const editingTopic = ref<string | null>(restoredUiState.editingTopic ?? null);
-const MQTT_PUBLISH_PANEL_COLLAPSED_STORAGE_KEY = "dbx-mqtt-publish-panel-collapsed";
+const MQTT_PUBLISH_PANEL_COLLAPSED_STORAGE_KEY = "chiron-horizon-mqtt-publish-panel-collapsed";
 const publishPanelCollapsed = ref(restoredUiState.publishPanelCollapsed ?? safeLocalStorageGet(MQTT_PUBLISH_PANEL_COLLAPSED_STORAGE_KEY) === "true");
 
 trackUiState(() => ({

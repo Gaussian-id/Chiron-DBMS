@@ -645,7 +645,7 @@
 
 .app-tab-bar:not(.vertical-tab-layout) .tab-group-header-content {
   height: 1.75rem;
-  border-radius: var(--dbx-radius-md);
+  border-radius: var(--chiron-horizon-radius-md);
   padding-inline: 0.4rem 0.5rem;
   background: var(--tab-group-soft);
 }
@@ -980,7 +980,7 @@
   min-height: 2rem;
   height: 2rem !important;
   border-right: 0;
-  border-radius: var(--dbx-radius-md);
+  border-radius: var(--chiron-horizon-radius-md);
   background-color: var(--app-tab-background, transparent);
   transition:
     background-color 150ms ease,
@@ -1060,7 +1060,7 @@
   justify-content: center;
   margin: 0.125rem auto;
   padding: 0 !important;
-  border-radius: var(--dbx-radius-md);
+  border-radius: var(--chiron-horizon-radius-md);
 }
 
 .vertical-tab-layout--collapsed .compact-dirty-tab-marker {
@@ -1155,7 +1155,7 @@
 .vertical-tab-layout .tab-group-header-content {
   width: 100%;
   height: 100%;
-  border-radius: var(--dbx-radius-md);
+  border-radius: var(--chiron-horizon-radius-md);
   padding-inline: 0.55rem;
 }
 

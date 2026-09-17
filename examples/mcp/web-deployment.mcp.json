@@ -1,10 +1,10 @@
 {
   "mcpServers": {
-    "dbx": {
-      "command": "dbx-mcp-server",
+    "chiron-horizon": {
+      "command": "chiron-horizon-mcp-server",
       "env": {
-        "DBX_WEB_URL": "http://localhost:4224",
-        "DBX_WEB_PASSWORD": "changeme"
+        "CHIRON_HORIZON_WEB_URL": "http://localhost:4224",
+        "CHIRON_HORIZON_WEB_PASSWORD": "changeme"
       }
     }
   }

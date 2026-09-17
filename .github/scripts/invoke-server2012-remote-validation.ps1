@@ -39,7 +39,7 @@ if ($useSslEnabled) {
 }
 
 $session = $null
-$remoteRoot = "C:\Windows\Temp\dbx-server2012-ci-$([Guid]::NewGuid().ToString('N'))"
+$remoteRoot = "C:\Windows\Temp\chiron-horizon-server2012-ci-$([Guid]::NewGuid().ToString('N'))"
 try {
   $session = New-PSSession @sessionParameters
   Invoke-Command -Session $session -ScriptBlock {
@@ -81,7 +81,7 @@ finally {
       param($Path)
       $windowsTemp = [System.IO.Path]::GetFullPath("C:\Windows\Temp").TrimEnd('\')
       $resolvedPath = [System.IO.Path]::GetFullPath($Path).TrimEnd('\')
-      if (!$resolvedPath.StartsWith("$windowsTemp\dbx-server2012-ci-", [System.StringComparison]::OrdinalIgnoreCase)) {
+      if (!$resolvedPath.StartsWith("$windowsTemp\chiron-horizon-server2012-ci-", [System.StringComparison]::OrdinalIgnoreCase)) {
         throw "Refusing to clean an unexpected remote validation directory: $resolvedPath"
       }
       if (Test-Path -LiteralPath $resolvedPath) {
