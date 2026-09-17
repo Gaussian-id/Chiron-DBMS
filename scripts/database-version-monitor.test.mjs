@@ -12,6 +12,7 @@ function target(id, kind, currentVersion) {
       id,
       kind,
       currentVersion,
+      versionPrefix: `${currentVersion.split('.').slice(0, -1).join('.')}.`,
       source: { repository: `library/${id}` },
       image: id === 'postgresql' ? 'postgres' : id,
       template: `deploy/database/${id}/${currentVersion}`,
@@ -19,7 +20,7 @@ function target(id, kind, currentVersion) {
       testSuite: id,
     };
   }
-  return { id, kind, currentVersion, source: { crate: id }, manifest: 'agents/drivers/duckdb/Cargo.toml', lockfile: 'agents/drivers/duckdb/Cargo.lock', testSuite: id };
+  return { id, kind, currentVersion, versionPrefix: `${currentVersion.split('.').slice(0, -1).join('.')}.`, source: { crate: id }, manifest: 'agents/drivers/duckdb/Cargo.toml', lockfile: 'agents/drivers/duckdb/Cargo.lock', testSuite: id };
 }
 
 function serverFixture() {
@@ -46,10 +47,10 @@ test('compares numeric versions including different precision', () => {
   assert.throws(() => compareVersions('latest', '1.0'), /stable numeric/);
 });
 
-test('chooses only stable numeric Docker Hub tags', () => {
-  assert.equal(newestDockerHubVersion({ results: [{ name: '18.1' }, { name: '18.1-bookworm' }, { name: '17.9' }, { name: 'latest' }] }), '18.1');
-  assert.throws(() => newestDockerHubVersion({ results: [{ name: 'latest' }, { name: '18.1-rc1' }] }), /stable numeric/);
-  assert.equal(newestCratesVersion({ crate: { newest_version: '1.4.0' } }), '1.4.0');
+test('chooses only stable numeric versions in the configured support channel', () => {
+  assert.equal(newestDockerHubVersion({ results: [{ name: '18.1' }, { name: '17.9' }, { name: '17.10-bookworm' }, { name: 'latest' }] }, '17.'), '17.9');
+  assert.equal(newestDockerHubVersion({ results: [{ name: 'latest' }, { name: '18.1-rc1' }] }, '17.'), null);
+  assert.equal(newestCratesVersion({ crate: { newest_version: '1.4.0' } }, '1.3.'), null);
 });
 
 test('validates target source requirements', () => {
@@ -59,8 +60,8 @@ test('validates target source requirements', () => {
 
 test('discovers updates and leaves current versions alone', async () => {
   const registry = { schemaVersion: 1, targets: [target('postgresql', 'docker-hub-image', '17.4'), target('duckdb', 'crates-io-package', '1.3.2')] };
-  const fetchImpl = async (url) => ({ ok: true, json: async () => url.includes('postgres') ? { results: [{ name: '17.4' }, { name: '18.1' }] } : { crate: { newest_version: '1.3.2' } } });
-  assert.deepEqual(await findUpdate(registry, 'all', fetchImpl), [{ id: 'postgresql', kind: 'docker-hub-image', currentVersion: '17.4', latestVersion: '18.1', testSuite: 'postgresql' }]);
+  const fetchImpl = async (url) => ({ ok: true, json: async () => url.includes('postgres') ? { results: [{ name: '17.4' }, { name: '17.9' }, { name: '18.1' }] } : { crate: { newest_version: '1.3.2' } } });
+  assert.deepEqual(await findUpdate(registry, 'all', fetchImpl), [{ id: 'postgresql', kind: 'docker-hub-image', currentVersion: '17.4', latestVersion: '17.9', testSuite: 'postgresql' }]);
 });
 
 test('creates an isolated server recipe and advances its registry cursor', () => {
