@@ -48,7 +48,7 @@ describe("sqlExecutionTargetGroupStore", () => {
     const store = useSqlExecutionTargetGroupStore();
     const group = store.createGroup({ name: "Shared", databaseType: "mysql", targets: [targets[0]], resolveDatabaseType: () => "mysql" });
 
-    expect(() => store.createGroup({ name: " shared ", databaseType: "mysql", targets: [targets[1]], resolveDatabaseType: () => "mysql" })).toThrow("目标组名称已存在");
+    expect(() => store.createGroup({ name: " shared ", databaseType: "mysql", targets: [targets[1]], resolveDatabaseType: () => "mysql" })).toThrow("Execution target group name already exists");
     const updated = store.updateGroup(group.id, { name: "Shared App", targets: [targets[1]], resolveDatabaseType: () => "mysql" });
     expect(updated?.name).toBe("Shared App");
     expect(updated?.targets).toEqual([targets[1]]);
@@ -71,6 +71,6 @@ describe("sqlExecutionTargetGroupStore", () => {
         targets,
         resolveDatabaseType: (target) => (target.connectionId === "conn-1" ? "postgres" : "mysql"),
       }),
-    ).toThrow("目标组只能包含同一种数据库类型");
+    ).toThrow("An execution target group can contain targets for only one database type");
   });
 });

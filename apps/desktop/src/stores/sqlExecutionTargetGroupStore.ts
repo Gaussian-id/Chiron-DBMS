@@ -87,17 +87,17 @@ export const useSqlExecutionTargetGroupStore = defineStore("sqlExecutionTargetGr
 
   function assertGroupName(name: string, exceptId?: string): string {
     const normalized = name.trim();
-    if (!normalized) throw new Error("目标组名称不能为空");
-    if (hasName(normalized, exceptId)) throw new Error("目标组名称已存在");
+    if (!normalized) throw new Error("Execution target group name is required");
+    if (hasName(normalized, exceptId)) throw new Error("Execution target group name already exists");
     return normalized;
   }
 
   function assertTargets(targets: readonly MultiDbExecutionTarget[], expectedDatabaseType?: DatabaseType, resolveDatabaseType?: SqlExecutionTargetDatabaseTypeResolver): MultiDbExecutionTarget[] {
     const normalized = dedupeMultiDbExecutionTargets(targets);
-    if (normalized.length === 0) throw new Error("目标组至少需要一个执行目标");
+    if (normalized.length === 0) throw new Error("An execution target group needs at least one target");
     if (expectedDatabaseType && resolveDatabaseType) {
       const mismatched = normalized.find((target) => resolveDatabaseType(target) !== expectedDatabaseType);
-      if (mismatched) throw new Error("目标组只能包含同一种数据库类型的执行目标");
+      if (mismatched) throw new Error("An execution target group can contain targets for only one database type");
     }
     return normalized;
   }

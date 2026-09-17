@@ -2,7 +2,7 @@ schemaVersion: 1
 order: 260
 dbType: dameng
 rustVariant: Dameng
-label: 达梦 DM8
+label: Dameng DM8
 dialect: Dameng
 runtimeMode: agent
 mcpMode: bridge
