@@ -6,7 +6,7 @@ import { fileURLToPath } from 'node:url';
 
 const REPO_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const DEFAULT_REGISTRY_PATH = join(REPO_ROOT, '.github', 'database-version-sources.json');
-const USER_AGENT = 'gauss-horizon-database-version-monitor/1.0';
+const USER_AGENT = 'chiron-horizon-database-version-monitor/1.0';
 const SEMVER = /^(0|[1-9]\d*)(?:\.(0|[1-9]\d*)){1,2}$/;
 
 function parseVersion(version) {
