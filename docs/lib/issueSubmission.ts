@@ -400,7 +400,7 @@ async function githubJson(url: string, init: RequestInit): Promise<{ response: R
 }
 
 async function getGitHubInstallationToken(config: GitHubIssueConfig): Promise<{ token: string; repository: string }> {
-  const repository = cleanText(config.repository ?? "Gaussian-id/Gauss-Horizon");
+  const repository = cleanText(config.repository ?? "Gaussian-id/Chiron-Horizon");
   if (!/^[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+$/.test(repository)) throw new IssueSubmissionError("GITHUB_REPOSITORY_INVALID", 503);
   const appJwt = await createGitHubAppJwt(config);
   const headers = {

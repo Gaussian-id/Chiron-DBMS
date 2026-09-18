@@ -48,11 +48,11 @@ export type PluginCatalog = {
 // R2 responds with a chiron-horizon.com CORS header, so the browser refresh path works too.
 export const PLUGIN_CATALOG_URLS = [
   "https://dl.chiron-horizon.com/catalog/index.json",
-  "https://raw.githubusercontent.com/Gaussian-id/Gauss-Horizon-store/main/catalog/index.json",
+  "https://raw.githubusercontent.com/Gaussian-id/Chiron-Horizon-store/main/catalog/index.json",
 ] as const;
 
-export const CHIRON_HORIZON_STORE_URL = "https://github.com/Gaussian-id/Gauss-Horizon-store";
-export const CHIRON_HORIZON_STORE_CONTRIBUTING_URL = "https://github.com/Gaussian-id/Gauss-Horizon-store/blob/main/CONTRIBUTING.md";
+export const CHIRON_HORIZON_STORE_URL = "https://github.com/Gaussian-id/Chiron-Horizon-store";
+export const CHIRON_HORIZON_STORE_CONTRIBUTING_URL = "https://github.com/Gaussian-id/Chiron-Horizon-store/blob/main/CONTRIBUTING.md";
 
 function isPluginCatalog(value: unknown): value is PluginCatalog {
   return (

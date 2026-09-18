@@ -134,10 +134,10 @@ test("prioritizes common read helpers and keeps destructive helpers last", () =>
   const getCollectionMethodLabels = labels('db.getCollection("order-events").');
 
   assert.deepEqual(labels("").slice(0, 5), ["db.collection.find", "db.collection.aggregate", "db.getCollection", "use", "db.version"]);
-  assert.deepEqual(methodLabels.slice(0, 5), ["find", "findOne", "aggregate", "countDocuments", "distinct"]);
-  assert.deepEqual(getCollectionMethodLabels.slice(0, 5), ["find", "findOne", "aggregate", "countDocuments", "distinct"]);
+  assert.deepEqual(methodLabels.slice(0, 6), ["find", "findOne", "aggregate", "countDocuments", "estimatedDocumentCount", "distinct"]);
+  assert.deepEqual(getCollectionMethodLabels.slice(0, 6), ["find", "findOne", "aggregate", "countDocuments", "estimatedDocumentCount", "distinct"]);
   assert.deepEqual(methodLabels.slice(-3), ["dropIndex", "dropIndexes", "drop"]);
-  assert.deepEqual(labels("db.users.find({})."), ["limit", "sort", "skip", "count"]);
+  assert.deepEqual(labels("db.users.find({})."), ["limit", "sort", "skip", "count", "explain"]);
 });
 
 test("keeps dotted collection names ahead of methods until the collection is resolved", () => {
@@ -162,7 +162,7 @@ test("suggests cursor methods after find result chains", () => {
 
   assert.deepEqual(
     allItems.map((item) => item.label),
-    ["limit", "sort", "skip", "count"],
+    ["limit", "sort", "skip", "count", "explain"],
   );
   assert.deepEqual(
     prefixedItems.map((item) => item.label),
@@ -170,7 +170,7 @@ test("suggests cursor methods after find result chains", () => {
   );
   assert.deepEqual(
     formattedChainItems.map((item) => item.label),
-    ["limit", "sort", "skip", "count"],
+    ["limit", "sort", "skip", "count", "explain"],
   );
   assert.deepEqual(
     formattedPrefixedItems.map((item) => item.label),
@@ -248,6 +248,14 @@ test("treats $in, $nin and $all elements as values rather than sub-filters", () 
   assert.equal(labels("db.users.find({ $or: [{ ").includes("$oid"), false);
 });
 
+test("offers the newly supported count and database commands", () => {
+  assert.ok(labels("db.users.estim", { fields }).includes("estimatedDocumentCount"));
+  const dbLevel = labels("db.");
+  assert.ok(dbLevel.includes("stats"));
+  assert.ok(dbLevel.includes("serverStatus"));
+  assert.ok(labels("").includes("db.stats"));
+});
+
 test("offers the newer shell value constructors", () => {
   const labels = buildMongoCompletionItems("db.users.find({ _id: ", "db.users.find({ _id: ".length, { fields }).map((item) => item.label);
   for (const constructor of ["NumberInt", "NumberDecimal", "UUID", "BinData", "Timestamp", "MinKey", "MaxKey"]) {
@@ -272,7 +280,7 @@ test("suggests aggregation stages inside aggregate pipeline", () => {
 test("completion context is tolerant of unfinished input", () => {
   const context = getMongoCompletionContext('db.getCollection("users").find({ "', 'db.getCollection("users").find({ "'.length);
 
-  assert.equal(context.mode, "field");
+  assert.equal(context.mode, "filterField");
   assert.equal(context.collection, "users");
 });
 
@@ -329,6 +337,46 @@ test("auto trigger opens for useful MongoDB characters only", () => {
   assert.equal(shouldAutoOpenMongoCompletion("db.", "db.".length), true);
   assert.equal(shouldAutoOpenMongoCompletion("db.users.find({ $", "db.users.find({ $".length), true);
   assert.equal(shouldAutoOpenMongoCompletion("db.users.find({", "db.users.find({".length), true);
+});
+
+test("offers whole-filter operators at the top level and field operators under a field", () => {
+  // `$and` / `$or` belong at the top of a filter, where nothing was offered before.
+  const top = labels("db.users.find({ $", { fields });
+  assert.ok(top.includes("$or"));
+  assert.ok(top.includes("$and"));
+  assert.ok(top.includes("$expr"));
+  assert.equal(top.includes("$gte"), false, "field operators are not valid at the top level");
+
+  // Under a field only the constraint operators apply; `{ _id: { $or: ... } }` is invalid.
+  const under = labels("db.users.find({ _id: { $", { fields });
+  assert.ok(under.includes("$gte"));
+  assert.ok(under.includes("$oid"));
+  assert.equal(under.includes("$or"), false, "$or is not valid under a field");
+  assert.equal(under.includes("$and"), false);
+  assert.deepEqual(labels("db.users.find({ _id: { $o", { fields }), ["$oid"]);
+
+  // Fields lead when nothing has been typed yet.
+  const bare = labels("db.users.find({ ", { fields });
+  assert.ok(
+    bare.slice(0, fields.length).every((label) => !label.startsWith("$")),
+    `fields first: ${bare.join(", ")}`,
+  );
+  assert.ok(bare.includes("$or"));
+});
+
+test("treats $and / $or sub-filters, $elemMatch bodies and $match as filters", () => {
+  for (const text of ["db.users.find({ $or: [{ $", "db.users.find({ items: { $elemMatch: { $", "db.users.aggregate([{ $match: { $"]) {
+    const items = labels(text, { fields });
+    assert.ok(items.includes("$or"), text);
+    assert.equal(items.includes("$gte"), false, text);
+  }
+  assert.ok(labels("db.users.find({ $or: [{ ", { fields }).includes("name"));
+  assert.ok(labels("db.users.find({ $or: [{ age: { $", { fields }).includes("$gte"));
+});
+
+test("does not offer filter operators in update or insert documents", () => {
+  assert.equal(labels("db.users.updateOne({}, { $set: { ", { fields }).includes("$or"), false);
+  assert.equal(labels("db.users.insertOne({ $", { fields }).length, 0);
 });
 
 test("keeps query and update operators in their own positions", () => {
@@ -451,8 +499,11 @@ test("suggests only helpers the shell parser accepts", () => {
   assert.ok(methodLabels.includes("count"));
   assert.ok(methodLabels.includes("drop"));
   assert.ok(methodLabels.includes("distinct"));
+  assert.ok(methodLabels.includes("estimatedDocumentCount"));
+  assert.ok(methodLabels.includes("replaceOne"));
+  assert.ok(methodLabels.includes("bulkWrite"));
   // Suggesting a helper Chiron Horizon cannot run just hands the user a command that fails.
-  for (const unsupported of ["bulkWrite", "estimatedDocumentCount", "replaceOne"]) {
+  for (const unsupported of ["renameCollection", "mapReduce", "watch"]) {
     assert.equal(methodLabels.includes(unsupported), false, `${unsupported} is not executable`);
   }
   // Cursor methods are not collection methods.
@@ -473,7 +524,8 @@ test("completes both arguments of distinct", () => {
 
   // Second argument is a filter, so it behaves like find()'s.
   const filterArg = labels('db.users.distinct("name", { ', { fields });
-  assert.deepEqual(filterArg, ["_id", "createdAt", "name", "profile.email"]);
+  assert.deepEqual(filterArg.slice(0, 4), ["_id", "createdAt", "name", "profile.email"]);
+  assert.ok(filterArg.includes("$or"), "a filter argument offers whole-filter operators after the fields");
   assert.ok(labels('db.users.distinct("name", { age: { $g', { fields }).includes("$gte"));
 });
 

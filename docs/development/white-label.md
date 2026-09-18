@@ -1,7 +1,7 @@
 # Chiron Horizon white-label boundary
 
 Product: Chiron Horizon. Application identifier: `id.chiron.horizon`.
-Initial Chiron Horizon version: 0.1.0 (unreleased). Repository: Gaussian-id/Gauss-Horizon.
+Initial Chiron Horizon version: 0.1.0 (unreleased). Repository: Gaussian-id/Chiron-Horizon.
 
 The active application, internally owned packages, events, environment names, exporters and installers use the Chiron Horizon identity. The old upstream updater is unavailable at the frontend and backend; old cached packages cannot be installed. Default driver/plugin distribution is unavailable until Chiron Horizon artifacts exist. `.invalid` distribution sentinels are explicitly disabled before network access; they are not proposed Chiron Horizon services.
 

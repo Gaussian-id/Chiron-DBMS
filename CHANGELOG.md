@@ -1,6 +1,6 @@
 # Chiron Horizon changelog
 
-Canonical repository: [Gaussian-id/Gauss-Horizon](https://github.com/Gaussian-id/Gauss-Horizon).
+Canonical repository: [Gaussian-id/Chiron-Horizon](https://github.com/Gaussian-id/Chiron-Horizon).
 
 ## 0.1.0
 

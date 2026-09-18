@@ -34,7 +34,7 @@ func TestLiveIoTDBAgentTreeAndTable(t *testing.T) {
 
 	// 1.3.x servers order aggregate TsBlock columns by their own aggregate
 	// layout, not the SELECT list; values must still line up with the headers
-	// (https://github.com/Gaussian-id/Gauss-Horizon/issues/7306).
+	// (https://github.com/Gaussian-id/Chiron-Horizon/issues/7306).
 	aggregate, err := treeServer.executeQuery(queryOptions{
 		SQL:     "SELECT max_time(s1), avg(s1), max_value(s1), min_value(s1) FROM " + treeDevice,
 		MaxRows: 10,

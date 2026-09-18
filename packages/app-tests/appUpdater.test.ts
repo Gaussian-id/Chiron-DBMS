@@ -15,7 +15,7 @@ function updateInfo(overrides: Partial<UpdateInfo> = {}): UpdateInfo {
     portable_mode: false,
     manual_update_only: false,
     release_name: "Chiron Horizon v0.5.26",
-    release_url: "https://github.com/Gaussian-id/Gauss-Horizon/releases/tag/v0.5.26",
+    release_url: "https://github.com/Gaussian-id/Chiron-Horizon/releases/tag/v0.5.26",
     release_notes: "",
     ...overrides,
   };
@@ -81,9 +81,9 @@ test("normalizes release tag versions", () => {
 });
 
 test("resolves release page URL from update download source", () => {
-  const fallbackUrl = "https://github.com/Gaussian-id/Gauss-Horizon/releases/latest";
+  const fallbackUrl = "https://github.com/Gaussian-id/Chiron-Horizon/releases/latest";
   assert.equal(resolveUpdateReleaseUrl(updateInfo({ latest_version: "0.5.39" }), "cnb", fallbackUrl), "https://distribution-disabled.invalid/-/releases/tag/v0.5.39");
-  assert.equal(resolveUpdateReleaseUrl(updateInfo({ release_url: "https://github.com/Gaussian-id/Gauss-Horizon/releases/tag/v0.5.39" }), "official", fallbackUrl), "https://github.com/Gaussian-id/Gauss-Horizon/releases/tag/v0.5.39");
+  assert.equal(resolveUpdateReleaseUrl(updateInfo({ release_url: "https://github.com/Gaussian-id/Chiron-Horizon/releases/tag/v0.5.39" }), "official", fallbackUrl), "https://github.com/Gaussian-id/Chiron-Horizon/releases/tag/v0.5.39");
   assert.equal(resolveUpdateReleaseUrl(null, "cnb", fallbackUrl), "https://distribution-disabled.invalid/-/releases");
 });
 

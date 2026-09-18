@@ -1,4 +1,4 @@
-module github.com/Gaussian-id/Gauss-Horizon/agents/drivers/hive-go
+module github.com/Gaussian-id/Chiron-Horizon/agents/drivers/hive-go
 
 go 1.23.0
 
@@ -8,7 +8,7 @@ require (
 	github.com/golang-auth/go-gssapi/v2 v2.0.0
 	github.com/jcmturner/krb5test v0.0.0-20201230140143-102e4b78cdb8
 	github.com/pavlo-v-chernykh/keystore-go/v4 v4.5.0
-	github.com/Gaussian-id/Gauss-Horizon/agents/go-common/gohive v0.0.0
+	github.com/Gaussian-id/Chiron-Horizon/agents/go-common/gohive v0.0.0
 	software.sslmate.com/src/go-pkcs12 v0.7.3
 )
 
@@ -32,4 +32,4 @@ replace github.com/beltran/gosasl => ../../go-common/gosasl
 
 replace github.com/golang-auth/go-gssapi/v2 => ../../go-common/go-gssapi
 
-replace github.com/Gaussian-id/Gauss-Horizon/agents/go-common/gohive => ../../go-common/gohive
+replace github.com/Gaussian-id/Chiron-Horizon/agents/go-common/gohive => ../../go-common/gohive

@@ -17,8 +17,8 @@ additionalProperties:
   crossVersionUpdate: true
   limit: 0
   recommend: 0
-  website: https://github.com/Gaussian-id/Gauss-Horizon
-  github: https://github.com/Gaussian-id/Gauss-Horizon
-  document: https://github.com/Gaussian-id/Gauss-Horizon#readme
+  website: https://github.com/Gaussian-id/Chiron-Horizon
+  github: https://github.com/Gaussian-id/Chiron-Horizon
+  document: https://github.com/Gaussian-id/Chiron-Horizon#readme
   architectures:
     - amd64

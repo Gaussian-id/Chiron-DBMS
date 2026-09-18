@@ -116,7 +116,7 @@ test("adds JDBC plugin metadata to latest.json without disturbing updater fields
     }),
     jdbcVersion: "0.1.3",
     protocolVersion: 1,
-    url: "https://github.com/Gaussian-id/Gauss-Horizon/releases/latest/download/chiron-horizon-jdbc-plugin-latest.zip",
+    url: "https://github.com/Gaussian-id/Chiron-Horizon/releases/latest/download/chiron-horizon-jdbc-plugin-latest.zip",
   });
   const parsed = JSON.parse(result);
 
@@ -125,6 +125,6 @@ test("adds JDBC plugin metadata to latest.json without disturbing updater fields
   assert.deepEqual(parsed.jdbc_plugin, {
     version: "0.1.3",
     protocol_version: 1,
-    url: "https://github.com/Gaussian-id/Gauss-Horizon/releases/latest/download/chiron-horizon-jdbc-plugin-latest.zip",
+    url: "https://github.com/Gaussian-id/Chiron-Horizon/releases/latest/download/chiron-horizon-jdbc-plugin-latest.zip",
   });
 });

@@ -18,11 +18,11 @@ use tauri_plugin_updater::{Update, UpdaterExt};
 
 const OFFICIAL_UPDATE_ENDPOINTS: [&str; 2] = [
     "https://distribution-disabled.invalid/releases/latest/latest.json",
-    "https://github.com/Gaussian-id/Gauss-Horizon/releases/latest/download/latest.json",
+    "https://github.com/Gaussian-id/Chiron-Horizon/releases/latest/download/latest.json",
 ];
 const R2_LATEST_RELEASE_DOWNLOAD_PREFIX: &str = "https://distribution-disabled.invalid/releases/latest/";
 const CNB_RELEASE_DOWNLOAD_PREFIX: &str = "https://distribution-disabled.invalid/-/releases/download/";
-const GITHUB_RELEASE_DOWNLOAD_PREFIX: &str = "https://github.com/Gaussian-id/Gauss-Horizon/releases/download/";
+const GITHUB_RELEASE_DOWNLOAD_PREFIX: &str = "https://github.com/Gaussian-id/Chiron-Horizon/releases/download/";
 const UPDATE_DOWNLOAD_PROGRESS_EVENT: &str = "update-download-progress";
 const DOWNLOAD_CANCELED_ERROR: &str = "Download canceled by user.";
 const DOWNLOAD_STALL_TIMEOUT: Duration = Duration::from_secs(15);
@@ -518,7 +518,7 @@ pub async fn download_update(
             cache_id: uuid::Uuid::new_v4().to_string(),
             version: version.to_string(),
             portable_mode,
-            release_url: format!("https://github.com/Gaussian-id/Gauss-Horizon/releases/tag/v{version}"),
+            release_url: format!("https://github.com/Gaussian-id/Chiron-Horizon/releases/tag/v{version}"),
             release_notes: release_notes.unwrap_or(notes),
             downloaded_at: std::time::SystemTime::now()
                 .duration_since(std::time::UNIX_EPOCH)
@@ -1051,7 +1051,7 @@ mod tests {
     #[test]
     fn rewrites_github_asset_url_to_cnb() {
         let download_url = UpdateDownloadSource::Cnb
-            .rewrite_download_url("https://github.com/Gaussian-id/Gauss-Horizon/releases/download/v0.5.39/CHIRON_HORIZON_0.5.39_aarch64.dmg")
+            .rewrite_download_url("https://github.com/Gaussian-id/Chiron-Horizon/releases/download/v0.5.39/CHIRON_HORIZON_0.5.39_aarch64.dmg")
             .unwrap()
             .unwrap();
         assert_eq!(
@@ -1101,7 +1101,7 @@ mod tests {
     #[test]
     fn builds_installer_asset_candidates_for_cnb_source() {
         let candidates = UpdateDownloadSource::Cnb.installer_asset_candidates(
-            "https://github.com/Gaussian-id/Gauss-Horizon/releases/download/v0.5.64/CHIRON_HORIZON_0.5.64_aarch64.dmg",
+            "https://github.com/Gaussian-id/Chiron-Horizon/releases/download/v0.5.64/CHIRON_HORIZON_0.5.64_aarch64.dmg",
             Some("0.5.64"),
         );
         assert_eq!(candidates.len(), 3);
@@ -1112,21 +1112,21 @@ mod tests {
         assert_eq!(candidates[1], format!("{R2_LATEST_RELEASE_DOWNLOAD_PREFIX}CHIRON_HORIZON_0.5.64_aarch64.dmg"));
         assert_eq!(
             candidates[2],
-            "https://github.com/Gaussian-id/Gauss-Horizon/releases/download/v0.5.64/CHIRON_HORIZON_0.5.64_aarch64.dmg"
+            "https://github.com/Gaussian-id/Chiron-Horizon/releases/download/v0.5.64/CHIRON_HORIZON_0.5.64_aarch64.dmg"
         );
     }
 
     #[test]
     fn builds_installer_asset_candidates_for_official_source() {
         let candidates = UpdateDownloadSource::Official.installer_asset_candidates(
-            "https://github.com/Gaussian-id/Gauss-Horizon/releases/download/v0.5.64/CHIRON_HORIZON_0.5.64_aarch64.dmg",
+            "https://github.com/Gaussian-id/Chiron-Horizon/releases/download/v0.5.64/CHIRON_HORIZON_0.5.64_aarch64.dmg",
             Some("0.5.64"),
         );
         assert_eq!(candidates.len(), 2);
         assert_eq!(candidates[0], format!("{R2_LATEST_RELEASE_DOWNLOAD_PREFIX}CHIRON_HORIZON_0.5.64_aarch64.dmg"));
         assert_eq!(
             candidates[1],
-            "https://github.com/Gaussian-id/Gauss-Horizon/releases/download/v0.5.64/CHIRON_HORIZON_0.5.64_aarch64.dmg"
+            "https://github.com/Gaussian-id/Chiron-Horizon/releases/download/v0.5.64/CHIRON_HORIZON_0.5.64_aarch64.dmg"
         );
         assert!(!candidates.iter().any(|url| url.contains("cnb.cool")));
     }

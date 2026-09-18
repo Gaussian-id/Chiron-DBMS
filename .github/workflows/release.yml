@@ -82,31 +82,31 @@ jobs:
             platform: macos-arm64
             bundles: app,dmg
             extension: .dmg
-            output: Chiron-Horizon_0.1.0_macos-arm64.dmg
+            output: Chiron-Horizon_0.1.1_macos-arm64.dmg
           - os: macos-15-intel
             target: x86_64-apple-darwin
             platform: macos-x64
             bundles: app,dmg
             extension: .dmg
-            output: Chiron-Horizon_0.1.0_macos-x64.dmg
+            output: Chiron-Horizon_0.1.1_macos-x64.dmg
           - os: windows-2022
             target: x86_64-pc-windows-msvc
             platform: windows-x64
             bundles: nsis
             extension: .exe
-            output: Chiron-Horizon_0.1.0_windows-x64-setup.exe
+            output: Chiron-Horizon_0.1.1_windows-x64-setup.exe
           - os: ubuntu-22.04
             target: x86_64-unknown-linux-gnu
             platform: linux-x64
             bundles: deb,appimage
             extension: .deb
-            output: Chiron-Horizon_0.1.0_linux-x64.deb
+            output: Chiron-Horizon_0.1.1_linux-x64.deb
           - os: ubuntu-22.04
             target: x86_64-unknown-linux-gnu
             platform: linux-appimage-x64
             bundles: appimage
             extension: .AppImage
-            output: Chiron-Horizon_0.1.0_linux-x64.AppImage
+            output: Chiron-Horizon_0.1.1_linux-x64.AppImage
     runs-on: ${{ matrix.os }}
     env:
       CARGO_INCREMENTAL: "0"
@@ -212,7 +212,7 @@ jobs:
         run: |
           ./gradlew test shadowJar --no-daemon
           ./package.sh
-          cp dist/chiron-horizon-jdbc-plugin-0.1.0.zip ../../release-agents/
+          cp "dist/chiron-horizon-jdbc-plugin-${GITHUB_REF_NAME#v}.zip" ../../release-agents/
       - uses: actions/upload-artifact@v4
         with:
           name: java-agents
@@ -271,9 +271,10 @@ jobs:
           cargo build -p chiron-horizon-sqlite-worker --locked --release --target ${{ matrix.target }}
           mkdir -p release-agents
           extension=''; [ "${{ runner.os }}" = 'Windows' ] && extension='.exe'
-          cp "$CARGO_TARGET_DIR/${{ matrix.target }}/release/chiron-horizon-duckdb-driver$extension" "release-agents/chiron-horizon-agent-duckdb-0.1.0-${{ matrix.platform }}$extension"
-          cp "$CARGO_TARGET_DIR/${{ matrix.target }}/release/chiron-horizon-tdengine-driver$extension" "release-agents/chiron-horizon-agent-tdengine-0.1.0-${{ matrix.platform }}$extension"
-          cp "$CARGO_TARGET_DIR/${{ matrix.target }}/release/chiron-horizon-sqlite-worker$extension" "release-agents/chiron-horizon-agent-sqlite-worker-0.1.0-${{ matrix.platform }}$extension"
+          VERSION="${GITHUB_REF_NAME#v}"
+          cp "$CARGO_TARGET_DIR/${{ matrix.target }}/release/chiron-horizon-duckdb-driver$extension" "release-agents/chiron-horizon-agent-duckdb-$VERSION-${{ matrix.platform }}$extension"
+          cp "$CARGO_TARGET_DIR/${{ matrix.target }}/release/chiron-horizon-tdengine-driver$extension" "release-agents/chiron-horizon-agent-tdengine-$VERSION-${{ matrix.platform }}$extension"
+          cp "$CARGO_TARGET_DIR/${{ matrix.target }}/release/chiron-horizon-sqlite-worker$extension" "release-agents/chiron-horizon-agent-sqlite-worker-$VERSION-${{ matrix.platform }}$extension"
       - uses: actions/upload-artifact@v4
         with:
           name: rust-agents-${{ matrix.platform }}
@@ -319,7 +320,7 @@ jobs:
           if-no-files-found: error
 
   publish:
-    name: Publish verified v0.1.0 release
+    name: Publish verified v0.1.1 release
     needs: [desktop, java-agents, go-agents, rust-agents, managed-jre]
     runs-on: ubuntu-22.04
     steps:
@@ -341,7 +342,7 @@ jobs:
           find release-input -maxdepth 1 -type f -exec cp {} release/ \;
           python3 agents/scripts/create_release_registry.py release --tag "$GITHUB_REF_NAME" --jre-version "$(java -version 2>&1 | head -1 | sed -E 's/.*\"([^\"]+)\".*/\1/')"
           python3 agents/scripts/build_driver_zips.py release
-          JDBC_ARCHIVE="$(find release -maxdepth 1 -name 'chiron-horizon-jdbc-plugin-0.1.0.zip' -type f | head -1)"
+          JDBC_ARCHIVE="$(find release -maxdepth 1 -name "chiron-horizon-jdbc-plugin-${GITHUB_REF_NAME#v}.zip" -type f | head -1)"
           test -n "$JDBC_ARCHIVE"
           JDBC_WORK="$(mktemp -d)"
           unzip -q "$JDBC_ARCHIVE" -d "$JDBC_WORK"
@@ -351,16 +352,16 @@ jobs:
           node agents/scripts/build_offline_jdbc_payload.mjs release "$JDBC_ARCHIVE" "$JDBC_RESOLVER"
           agents/scripts/build_offline_zip.sh release
           node agents/scripts/verify_offline_jdbc_release.mjs release
-          python3 agents/scripts/verify_release_assets.py release
+          python3 agents/scripts/verify_release_assets.py release --tag "$GITHUB_REF_NAME"
           node scripts/create-release-manifest.mjs release
       - name: Validate staged public assets
         run: |
-          test "$(find release -maxdepth 1 -name 'Chiron-Horizon_0.1.0_*' -type f | wc -l)" -eq 5
+          test "$(find release -maxdepth 1 -name "Chiron-Horizon_${GITHUB_REF_NAME#v}_*" -type f | wc -l)" -eq 5
           sha256sum -c release/SHA256SUMS
       - name: Create public GitHub Release
         env:
           GH_TOKEN: ${{ github.token }}
-        run: gh release create "$GITHUB_REF_NAME" release/* --repo "$GITHUB_REPOSITORY" --title "Chiron Horizon 0.1.0" --notes-file docs/release-notes-v0.1.0.md --latest
+        run: gh release create "$GITHUB_REF_NAME" release/* --repo "$GITHUB_REPOSITORY" --title "Chiron Horizon 0.1.1" --generate-notes --latest
       - name: Download published assets and reverify checksums
         env:
           GH_TOKEN: ${{ github.token }}
@@ -368,5 +369,5 @@ jobs:
           mkdir published
           gh release download "$GITHUB_REF_NAME" --repo "$GITHUB_REPOSITORY" --dir published
           (cd published && sha256sum -c SHA256SUMS)
-          curl --fail --location --retry 3 "https://github.com/Gaussian-id/Gauss-Horizon/releases/latest/download/agent-registry.json" -o published/latest-agent-registry.json
+          curl --fail --location --retry 3 "https://github.com/Gaussian-id/Chiron-Horizon/releases/latest/download/agent-registry.json" -o published/latest-agent-registry.json
           cmp published/agent-registry.json published/latest-agent-registry.json

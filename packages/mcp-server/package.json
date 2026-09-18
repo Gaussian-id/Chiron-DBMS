@@ -1,21 +1,21 @@
 {
   "name": "@chiron-horizon/mcp-server",
-  "version": "0.1.0",
-  "description": "MCP server for Chiron Horizon \u2014 query databases from Claude Code, Cursor, and other AI agents",
+  "version": "0.4.90",
+  "description": "MCP server for Chiron Horizon — query databases from Claude Code, Cursor, and other AI agents",
   "keywords": [
     "ai-agent",
     "claude",
     "database",
-    "chiron-horizon",
+    "chiron_horizon",
     "mcp",
     "mysql",
     "postgresql"
   ],
-  "homepage": "https://github.com/Gaussian-id/Gauss-Horizon/tree/main/packages/mcp-server",
+  "homepage": "https://github.com/t8y2/chiron-horizon/tree/main/packages/mcp-server",
   "license": "Apache-2.0",
   "repository": {
     "type": "git",
-    "url": "https://github.com/Gaussian-id/Gauss-Horizon",
+    "url": "https://github.com/t8y2/chiron_horizon",
     "directory": "packages/mcp-server"
   },
   "bin": {
@@ -34,12 +34,12 @@
     "prepublishOnly": "node bin/chiron-horizon-mcp-server.js --verify-platform"
   },
   "optionalDependencies": {
-    "@chiron-horizon/mcp-darwin-arm64": "workspace:*",
-    "@chiron-horizon/mcp-darwin-x64": "workspace:*",
-    "@chiron-horizon/mcp-linux-arm64-gnu": "workspace:*",
-    "@chiron-horizon/mcp-linux-x64-gnu": "workspace:*",
-    "@chiron-horizon/mcp-win32-arm64": "workspace:*",
-    "@chiron-horizon/mcp-win32-x64": "workspace:*"
+    "@chiron-horizon/mcp-darwin-arm64": "0.4.90",
+    "@chiron-horizon/mcp-darwin-x64": "0.4.90",
+    "@chiron-horizon/mcp-linux-arm64-gnu": "0.4.90",
+    "@chiron-horizon/mcp-linux-x64-gnu": "0.4.90",
+    "@chiron-horizon/mcp-win32-arm64": "0.4.90",
+    "@chiron-horizon/mcp-win32-x64": "0.4.90"
   },
   "devDependencies": {
     "@types/node": "^22.15.21",
@@ -48,5 +48,5 @@
   "engines": {
     "node": ">=18.18.0"
   },
-  "mcpName": "io.github.Gaussian-id/Gauss-Horizon"
+  "mcpName": "io.github.t8y2/chiron_horizon"
 }

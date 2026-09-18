@@ -24,8 +24,8 @@
         "host.events",
         "host.filesystem"
       ],
-      "source": "https://github.com/Gaussian-id/Gauss-Horizon",
-      "homepage": "https://github.com/Gaussian-id/Gauss-Horizon/tree/main/plugins/examples/hello-workbench",
+      "source": "https://github.com/Gaussian-id/Chiron-Horizon",
+      "homepage": "https://github.com/Gaussian-id/Chiron-Horizon/tree/main/plugins/examples/hello-workbench",
       "license": "Apache-2.0",
       "latestVersion": "1.0.0",
       "versions": [

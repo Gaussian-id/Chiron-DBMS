@@ -55,7 +55,7 @@ sudo apt-get install -y build-essential pkg-config libwebkit2gtk-4.1-dev libgtk-
 ### Run the desktop app
 
 ```bash
-git clone https://github.com/Gaussian-id/Gauss-Horizon.git Chiron-Horizon
+git clone https://github.com/Gaussian-id/Chiron-Horizon.git Chiron-Horizon
 cd Chiron-Horizon
 pnpm install --frozen-lockfile
 pnpm dev:tauri
@@ -112,9 +112,9 @@ Package names, configuration keys, and documentation use the Chiron Horizon iden
 
 ## Contributing
 
-Report bugs and request features in [this repository's issue tracker](https://github.com/Gaussian-id/Gauss-Horizon/issues). Include the application version, operating system, database engine, and steps to reproduce when reporting a problem.
+Report bugs and request features in [this repository's issue tracker](https://github.com/Gaussian-id/Chiron-Horizon/issues). Include the application version, operating system, database engine, and steps to reproduce when reporting a problem.
 
-Contributions are welcome through [pull requests](https://github.com/Gaussian-id/Gauss-Horizon/pulls). Include a description of the change and the checks you ran.
+Contributions are welcome through [pull requests](https://github.com/Gaussian-id/Chiron-Horizon/pulls). Include a description of the change and the checks you ran.
 
 ## Acknowledgments
 

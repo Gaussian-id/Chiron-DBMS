@@ -740,7 +740,7 @@ fn parse_account_auth_state(account: Option<&Value>) -> Option<bool> {
         // 2.136.0) always reports `account: null` in this control response, whether
         // or not the session is signed in — it's not a login signal here. Treat it
         // as unknown so callers fall back to the model-catalog-based heuristic
-        // instead of hard-blocking authenticated users (Gaussian-id/Gauss-Horizon#6253).
+        // instead of hard-blocking authenticated users (Gaussian-id/Chiron-Horizon#6253).
         Value::Null => None,
         Value::Bool(value) => Some(*value),
         Value::Object(fields) => fields

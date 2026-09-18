@@ -142,7 +142,7 @@ export function useAppUpdater(options: UseAppUpdaterOptions = {}) {
       (updateDownloaded.value || updateReady.value || (updateInfo.value?.update_available === true && (!autoDownloadEnabled.value || !isTauriRuntime() || updateInfo.value.manual_update_only))) &&
       !isUpdateIgnored(updateInfo.value, settingsStore.editorSettings.ignoredUpdateVersion),
   );
-  const latestReleaseUrl = "https://github.com/Gaussian-id/Gauss-Horizon/releases/latest";
+  const latestReleaseUrl = "https://github.com/Gaussian-id/Chiron-Horizon/releases/latest";
   let generation = 0;
   let activeDownload: Promise<void> | undefined;
   let automaticDownload = false;

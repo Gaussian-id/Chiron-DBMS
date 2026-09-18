@@ -9,7 +9,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/Gaussian-id/Gauss-Horizon/agents/go-common/gohive"
+	"github.com/Gaussian-id/Chiron-Horizon/agents/go-common/gohive"
 )
 
 func TestShowTablesRowName(t *testing.T) {

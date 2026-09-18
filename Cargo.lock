@@ -1391,68 +1391,8 @@ dependencies = [
 ]
 
 [[package]]
-name = "chiron-horizon"
-version = "0.1.0"
-dependencies = [
- "anyhow",
- "axum",
- "base64 0.22.1",
- "calamine",
- "chiron-horizon-core",
- "chiron-horizon-mcp",
- "chrono",
- "csv",
- "deadpool-postgres",
- "font-kit",
- "futures",
- "libloading 0.8.9",
- "log",
- "minisign-verify",
- "mongodb",
- "objc2",
- "objc2-app-kit",
- "objc2-foundation",
- "percent-encoding",
- "portpicker",
- "redis",
- "regex",
- "reqwest 0.12.28",
- "rfd",
- "russh",
- "rust_decimal",
- "rustls 0.23.43",
- "semver",
- "serde",
- "serde_json",
- "sha2 0.10.9",
- "sys-locale",
- "sysinfo",
- "tauri",
- "tauri-build",
- "tauri-plugin-clipboard-manager",
- "tauri-plugin-deep-link",
- "tauri-plugin-dialog",
- "tauri-plugin-fs",
- "tauri-plugin-log",
- "tauri-plugin-opener",
- "tauri-plugin-process",
- "tauri-plugin-shell",
- "tauri-plugin-single-instance",
- "tauri-plugin-updater",
- "tauri-plugin-window-state",
- "tiberius",
- "tokio",
- "tokio-postgres",
- "tokio-util",
- "uuid",
- "windows-sys 0.61.2",
- "wry",
- "zip",
-]
-
-[[package]]
 name = "chiron-horizon-cli"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "async-trait",
  "chiron-horizon-core",
@@ -1466,7 +1406,7 @@ dependencies = [
 
 [[package]]
 name = "chiron-horizon-core"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "aes 0.8.4",
  "aes-gcm 0.10.3",
@@ -1553,7 +1493,7 @@ dependencies = [
 
 [[package]]
 name = "chiron-horizon-mcp"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "async-trait",
  "axum",
@@ -1578,7 +1518,7 @@ dependencies = [
 
 [[package]]
 name = "chiron-horizon-sqlite-worker"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "rusqlite",
  "serde",
@@ -1588,7 +1528,7 @@ dependencies = [
 
 [[package]]
 name = "chiron-horizon-web"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "aes-gcm 0.10.3",
  "argon2",
@@ -1615,6 +1555,66 @@ dependencies = [
  "tracing-subscriber",
  "utoipa",
  "uuid",
+]
+
+[[package]]
+name = "chiron_horizon"
+version = "0.1.1"
+dependencies = [
+ "anyhow",
+ "axum",
+ "base64 0.22.1",
+ "calamine",
+ "chiron-horizon-core",
+ "chiron-horizon-mcp",
+ "chrono",
+ "csv",
+ "deadpool-postgres",
+ "font-kit",
+ "futures",
+ "libloading 0.8.9",
+ "log",
+ "minisign-verify",
+ "mongodb",
+ "objc2",
+ "objc2-app-kit",
+ "objc2-foundation",
+ "percent-encoding",
+ "portpicker",
+ "redis",
+ "regex",
+ "reqwest 0.12.28",
+ "russh",
+ "rust_decimal",
+ "rustls 0.23.43",
+ "semver",
+ "serde",
+ "serde_json",
+ "sha2 0.10.9",
+ "sys-locale",
+ "sysinfo",
+ "tauri",
+ "tauri-build",
+ "tauri-plugin-clipboard-manager",
+ "tauri-plugin-deep-link",
+ "tauri-plugin-dialog",
+ "tauri-plugin-fs",
+ "tauri-plugin-log",
+ "tauri-plugin-opener",
+ "tauri-plugin-process",
+ "tauri-plugin-shell",
+ "tauri-plugin-single-instance",
+ "tauri-plugin-updater",
+ "tauri-plugin-window-state",
+ "tempfile",
+ "tiberius",
+ "tokio",
+ "tokio-postgres",
+ "tokio-util",
+ "uuid",
+ "windows-sys 0.61.2",
+ "wry",
+ "zip",
 ]
 
 [[package]]
@@ -6918,6 +6918,7 @@ dependencies = [
  "js-sys",
  "log",
  "mime",
+ "mime_guess",
  "native-tls",
  "percent-encoding",
  "pin-project-lite",
@@ -9073,7 +9074,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "32497e9a4c7b38532efcdebeef879707aa9f794296a4f0244f6f69e9bc8574bd"
 dependencies = [
  "fastrand",
- "getrandom 0.4.3",
+ "getrandom 0.3.4",
  "once_cell",
  "rustix",
  "windows-sys 0.61.2",

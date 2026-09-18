@@ -4620,7 +4620,7 @@ func containsString(values []string, target string) bool {
 	return false
 }
 
-// Regression test for https://github.com/Gaussian-id/Gauss-Horizon/issues/7681: a timezone-less
+// Regression test for https://github.com/Gaussian-id/Chiron-Horizon/issues/7681: a timezone-less
 // "timestamp"/"date"/"time" column must not be labeled as an absolute UTC
 // instant (RFC3339Nano with a "Z"/offset suffix), or clients that convert it
 // to a display timezone will double-apply the shift.
