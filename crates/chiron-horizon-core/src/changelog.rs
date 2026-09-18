@@ -1,7 +1,7 @@
 use serde::{Deserialize, Serialize};
 
 const CHANGELOG_URL: &str =
-    "https://raw.githubusercontent.com/Gaussian-id/Gauss-Horizon/main/crates/chiron-horizon-core/assets/changelog.json";
+    "https://raw.githubusercontent.com/Gaussian-id/Chiron-Horizon/main/crates/chiron-horizon-core/assets/changelog.json";
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]

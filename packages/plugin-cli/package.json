@@ -9,11 +9,11 @@
     "plugin",
     "plugin-development"
   ],
-  "homepage": "https://github.com/Gaussian-id/Gauss-Horizon/tree/main/plugins",
+  "homepage": "https://github.com/Gaussian-id/Chiron-Horizon/tree/main/plugins",
   "license": "Apache-2.0",
   "repository": {
     "type": "git",
-    "url": "https://github.com/Gaussian-id/Gauss-Horizon",
+    "url": "https://github.com/Gaussian-id/Chiron-Horizon",
     "directory": "packages/plugin-cli"
   },
   "bin": {

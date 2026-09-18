@@ -1,4 +1,4 @@
-// Regression test for Gaussian-id/Gauss-Horizon #9094.
+// Regression test for Gaussian-id/Chiron-Horizon #9094.
 //
 // Local-mode sidebar table search only matched table names, even though the
 // persisted search index, the global sidebar search, and the backend's

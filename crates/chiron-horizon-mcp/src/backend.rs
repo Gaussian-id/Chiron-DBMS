@@ -1478,6 +1478,7 @@ impl ChironHorizonBackend for WebBackend {
                     Some(TableInfo {
                         name,
                         table_type: "COLLECTION".to_string(),
+                        valid: None,
                         comment: None,
                         parent_schema: None,
                         parent_name: None,
@@ -1890,6 +1891,25 @@ impl ChironHorizonBackend for WebBackend {
                     .await
                     .map_err(|error| format!("Invalid MongoDB insert response: {error}"))?;
                 Ok(affected_query_result(affected_rows_from_value(&value)))
+            }
+            MongoCommand::BulkWrite { collection, operations, options } => {
+                let result: chiron_horizon_core::db::mongo_driver::MongoBulkWriteResult = self
+                    .request(
+                        reqwest::Method::POST,
+                        "/api/mongo/bulk-write",
+                        Some(json!({
+                            "connectionId": connection_id,
+                            "database": database,
+                            "collection": collection,
+                            "operationsJson": operations,
+                            "optionsJson": options,
+                        })),
+                    )
+                    .await?
+                    .json()
+                    .await
+                    .map_err(|error| format!("Invalid MongoDB bulkWrite response: {error}"))?;
+                Ok(chiron_horizon_core::mongo_ops::mongo_bulk_write_query_result(&result))
             }
             MongoCommand::Replace { collection, filter, replacement, options } => {
                 let value: Value = self

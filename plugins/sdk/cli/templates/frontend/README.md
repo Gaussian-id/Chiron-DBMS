@@ -32,4 +32,4 @@ The command stages `manifest.json`, `assets/`, and `ui/`, then writes an unsigne
 
 Source code and the unsigned candidate stay in this repository. Chiron Horizon users install the Chiron Horizon Store-signed asset exposed by the official catalog.
 
-Do not submit ordinary plugin source to `Gaussian-id/Gauss-Horizon`; that repository accepts plugin host, SDK, CLI, schema, documentation, and official-example changes.
+Do not submit ordinary plugin source to `Gaussian-id/Chiron-Horizon`; that repository accepts plugin host, SDK, CLI, schema, documentation, and official-example changes.

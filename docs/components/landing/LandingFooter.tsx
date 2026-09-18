@@ -38,7 +38,7 @@ export function LandingFooter({ lang }: { lang: DocsLang }) {
 
           {/* Repo icons */}
           <div className="flex items-center gap-3 shrink-0">
-            <a href="https://github.com/Gaussian-id/Gauss-Horizon" target="_blank" rel="noopener noreferrer" className="inline-flex size-11 items-center justify-center text-[var(--color-landing-muted)] hover:text-[var(--color-landing-ink)] transition-colors" aria-label="GitHub">
+            <a href="https://github.com/Gaussian-id/Chiron-Horizon" target="_blank" rel="noopener noreferrer" className="inline-flex size-11 items-center justify-center text-[var(--color-landing-muted)] hover:text-[var(--color-landing-ink)] transition-colors" aria-label="GitHub">
               <GithubIcon />
             </a>
           </div>

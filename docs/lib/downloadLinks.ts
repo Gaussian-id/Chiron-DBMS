@@ -111,7 +111,7 @@ export function createInstallOptions(lang: InstallLang, version: string): Instal
     driverLinkLabel: artifact.driverLinkLabels?.[lang],
     descriptionSuffix: artifact.descriptionSuffixes?.[lang],
     badge: artifact.badges?.[lang],
-    href: "https://github.com/Gaussian-id/Gauss-Horizon/actions",
+    href: "https://github.com/Gaussian-id/Chiron-Horizon/actions",
     action: "instructions",
 
   }));

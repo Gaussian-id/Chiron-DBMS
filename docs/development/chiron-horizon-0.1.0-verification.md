@@ -120,7 +120,7 @@ Final source checks: branding audit 4,785 owned text files passed; 82 generated 
 
 ## 2026-09-14 — About changelog 404 follow-up
 
-Kevin reported that Settings → About → changelog → “View on website” returned 404 and said the remainder matched expectations. The button pointed to an unpublished `blob/main/CHANGELOG.md`. Read-only verification also found the old Chiron Horizon repository address redirects to [Gaussian-id/Gauss-Horizon](https://github.com/Gaussian-id/Gauss-Horizon).
+Kevin reported that Settings → About → changelog → “View on website” returned 404 and said the remainder matched expectations. The button pointed to an unpublished `blob/main/CHANGELOG.md`. Read-only verification also found the old Chiron Horizon repository address redirects to [Gaussian-id/Chiron-Horizon](https://github.com/Gaussian-id/Chiron-Horizon).
 
 Changed the changelog navigation to the verified canonical repository root and renamed the action “View repository” in all ten locales. Header, error fallback and unreleased-entry actions now share that destination; unreleased entries no longer promise a published source changelog. Published-release links use the same canonical repository. Bundled changelog and updater behavior are unchanged. No GitHub publication or repository mutation was performed.
 

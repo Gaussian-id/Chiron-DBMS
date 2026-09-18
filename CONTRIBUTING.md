@@ -4,12 +4,14 @@ Thanks for taking a look at Chiron Horizon. Whether you fix a typo, improve docs
 
 ## Where to Start
 
-1. Browse [open issues](https://github.com/Gaussian-id/Gauss-Horizon/issues) and choose one with no assignee or active contributor in its comments. Do not rely only on labels; read the full report, comments, and screenshots.
+1. Browse [open issues](https://github.com/Gaussian-id/Chiron-Horizon/issues) and choose one with no assignee or active contributor in its comments. Do not rely only on labels; read the full report, comments, and screenshots.
 2. Comment on the issue you want to work on so others do not duplicate the effort. Use `/claim` to claim it, or `/unclaim` (`/unclaimed` is also accepted) later if you cannot continue.
 3. Fork the repo, create a branch, and open a PR against `main`.
 4. After your linked PR is merged, comment `/close` if the issue remains open. The command only works for the current assignee and the author of the merged PR.
 
 If you are not sure what to pick, choose an issue with clear reproduction steps, a small scope, or a database you can verify against a real instance. Follow the [complete website tutorial](https://distribution-disabled.invalid/en/docs/contributing).
+
+`user-priority/*` reflects the reporter's urgency; `ai-priority/*` is an automated repair/implementation suggestion, not a verified diagnosis or release promise. Maintainer decisions take precedence. See the [priority rubric and automation safeguards](.github/scripts/README.md).
 
 ## Development Setup
 
@@ -25,7 +27,7 @@ Linux desktop builds also need WebKit/GTK packages. See [README.md](README.md#ge
 ### Run Locally
 
 ```bash
-git clone https://github.com/Gaussian-id/Gauss-Horizon.git
+git clone https://github.com/Gaussian-id/Chiron-Horizon.git
 cd chiron-horizon
 make
 ```
@@ -133,7 +135,7 @@ make docs
 ## Pull Requests
 
 1. Push your branch to your fork.
-2. Open a PR against `https://github.com/Gaussian-id/Gauss-Horizon` `main`.
+2. Open a PR against `https://github.com/Gaussian-id/Chiron-Horizon` `main`.
 3. Link the related issue in the PR description.
 4. Explain what changed, how you tested it, and any screenshots if the UI changed.
 
@@ -150,7 +152,7 @@ Small PRs are easier to review and merge.
 ## Community
 
 - [Discord](https://discord.gg/W7NyVDRt6a)
-- [GitHub Issues](https://github.com/Gaussian-id/Gauss-Horizon/issues)
+- [GitHub Issues](https://github.com/Gaussian-id/Chiron-Horizon/issues)
 - [Official docs](https://distribution-disabled.invalid/en/docs/what-is-chiron-horizon)
 
 Merged contributors appear on the [Chiron Horizon contributors wall](https://distribution-disabled.invalid/en/community).

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Create the immutable Chiron Horizon 0.1.0 agent registry from staged assets."""
+"""Create an immutable Chiron Horizon agent registry from staged assets."""
 import argparse
 import hashlib
 import json
@@ -10,7 +10,7 @@ from email.parser import Parser
 from pathlib import Path
 
 PLATFORMS = ("macos-aarch64", "macos-x64", "windows-x64", "linux-x64")
-RELEASE_PREFIX = "https://github.com/Gaussian-id/Gauss-Horizon/releases/download"
+RELEASE_PREFIX = "https://github.com/Gaussian-id/Chiron-Horizon/releases/download"
 
 
 def digest(path: Path) -> str:
@@ -51,8 +51,8 @@ def main() -> int:
     release_dir = args.release_dir.resolve()
     versions = json.loads(args.versions.read_text(encoding="utf-8"))
     expected_version = args.tag.removeprefix("v")
-    if expected_version != "0.1.0" or any(version != expected_version for version in versions.values()):
-        raise SystemExit("Agent registry requires every product agent to be version 0.1.0")
+    if not expected_version or any(version != expected_version for version in versions.values()):
+        raise SystemExit(f"Agent registry requires every product agent to be version {expected_version}")
 
     jre_platforms = {}
     for platform in PLATFORMS:
@@ -89,7 +89,7 @@ def main() -> int:
             item["native"] = native
         drivers[key] = item
     if missing:
-        raise SystemExit("Missing 0.1.0 agent artifacts: " + ", ".join(missing))
+        raise SystemExit(f"Missing {expected_version} agent artifacts: " + ", ".join(missing))
 
     registry = {"jres": {"21": {"version": args.jre_version, "platforms": jre_platforms}}, "drivers": drivers}
     output = release_dir / "agent-registry.json"

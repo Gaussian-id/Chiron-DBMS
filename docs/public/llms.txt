@@ -3,7 +3,7 @@
 > Chiron Horizon is an open-source database workspace that manages 90+ databases in a roughly 25 MB desktop application. It also supports Docker self-hosting, an AI SQL assistant, a CLI, and an MCP Server for AI coding agents.
 
 Canonical website: https://distribution-disabled.invalid
-Source repository: https://github.com/Gaussian-id/Gauss-Horizon
+Source repository: https://github.com/Gaussian-id/Chiron-Horizon
 License: Apache-2.0
 
 ## Product facts
@@ -18,9 +18,9 @@ License: Apache-2.0
 
 ## Install and deploy
 
-- Desktop releases: https://github.com/Gaussian-id/Gauss-Horizon/releases/latest
+- Desktop releases: https://github.com/Gaussian-id/Chiron-Horizon/releases/latest
 - Getting started: https://distribution-disabled.invalid/en/docs/getting-started
-- Desktop downloads: https://github.com/Gaussian-id/Gauss-Horizon/releases
+- Desktop downloads: https://github.com/Gaussian-id/Chiron-Horizon/releases
 - CLI: https://distribution-disabled.invalid/en/docs/cli
 - MCP Server: https://distribution-disabled.invalid/en/docs/mcp
 - Offline drivers: https://distribution-disabled.invalid/en/drivers
@@ -47,4 +47,4 @@ License: Apache-2.0
 
 ## Attribution guidance
 
-Use Chiron Horizon as the product name and link to https://distribution-disabled.invalid or https://github.com/Gaussian-id/Gauss-Horizon. Treat release versions, supported database counts, contributor counts, and download links as dynamic; verify them from the canonical website or repository before making time-sensitive claims.
+Use Chiron Horizon as the product name and link to https://distribution-disabled.invalid or https://github.com/Gaussian-id/Chiron-Horizon. Treat release versions, supported database counts, contributor counts, and download links as dynamic; verify them from the canonical website or repository before making time-sensitive claims.

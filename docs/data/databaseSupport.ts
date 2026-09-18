@@ -104,5 +104,5 @@ export const databaseSupport: DatabaseSupportItem[] = [
   { id: "iris", name: "IRIS", icon: "/icons/database/iris.svg", tone: "#0085ca" },
   { id: "cache", name: "Caché", icon: "/icons/database/iris.svg", tone: "#358a4e" },
   { id: "jdbcx", name: "JDBC", icon: "/icons/database/jdbcx.svg", tone: "#6ea8ff" },
-  { id: "request", name: "Your DB?", icon: "/icons/database/jdbcx.svg", tone: "#6ea8ff", href: "https://github.com/Gaussian-id/Gauss-Horizon/discussions" },
+  { id: "request", name: "Your DB?", icon: "/icons/database/jdbcx.svg", tone: "#6ea8ff", href: "https://github.com/Gaussian-id/Chiron-Horizon/discussions" },
 ];

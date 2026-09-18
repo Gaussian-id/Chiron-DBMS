@@ -1,4 +1,4 @@
-module github.com/Gaussian-id/Gauss-Horizon/agents/drivers/rocketmq
+module github.com/Gaussian-id/Chiron-Horizon/agents/drivers/rocketmq
 
 go 1.25.0
 

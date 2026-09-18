@@ -1,6 +1,6 @@
 # Chiron Horizon Agents
 
-Agent drivers for [Chiron Horizon](https://github.com/Gaussian-id/Gauss-Horizon) — database support via JDBC and native database drivers.
+Agent drivers for [Chiron Horizon](https://github.com/Gaussian-id/Chiron-Horizon) — database support via JDBC and native database drivers.
 
 Each agent runs as a standalone process and communicates with Chiron Horizon via stdin/stdout JSON-RPC 2.0.
 
@@ -147,4 +147,4 @@ Native driver / JDBC → Database
 
 ## License
 
-[AGPL-3.0](https://github.com/Gaussian-id/Gauss-Horizon/blob/main/LICENSE)
+[AGPL-3.0](https://github.com/Gaussian-id/Chiron-Horizon/blob/main/LICENSE)

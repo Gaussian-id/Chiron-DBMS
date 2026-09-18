@@ -1,4 +1,4 @@
-module github.com/Gaussian-id/Gauss-Horizon/agents/drivers/oracle-go
+module github.com/Gaussian-id/Chiron-Horizon/agents/drivers/oracle-go
 
 go 1.20
 

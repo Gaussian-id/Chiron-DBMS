@@ -11,7 +11,6 @@ node_modules
 openspec/
 .zcode/
 .mcp.json
-AGENTS.md
 CLAUDE.md
 
 # Build output

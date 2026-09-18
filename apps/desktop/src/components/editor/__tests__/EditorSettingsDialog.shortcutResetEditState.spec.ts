@@ -3,7 +3,7 @@ import { describe, expect, it } from "vitest";
 
 const dialogSource = readFileSync(new URL("../EditorSettingsDialog.vue", import.meta.url), "utf8");
 
-// Regression for https://github.com/Gaussian-id/Gauss-Horizon/issues/9066: clicking a shortcut
+// Regression for https://github.com/Gaussian-id/Chiron-Horizon/issues/9066: clicking a shortcut
 // row's edit button enters the per-row capture state (editingShortcutId), and
 // clicking the footer "restore defaults" button afterwards reset the shortcut
 // values but left the row stuck in the editing state ("press shortcut"

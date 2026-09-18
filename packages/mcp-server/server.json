@@ -1,17 +1,17 @@
 {
   "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
-  "name": "io.github.Gaussian-id/Gauss-Horizon",
+  "name": "io.github.t8y2/chiron_horizon",
   "description": "Query and manage databases from AI agents using connections configured in Chiron Horizon.",
   "repository": {
-    "url": "https://github.com/Gaussian-id/Gauss-Horizon",
+    "url": "https://github.com/t8y2/chiron_horizon",
     "source": "github"
   },
-  "version": "0.4.86",
+  "version": "0.4.90",
   "packages": [
     {
       "registryType": "npm",
       "identifier": "@chiron-horizon/mcp-server",
-      "version": "0.4.86",
+      "version": "0.4.90",
       "transport": {
         "type": "stdio"
       }

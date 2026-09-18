@@ -21,6 +21,7 @@ const compatibility = new Set([
   "crates/chiron-horizon-core/src/legacy.rs",
   "src-tauri/src/data_dir.rs",
   "README.md",
+  "AGENTS.md",
   "docs/development/white-label.md",
   "scripts/audit-branding.mjs",
   "scripts/stage-desktop-release.mjs",
@@ -50,7 +51,7 @@ for (const file of files) {
 }
 
 const config = JSON.parse(readFileSync("src-tauri/tauri.conf.json", "utf8"));
-if (config.productName !== "Chiron Horizon" || config.version !== "0.1.0" || config.identifier !== "id.chiron.horizon") {
+if (config.productName !== "Chiron Horizon" || !/^0\.1\.\d+$/.test(config.version) || config.identifier !== "id.chiron.horizon") {
   failures.push("Unexpected application identity");
 }
 if (config.plugins.updater || config.bundle.createUpdaterArtifacts) failures.push("Updater configuration must be absent/disabled");

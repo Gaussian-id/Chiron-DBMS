@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { AiGenerationGuard } from "@/lib/ai/aiGenerationGuard";
 
-// Race coverage requested on https://github.com/Gaussian-id/Gauss-Horizon/pull/6332: clearing/switching
+// Race coverage requested on https://github.com/Gaussian-id/Chiron-Horizon/pull/6332: clearing/switching
 // the AI chat while a request is in flight must isolate that request's async callbacks
 // from whatever generation is active by the time they run, independent of whether the
 // backend cancel RPC actually reached a registered stream id.

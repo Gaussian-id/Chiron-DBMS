@@ -340,7 +340,7 @@ describe("useDataGridExport prepared row statements", () => {
     );
   });
 
-  // Regression test for https://github.com/Gaussian-id/Gauss-Horizon/issues/6519
+  // Regression test for https://github.com/Gaussian-id/Chiron-Horizon/issues/6519
   it("uses every selected cell for a WHERE clause when right-clicking inside an existing multi-cell selection", async () => {
     const matrix: CellSelectionMatrix = {
       rowIndexes: [0],
@@ -387,7 +387,7 @@ describe("useDataGridExport prepared row statements", () => {
     expect(state.canCopyWithExtractor("where-clause")).toBe(false);
   });
 
-  // Regression test for https://github.com/Gaussian-id/Gauss-Horizon/issues/6519
+  // Regression test for https://github.com/Gaussian-id/Chiron-Horizon/issues/6519
   it("uses every selected cell for a SELECT when right-clicking inside an existing multi-cell selection", async () => {
     const matrix: CellSelectionMatrix = {
       rowIndexes: [0],
@@ -412,7 +412,7 @@ describe("useDataGridExport prepared row statements", () => {
     );
   });
 
-  // Regression test for https://github.com/Gaussian-id/Gauss-Horizon/issues/6519
+  // Regression test for https://github.com/Gaussian-id/Chiron-Horizon/issues/6519
   it("joins a same-column multi-row SELECT selection with OR", async () => {
     const selectedRows = [
       [7, "Ada"],
@@ -521,7 +521,7 @@ describe("useDataGridExport prepared row statements", () => {
     expect(createExportState({ ...editableTable, tableName: "" }, ["id", "name"], matrix, [7, "Ada"]).canCopyWithExtractor("sql-select")).toBe(false);
   });
 
-  // Regression tests for https://github.com/Gaussian-id/Gauss-Horizon/issues/6272
+  // Regression tests for https://github.com/Gaussian-id/Chiron-Horizon/issues/6272
   it("enables SELECT copy when sourceColumns is undefined by falling back to display names", () => {
     const matrix: CellSelectionMatrix = {
       rowIndexes: [0],
@@ -961,6 +961,32 @@ describe("useDataGridExport prepared row statements", () => {
     };
 
     const state = createExportState(autoIncrementTable, ["id"], matrix, [1], undefined, undefined, [], excludePrimaryKeys);
+
+    expect(state.canCopyWithExtractor("sql-inserts")).toBe(false);
+  });
+
+  it("recognizes PostgreSQL serial primary keys when excluding primary keys", () => {
+    const serialTable: DataGridTableMeta = {
+      tableName: "users",
+      primaryKeys: ["id"],
+      columns: [
+        {
+          name: "id",
+          data_type: "integer",
+          is_nullable: false,
+          is_primary_key: true,
+          extra: "serial",
+        },
+        { name: "name", data_type: "text", is_nullable: false },
+      ],
+    };
+    const matrix: CellSelectionMatrix = { rowIndexes: [0], columnIndexes: [0], columns: ["id"], rows: [[1]] };
+    const excludePrimaryKeys = {
+      ...DEFAULT_DATA_GRID_EXTRACTOR_OPTIONS,
+      sql: { ...DEFAULT_DATA_GRID_EXTRACTOR_OPTIONS.sql, excludePrimaryKeysFromInsert: true },
+    };
+
+    const state = createExportState(serialTable, ["id"], matrix, [1], undefined, undefined, [], excludePrimaryKeys);
 
     expect(state.canCopyWithExtractor("sql-inserts")).toBe(false);
   });

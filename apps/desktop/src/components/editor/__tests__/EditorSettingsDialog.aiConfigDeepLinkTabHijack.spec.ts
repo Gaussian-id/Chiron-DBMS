@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 const dialogSource = readFileSync(new URL("../EditorSettingsDialog.vue", import.meta.url), "utf8");
 const appSource = readFileSync(new URL("../../../App.vue", import.meta.url), "utf8");
 
-// Regression for https://github.com/Gaussian-id/Gauss-Horizon/issues/7874: after using an AI
+// Regression for https://github.com/Gaussian-id/Chiron-Horizon/issues/7874: after using an AI
 // config deep link ("chiron-horizon"://settings/ai/new?...) once, every later "open
 // Settings" (even a plain click on the gear icon) got forcibly yanked back to
 // the AI tab. Root cause: `settingsAiConfigDraft`/`settingsAiConfigRequestId`

@@ -736,8 +736,12 @@ fn prompt_project_template<R: BufRead, W: Write>(reader: &mut R, writer: &mut W)
             "2" | "svelte" => return Ok(ProjectTemplate::Svelte),
             "3" | "rust" => return Ok(ProjectTemplate::Rust),
             "4" | "go" | "golang" => return Ok(ProjectTemplate::Go),
-            _ => writeln!(writer, "{} choose 1/Frontend, 2/Svelte, 3/Rust, or 4/Go", styled_stdout("Invalid:", ANSI_WARNING))
-                .map_err(|error| error.to_string())?,
+            _ => writeln!(
+                writer,
+                "{} choose 1/Frontend, 2/Svelte, 3/Rust, or 4/Go",
+                styled_stdout("Invalid:", ANSI_WARNING)
+            )
+            .map_err(|error| error.to_string())?,
         }
     }
 }
@@ -947,9 +951,9 @@ pub fn package_project(options: &PackageOptions) -> Result<(PathBuf, PathBuf), S
         copy_path(&source, &stage.path().join(include))?;
     }
 
-    let package_name = format!("{}-{}-{target}.chiron-horizonp", manifest.id, manifest.version);
+    let package_name = format!("{}-{}-{target}.chiron_horizonp", manifest.id, manifest.version);
     let package_path = output_directory.join(&package_name);
-    let metadata_path = output_directory.join(package_name.replace(".chiron-horizonp", ".artifact.json"));
+    let metadata_path = output_directory.join(package_name.replace(".chiron_horizonp", ".artifact.json"));
     let artifact_url = options.artifact_url.clone().unwrap_or(package_name);
     let packager_arguments = vec![
         stage.path().to_string_lossy().into_owned(),
@@ -1112,7 +1116,7 @@ fn build_rust_backend(
             return Err(format!("Rust plugin SDK was not found at {}", sdk.display()));
         }
         command.arg("--config").arg(format!(
-            "patch.crates-io.chiron-horizon-plugin-sdk.path={}",
+            "patch.crates-id.chiron.horizon-plugin-sdk.path={}",
             serde_json::to_string(&sdk.to_string_lossy()).map_err(|error| error.to_string())?
         ));
     }
@@ -1142,35 +1146,32 @@ fn build_go_backend(
             return Err(format!("Go plugin SDK was not found at {}", sdk.display()));
         }
         fs::create_dir_all(build_directory).map_err(|error| error.to_string())?;
-        let mod_file = build_directory.join("chiron-horizon-plugin.mod");
+        let mod_file = build_directory.join("go.mod");
         fs::copy(backend_directory.join("go.mod"), &mod_file).map_err(|error| error.to_string())?;
-        if backend_directory.join("go.sum").is_file() {
-            fs::copy(backend_directory.join("go.sum"), build_directory.join("chiron-horizon-plugin.sum"))
-                .map_err(|error| error.to_string())?;
+        let source_sum = backend_directory.join("go.sum");
+        if source_sum.is_file() {
+            fs::copy(source_sum, build_directory.join("go.sum")).map_err(|error| error.to_string())?;
         }
-        let sdk_module = go_module_path(&sdk.join("go.mod"))?;
-        let mut mod_command = Command::new("go");
-        mod_command
+        let mut replace = Command::new("go");
+        replace
             .current_dir(&backend_directory)
             .arg("mod")
             .arg("edit")
             .arg("-modfile")
             .arg(&mod_file)
-            .arg(format!("-replace={sdk_module}={}", sdk.display()));
-        run_command(&mut mod_command, "Go module configuration")?;
-        command.arg("-modfile").arg(mod_file).env("GOWORK", "off");
+            .arg(format!(
+                "-replace=github.com/t8y2/chiron-horizon/plugins/sdk/go/chiron-horizon-plugin-sdk={}",
+                go_work_path(&sdk)
+            ));
+        run_command(&mut replace, "Go module setup")?;
+        command.env("GOWORK", "off").arg("-modfile").arg(&mod_file);
     }
     command.arg("-o").arg(staged_executable).arg(".");
     run_command(&mut command, "Go backend build")
 }
 
-fn go_module_path(path: &Path) -> Result<String, String> {
-    let contents = fs::read_to_string(path).map_err(|error| format!("Failed to read {}: {error}", path.display()))?;
-    contents
-        .lines()
-        .find_map(|line| line.strip_prefix("module ").map(str::trim).filter(|module| !module.is_empty()))
-        .map(str::to_string)
-        .ok_or_else(|| format!("{} is missing a module directive", path.display()))
+fn go_work_path(path: &Path) -> String {
+    path.to_string_lossy().replace('\\', "/")
 }
 
 fn run_command(command: &mut Command, label: &str) -> Result<(), String> {
@@ -1231,6 +1232,18 @@ fn template_values(
         ("PUBLISHER", options.publisher.clone()),
         ("PUBLISHER_JSON", json_string_content(&options.publisher)),
         ("VERSION", options.version.clone()),
+        ("CLI_VERSION", CLI_VERSION.to_string()),
+        ("GO_VERSION", if options.template == ProjectTemplate::Go { "1.22.x" } else { "" }.to_string()),
+        ("RUST_TOOLCHAIN", if options.template == ProjectTemplate::Rust { "stable" } else { "" }.to_string()),
+        (
+            "PACKAGE_COMMAND",
+            if options.template == ProjectTemplate::Svelte {
+                "npm ci && npm run build && chiron-horizon-plugin package ."
+            } else {
+                "chiron-horizon-plugin package ."
+            }
+            .to_string(),
+        ),
         ("TEMPLATE", options.template.as_str().to_string()),
         ("TEMPLATE_LABEL", options.template.label().to_string()),
         ("LANGUAGE", backend_language.map(BackendLanguage::as_str).unwrap_or("none").to_string()),
@@ -1281,7 +1294,7 @@ fn go_sdk_replace(sdk_root: Option<&Path>) -> Result<String, String> {
             if !path.join("go.mod").is_file() {
                 return Err(format!("Go plugin SDK was not found at {}", path.display()));
             }
-            Ok(format!("replace github.com/Gaussian-id/Gauss-Horizon/plugins/sdk/go/chiron-horizon-plugin-sdk => {}", path.display()))
+            Ok(format!("replace github.com/t8y2/chiron-horizon/plugins/sdk/go/chiron-horizon-plugin-sdk => {}", path.display()))
         }
         None => Ok(String::new()),
     }
@@ -1398,7 +1411,7 @@ fn title_from_slug(slug: &str) -> String {
 
 fn title_word(word: &str) -> String {
     match word {
-        "api" | "chiron-horizon" | "http" | "https" | "jdbc" | "sdk" | "sftp" | "sql" | "ssh" | "tcp" | "tls" | "udp" | "ui" => {
+        "api" | "chiron_horizon" | "http" | "https" | "jdbc" | "sdk" | "sftp" | "sql" | "ssh" | "tcp" | "tls" | "udp" | "ui" => {
             word.to_ascii_uppercase()
         }
         _ => {
@@ -1484,8 +1497,11 @@ fn print_usage() {
     println!("\n{}", styled_stdout("Usage:", ANSI_PROMPT));
     println!("  chiron-horizon-plugin <command> [options]");
     println!("\n{}", styled_stdout("Commands:", ANSI_PROMPT));
-    println!("  {}     Create a frontend-only, Svelte, Rust, or Go plugin project", styled_stdout("create", ANSI_SUCCESS));
-    println!("  {}    Build a .chiron-horizonp package and artifact metadata", styled_stdout("package", ANSI_SUCCESS));
+    println!(
+        "  {}     Create a frontend-only, Svelte, Rust, or Go plugin project",
+        styled_stdout("create", ANSI_SUCCESS)
+    );
+    println!("  {}    Build a .chiron_horizonp package and artifact metadata", styled_stdout("package", ANSI_SUCCESS));
     println!(
         "  {}        Run a plugin in the local browser development host (Node.js 22+)",
         styled_stdout("dev", ANSI_SUCCESS)
@@ -1573,23 +1589,14 @@ fn keygen_usage() -> String {
 
 #[cfg(test)]
 mod tests {
-    use std::fs;
     use std::io::Cursor;
-    use std::path::PathBuf;
+    use std::path::{Path, PathBuf};
 
     use super::{
         color_enabled_with, create_project, generate_signing_key_file, package_manifest, package_project,
         resolve_create_options, run_cli, styled, title_from_slug, validate_manifest_assets, validate_semver,
-        BackendConfig, CreateInputs, CreateOptions, PackageOptions, ProjectTemplate, ANSI_ACCENT,
+        BackendConfig, CreateInputs, CreateOptions, PackageOptions, ProjectTemplate, ANSI_ACCENT, CLI_VERSION,
     };
-
-    #[test]
-    fn reads_go_module_paths() {
-        let root = tempfile::tempdir().unwrap();
-        let module_file = root.path().join("go.mod");
-        fs::write(&module_file, "module example.com/plugin\n\ngo 1.22\n").unwrap();
-        assert_eq!(super::go_module_path(&module_file).unwrap(), "example.com/plugin");
-    }
 
     #[test]
     fn rejects_development_data_in_package_inputs() {
@@ -1600,6 +1607,11 @@ mod tests {
         let output = root.path().join("stage");
         assert!(super::copy_path(&input, &output).unwrap_err().contains(".chiron-horizon-dev"));
         assert!(!output.join(".chiron-horizon-dev/connections.json").exists());
+    }
+
+    #[test]
+    fn normalizes_go_work_paths_for_windows() {
+        assert_eq!(super::go_work_path(Path::new(r"C:\workspace\backend")), "C:/workspace/backend");
     }
 
     #[test]
@@ -1805,7 +1817,8 @@ mod tests {
     fn creates_frontend_rust_and_go_projects() {
         let root = tempfile::tempdir().unwrap();
         let sdk_root = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../..");
-        for template in [ProjectTemplate::Frontend, ProjectTemplate::Svelte, ProjectTemplate::Rust, ProjectTemplate::Go] {
+        for template in [ProjectTemplate::Frontend, ProjectTemplate::Svelte, ProjectTemplate::Rust, ProjectTemplate::Go]
+        {
             let directory = root.path().join(template.as_str());
             create_project(&CreateOptions {
                 directory: directory.clone(),
@@ -1821,14 +1834,16 @@ mod tests {
             .unwrap();
 
             assert!(directory.join("manifest.json").is_file());
-            assert!(directory.join(if template == ProjectTemplate::Svelte { "index.html" } else { "ui/index.html" }).is_file());
+            assert!(directory
+                .join(if template == ProjectTemplate::Svelte { "index.html" } else { "ui/index.html" })
+                .is_file());
             assert!(directory.join(".github/workflows/plugin-release.yml").is_file());
             let readme = std::fs::read_to_string(directory.join("README.md")).unwrap();
             assert!(readme.contains("autoUpdate: true"));
             assert!(readme.contains("submission Issue is not required"));
-            assert!(readme.contains("https://distribution-disabled.invalid/en/docs/plugin-development"));
-            assert!(readme.contains("Gaussian-id/Gauss-DBM-store:main"));
-            assert!(readme.contains("Do not submit ordinary plugin source to `Gaussian-id/Gauss-Horizon`"));
+            assert!(readme.contains("https://chiron_horizonio.com/en/docs/plugin-development"));
+            assert!(readme.contains("t8y2/chiron-horizon-store:main"));
+            assert!(readme.contains("Do not submit ordinary plugin source to `t8y2/chiron_horizon`"));
             assert!(std::fs::read_to_string(directory.join(".gitignore"))
                 .unwrap()
                 .contains(".chiron-horizon-repository-signing-key.env"));
@@ -1840,7 +1855,13 @@ mod tests {
             let workflow = std::fs::read_to_string(directory.join(".github/workflows/plugin-release.yml")).unwrap();
             assert!(!workflow.contains("signing-key-id"));
             assert!(!workflow.contains("CHIRON_HORIZON_PLUGIN_SIGNING_KEY"));
-            assert!(workflow.contains("plugin-cli-version: 0.1.3"));
+            assert!(workflow.contains(&format!("plugin-cli-version: {CLI_VERSION}")));
+            assert!(workflow.contains(&format!("plugin-release-reusable.yml@plugin-cli-v{CLI_VERSION}")));
+            assert!(!workflow.contains("@plugin-sdk-v1"));
+            let go_version = if template == ProjectTemplate::Go { "1.22.x" } else { "" };
+            let rust_toolchain = if template == ProjectTemplate::Rust { "stable" } else { "" };
+            assert!(workflow.contains(&format!("go-version: \"{go_version}\"")));
+            assert!(workflow.contains(&format!("rust-toolchain: \"{rust_toolchain}\"")));
             assert!(!workflow.contains("sdk-ref:"));
 
             match template {
@@ -1851,6 +1872,7 @@ mod tests {
                     assert!(workflow.contains("\"target\":\"universal\""));
                 }
                 ProjectTemplate::Svelte => {
+                    assert!(workflow.contains("package-command: npm ci && npm run build && chiron-horizon-plugin package ."));
                     assert!(manifest["entrypoints"].get("backend").is_none());
                     assert!(config.get("backend").is_none());
                     assert!(directory.join("src/App.svelte").is_file());
@@ -1897,7 +1919,7 @@ mod tests {
             artifact_url: None,
         })
         .unwrap();
-        assert_eq!(package.file_name().unwrap(), "com.example.frontend-package-1.2.3-universal.chiron-horizonp");
+        assert_eq!(package.file_name().unwrap(), "com.example.frontend-package-1.2.3-universal.chiron_horizonp");
         assert!(package.is_file());
         assert!(metadata.is_file());
         let artifact: serde_json::Value = serde_json::from_slice(&std::fs::read(metadata).unwrap()).unwrap();

@@ -199,7 +199,7 @@ impl MessageQueueAdmin for KafkaAdmin {
                     short_name: name,
                     // Kafka topics always have partitions; mark as partitioned so the
                     // "Adjust Partitions" UI button is available even for single-partition
-                    // topics (fixes Gaussian-id/Gauss-Horizon#6208).
+                    // topics (fixes Gaussian-id/Chiron-Horizon#6208).
                     partitioned: partitions.map(|p| p > 0).unwrap_or(false),
                     partitions,
                     persistent: true,
@@ -1321,7 +1321,7 @@ mod tests {
     #[test]
     fn kafka_topic_partitioned_flag_true_for_any_partition_count() {
         // Single-partition topics must still be marked as partitioned so the
-        // frontend "Adjust Partitions" button is available (Gaussian-id/Gauss-Horizon#6208).
+        // frontend "Adjust Partitions" button is available (Gaussian-id/Chiron-Horizon#6208).
         let single = serde_json::json!({ "name": "orders", "partitions": 1 });
         let partitions = single.get("partitions").and_then(|v| v.as_u64()).map(|v| v as u32);
         assert!(partitions.map(|p| p > 0).unwrap_or(false));
