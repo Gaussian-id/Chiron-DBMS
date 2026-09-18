@@ -216,7 +216,7 @@ describe("ObjectSelectionTree interaction", () => {
 
     expect(container.querySelector('label[data-test="item-FUNCTION-box"]')).toBeNull();
     expect(container.querySelector('label[data-test="item-SEQUENCE-biz_banner_id_seq"]')).not.toBeNull();
-    expect(container.querySelector('[data-test="group-FUNCTION"]')?.textContent).toContain("无匹配");
+    expect(container.querySelector('[data-test="group-FUNCTION"]')?.textContent).toContain("No matches");
   });
 
   it("search ranks exact-prefix matches before mid-name matches", async () => {

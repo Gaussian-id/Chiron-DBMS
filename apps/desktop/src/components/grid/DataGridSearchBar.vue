@@ -76,8 +76,8 @@ defineExpose({
           <span>{{ suggestion }}</span>
         </div>
       </div>
-      <!-- 截断标记：表格预览对长文本/JSON 值做服务端截断，客户端搜索只能覆盖
-           显示前缀，匹配数可能少于 SQL 查询（#7279）。 -->
+      <!-- Long text and JSON values are truncated by the server in the table preview. Client-side search covers only
+           the displayed prefix, so its match count can be lower than the SQL query result (#7279). -->
       <span v-if="props.valuesTruncated && (props.matchCount > 0 || props.hasDeferredSearchText)" data-grid-search-truncated-hint class="text-xs text-amber-600 dark:text-amber-400 shrink-0 cursor-help" :title="t('grid.searchTruncatedValuesHint')" :aria-label="t('grid.searchTruncatedValuesHint')"
         >≈</span
       >

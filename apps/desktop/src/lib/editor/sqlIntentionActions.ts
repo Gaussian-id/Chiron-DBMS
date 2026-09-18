@@ -238,19 +238,19 @@ function buildBatchQualifyActions(ctx: IntentionActionContext): IntentionAction[
     if (token.qualified) continue;
     // 跳过 SQL 关键字
     if (SQL_KEYWORDS.has(token.text.toLowerCase())) continue;
-    // 跳过 projection 别名（P1-2）
+    // Skip projection aliases (P1-2).
     if (aliasNames.has(token.text.toLowerCase())) continue;
 
     let qualifier: string;
 
     if (isMultiTable) {
-      // 多表场景：为每个 token 独立解析表源（使用缓存的 qualifierMap）
+      // In multi-table queries, resolve each token's table source independently using the cached qualifierMap.
       const tokenModel = buildSqlSemanticModel(sql, offset + token.start, {
         databaseType,
         dialect,
       });
       const tokenTarget = resolveNavigationTarget(tokenModel, tokenModel.cursorIntent, qualifierMap);
-      if (!tokenTarget) continue; // 无法确定表源，跳过
+      if (!tokenTarget) continue; // Skip tokens whose table source cannot be determined.
       qualifier = quote ? quoteTableIdentifier(databaseType, tokenTarget.alias ?? tokenTarget.name) : (tokenTarget.alias ?? tokenTarget.name);
     } else {
       qualifier = singleQualifier!;
@@ -724,20 +724,20 @@ function splitQualifiedIdentifier(text: string, databaseType?: DatabaseType): st
 /**
  * 查找包含光标位置的最内层 scope。
  *
- * 注意：clauseSpans 中每个子句的 end 只到下一个 token 的 start（非常窄），
- * 无法覆盖整个子句范围。因此优先使用 scope 的 statement span 判断光标归属，
- * 仅在 statement span 不可用时回退到 clauseSpans。
+ * Each clause end in clauseSpans reaches only the next token's start, so it cannot
+ * cover the full clause. Prefer the scope's statement span to identify cursor
+ * ownership, and fall back to clauseSpans only when the statement span is unavailable.
  */
 function findScopeContainingCursor(model: SqlSemanticModel, cursor: number) {
   let best: SqlSemanticScope | undefined;
   for (const s of model.scopes) {
     if (s.rowSources.length === 0) continue;
-    // 优先使用 statement span（覆盖整条语句，cursor 必在其中）
+    // Prefer the statement span because it covers the entire statement and cursor must be within it.
     if (cursor >= s.span.start && cursor <= s.span.end) {
-      best = s; // 取最后一个匹配的（最内层）
+      best = s; // Keep the final match, which is the innermost scope.
       continue;
     }
-    // 回退：检查 clauseSpans
+    // Fall back to clauseSpans.
     const spans = [s.clauseSpans.select, s.clauseSpans.from, s.clauseSpans.where, s.clauseSpans.having, s.clauseSpans.groupBy, s.clauseSpans.orderBy, s.clauseSpans.limit].filter(Boolean) as { start: number; end: number }[];
     if (spans.some((sp) => cursor >= sp.start && cursor <= sp.end)) {
       best = s;
