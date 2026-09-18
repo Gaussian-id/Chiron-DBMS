@@ -30,9 +30,9 @@ References:
 
 ## Ownership
 
-- `dbx-core::mongodb_dump`: metadata, source preparation, database plans, progress,
+- `chiron-horizon-core::mongodb_dump`: metadata, source preparation, database plans, progress,
   cancellation, collection options, indexes and views.
-- `dbx-core::mongodb_dump::archive`: official prelude, namespace segments,
+- `chiron-horizon-core::mongodb_dump::archive`: official prelude, namespace segments,
   terminators and per-namespace CRC64 validation. BSON and gzip use the existing
   libraries; CRC uses a maintained implementation, not handwritten arithmetic.
 - Existing `mongodb_import_export`: bounded BSON streaming and batched inserts.
@@ -128,6 +128,6 @@ Verified against MongoDB Server 8.0.17 and Database Tools 100.18.0 on Windows:
   `output/playwright/database-{dump,restore}-desktop.png` and
   `output/playwright/database-restore-mobile.png`.
 
-The opt-in database test is `official_database_tools_round_trip_through_dbx` in
-`crates/dbx-core/tests/mongodb_dump_restore.rs`. Set `DBX_MONGO_DUMP_TEST_URI` and
-`DBX_MONGO_TOOLS_DIR` to run it against an isolated server.
+The opt-in database test is `official_database_tools_round_trip_through_chiron_horizon` in
+`crates/chiron-horizon-core/tests/mongodb_dump_restore.rs`. Set `CHIRON_HORIZON_MONGO_DUMP_TEST_URI` and
+`CHIRON_HORIZON_MONGO_TOOLS_DIR` to run it against an isolated server.

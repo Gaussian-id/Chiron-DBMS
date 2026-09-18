@@ -20,18 +20,20 @@ use super::{
 };
 
 pub const SUPPORTED_PLUGIN_CATALOG_VERSION: u32 = 1;
-pub const OFFICIAL_PLUGIN_REPOSITORY_ID: &str = "dbx-official";
+pub const OFFICIAL_PLUGIN_REPOSITORY_ID: &str = "chiron-horizon-official";
 pub const UNIVERSAL_PLUGIN_TARGET: &str = "universal";
 pub const MAX_PLUGIN_CATALOG_BYTES: usize = 4 * 1024 * 1024;
 
 const REPOSITORIES_FILE: &str = ".repositories.json";
 const REPOSITORIES_LOCK_FILE: &str = ".repositories.lock";
-const OFFICIAL_CATALOG_URL: &str = "https://dl.dbxio.com/catalog/index.json";
-const OFFICIAL_CATALOG_FALLBACK_URL: &str = "https://raw.githubusercontent.com/t8y2/dbx-store/main/catalog/index.json";
-const ADDITIONAL_OFFICIAL_TRUSTED_KEYS_JSON: Option<&str> = option_env!("DBX_PLUGIN_MARKETPLACE_TRUSTED_KEYS_JSON");
+const OFFICIAL_CATALOG_URL: &str = "https://dl.chiron-horizon.com/catalog/index.json";
+const OFFICIAL_CATALOG_FALLBACK_URL: &str =
+    "https://raw.githubusercontent.com/Gaussian-id/Gauss-Horizon-store/main/catalog/index.json";
+const ADDITIONAL_OFFICIAL_TRUSTED_KEYS_JSON: Option<&str> =
+    option_env!("CHIRON_HORIZON_PLUGIN_MARKETPLACE_TRUSTED_KEYS_JSON");
 const BUILTIN_OFFICIAL_TRUSTED_KEYS: &[(&str, &str)] = &[
-    ("dbx-store-preview-2026", "VRb0VscZfWwuFa7LYfeD/wEOJeyNP8wPGND9br8Icmk="),
-    ("dbx-store-release-2026", "6WbMG2UDx+EZ/oauMtHjdinvSD5MuFWSgXbI0n7eL+k="),
+    ("chiron-horizon-store-preview-2026", "VRb0VscZfWwuFa7LYfeD/wEOJeyNP8wPGND9br8Icmk="),
+    ("chiron-horizon-store-release-2026", "6WbMG2UDx+EZ/oauMtHjdinvSD5MuFWSgXbI0n7eL+k="),
 ];
 
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
@@ -292,7 +294,7 @@ impl PluginMarketplace {
             .redirect(Policy::limited(5))
             .connect_timeout(Duration::from_secs(10))
             .timeout(Duration::from_secs(300))
-            .user_agent(format!("DBX/{}/plugin-marketplace", env!("CARGO_PKG_VERSION")))
+            .user_agent(format!("Chiron Horizon/{}/plugin-marketplace", env!("CARGO_PKG_VERSION")))
             .build()
             .map_err(|error| format!("Failed to create plugin marketplace HTTP client: {error}"))?;
         Ok(Self {
@@ -407,9 +409,9 @@ impl PluginMarketplace {
             .install_marketplace_bytes(&package, &expectation)
     }
 
-    /// Downloads a .dbxp package from a direct http(s) URL and installs it with
+    /// Downloads a .chiron-horizonp package from a direct http(s) URL and installs it with
     /// the same policy semantics as a local package install, except that
-    /// signatures may also verify against the built-in official DBX Marketplace
+    /// signatures may also verify against the built-in official Chiron Horizon Marketplace
     /// keys, so store-signed packages install from their direct artifact URLs
     /// as well. No marketplace catalog expectation is applied.
     pub async fn install_url_package<F>(
@@ -498,7 +500,7 @@ fn supported_repository_document_version() -> u32 {
 fn official_repository() -> PluginRepository {
     PluginRepository {
         id: OFFICIAL_PLUGIN_REPOSITORY_ID.to_string(),
-        name: "DBX Marketplace".to_string(),
+        name: "Chiron Horizon Marketplace".to_string(),
         kind: PluginRepositoryKind::Official,
         catalog_url: Some(OFFICIAL_CATALOG_URL.to_string()),
         enabled: true,
@@ -509,7 +511,7 @@ fn official_repository() -> PluginRepository {
 fn repository_catalog_url(repository: &PluginRepository) -> Result<Url, String> {
     let raw = repository.catalog_url.as_deref().and_then(trimmed_nonempty).ok_or_else(|| {
         if repository.kind == PluginRepositoryKind::Official {
-            "Official DBX Marketplace catalog is not configured in this build".to_string()
+            "Official Chiron Horizon Marketplace catalog is not configured in this build".to_string()
         } else {
             format!("Plugin repository '{}' has no catalog URL", repository.id)
         }
@@ -552,7 +554,7 @@ fn validate_and_resolve_catalog(
 ) -> Result<(), String> {
     if catalog.catalog_version != SUPPORTED_PLUGIN_CATALOG_VERSION {
         return Err(format!(
-            "Unsupported plugin catalog version {}; this DBX build supports version {}",
+            "Unsupported plugin catalog version {}; this Chiron Horizon build supports version {}",
             catalog.catalog_version, SUPPORTED_PLUGIN_CATALOG_VERSION
         ));
     }
@@ -697,11 +699,12 @@ fn builtin_official_trusted_keys() -> Result<BTreeMap<String, String>, String> {
         .map(|(key_id, public_key)| ((*key_id).to_string(), (*public_key).to_string()))
         .collect::<BTreeMap<_, _>>();
     if let Some(raw) = ADDITIONAL_OFFICIAL_TRUSTED_KEYS_JSON.and_then(trimmed_nonempty) {
-        let additional: BTreeMap<String, String> = serde_json::from_str(raw)
-            .map_err(|error| format!("Failed to parse additional official DBX Marketplace signing keys: {error}"))?;
+        let additional: BTreeMap<String, String> = serde_json::from_str(raw).map_err(|error| {
+            format!("Failed to parse additional official Chiron Horizon Marketplace signing keys: {error}")
+        })?;
         for (key_id, public_key) in additional {
             if keys.insert(key_id.clone(), public_key).is_some() {
-                return Err(format!("Duplicate official DBX Marketplace signing key '{key_id}'"));
+                return Err(format!("Duplicate official Chiron Horizon Marketplace signing key '{key_id}'"));
             }
         }
     }
@@ -714,13 +717,13 @@ fn marketplace_trust_store(root_dir: &Path, kind: PluginRepositoryKind) -> Resul
     }
     let store = PluginTrustStore::from_base64_keys(builtin_official_trusted_keys()?)?;
     if store.is_empty() {
-        return Err("Official DBX Marketplace signing keys are empty".to_string());
+        return Err("Official Chiron Horizon Marketplace signing keys are empty".to_string());
     }
     Ok(store)
 }
 
 /// Trust store for direct URL installs: the user's trusted keys plus the
-/// built-in official DBX Marketplace keys. A user-saved key that collides with
+/// built-in official Chiron Horizon Marketplace keys. A user-saved key that collides with
 /// a builtin key id but carries a different public key is a rotation conflict
 /// and fails the install instead of silently overriding the builtin key.
 pub fn url_install_trust_store(root_dir: &Path) -> Result<PluginTrustStore, String> {
@@ -832,7 +835,7 @@ mod tests {
                     release_notes: Some("Initial release".to_string()),
                     artifacts: vec![PluginMarketplaceArtifact {
                         target: current_plugin_target(),
-                        url: "../dist/plugin.dbxp".to_string(),
+                        url: "../dist/plugin.chiron-horizonp".to_string(),
                         sha256: "a".repeat(64),
                         signing_key_id: "example.release".to_string(),
                         size: Some(100),
@@ -873,7 +876,7 @@ mod tests {
         assert_eq!(plugin.icon.as_deref(), Some("https://plugins.example.com/team-marketplace/assets/icon.svg"));
         assert_eq!(
             plugin.versions[0].artifacts[0].url,
-            "https://plugins.example.com/team-marketplace/dist/plugin.dbxp"
+            "https://plugins.example.com/team-marketplace/dist/plugin.chiron-horizonp"
         );
     }
 
@@ -909,14 +912,14 @@ mod tests {
             artifacts: vec![
                 PluginMarketplaceArtifact {
                     target: UNIVERSAL_PLUGIN_TARGET.to_string(),
-                    url: "https://plugins.example.com/universal.dbxp".to_string(),
+                    url: "https://plugins.example.com/universal.chiron-horizonp".to_string(),
                     sha256: "a".repeat(64),
                     signing_key_id: "example.release".to_string(),
                     size: None,
                 },
                 PluginMarketplaceArtifact {
                     target: "darwin-arm64".to_string(),
-                    url: "https://plugins.example.com/darwin-arm64.dbxp".to_string(),
+                    url: "https://plugins.example.com/darwin-arm64.chiron-horizonp".to_string(),
                     sha256: "b".repeat(64),
                     signing_key_id: "example.release".to_string(),
                     size: None,
@@ -938,7 +941,7 @@ mod tests {
             release_notes: None,
             artifacts: vec![PluginMarketplaceArtifact {
                 target: UNIVERSAL_PLUGIN_TARGET.to_string(),
-                url: "https://plugins.example.com/universal.dbxp".to_string(),
+                url: "https://plugins.example.com/universal.chiron-horizonp".to_string(),
                 sha256: "a".repeat(64),
                 signing_key_id: "example.release".to_string(),
                 size: None,
@@ -980,7 +983,7 @@ mod tests {
         let bytes = b"plugin-package";
         let artifact = PluginMarketplaceArtifact {
             target: current_plugin_target(),
-            url: "https://plugins.example.com/plugin.dbxp".to_string(),
+            url: "https://plugins.example.com/plugin.chiron-horizonp".to_string(),
             sha256: format!("{:x}", Sha256::digest(bytes)),
             signing_key_id: "example.release".to_string(),
             size: Some(bytes.len() as u64),
@@ -1100,7 +1103,7 @@ mod tests {
                     release_notes: None,
                     artifacts: vec![PluginMarketplaceArtifact {
                         target: UNIVERSAL_PLUGIN_TARGET.to_string(),
-                        url: "package.dbxp".to_string(),
+                        url: "package.chiron-horizonp".to_string(),
                         sha256: package_sha256,
                         signing_key_id: key_id.to_string(),
                         size: Some(package.len() as u64),
@@ -1162,7 +1165,7 @@ mod tests {
             "name": name,
             "version": "1.0.0",
             "publisher": "example",
-            "engines": { "dbx": ">=0.5.0", "host_api": "^1.0" },
+            "engines": { "chiron_horizon": ">=0.5.0", "host_api": "^1.0" },
             "entrypoints": {
                 "backend": {
                     "protocol_versions": [1],
@@ -1245,7 +1248,7 @@ mod tests {
         let mut last_progress = (0u64, None);
         let result = marketplace
             .install_url_package(
-                &format!("http://{address}/plugin.dbxp"),
+                &format!("http://{address}/plugin.chiron-horizonp"),
                 PluginInstallPolicy::LocalSigned,
                 |downloaded, total| last_progress = (downloaded, total),
             )
@@ -1269,7 +1272,11 @@ mod tests {
         let server = serve_package_once(listener, package);
         let marketplace = PluginMarketplace::new(root.path().to_path_buf(), "0.5.68").unwrap();
         let error = marketplace
-            .install_url_package(&format!("http://{address}/plugin.dbxp"), PluginInstallPolicy::LocalSigned, |_, _| {})
+            .install_url_package(
+                &format!("http://{address}/plugin.chiron-horizonp"),
+                PluginInstallPolicy::LocalSigned,
+                |_, _| {},
+            )
             .await
             .unwrap_err();
         server.await.unwrap();
@@ -1284,7 +1291,7 @@ mod tests {
         let forged_key = SigningKey::from_bytes(&[11u8; 32]);
         let signature = serde_json::to_vec_pretty(&serde_json::json!({
             "algorithm": "ed25519",
-            "key_id": "dbx-store-release-2026",
+            "key_id": "chiron-horizon-store-release-2026",
             "signature": base64::engine::general_purpose::STANDARD.encode(forged_key.sign(&checksums).to_bytes())
         }))
         .unwrap();
@@ -1294,7 +1301,11 @@ mod tests {
         let server = serve_package_once(listener, package);
         let marketplace = PluginMarketplace::new(root.path().to_path_buf(), "0.5.68").unwrap();
         let error = marketplace
-            .install_url_package(&format!("http://{address}/plugin.dbxp"), PluginInstallPolicy::LocalSigned, |_, _| {})
+            .install_url_package(
+                &format!("http://{address}/plugin.chiron-horizonp"),
+                PluginInstallPolicy::LocalSigned,
+                |_, _| {},
+            )
             .await
             .unwrap_err();
         server.await.unwrap();
@@ -1316,7 +1327,7 @@ mod tests {
         let marketplace = PluginMarketplace::new(root.path().to_path_buf(), "0.5.68").unwrap();
         let result = marketplace
             .install_url_package(
-                &format!("http://{address}/plugin.dbxp"),
+                &format!("http://{address}/plugin.chiron-horizonp"),
                 PluginInstallPolicy::LocalDevelopment,
                 |_, _| {},
             )
@@ -1333,7 +1344,11 @@ mod tests {
         let root = tempfile::tempdir().unwrap();
         let marketplace = PluginMarketplace::new(root.path().to_path_buf(), "0.5.68").unwrap();
         let error = marketplace
-            .install_url_package("ftp://example.com/plugin.dbxp", PluginInstallPolicy::LocalSigned, |_, _| {})
+            .install_url_package(
+                "ftp://example.com/plugin.chiron-horizonp",
+                PluginInstallPolicy::LocalSigned,
+                |_, _| {},
+            )
             .await
             .unwrap_err();
         assert!(error.contains("HTTP or HTTPS"), "unexpected error: {error}");

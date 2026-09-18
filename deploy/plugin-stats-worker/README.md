@@ -1,17 +1,17 @@
 # plugin-stats-worker
 
 Cloudflare Worker that counts plugin marketplace traffic. Deployed on the same
-Cloudflare account as the dbxio.com site (`npx wrangler deploy` from this
+Cloudflare account as the chiron-horizon.com site (`npx wrangler deploy` from this
 directory; OAuth login required).
 
 ## Routes
 
-- `dl.dbxio.com/plugins/*` — counts every `GET` of a real `.dbxp` artifact
+- `dl.chiron-horizon.com/plugins/*` — counts every `GET` of a real `.chiron-horizonp` artifact
   (icons and other static assets under the same prefix are excluded: they are
   fetched on every marketplace page/app view, which both burned KV quota and
   inflated the numbers), then passes the request through to the R2 custom
   domain. Artifact bytes, headers, and Range semantics are untouched.
-- `dbxio.com/api/plugins/install` — `POST` fire-and-forget beacon the desktop
+- `chiron-horizon.com/api/plugins/install` — `POST` fire-and-forget beacon the desktop
   app can send after a successful marketplace install
   (`{"id": "<plugin id>", "version": "<version>"}`, 204 on accept). Decorative
   statistics only: no auth, no PII.
@@ -49,7 +49,7 @@ Create the token in the dashboard with **Account → Analytics → Read**. The s
 token authorizes the manual trigger (verification / backfill):
 
 ```sh
-curl -s -X POST https://dbxio.com/api/plugins/archive -H "x-archive-token: <token>"
+curl -s -X POST https://chiron-horizon.com/api/plugins/archive -H "x-archive-token: <token>"
 ```
 
 ## Reading counters
@@ -61,7 +61,7 @@ Account → Analytics → Read:
 ```sh
 curl -s "https://api.cloudflare.com/client/v4/accounts/<account_id>/analytics_engine/sql" \
   -H "Authorization: Bearer <token>" \
-  --data-urlencode "query=SELECT blob1 AS kind, blob2 AS plugin, blob3 AS version, SUM(_sample_interval) AS events FROM DBX_PLUGIN_STATS WHERE timestamp > NOW() - INTERVAL '7' DAY GROUP BY 1,2,3 ORDER BY events DESC"
+  --data-urlencode "query=SELECT blob1 AS kind, blob2 AS plugin, blob3 AS version, SUM(_sample_interval) AS events FROM CHIRON_HORIZON_PLUGIN_STATS WHERE timestamp > NOW() - INTERVAL '7' DAY GROUP BY 1,2,3 ORDER BY events DESC"
 ```
 
 At current volume sampling is 1:1, so `SUM(_sample_interval)` equals the event

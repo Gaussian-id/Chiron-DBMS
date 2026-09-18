@@ -722,7 +722,7 @@ mod tests {
 
     #[test]
     fn source_ref_rejects_path_traversal() {
-        let data_dir = std::env::temp_dir().join(format!("dbx-mongo-import-data-{}", uuid::Uuid::new_v4()));
+        let data_dir = std::env::temp_dir().join(format!("chiron-horizon-mongo-import-data-{}", uuid::Uuid::new_v4()));
         let upload_dir = import_upload_dir(&data_dir);
         std::fs::create_dir_all(&upload_dir).unwrap();
         let source_ref = uuid::Uuid::new_v4().to_string();

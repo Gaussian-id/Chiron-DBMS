@@ -29,7 +29,7 @@ pub fn inspect_sql_file_zip_package(path: &Path) -> Result<SqlFileZipPackage, St
     let manifest_bytes = read_zip_entry(&mut archive, "manifest.json", SQL_FILE_ZIP_MAX_MANIFEST_BYTES)?;
     let manifest: SqlZipManifest =
         serde_json::from_slice(&manifest_bytes).map_err(|error| format!("Invalid SQL ZIP manifest: {error}"))?;
-    if manifest.format != "dbx-sql-export-parts-v1" {
+    if manifest.format != "chiron-horizon-sql-export-parts-v1" {
         return Err("Unsupported SQL ZIP package format".to_string());
     }
     if manifest.parts.is_empty() || manifest.parts.len() > SQL_FILE_ZIP_MAX_PARTS {
@@ -129,7 +129,7 @@ mod tests {
             zip.start_file(*name, options).unwrap();
             zip.write_all(contents.as_bytes()).unwrap();
         }
-        let manifest = serde_json::json!({ "format": "dbx-sql-export-parts-v1", "sourceFileName": "source.sql", "parts": manifest_parts });
+        let manifest = serde_json::json!({ "format": "chiron-horizon-sql-export-parts-v1", "sourceFileName": "source.sql", "parts": manifest_parts });
         zip.start_file("manifest.json", options).unwrap();
         zip.write_all(serde_json::to_string(&manifest).unwrap().as_bytes()).unwrap();
         zip.finish().unwrap();

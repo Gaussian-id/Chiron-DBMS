@@ -598,9 +598,9 @@ export async function installPluginPackageFromUrl(url: string, allowUnsigned = f
   let blob: Blob;
   let fileName: string;
   try {
-    fileName = new URL(url).pathname.split("/").pop() || "plugin.dbxp";
+    fileName = new URL(url).pathname.split("/").pop() || "plugin.chiron-horizonp";
   } catch {
-    fileName = "plugin.dbxp";
+    fileName = "plugin.chiron-horizonp";
   }
   blob = await (await fetch(url)).blob();
   const formData = new FormData();
@@ -2686,7 +2686,7 @@ export function inspectMongodbDatabaseDump(connectionId: string, database: strin
 async function checkMongoUploadSize(files: File[]) {
   const limit = await get<number>("/api/mongo/dump/upload-limit");
   const size = files.reduce((total, file) => total + file.size, 0);
-  if (size > limit) throw new Error(`MongoDB upload: ${(size / 1024 ** 3).toFixed(2)} GiB exceeds ${(limit / 1024 ** 3).toFixed(2)} GiB (DBX_MAX_UPLOAD_MB)`);
+  if (size > limit) throw new Error(`MongoDB upload: ${(size / 1024 ** 3).toFixed(2)} GiB exceeds ${(limit / 1024 ** 3).toFixed(2)} GiB (CHIRON_HORIZON_MAX_UPLOAD_MB)`);
 }
 
 function uploadMongoForm(url: string, form: FormData, options?: MongoSourceReadOptions): Promise<MongoRestoreSourcePreview> {

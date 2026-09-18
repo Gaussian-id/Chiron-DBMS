@@ -221,7 +221,7 @@ const runtimeError = ref("");
 const runtimeBusy = ref<string | null>(null);
 let runtimeTimer: ReturnType<typeof setInterval> | null = null;
 const DRIVER_RUNTIME_POLL_MS = 5000;
-const OFFLINE_DRIVER_DOWNLOAD_URL = "https://dbxio.com/cn/drivers";
+const OFFLINE_DRIVER_DOWNLOAD_URL = "https://chiron-horizon.com/cn/drivers";
 
 let unlisten: (() => void) | null = null;
 const lastAgentProgressPercent: Record<string, number> = {};
@@ -664,7 +664,7 @@ async function exportOfflinePackage(driverKeys: string[]) {
       const { save } = await import("@tauri-apps/plugin-dialog");
       return save({
         title: t("driverStore.offlineExportChooseDestination"),
-        defaultPath: `dbx-agents-offline-${platform}.zip`,
+        defaultPath: `chiron-horizon-agents-offline-${platform}.zip`,
         filters: [{ name: "ZIP", extensions: ["zip"] }],
       });
     },
@@ -2045,7 +2045,7 @@ watch(driverStoreTab, (tab) => {
 .driver-store-focus-highlight {
   background-color: color-mix(in srgb, var(--primary) 8%, transparent);
   box-shadow: inset 0 0 0 1.5px color-mix(in srgb, var(--primary) 45%, transparent);
-  border-radius: var(--dbx-radius-fixed-6);
+  border-radius: var(--chiron-horizon-radius-fixed-6);
 }
 
 .driver-store-view,

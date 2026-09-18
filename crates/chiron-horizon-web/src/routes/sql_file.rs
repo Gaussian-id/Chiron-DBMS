@@ -384,7 +384,7 @@ mod tests {
 
     #[test]
     fn uploaded_sql_paths_are_unique_and_keep_the_extension() {
-        let data_dir = std::env::temp_dir().join(format!("dbx-web-sql-file-test-{}", uuid::Uuid::new_v4()));
+        let data_dir = std::env::temp_dir().join(format!("chiron-horizon-web-sql-file-test-{}", uuid::Uuid::new_v4()));
         let tmp_dir = data_dir.join("tmp");
 
         let first = match safe_uploaded_sql_path(&tmp_dir, "../outside.sql") {
@@ -407,7 +407,7 @@ mod tests {
 
     #[test]
     fn execution_path_must_stay_inside_uploaded_tmp_dir() {
-        let data_dir = std::env::temp_dir().join(format!("dbx-web-sql-file-test-{}", uuid::Uuid::new_v4()));
+        let data_dir = std::env::temp_dir().join(format!("chiron-horizon-web-sql-file-test-{}", uuid::Uuid::new_v4()));
         let tmp_dir = data_dir.join("tmp");
         std::fs::create_dir_all(&tmp_dir).unwrap();
         let outside = data_dir.join("outside.sql");
@@ -421,7 +421,7 @@ mod tests {
 
     #[test]
     fn expired_sql_file_uploads_are_removed() {
-        let tmp_dir = std::env::temp_dir().join(format!("dbx-web-sql-file-test-{}", uuid::Uuid::new_v4()));
+        let tmp_dir = std::env::temp_dir().join(format!("chiron-horizon-web-sql-file-test-{}", uuid::Uuid::new_v4()));
         std::fs::create_dir_all(&tmp_dir).unwrap();
         let upload = tmp_dir.join("upload.sql");
         std::fs::write(&upload, "select 1;").unwrap();

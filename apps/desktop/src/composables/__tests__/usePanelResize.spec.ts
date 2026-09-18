@@ -103,7 +103,7 @@ describe("usePanelResize", () => {
     document.dispatchEvent(pointerEvent("pointerup", 0));
 
     expect(sidebarWidth.value).toBe(240);
-    expect(localStorage.getItem("dbx-sidebar-width")).toBe("240");
+    expect(localStorage.getItem("chiron-horizon-sidebar-width")).toBe("240");
   });
 
   it("removes the drag overlay when the window loses focus", () => {
@@ -122,8 +122,8 @@ describe("usePanelResize", () => {
   });
 
   it("raises persisted panel widths below the toolbar-safe minimum", () => {
-    localStorage.setItem("dbx-sidebar-width", "180");
-    localStorage.setItem("dbx-ai-panel-width", "200");
+    localStorage.setItem("chiron-horizon-sidebar-width", "180");
+    localStorage.setItem("chiron-horizon-ai-panel-width", "200");
 
     const { sidebarWidth, aiPanelWidth } = usePanelResize();
 

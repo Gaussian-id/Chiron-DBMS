@@ -6,7 +6,7 @@ import { LandingNav } from "@/components/landing/LandingNav";
 import { LandingFooter } from "@/components/landing/LandingFooter";
 import type { DocsLang } from "@/lib/i18n";
 import {
-  DBX_STORE_CONTRIBUTING_URL,
+  CHIRON_HORIZON_STORE_CONTRIBUTING_URL,
   fetchPluginCatalog,
   latestPluginVersion,
   pluginDisplayDescription,
@@ -19,9 +19,9 @@ const i18n = {
     title: "Plugin Center",
     viewPlugin: "View plugin",
     refreshError: "Could not refresh the catalog; showing the last snapshot.",
-    submitTitle: "Built a plugin for DBX?",
-    submitDesc: "Package it as a .dbxp, submit a PR to dbx-store, and it will appear here and in the in-app plugin center after review.",
-    submitAction: "Submit to dbx-store",
+    submitTitle: "Built a plugin for Chiron Horizon?",
+    submitDesc: "Package it as a .chiron-horizonp, submit a PR to chiron-horizon-store, and it will appear here and in the in-app plugin center after review.",
+    submitAction: "Submit to chiron-horizon-store",
     submitDocs: "Plugin development docs",
     emptyTitle: "No plugins yet",
     emptyDesc: "The marketplace catalog is empty or unreachable right now. Try again in a moment.",
@@ -30,9 +30,9 @@ const i18n = {
     title: "插件中心",
     viewPlugin: "查看插件",
     refreshError: "目录刷新失败，当前展示构建时的快照。",
-    submitTitle: "为 DBX 开发了插件？",
-    submitDesc: "打包为 .dbxp，向 dbx-store 提交 PR，审核通过后会同时出现在本页面和客户端插件中心。",
-    submitAction: "提交到 dbx-store",
+    submitTitle: "为 Chiron Horizon 开发了插件？",
+    submitDesc: "打包为 .chiron-horizonp，向 chiron-horizon-store 提交 PR，审核通过后会同时出现在本页面和客户端插件中心。",
+    submitAction: "提交到 chiron-horizon-store",
     submitDocs: "插件开发文档",
     emptyTitle: "暂无插件",
     emptyDesc: "商店目录暂时为空或无法访问，请稍后再试。",
@@ -137,7 +137,7 @@ export function PluginsClient({ lang, initialPlugins }: { lang: DocsLang; initia
             </div>
             <div className="flex flex-wrap items-center gap-3">
               <a
-                href={DBX_STORE_CONTRIBUTING_URL}
+                href={CHIRON_HORIZON_STORE_CONTRIBUTING_URL}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="inline-flex h-10 items-center rounded-lg bg-[#f0f1f4] px-4 text-[13px] font-[720] text-[#0a0b0e] transition hover:bg-white"

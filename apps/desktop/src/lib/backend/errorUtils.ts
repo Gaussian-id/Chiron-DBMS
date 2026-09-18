@@ -36,15 +36,15 @@ export interface BackendError {
   errorPosition?: SqlErrorPosition;
 }
 
-export const MANUAL_TRANSACTION_SESSION_EXPIRED_CODE = "DBX-TXN-1001";
+export const MANUAL_TRANSACTION_SESSION_EXPIRED_CODE = "CHIRON-HORIZON-TXN-1001";
 
 const MAX_FALLBACK_CHARS = 64 * 1024;
 const MAX_ERROR_PARSE_DEPTH = 16;
-const AGENT_RPC_ERROR_DATA_MARKER = "\nDBX_AGENT_ERROR_DATA:";
+const AGENT_RPC_ERROR_DATA_MARKER = "\nCHIRON_HORIZON_AGENT_ERROR_DATA:";
 // Rust-side transport suffix carrying a driver cursor position. It is stripped
 // before a structured envelope is built, but metadata/catalog errors can surface
 // as raw strings, so strip it here so it never reaches the UI.
-const SQL_ERROR_POSITION_MARKER_PATTERN = /\nDBX_SQL_ERROR_POSITION:\d+/g;
+const SQL_ERROR_POSITION_MARKER_PATTERN = /\nCHIRON_HORIZON_SQL_ERROR_POSITION:\d+/g;
 
 export function sanitizeBackendErrorMessage(message: string): string {
   const withoutPositionMarker = message.replace(SQL_ERROR_POSITION_MARKER_PATTERN, "");
@@ -68,7 +68,7 @@ function isBackendError(value: unknown): value is BackendError {
   if (
     candidate.version !== 1 ||
     typeof candidate.code !== "string" ||
-    !/^DBX-[A-Z][A-Z0-9]*-\d{4}$/.test(candidate.code) ||
+    !/^CHIRON-HORIZON-[A-Z][A-Z0-9]*-\d{4}$/.test(candidate.code) ||
     typeof candidate.messageKey !== "string" ||
     !candidate.messageKey.startsWith("backendErrors.") ||
     !candidate.messageParams ||
@@ -186,7 +186,7 @@ export const GENERIC_TRANSPORT_FAILURE_MESSAGE = "Backend request failed";
  * Marks a backend message the UI could not classify, so it is carried as raw text inside a
  * structured envelope. Callers may still match that text against the known-message catalog.
  */
-export const LEGACY_BACKEND_ERROR_CODE = "DBX-LEGACY-0001";
+export const LEGACY_BACKEND_ERROR_CODE = "CHIRON-HORIZON-LEGACY-0001";
 
 export class BackendErrorException extends Error {
   readonly backendError: BackendError;

@@ -6709,7 +6709,7 @@ mod tests {
         config.db_type = DatabaseType::Plugin;
         config.driver_profile = Some("plugin".to_string());
         config.external_config = Some(serde_json::json!({ "greeting": "Hello" }));
-        config.plugin_id = Some("dbx.example.hello".to_string());
+        config.plugin_id = Some("chiron.horizon.example.hello".to_string());
         config.plugin_connection_provider = Some("hello.connection".to_string());
         config.plugin_connection_type = Some("hello".to_string());
         config.connection_secrets.insert("access_token".to_string(), "plugin-secret".to_string());

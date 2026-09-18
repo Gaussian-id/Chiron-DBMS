@@ -180,14 +180,14 @@ describe("qualifiedTableName — GBase 8s", () => {
 
 describe("quoteTableIdentifier", () => {
   it("keeps only required quotes when identifier quoting is disabled", () => {
-    expect(quoteTableIdentifierIfNeeded("oracle", "DBX_TEST")).toBe("DBX_TEST");
+    expect(quoteTableIdentifierIfNeeded("oracle", "CHIRON_HORIZON_TEST")).toBe("CHIRON_HORIZON_TEST");
     expect(quoteTableIdentifierIfNeeded("oracle", "Order")).toBe('"Order"');
     expect(quoteTableIdentifierIfNeeded("oracle", "ORDER")).toBe('"ORDER"');
-    expect(quoteTableIdentifierIfNeeded("dameng", "DBX_TEST")).toBe("DBX_TEST");
+    expect(quoteTableIdentifierIfNeeded("dameng", "CHIRON_HORIZON_TEST")).toBe("CHIRON_HORIZON_TEST");
     expect(quoteTableIdentifierIfNeeded("dameng", "order detail")).toBe('"order detail"');
-    expect(quoteTableIdentifierIfNeeded("postgres", "dbx_test")).toBe("dbx_test");
+    expect(quoteTableIdentifierIfNeeded("postgres", "chiron_horizon_test")).toBe("chiron_horizon_test");
     expect(quoteTableIdentifierIfNeeded("postgres", "Order")).toBe('"Order"');
-    expect(quoteTableIdentifierIfNeeded("mysql", "dbx_test")).toBe("dbx_test");
+    expect(quoteTableIdentifierIfNeeded("mysql", "chiron_horizon_test")).toBe("chiron_horizon_test");
     expect(quoteTableIdentifierIfNeeded("mysql", "order")).toBe("`order`");
   });
 

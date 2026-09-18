@@ -603,7 +603,7 @@ mod tests {
             "id": id,
             "name": name,
             "db_type": "plugin",
-            "plugin_id": "io.dbx.ssh",
+            "plugin_id": "chiron.horizon.ssh",
             "plugin_connection_type": "ssh",
             "host": "server.example.com",
             "port": 2222,
@@ -658,16 +658,16 @@ mod tests {
         let ssh_b = plugin_connection_config("b", "Beta", serde_json::json!({}));
         let ssh_a = plugin_connection_config("a", "alpha", serde_json::json!({}));
         let mut ldap = plugin_connection_config("l", "zeta", serde_json::json!({}));
-        ldap.plugin_id = Some("io.dbx.ldap".to_string());
+        ldap.plugin_id = Some("chiron.horizon.ldap".to_string());
         let mysql = mysql_config(false);
 
-        let summaries = plugin_connection_summaries(&[ssh_b, ldap, mysql, ssh_a], "io.dbx.ssh");
+        let summaries = plugin_connection_summaries(&[ssh_b, ldap, mysql, ssh_a], "chiron.horizon.ssh");
         let names: Vec<_> = summaries.iter().map(|s| s.name.as_str()).collect();
         assert_eq!(names, vec!["alpha", "Beta"]);
 
         assert!(plugin_connection_summaries(
             &[plugin_connection_config("a", "alpha", serde_json::json!({}))],
-            "io.dbx.files"
+            "chiron.horizon.files"
         )
         .is_empty());
     }

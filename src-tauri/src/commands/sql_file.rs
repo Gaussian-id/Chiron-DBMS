@@ -47,7 +47,7 @@ pub async fn preview_sql_file(file_path: String) -> Result<SqlFilePreview, Strin
         .is_some_and(|extension| extension.eq_ignore_ascii_case("zip"))
     {
         sweep_stale_sql_zip_packages();
-        let extraction_dir = std::env::temp_dir().join(format!("dbx-sql-package-{}", uuid::Uuid::new_v4()));
+        let extraction_dir = std::env::temp_dir().join(format!("chiron-horizon-sql-package-{}", uuid::Uuid::new_v4()));
         let (package, extracted_paths) = tokio::task::spawn_blocking({
             let path = path.clone();
             let extraction_dir = extraction_dir.clone();
@@ -137,7 +137,11 @@ fn cleanup_sql_zip_package_paths(file_paths: &[String]) {
         let Some(parent) = path.parent() else {
             continue;
         };
-        if parent.file_name().and_then(|name| name.to_str()).is_some_and(|name| name.starts_with("dbx-sql-package-")) {
+        if parent
+            .file_name()
+            .and_then(|name| name.to_str())
+            .is_some_and(|name| name.starts_with("chiron-horizon-sql-package-"))
+        {
             directories.insert(parent.to_path_buf());
         }
     }
@@ -147,14 +151,14 @@ fn cleanup_sql_zip_package_paths(file_paths: &[String]) {
 }
 
 /// A preview that never reaches execution leaves its extraction directory behind, so each new
-/// preview also sweeps `dbx-sql-package-*` directories that have outlived a day.
+/// preview also sweeps `chiron-horizon-sql-package-*` directories that have outlived a day.
 fn sweep_stale_sql_zip_packages() {
     const MAX_AGE: std::time::Duration = std::time::Duration::from_secs(24 * 60 * 60);
     let Ok(entries) = std::fs::read_dir(std::env::temp_dir()) else {
         return;
     };
     for entry in entries.flatten() {
-        if !entry.file_name().to_str().is_some_and(|name| name.starts_with("dbx-sql-package-")) {
+        if !entry.file_name().to_str().is_some_and(|name| name.starts_with("chiron-horizon-sql-package-")) {
             continue;
         }
         let expired = entry

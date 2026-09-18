@@ -1081,7 +1081,7 @@ mod tests {
                 "username": "",
                 "password": "",
                 "database": null,
-                "plugin_id": "io.dbx.ldap",
+                "plugin_id": "chiron.horizon.ldap",
                 "plugin_connection_provider": "ldap.connection",
                 "plugin_connection_type": "ldap",
                 "external_config": external

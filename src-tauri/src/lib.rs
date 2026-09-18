@@ -48,7 +48,7 @@ const APP_MENU_COPY_SUPPORT_INFO_ID: &str = "app-menu-copy-support-info";
 #[cfg(target_os = "macos")]
 const APP_MENU_CLOSE_TAB_ID: &str = "app-menu-close-tab";
 #[cfg(target_os = "macos")]
-const APP_CLOSE_ACTIVE_TAB_EVENT: &str = "dbx-close-active-tab";
+const APP_CLOSE_ACTIVE_TAB_EVENT: &str = "chiron-horizon-close-active-tab";
 
 pub struct CloseBehaviorState {
     confirmed_exit: AtomicBool,
@@ -712,7 +712,7 @@ fn open_plugin_install_deep_links(app: &tauri::AppHandle, links: Vec<String>) {
     if let Some(state) = app.try_state::<commands::deep_link::DeepLinkOpenState>() {
         state.push_plugin_install_links(links.clone());
     }
-    let _ = app.emit("dbx-open-plugin-install-links", links);
+    let _ = app.emit("chiron-horizon-open-plugin-install-links", links);
     show_main_window(app);
 }
 

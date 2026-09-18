@@ -1,14 +1,14 @@
 // Counts plugin marketplace traffic on Cloudflare without touching artifact bytes.
 //
 // Routes (see wrangler.json):
-// - dl.dbxio.com/plugins/*: counts each GET of a real `.dbxp` artifact (icons and
+// - dl.chiron-horizon.com/plugins/*: counts each GET of a real `.chiron-horizonp` artifact (icons and
 //   other static assets are excluded — they are fetched on every marketplace
 //   page/app view and would both burn quota and pollute the numbers), then
 //   passes the request through to the R2 custom domain. Same-zone subrequests do
 //   not re-enter Workers, so the pass-through cannot loop.
-// - dbxio.com/api/plugins/install: fire-and-forget beacon the desktop app can
+// - chiron-horizon.com/api/plugins/install: fire-and-forget beacon the desktop app can
 //   send after a successful marketplace install. Decorative statistics only.
-// - dbxio.com/api/plugins/archive: token-gated manual trigger for the daily
+// - chiron-horizon.com/api/plugins/archive: token-gated manual trigger for the daily
 //   aggregation (same handler the cron runs), for verification and backfills.
 //
 // Storage:
@@ -35,7 +35,7 @@ type Env = {
 };
 
 const DOWNLOAD_PATTERN = /^\/plugins\/([A-Za-z0-9._-]{1,64})\/([0-9A-Za-z.+-]{1,32})\//;
-const ARTIFACT_SUFFIX_PATTERN = /\.dbxp$/;
+const ARTIFACT_SUFFIX_PATTERN = /\.chiron-horizonp$/;
 const PLUGIN_ID_PATTERN = /^[A-Za-z0-9._-]{1,64}$/;
 const VERSION_PATTERN = /^[0-9A-Za-z.+-]{1,32}$/;
 const INSTALL_BODY_LIMIT_BYTES = 512;
@@ -118,7 +118,7 @@ async function fetchDailyUniques(env: Env, from: Date, to: Date): Promise<DailyU
   // unique counts and immune to multi-version release inflation.
   const query =
     "SELECT blob1 AS kind, blob2 AS plugin, toStartOfHour(timestamp) AS hour, count(DISTINCT blob4) AS uniq " +
-    `FROM DBX_PLUGIN_STATS WHERE timestamp > toDateTime(${sqlString(sqlTimestamp(from))}) ` +
+    `FROM CHIRON_HORIZON_PLUGIN_STATS WHERE timestamp > toDateTime(${sqlString(sqlTimestamp(from))}) ` +
     `AND timestamp <= toDateTime(${sqlString(sqlTimestamp(to))}) AND blob4 != '' ` +
     "GROUP BY kind, plugin, hour";
   const response = await fetch(`${SQL_ENDPOINT}/${env.CF_ACCOUNT_ID}/analytics_engine/sql?query=${encodeURIComponent(query)}`, {
@@ -153,7 +153,7 @@ async function fetchWindowCounts(env: Env, from: Date, to: Date): Promise<Window
   // keep in sync with the analytics_engine_datasets entry.
   const query =
     "SELECT blob1 AS kind, blob2 AS plugin, blob3 AS version, SUM(_sample_interval) AS events " +
-    `FROM DBX_PLUGIN_STATS WHERE timestamp > toDateTime(${sqlString(sqlTimestamp(from))}) ` +
+    `FROM CHIRON_HORIZON_PLUGIN_STATS WHERE timestamp > toDateTime(${sqlString(sqlTimestamp(from))}) ` +
     `AND timestamp <= toDateTime(${sqlString(sqlTimestamp(to))}) GROUP BY blob1, blob2, blob3`;
   // The SQL API takes the statement as a URL parameter, not a form body (a
   // form-encoded body is parsed as the raw SQL and rejected with a 422).
@@ -253,7 +253,7 @@ async function handleInstallBeacon(request: Request, env: Env): Promise<Response
 export default {
   async fetch(request: Request, env: Env): Promise<Response> {
     const url = new URL(request.url);
-    if (url.hostname === "dl.dbxio.com") {
+    if (url.hostname === "dl.chiron-horizon.com") {
       if (request.method === "GET") {
         const download = url.pathname.match(DOWNLOAD_PATTERN);
         if (download && ARTIFACT_SUFFIX_PATTERN.test(url.pathname)) {

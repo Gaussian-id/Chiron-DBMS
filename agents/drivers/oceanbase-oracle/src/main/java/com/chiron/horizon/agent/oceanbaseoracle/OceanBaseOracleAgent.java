@@ -1,22 +1,22 @@
-package com.dbx.agent.oceanbaseoracle;
+package com.chiron.horizon.agent.oceanbaseoracle;
 
-import com.dbx.agent.ColumnInfo;
-import com.dbx.agent.ConfiguredJdbcAgent;
-import com.dbx.agent.ConnectParams;
-import com.dbx.agent.DatabaseInfo;
-import com.dbx.agent.DdlBuilder;
-import com.dbx.agent.ForeignKeyInfo;
-import com.dbx.agent.IndexInfo;
-import com.dbx.agent.JdbcAgentProfile;
-import com.dbx.agent.JdbcExecutor;
-import com.dbx.agent.JdbcIdentifiers;
-import com.dbx.agent.MultiSessionJsonRpcServer;
-import com.dbx.agent.MetadataListConstraints;
-import com.dbx.agent.ObjectInfo;
-import com.dbx.agent.ObjectSource;
-import com.dbx.agent.OracleObjectPrivilege;
-import com.dbx.agent.TableInfo;
-import com.dbx.agent.TriggerInfo;
+import com.chiron.horizon.agent.ColumnInfo;
+import com.chiron.horizon.agent.ConfiguredJdbcAgent;
+import com.chiron.horizon.agent.ConnectParams;
+import com.chiron.horizon.agent.DatabaseInfo;
+import com.chiron.horizon.agent.DdlBuilder;
+import com.chiron.horizon.agent.ForeignKeyInfo;
+import com.chiron.horizon.agent.IndexInfo;
+import com.chiron.horizon.agent.JdbcAgentProfile;
+import com.chiron.horizon.agent.JdbcExecutor;
+import com.chiron.horizon.agent.JdbcIdentifiers;
+import com.chiron.horizon.agent.MultiSessionJsonRpcServer;
+import com.chiron.horizon.agent.MetadataListConstraints;
+import com.chiron.horizon.agent.ObjectInfo;
+import com.chiron.horizon.agent.ObjectSource;
+import com.chiron.horizon.agent.OracleObjectPrivilege;
+import com.chiron.horizon.agent.TableInfo;
+import com.chiron.horizon.agent.TriggerInfo;
 
 import java.sql.Connection;
 import java.sql.ResultSet;
@@ -302,15 +302,15 @@ public final class OceanBaseOracleAgent extends ConfiguredJdbcAgent {
         if (constraints.hasLimit()) {
             // OceanBase Oracle mode is safest with the classic ordered ROWNUM wrapper for paged metadata.
             int offset = constraints.getOffset() == null ? 0 : constraints.getOffset();
-            sql = "SELECT " + selectList + "\nFROM (\n  SELECT DBX_Q.*, ROWNUM AS DBX_RN\n  FROM (\n"
+            sql = "SELECT " + selectList + "\nFROM (\n  SELECT CHIRON_HORIZON_Q.*, ROWNUM AS CHIRON_HORIZON_RN\n  FROM (\n"
                 + sql
-                + "\n  ) DBX_Q\n  WHERE ROWNUM <= ?\n)\nWHERE DBX_RN > ?";
+                + "\n  ) CHIRON_HORIZON_Q\n  WHERE ROWNUM <= ?\n)\nWHERE CHIRON_HORIZON_RN > ?";
             args.add(offset + constraints.getLimit());
             args.add(offset);
         } else if (constraints.hasOffset()) {
-            sql = "SELECT " + selectList + "\nFROM (\n  SELECT DBX_Q.*, ROWNUM AS DBX_RN\n  FROM (\n"
+            sql = "SELECT " + selectList + "\nFROM (\n  SELECT CHIRON_HORIZON_Q.*, ROWNUM AS CHIRON_HORIZON_RN\n  FROM (\n"
                 + sql
-                + "\n  ) DBX_Q\n)\nWHERE DBX_RN > ?";
+                + "\n  ) CHIRON_HORIZON_Q\n)\nWHERE CHIRON_HORIZON_RN > ?";
             args.add(constraints.getOffset());
         }
         return new MetadataSql(sql, args);

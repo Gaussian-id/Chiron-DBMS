@@ -29,17 +29,17 @@ test("static assets receive browser cache headers without caching HTML", () => {
 });
 
 test("plugin detail fallback maps unknown ids onto the shell route", () => {
-  const shell = pluginDetailShellRequest(new URL("https://dbxio.com/cn/plugins/io.github.t8y2.s3"), new Request("https://dbxio.com/cn/plugins/io.github.t8y2.s3"));
-  assert.equal(shell?.url, "https://dbxio.com/cn/plugins/detail?id=io.github.t8y2.s3");
+  const shell = pluginDetailShellRequest(new URL("https://chiron-horizon.com/cn/plugins/io.github.t8y2.s3"), new Request("https://chiron-horizon.com/cn/plugins/io.github.t8y2.s3"));
+  assert.equal(shell?.url, "https://chiron-horizon.com/cn/plugins/detail?id=io.github.t8y2.s3");
 
-  const encoded = pluginDetailShellRequest(new URL("https://dbxio.com/en/plugins/a%20b"), new Request("https://dbxio.com/en/plugins/a%20b"));
-  assert.equal(encoded?.url, "https://dbxio.com/en/plugins/detail?id=a%2520b");
+  const encoded = pluginDetailShellRequest(new URL("https://chiron-horizon.com/en/plugins/a%20b"), new Request("https://chiron-horizon.com/en/plugins/a%20b"));
+  assert.equal(encoded?.url, "https://chiron-horizon.com/en/plugins/detail?id=a%2520b");
 
   // The shell route itself and non-GET requests must pass through untouched.
-  assert.equal(pluginDetailShellRequest(new URL("https://dbxio.com/en/plugins/detail"), new Request("https://dbxio.com/en/plugins/detail")), null);
+  assert.equal(pluginDetailShellRequest(new URL("https://chiron-horizon.com/en/plugins/detail"), new Request("https://chiron-horizon.com/en/plugins/detail")), null);
   assert.equal(
-    pluginDetailShellRequest(new URL("https://dbxio.com/en/plugins/io.dbx.ssh"), new Request("https://dbxio.com/en/plugins/io.dbx.ssh", { method: "POST" })),
+    pluginDetailShellRequest(new URL("https://chiron-horizon.com/en/plugins/chiron.horizon.ssh"), new Request("https://chiron-horizon.com/en/plugins/chiron.horizon.ssh", { method: "POST" })),
     null,
   );
-  assert.equal(pluginDetailShellRequest(new URL("https://dbxio.com/en/plugins"), new Request("https://dbxio.com/en/plugins")), null);
+  assert.equal(pluginDetailShellRequest(new URL("https://chiron-horizon.com/en/plugins"), new Request("https://chiron-horizon.com/en/plugins")), null);
 });

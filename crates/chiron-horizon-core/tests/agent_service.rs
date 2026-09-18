@@ -23,9 +23,9 @@ fn write_standalone_jre(path: &std::path::Path, version: &str, java: Option<&[u8
         header.set_cksum();
         archive.append_data(&mut header, name, bytes).unwrap();
     };
-    append("dbx-jre/release", format!("JAVA_VERSION=\"{version}\"\n").as_bytes());
+    append("chiron-horizon-jre/release", format!("JAVA_VERSION=\"{version}\"\n").as_bytes());
     if let Some(java) = java {
-        append(if cfg!(windows) { "dbx-jre/bin/java.exe" } else { "dbx-jre/bin/java" }, java);
+        append(if cfg!(windows) { "chiron-horizon-jre/bin/java.exe" } else { "chiron-horizon-jre/bin/java" }, java);
     }
     archive.into_inner().unwrap().finish().unwrap();
 }
@@ -87,21 +87,21 @@ fn standalone_jre_rejects_links_outside_archive() {
     header.set_size(release.len() as u64);
     header.set_mode(0o644);
     header.set_cksum();
-    archive.append_data(&mut header, "dbx-jre/release", release.as_slice()).unwrap();
+    archive.append_data(&mut header, "chiron-horizon-jre/release", release.as_slice()).unwrap();
     let mut header = tar::Header::new_gnu();
     header.set_entry_type(tar::EntryType::Symlink);
     header.set_size(0);
     header.set_mode(0o777);
-    archive.append_link(&mut header, "dbx-jre/lib/escape", "../../outside").unwrap();
+    archive.append_link(&mut header, "chiron-horizon-jre/lib/escape", "../../outside").unwrap();
     archive.into_inner().unwrap().finish().unwrap();
     assert!(inspect_offline_package(&package).unwrap_err().contains("non-regular entry"));
     assert!(!dir.path().join("outside").exists());
 }
 
 #[tokio::test]
-#[ignore = "requires DBX_TEST_JRE_PACKAGE containing an official package for the current platform"]
+#[ignore = "requires CHIRON_HORIZON_TEST_JRE_PACKAGE containing an official package for the current platform"]
 async fn standalone_jre_official_package_runs_java_after_import() {
-    let package = std::path::PathBuf::from(std::env::var("DBX_TEST_JRE_PACKAGE").unwrap());
+    let package = std::path::PathBuf::from(std::env::var("CHIRON_HORIZON_TEST_JRE_PACKAGE").unwrap());
     let dir = tempfile::tempdir().unwrap();
     let manager = AgentManager::new_with_base_dir(dir.path().join("agents"));
     assert!(inspect_offline_package(&package).unwrap().includes_jre);

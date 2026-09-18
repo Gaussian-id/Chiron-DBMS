@@ -1585,7 +1585,7 @@ mod tests {
         let store = MemorySecretStore::default();
         let mut config = connection("plugin-connection", "", "");
         config.db_type = DatabaseType::Plugin;
-        config.plugin_id = Some("dbx.example.hello".to_string());
+        config.plugin_id = Some("chiron.horizon.example.hello".to_string());
         config.plugin_connection_provider = Some("hello.connection".to_string());
         config.plugin_connection_type = Some("hello".to_string());
         config.external_config = Some(serde_json::json!({ "greeting": "Hello" }));

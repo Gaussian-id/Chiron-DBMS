@@ -38,11 +38,11 @@ describe("MCP config templates", () => {
   });
 
   it("builds the standard mcpServers JSON used by WorkBuddy", () => {
-    const launch = { command: "dbx-mcp-server", env: { DBX_DATA_DIR: "D:\\DBX Data" } };
+    const launch = { command: "chiron-horizon-mcp-server", env: { CHIRON_HORIZON_DATA_DIR: "D:\\Chiron Horizon Data" } };
 
     expect(JSON.parse(buildMcpWorkBuddyConfig(launch))).toEqual({
       mcpServers: {
-        dbx: launch,
+        chiron_horizon: launch,
       },
     });
   });

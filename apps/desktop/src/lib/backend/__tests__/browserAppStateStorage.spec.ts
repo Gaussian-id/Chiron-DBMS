@@ -94,7 +94,7 @@ describe("saveBrowserAppState", () => {
     expect("untouched" in storedTabs[0]).toBe(false);
     // A successful IndexedDB write clears any stale fallback copy instead of
     // leaving an older localStorage value that a future load could resurrect.
-    expect(globalThis.localStorage.removeItem).toHaveBeenCalledWith("dbx-app-state:open_tabs");
+    expect(globalThis.localStorage.removeItem).toHaveBeenCalledWith("chiron-horizon-app-state:open_tabs");
     expect(globalThis.localStorage.setItem).not.toHaveBeenCalled();
   });
 

@@ -2,7 +2,7 @@ use chiron_horizon_core::{
     models::connection::ConnectionConfig,
     storage::{McpGlobalPolicy, Storage},
 };
-use chiron_horizon_mcp::{DbxMcpServer, LocalBackend, McpScope};
+use chiron_horizon_mcp::{ChironHorizonMcpServer, LocalBackend, McpScope};
 use rmcp::{model::CallToolRequestParams, ServiceExt};
 use serde_json::json;
 use std::sync::Arc;
@@ -24,14 +24,14 @@ async fn ddl_schema_cache_mcp_query_and_automatic_batch_dispatch() {
         .await
         .unwrap();
     let backend = Arc::new(LocalBackend::open(&dir.path().join("storage.db")).await.unwrap());
-    let server = DbxMcpServer::with_runtime_options(backend, McpScope::default(), false);
+    let server = ChironHorizonMcpServer::with_runtime_options(backend, McpScope::default(), false);
     let (server_transport, client_transport) = tokio::io::duplex(16 * 1024);
     let server_task = tokio::spawn(async move { server.serve(server_transport).await });
     let client = ().serve(client_transport).await.unwrap();
     for (tool, sql) in [
-        ("dbx_execute_query", "CREATE TABLE users (id INTEGER)"),
-        ("dbx_execute_query", "ALTER TABLE users ADD COLUMN from_query INTEGER; SELECT 1"),
-        ("dbx_execute_batch", "ALTER TABLE users ADD COLUMN from_batch INTEGER; SELECT 1"),
+        ("chiron_horizon_execute_query", "CREATE TABLE users (id INTEGER)"),
+        ("chiron_horizon_execute_query", "ALTER TABLE users ADD COLUMN from_query INTEGER; SELECT 1"),
+        ("chiron_horizon_execute_batch", "ALTER TABLE users ADD COLUMN from_batch INTEGER; SELECT 1"),
     ] {
         let key = "object-meta:v1:cache-mcp:main:main:users::backend-columns:";
         storage.save_schema_cache(key, &json!([])).await.unwrap();

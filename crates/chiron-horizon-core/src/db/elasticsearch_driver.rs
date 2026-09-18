@@ -5638,29 +5638,31 @@ mod tests {
 
     // Integration test against a real TLS-enabled Elasticsearch. Gated by env vars
     // so it stays a no-op in CI:
-    //   DBX_ELASTICSEARCH_TLS_TEST_URL            e.g. https://localhost:9200
-    //   DBX_ELASTICSEARCH_TLS_TEST_CA_CERT_PATH   path to the server's CA cert (PEM)
+    //   CHIRON_HORIZON_ELASTICSEARCH_TLS_TEST_URL            e.g. https://localhost:9200
+    //   CHIRON_HORIZON_ELASTICSEARCH_TLS_TEST_CA_CERT_PATH   path to the server's CA cert (PEM)
     // Mirrors the ZooKeeper TLS integration test: tls_enabled=true loads the custom
     // CA (and any client cert) through apply_tls_certificates, then connects over HTTPS.
     #[tokio::test]
     async fn tls_integration_connects_with_custom_ca() {
-        let url = match std::env::var("DBX_ELASTICSEARCH_TLS_TEST_URL") {
+        let url = match std::env::var("CHIRON_HORIZON_ELASTICSEARCH_TLS_TEST_URL") {
             Ok(u) => u,
             Err(_) => {
-                eprintln!("skipping ES TLS integration test: DBX_ELASTICSEARCH_TLS_TEST_URL not set");
+                eprintln!("skipping ES TLS integration test: CHIRON_HORIZON_ELASTICSEARCH_TLS_TEST_URL not set");
                 return;
             }
         };
-        let ca_cert_path = match std::env::var("DBX_ELASTICSEARCH_TLS_TEST_CA_CERT_PATH") {
+        let ca_cert_path = match std::env::var("CHIRON_HORIZON_ELASTICSEARCH_TLS_TEST_CA_CERT_PATH") {
             Ok(c) => c,
             Err(_) => {
-                eprintln!("skipping ES TLS integration test: DBX_ELASTICSEARCH_TLS_TEST_CA_CERT_PATH not set");
+                eprintln!(
+                    "skipping ES TLS integration test: CHIRON_HORIZON_ELASTICSEARCH_TLS_TEST_CA_CERT_PATH not set"
+                );
                 return;
             }
         };
         // Optional basic-auth credentials (required when the server has security enabled).
-        let username = std::env::var("DBX_ELASTICSEARCH_TLS_TEST_USERNAME").ok();
-        let password = std::env::var("DBX_ELASTICSEARCH_TLS_TEST_PASSWORD").ok();
+        let username = std::env::var("CHIRON_HORIZON_ELASTICSEARCH_TLS_TEST_USERNAME").ok();
+        let password = std::env::var("CHIRON_HORIZON_ELASTICSEARCH_TLS_TEST_PASSWORD").ok();
         let timeout = std::time::Duration::from_secs(15);
         let mut client = EsClient::from_config(
             &url,

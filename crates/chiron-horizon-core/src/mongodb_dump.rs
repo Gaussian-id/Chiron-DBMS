@@ -383,8 +383,10 @@ where
         }
         let parent = target.parent().filter(|p| !p.as_os_str().is_empty()).unwrap_or(Path::new("."));
         std::fs::create_dir_all(parent).map_err(|e| e.to_string())?;
-        let working =
-            tempfile::Builder::new().prefix(".dbx-mongo-dump-").tempdir_in(parent).map_err(|e| e.to_string())?;
+        let working = tempfile::Builder::new()
+            .prefix(".chiron-horizon-mongo-dump-")
+            .tempdir_in(parent)
+            .map_err(|e| e.to_string())?;
         for (index, entry) in entries.iter_mut().enumerate() {
             if is_cancelled(&request.task_id).await {
                 return Err("MongoDB dump/restore cancelled".into());
@@ -456,7 +458,7 @@ where
                 }
                 MongoDumpFormat::Directory => {
                     let output = tempfile::Builder::new()
-                        .prefix(".dbx-dump-output-")
+                        .prefix(".chiron-horizon-dump-output-")
                         .tempdir_in(parent)
                         .map_err(|e| e.to_string())?;
                     directory::publish_files(output.path(), &database, &entries, gzip, || cancelled(&flag))?;

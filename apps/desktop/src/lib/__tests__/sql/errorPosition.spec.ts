@@ -123,7 +123,7 @@ describe("sqlErrorEditorOffset", () => {
 
     it("projects a pagination wrapper position back onto the inner statement", () => {
       const source = "SELECT * FROM t";
-      const executed = "SELECT * FROM (SELECT * FROM t) AS dbx_page LIMIT 100 OFFSET 0;";
+      const executed = "SELECT * FROM (SELECT * FROM t) AS chiron_horizon_page LIMIT 100 OFFSET 0;";
       const tableOffset = executed.indexOf("FROM t") + "FROM ".length;
       const result = errorResult({
         editorStatement: source,
@@ -136,7 +136,7 @@ describe("sqlErrorEditorOffset", () => {
 
     it("projects an injected hidden-key column position back onto the source", () => {
       const source = "SELECT * FROM users";
-      const executed = 'SELECT *, "id" AS "__dbx_hidden_pk" FROM users LIMIT 100 OFFSET 0;';
+      const executed = 'SELECT *, "id" AS "__chiron_horizon_hidden_pk" FROM users LIMIT 100 OFFSET 0;';
       const tableOffset = executed.indexOf("FROM users") + "FROM ".length;
       const result = errorResult({
         editorStatement: source,
@@ -149,7 +149,7 @@ describe("sqlErrorEditorOffset", () => {
 
     it("keeps a multi-line position aligned when the wrapper is on the first line only", () => {
       const source = "SELECT *\nFROM users\nWHERE id = 1";
-      const executed = `SELECT * FROM (${source}) AS dbx_page LIMIT 100 OFFSET 0;`;
+      const executed = `SELECT * FROM (${source}) AS chiron_horizon_page LIMIT 100 OFFSET 0;`;
       const executedMissing = executed.indexOf("users");
       const result = errorResult({
         editorStatement: source,

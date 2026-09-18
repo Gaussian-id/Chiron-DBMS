@@ -290,7 +290,7 @@ const emit = defineEmits<{
 }>();
 
 const store = useConnectionStore();
-const UNGROUPED_CONNECTION_GROUP = "__dbx_ungrouped_connection_group__";
+const UNGROUPED_CONNECTION_GROUP = "__chiron_horizon_ungrouped_connection_group__";
 const selectedConnectionGroupId = ref<string | null>(null);
 const connectionGroupSelectValue = computed({
   get: () => selectedConnectionGroupId.value ?? UNGROUPED_CONNECTION_GROUP,
@@ -1472,7 +1472,7 @@ function buildMqttExternalConfig(): MqttConnectionConfig {
   return {
     host: mqttHost.value.trim(),
     port: mqttPort.value,
-    clientId: mqttClientId.value.trim() || `dbx-${Math.random().toString(36).slice(2, 10)}`,
+    clientId: mqttClientId.value.trim() || `chiron-horizon-${Math.random().toString(36).slice(2, 10)}`,
     protocolVersion: mqttProtocolVersion.value,
     transport: mqttTransportMode.value,
     tls: mqttTls.value,
@@ -2884,7 +2884,7 @@ function transportLayerDisplayName(layer: TransportLayerConfig, index: number): 
 
 const transportPathSegments = computed(() => {
   const layers = transportLayers.value.filter((layer) => layer.enabled !== false);
-  return ["DBX", ...layers.map(transportLayerDisplayName), form.value.host || "Database"];
+  return ["Chiron Horizon", ...layers.map(transportLayerDisplayName), form.value.host || "Database"];
 });
 
 function defaultDatabaseForProfile() {
@@ -3331,22 +3331,22 @@ const canUseTransportLayers = computed(() => {
 const sqliteSshOnlyTransport = computed(() => form.value.db_type === "sqlite");
 const sqliteUsesSsh = computed(() => form.value.db_type === "sqlite" && connectionUsesSsh(form.value));
 const sqliteWorkerPlacement = computed({
-  get: () => getUrlParam(form.value.url_params, "dbx_sqlite_worker") || "session",
+  get: () => getUrlParam(form.value.url_params, "chiron_horizon_sqlite_worker") || "session",
   set: (value: string) => {
     const next = value === "session" ? "" : value;
-    form.value.url_params = setUrlParam(form.value.url_params, "dbx_sqlite_worker", next);
-    if (value !== "preplaced" && !getUrlParam(form.value.url_params, "dbx_sqlite_worker_path")) {
+    form.value.url_params = setUrlParam(form.value.url_params, "chiron_horizon_sqlite_worker", next);
+    if (value !== "preplaced" && !getUrlParam(form.value.url_params, "chiron_horizon_sqlite_worker_path")) {
       return;
     }
     if (value === "session") {
-      form.value.url_params = setUrlParam(form.value.url_params, "dbx_sqlite_worker_path", "");
+      form.value.url_params = setUrlParam(form.value.url_params, "chiron_horizon_sqlite_worker_path", "");
     }
   },
 });
 const sqliteWorkerPath = computed({
-  get: () => getUrlParam(form.value.url_params, "dbx_sqlite_worker_path"),
+  get: () => getUrlParam(form.value.url_params, "chiron_horizon_sqlite_worker_path"),
   set: (value: string) => {
-    form.value.url_params = setUrlParam(form.value.url_params, "dbx_sqlite_worker_path", value);
+    form.value.url_params = setUrlParam(form.value.url_params, "chiron_horizon_sqlite_worker_path", value);
   },
 });
 const sqliteWorkerPlacementOptions = [
@@ -4169,7 +4169,7 @@ function connectionConfigForSubmit(id: string, generatedName = "", validatePlugi
     config.database = alias;
     config.connection_string = buildOracleTnsConnectionString(alias, tnsAdmin);
   } else if (config.db_type === "oracle" && parseOracleTnsConnectionString(config.connection_string)) {
-    // Only clear DBX-generated TNS URLs when switching modes; preserve custom
+    // Only clear CHIRON-HORIZON-generated TNS URLs when switching modes; preserve custom
     // service, SID, and descriptor JDBC strings exactly as before.
     config.connection_string = undefined;
   }
@@ -6323,7 +6323,7 @@ function openExternalUrl(url: string) {
                     type="button"
                     :title="opt.label"
                     class="connection-db-picker-option group flex min-h-24 flex-col items-center justify-center gap-2 rounded-[4px] border bg-background/70 p-3 text-center transition hover:border-primary/40 hover:bg-muted/40 hover:shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                    :class="isPickerOptionSelected(opt.value) ? 'dbx-tile-selected shadow-sm' : 'border-border'"
+                    :class="isPickerOptionSelected(opt.value) ? 'chiron-horizon-tile-selected shadow-sm' : 'border-border'"
                     :aria-pressed="isPickerOptionSelected(opt.value)"
                     @click="onDbTypeChange(opt.value)"
                     @dblclick="goToConnectionStep(opt.value)"
@@ -6344,7 +6344,7 @@ function openExternalUrl(url: string) {
                     :key="opt.value"
                     type="button"
                     class="connection-db-picker-option flex items-center gap-3 rounded-[4px] border bg-background px-3 py-2 text-left transition hover:border-primary/40 hover:bg-muted/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                    :class="isPickerOptionSelected(opt.value) ? 'dbx-tile-selected' : 'border-border'"
+                    :class="isPickerOptionSelected(opt.value) ? 'chiron-horizon-tile-selected' : 'border-border'"
                     :aria-pressed="isPickerOptionSelected(opt.value)"
                     @click="onDbTypeChange(opt.value)"
                     @dblclick="goToConnectionStep(opt.value)"
@@ -6702,7 +6702,7 @@ function openExternalUrl(url: string) {
                             <FolderOpen class="h-3.5 w-3.5" />
                             {{ t("toolbar.driverManager") }}
                           </Button>
-                          <Button type="button" variant="outline" size="sm" @click="openExternalUrl(activeJdbcProductProfile?.docsUrl || 'https://dbxio.com')">
+                          <Button type="button" variant="outline" size="sm" @click="openExternalUrl(activeJdbcProductProfile?.docsUrl || 'https://chiron-horizon.com')">
                             <ExternalLink class="h-3.5 w-3.5" />
                             {{ activeJdbcProductProfile ? t(activeJdbcProductProfile.docsLabelKey) : t("connection.jdbcDocs") }}
                           </Button>
@@ -8242,7 +8242,7 @@ function openExternalUrl(url: string) {
                               <FolderOpen class="h-3.5 w-3.5" />
                               {{ t("toolbar.driverManager") }}
                             </Button>
-                            <Button v-if="form.db_type !== 'dameng'" type="button" variant="outline" size="sm" @click="openExternalUrl('https://dbxio.com')">
+                            <Button v-if="form.db_type !== 'dameng'" type="button" variant="outline" size="sm" @click="openExternalUrl('https://chiron-horizon.com')">
                               <ExternalLink class="h-3.5 w-3.5" />
                               {{ t("connection.jdbcDocs") }}
                             </Button>
@@ -9306,7 +9306,7 @@ function openExternalUrl(url: string) {
                   <template v-else-if="selectedHttpTunnelLayer && !selectedLayerProfileId">
                     <div class="grid grid-cols-4 items-center gap-4">
                       <Label :class="connectionLabelSmallClass">{{ t("connection.httpTunnelUrl") }}</Label>
-                      <Input v-model="selectedHttpTunnelLayer.url" class="col-span-3" placeholder="https://dbx.example.com/dbx_tunnel.php" :disabled="selectedHttpTunnelLayer.enabled === false" />
+                      <Input v-model="selectedHttpTunnelLayer.url" class="col-span-3" placeholder="https://chiron.horizon.example.com/chiron_horizon_tunnel.php" :disabled="selectedHttpTunnelLayer.enabled === false" />
                     </div>
                     <div class="grid grid-cols-4 items-center gap-4">
                       <Label :class="connectionLabelSmallClass">{{ t("connection.httpTunnelToken") }}</Label>
@@ -9714,7 +9714,7 @@ function openExternalUrl(url: string) {
 .connection-dialog-content {
   display: flex;
   flex-direction: column;
-  max-height: calc(var(--dbx-viewport-height) - 2rem);
+  max-height: calc(var(--chiron-horizon-viewport-height) - 2rem);
 }
 
 .connection-dialog-content--config {
@@ -9722,7 +9722,7 @@ function openExternalUrl(url: string) {
 }
 
 .connection-dialog-content--scrollable {
-  height: min(720px, calc(var(--dbx-viewport-height) - 2rem));
+  height: min(720px, calc(var(--chiron-horizon-viewport-height) - 2rem));
 }
 
 .connection-dialog-content--config .connection-form-body {
@@ -9740,7 +9740,7 @@ function openExternalUrl(url: string) {
 @media (max-height: 720px) {
   .connection-dialog-content--config {
     /* A definite flex height lets tab bodies shrink and scroll above the fixed footer. */
-    height: calc(var(--dbx-viewport-height) - 2rem);
+    height: calc(var(--chiron-horizon-viewport-height) - 2rem);
   }
 }
 
@@ -9791,7 +9791,7 @@ html.chiron-horizon-legacy-webview.dark .connection-transport-layer-option--sele
 }
 
 .connection-config-step :is([data-slot="input"], [data-slot="select-trigger"], [data-slot="tabs-list"], [data-slot="tabs-trigger"], textarea) {
-  border-radius: var(--dbx-radius-fixed-4, 4px);
+  border-radius: var(--chiron-horizon-radius-fixed-4, 4px);
 }
 
 .connection-dialog-content[data-wide="true"] .grid.grid-cols-4 {

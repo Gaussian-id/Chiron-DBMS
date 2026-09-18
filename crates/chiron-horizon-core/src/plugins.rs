@@ -106,7 +106,7 @@ pub struct PluginRuntimeEnv {
 /// persistent, version-independent local data (preferences, audit logs,
 /// known hosts, ...). Injected by the registry so plugins never have to fall
 /// back to the OS temp dir, which macOS wipes on reboot.
-pub const PLUGIN_DATA_DIR_ENV: &str = "DBX_PLUGIN_DATA_DIR";
+pub const PLUGIN_DATA_DIR_ENV: &str = "CHIRON_HORIZON_PLUGIN_DATA_DIR";
 
 impl PluginRuntimeEnv {
     pub fn with_var(mut self, key: impl Into<String>, value: impl Into<String>) -> Self {
@@ -114,7 +114,7 @@ impl PluginRuntimeEnv {
         self
     }
 
-    /// Sets `DBX_PLUGIN_DATA_DIR` unless the caller already provided one, so
+    /// Sets `CHIRON_HORIZON_PLUGIN_DATA_DIR` unless the caller already provided one, so
     /// an explicit override keeps winning over the registry default.
     pub fn with_plugin_data_dir(self, data_dir: &Path) -> Self {
         if self.get(PLUGIN_DATA_DIR_ENV).is_some() {
@@ -398,25 +398,28 @@ mod tests {
     #[test]
     fn plugin_data_dir_lives_beside_the_plugin_registry() {
         let registry = PluginRegistry::new(PathBuf::from("/data/plugins"));
-        assert_eq!(registry.plugin_data_dir("io.dbx.ssh"), PathBuf::from("/data/plugin-data/io.dbx.ssh"));
+        assert_eq!(
+            registry.plugin_data_dir("chiron.horizon.ssh"),
+            PathBuf::from("/data/plugin-data/chiron.horizon.ssh")
+        );
     }
 
     #[test]
     fn plugin_data_dir_falls_back_to_registry_root_without_a_parent() {
         let registry = PluginRegistry::new(PathBuf::from("/"));
-        assert_eq!(registry.plugin_data_dir("io.dbx.ssh"), PathBuf::from("/plugin-data/io.dbx.ssh"));
+        assert_eq!(registry.plugin_data_dir("chiron.horizon.ssh"), PathBuf::from("/plugin-data/chiron.horizon.ssh"));
     }
 
     #[test]
     fn with_plugin_data_dir_sets_the_env_var_once() {
-        let env = PluginRuntimeEnv::default().with_plugin_data_dir(Path::new("/data/plugin-data/io.dbx.ssh"));
-        assert_eq!(env.get("DBX_PLUGIN_DATA_DIR"), Some("/data/plugin-data/io.dbx.ssh"));
+        let env = PluginRuntimeEnv::default().with_plugin_data_dir(Path::new("/data/plugin-data/chiron.horizon.ssh"));
+        assert_eq!(env.get("CHIRON_HORIZON_PLUGIN_DATA_DIR"), Some("/data/plugin-data/chiron.horizon.ssh"));
 
         // An explicit caller-provided value wins over the registry default.
         let explicit = PluginRuntimeEnv::default()
-            .with_var("DBX_PLUGIN_DATA_DIR", "/custom")
+            .with_var("CHIRON_HORIZON_PLUGIN_DATA_DIR", "/custom")
             .with_plugin_data_dir(Path::new("/ignored"));
-        assert_eq!(explicit.get("DBX_PLUGIN_DATA_DIR"), Some("/custom"));
+        assert_eq!(explicit.get("CHIRON_HORIZON_PLUGIN_DATA_DIR"), Some("/custom"));
     }
 
     /// The registry-injected data dir must reach the sidecar process itself,
@@ -440,7 +443,7 @@ initialize_id=$(printf '%s' "$initialize" | sed -E 's/.*"id":([0-9]+).*/\1/')
 printf '{"jsonrpc":"2.0","id":%s,"result":{"protocolVersion":1,"capabilities":[],"plugin":{"id":"sample.sidecar","version":"1.0.0"}}}\n' "$initialize_id"
 IFS= read -r request
 request_id=$(printf '%s' "$request" | sed -E 's/.*"id":([0-9]+).*/\1/')
-printf '{"jsonrpc":"2.0","id":%s,"result":"%s"}\n' "$request_id" "$DBX_PLUGIN_DATA_DIR"
+printf '{"jsonrpc":"2.0","id":%s,"result":"%s"}\n' "$request_id" "$CHIRON_HORIZON_PLUGIN_DATA_DIR"
 sleep 30
 "#,
         )
@@ -455,8 +458,8 @@ sleep 30
                 "id": "sample.sidecar",
                 "name": "Sample Sidecar",
                 "version": "1.0.0",
-                "publisher": "dbx",
-                "engines": { "dbx": ">=0.1.0", "host_api": "^1.0" },
+                "publisher": "chiron_horizon",
+                "engines": { "chiron_horizon": ">=0.1.0", "host_api": "^1.0" },
                 "permissions": [],
                 "entrypoints": {
                     "backend": {
@@ -477,7 +480,7 @@ sleep 30
         assert_eq!(
             PathBuf::from(reported),
             data_dir.path().join("plugin-data").join("sample.sidecar"),
-            "sidecar must see <data dir>/plugin-data/<id> in DBX_PLUGIN_DATA_DIR"
+            "sidecar must see <data dir>/plugin-data/<id> in CHIRON_HORIZON_PLUGIN_DATA_DIR"
         );
         host.stop_all().await;
     }

@@ -1,4 +1,4 @@
-// 插件沙箱外观快照：读取 DBX 根节点的设计令牌（随 .dark / 调色板类
+// 插件沙箱外观快照：读取 Chiron Horizon 根节点的设计令牌（随 .dark / 调色板类
 // 实时变化）加编辑器字体设置，组装成插件契约里的 appearance 对象，
 // 供 PluginHostBridge 在 init 下发、主题变化时实时推送。
 
@@ -20,7 +20,7 @@ export interface PluginAppearance {
   ui?: { fontFamily: string };
 }
 
-// camelCase 字段 → DBX globals.css 的 CSS 令牌名。
+// camelCase 字段 → Chiron Horizon globals.css 的 CSS 令牌名。
 const APPEARANCE_TOKENS = [
   ["background", "--background"],
   ["foreground", "--foreground"],
@@ -32,7 +32,7 @@ const APPEARANCE_TOKENS = [
   ["destructive", "--destructive"],
 ] as const;
 
-// 读取失败时的兜底：与 DBX globals.css 的 :root（pearl）/.dark 规范块一致。
+// 读取失败时的兜底：与 Chiron Horizon globals.css 的 :root（pearl）/.dark 规范块一致。
 export const FALLBACK_APPEARANCE_COLORS: Record<"light" | "dark", PluginAppearanceColors> = {
   light: {
     background: "rgb(255 255 255)",

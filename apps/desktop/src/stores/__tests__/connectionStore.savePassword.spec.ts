@@ -487,13 +487,13 @@ describe("connectionStore plugin password prompt", () => {
   function sshInstalledPlugin(): unknown {
     return {
       manifest: {
-        id: "io.dbx.ssh",
+        id: "chiron.horizon.ssh",
         name: "SSH",
         drivers: [],
         contributions: [
           {
             type: "connection-provider",
-            id: "io.dbx.ssh.connection",
+            id: "chiron.horizon.ssh.connection",
             label: "SSH server",
             database_type: "ssh",
             fields: [
@@ -524,8 +524,8 @@ describe("connectionStore plugin password prompt", () => {
       username: "jinpy.he",
       password: "",
       save_password: false,
-      plugin_id: "io.dbx.ssh",
-      plugin_connection_provider: "io.dbx.ssh.connection",
+      plugin_id: "chiron.horizon.ssh",
+      plugin_connection_provider: "chiron.horizon.ssh.connection",
       plugin_connection_type: "ssh",
       external_config: { authentication: "private-key", private_key_path: "/Users/dev/.ssh/id_rsa" },
       read_only: false,

@@ -8,14 +8,14 @@ export interface PluginInstallDeepLinkDraft {
 }
 
 /**
- * Parses `dbx://plugins/install?url=<encoded package url>` links.
+ * Parses `chiron_horizon://plugins/install?url=<encoded package url>` links.
  * Returns null for non-matching links and throws for malformed ones,
  * mirroring the AI config deep-link parser contract.
  */
 export function parsePluginInstallDeepLink(value: string): PluginInstallDeepLinkDraft | null {
   const trimmed = value.trim();
   if (!trimmed || trimmed.length > MAX_DEEP_LINK_LENGTH) return null;
-  if (!trimmed.startsWith("dbx://")) return null;
+  if (!trimmed.startsWith("chiron_horizon://")) return null;
 
   const url = new URL(trimmed);
   if (url.host !== PLUGIN_INSTALL_DEEP_LINK_HOST || url.pathname !== PLUGIN_INSTALL_DEEP_LINK_PATH) return null;

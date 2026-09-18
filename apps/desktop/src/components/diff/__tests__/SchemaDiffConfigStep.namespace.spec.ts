@@ -72,12 +72,12 @@ it("offers Oracle schemas as schema-diff database choices", async () => {
   app.mount(container);
   await flushAsyncSetup();
 
-  const sourceDatabase = document.querySelector<HTMLButtonElement>("button.dbx-searchable-select-trigger");
+  const sourceDatabase = document.querySelector<HTMLButtonElement>("button.chiron-horizon-searchable-select-trigger");
   expect(sourceDatabase?.disabled).toBe(false);
   sourceDatabase?.click();
   await flushAsyncSetup();
 
-  const options = [...document.querySelectorAll<HTMLButtonElement>(".dbx-searchable-select-list button")].map((button) => button.textContent?.trim());
+  const options = [...document.querySelectorAll<HTMLButtonElement>(".chiron-horizon-searchable-select-list button")].map((button) => button.textContent?.trim());
   expect(options).toEqual(expect.arrayContaining(["APP", "REPORTING"]));
   expect(mocks.listDatabases).not.toHaveBeenCalled();
   expect(mocks.listSchemas).toHaveBeenCalledWith("oracle-11g", "XE", true);

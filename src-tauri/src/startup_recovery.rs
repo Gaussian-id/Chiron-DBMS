@@ -10,14 +10,14 @@ use tauri::Manager;
 const STARTUP_LOG_FILE: &str = "startup.log";
 #[cfg(target_os = "windows")]
 const RUNTIME_RECOVERY_LOG_FILE: &str = "webview2-recovery.log";
-const STARTUP_LOG_DIR_ENV: &str = "DBX_STARTUP_LOG_DIR";
-const KEEP_STARTUP_LOG_ENV: &str = "DBX_KEEP_STARTUP_LOG";
+const STARTUP_LOG_DIR_ENV: &str = "CHIRON_HORIZON_STARTUP_LOG_DIR";
+const KEEP_STARTUP_LOG_ENV: &str = "CHIRON_HORIZON_KEEP_STARTUP_LOG";
 #[cfg(target_os = "windows")]
-const NO_SANDBOX_ENV: &str = "DBX_WEBVIEW2_NO_SANDBOX";
-const RECOVERY_ATTEMPT_ENV: &str = "DBX_STARTUP_COMPAT_RECOVERY";
-const RECOVERY_PARENT_PID_ENV: &str = "DBX_STARTUP_COMPAT_PARENT_PID";
-const DISABLE_ENTERPRISE_COMPAT_ENV: &str = "DBX_DISABLE_ENTERPRISE_COMPAT";
-const WINDOWS_APP_DATA_DIR_NAME: &str = "com.dbx.app";
+const NO_SANDBOX_ENV: &str = "CHIRON_HORIZON_WEBVIEW2_NO_SANDBOX";
+const RECOVERY_ATTEMPT_ENV: &str = "CHIRON_HORIZON_STARTUP_COMPAT_RECOVERY";
+const RECOVERY_PARENT_PID_ENV: &str = "CHIRON_HORIZON_STARTUP_COMPAT_PARENT_PID";
+const DISABLE_ENTERPRISE_COMPAT_ENV: &str = "CHIRON_HORIZON_DISABLE_ENTERPRISE_COMPAT";
+const WINDOWS_APP_DATA_DIR_NAME: &str = "com.chiron.horizon.app";
 const COMPATIBILITY_MARKER_FILE: &str = "webview2-enterprise-compat.enabled";
 const COMPATIBILITY_PROFILE_DIR: &str = "webview2-enterprise-compat";
 const STARTUP_LOG_BUFFER_CAPACITY: usize = 256;
@@ -507,7 +507,7 @@ pub(crate) fn mark_frontend_ready(main_window_visible: bool) {
         );
         std::env::remove_var(RECOVERY_ATTEMPT_ENV);
     } else if keep_requested {
-        record("frontend ready; startup log retained by DBX_KEEP_STARTUP_LOG=1");
+        record("frontend ready; startup log retained by CHIRON_HORIZON_KEEP_STARTUP_LOG=1");
         persist_buffer();
         deactivate_probe();
     } else if let Some(path) = startup_log_path() {
@@ -570,13 +570,13 @@ fn show_recovery_failure_message() {
         startup_log_path().map(|path| path.display().to_string()).unwrap_or_else(|| "startup.log".to_string());
     let locale = sys_locale::get_locale().unwrap_or_default().to_ascii_lowercase();
     let body = if locale.starts_with("zh") {
-        format!("DBX 已尝试企业环境兼容模式，但主窗口仍未显示。\n\n请将此日志发给维护者：{log_path}")
+        format!("Chiron Horizon 已尝试企业环境兼容模式，但主窗口仍未显示。\n\n请将此日志发给维护者：{log_path}")
     } else {
         format!(
-            "DBX tried enterprise environment compatibility mode, but the main window was still not visible.\n\nPlease send this log to the maintainer: {log_path}"
+            "Chiron Horizon tried enterprise environment compatibility mode, but the main window was still not visible.\n\nPlease send this log to the maintainer: {log_path}"
         )
     };
-    windows_ok_message("DBX", &body);
+    windows_ok_message("Chiron Horizon", &body);
 }
 
 #[cfg(not(target_os = "windows"))]
@@ -597,7 +597,7 @@ mod tests {
     fn startup_log_uses_windows_appdata() {
         assert_eq!(
             startup_log_dir_from_inputs("windows", None, Some(OsString::from(r"C:\Users\test\AppData\Roaming")),),
-            Some(PathBuf::from(r"C:\Users\test\AppData\Roaming").join("com.dbx.app"))
+            Some(PathBuf::from(r"C:\Users\test\AppData\Roaming").join("com.chiron.horizon.app"))
         );
     }
 
@@ -606,10 +606,10 @@ mod tests {
         assert_eq!(
             startup_log_dir_from_inputs(
                 "windows",
-                Some(OsString::from(r"D:\DBXDiagnostics")),
+                Some(OsString::from(r"D:\Chiron HorizonDiagnostics")),
                 Some(OsString::from(r"C:\Users\test\AppData\Roaming")),
             ),
-            Some(PathBuf::from(r"D:\DBXDiagnostics"))
+            Some(PathBuf::from(r"D:\Chiron HorizonDiagnostics"))
         );
     }
 
@@ -619,7 +619,7 @@ mod tests {
             compatibility_marker_path_from_appdata(Some(OsString::from(r"C:\Users\test\AppData\Roaming"))),
             Some(
                 PathBuf::from(r"C:\Users\test\AppData\Roaming")
-                    .join("com.dbx.app")
+                    .join("com.chiron.horizon.app")
                     .join("webview2-enterprise-compat.enabled")
             )
         );
@@ -631,7 +631,7 @@ mod tests {
             (
                 Some(
                     PathBuf::from(r"C:\Users\test\AppData\Local")
-                        .join("com.dbx.app")
+                        .join("com.chiron.horizon.app")
                         .join("webview2-enterprise-compat")
                 ),
                 "local_appdata",
@@ -685,7 +685,7 @@ mod tests {
 
     #[test]
     fn recovery_child_receives_parent_handoff_without_disabling_single_instance() {
-        let mut command = std::process::Command::new("dbx-test");
+        let mut command = std::process::Command::new("chiron-horizon-test");
         configure_recovery_child(&mut command, 4242);
         let envs = command.get_envs().collect::<Vec<_>>();
         assert!(envs

@@ -166,7 +166,7 @@ async fn collection_bytes(client: &mongodb::Client, database: &str, collection: 
 }
 
 #[tokio::test]
-#[ignore = "opt-in: DBX_MONGO_DUMP_TEST_URI and DBX_MONGO_TOOLS_DIR; creates a temporary database"]
+#[ignore = "opt-in: CHIRON_HORIZON_MONGO_DUMP_TEST_URI and CHIRON_HORIZON_MONGO_TOOLS_DIR; creates a temporary database"]
 async fn official_tools_round_trip_through_chiron_horizon_core() {
     use chiron_horizon_core::connection::{AppState, PoolKind};
     use chiron_horizon_core::models::connection::ConnectionConfig;
@@ -181,11 +181,13 @@ async fn official_tools_round_trip_through_chiron_horizon_core() {
         Arc,
     };
 
-    let uri = std::env::var("DBX_MONGO_DUMP_TEST_URI").expect("DBX_MONGO_DUMP_TEST_URI");
-    let tools = std::path::PathBuf::from(std::env::var("DBX_MONGO_TOOLS_DIR").expect("DBX_MONGO_TOOLS_DIR"));
+    let uri = std::env::var("CHIRON_HORIZON_MONGO_DUMP_TEST_URI").expect("CHIRON_HORIZON_MONGO_DUMP_TEST_URI");
+    let tools = std::path::PathBuf::from(
+        std::env::var("CHIRON_HORIZON_MONGO_TOOLS_DIR").expect("CHIRON_HORIZON_MONGO_TOOLS_DIR"),
+    );
     let directory = tempfile::tempdir().unwrap();
     let client = mongodb::Client::with_uri_str(&uri).await.unwrap();
-    let database = format!("dbx_dump_test_{}", uuid::Uuid::new_v4().simple());
+    let database = format!("chiron_horizon_dump_test_{}", uuid::Uuid::new_v4().simple());
     let storage = Storage::open(&directory.path().join("storage.db")).await.unwrap();
     let state = AppState::new(storage);
     let connection_id = "mongo-dump-test";
@@ -251,7 +253,7 @@ async fn official_tools_round_trip_through_chiron_horizon_core() {
         .unwrap();
         assert_eq!(preview.rows.len(), 5);
 
-        let imported = if gzip { "dbx_gzip" } else { "dbx_plain" };
+        let imported = if gzip { "chiron_horizon_gzip" } else { "chiron_horizon_plain" };
         let request = MongoImportRequest {
             import_id: uuid::Uuid::new_v4().to_string(),
             connection_id: connection_id.into(),
@@ -270,8 +272,8 @@ async fn official_tools_round_trip_through_chiron_horizon_core() {
         assert_eq!(summary.batches_committed, 3);
         assert_eq!(collection_bytes(&client, &database, imported).await, expected);
 
-        // This file is produced by DBX, with no official metadata sidecar beside it.
-        let exported = directory.path().join(format!("dbx-output.{extension}"));
+        // This file is produced by Chiron Horizon, with no official metadata sidecar beside it.
+        let exported = directory.path().join(format!("chiron-horizon-output.{extension}"));
         let export = MongoExportRequest {
             export_id: uuid::Uuid::new_v4().to_string(),
             connection_id: connection_id.into(),
@@ -301,7 +303,7 @@ async fn official_tools_round_trip_through_chiron_horizon_core() {
         args.push(exported.to_str().unwrap());
         run_tool(&tools, "mongorestore", &args);
         assert_eq!(collection_bytes(&client, &database, restored).await, expected);
-        println!("{extension}: official -> DBX -> official, 1207 documents, BSON bytes match");
+        println!("{extension}: official -> Chiron Horizon -> official, 1207 documents, BSON bytes match");
 
         let mut empty_export = export.clone();
         empty_export.collection = "empty".into();
@@ -373,19 +375,21 @@ async fn specs(client: &mongodb::Client, db: &str, collection: &str) -> (Documen
 }
 
 #[tokio::test]
-#[ignore = "opt-in: DBX_MONGO_DUMP_TEST_URI and DBX_MONGO_TOOLS_DIR; creates temporary databases"]
-async fn official_database_tools_round_trip_through_dbx() {
+#[ignore = "opt-in: CHIRON_HORIZON_MONGO_DUMP_TEST_URI and CHIRON_HORIZON_MONGO_TOOLS_DIR; creates temporary databases"]
+async fn official_database_tools_round_trip_through_chiron_horizon() {
     use chiron_horizon_core::{
         connection::{AppState, PoolKind},
         models::connection::ConnectionConfig,
         mongodb_dump::*,
         storage::Storage,
     };
-    let uri = std::env::var("DBX_MONGO_DUMP_TEST_URI").expect("DBX_MONGO_DUMP_TEST_URI");
-    let tools = std::path::PathBuf::from(std::env::var("DBX_MONGO_TOOLS_DIR").expect("DBX_MONGO_TOOLS_DIR"));
+    let uri = std::env::var("CHIRON_HORIZON_MONGO_DUMP_TEST_URI").expect("CHIRON_HORIZON_MONGO_DUMP_TEST_URI");
+    let tools = std::path::PathBuf::from(
+        std::env::var("CHIRON_HORIZON_MONGO_TOOLS_DIR").expect("CHIRON_HORIZON_MONGO_TOOLS_DIR"),
+    );
     let files = tempfile::tempdir().unwrap();
     let client = mongodb::Client::with_uri_str(&uri).await.unwrap();
-    let database = format!("dbx_db_{}", uuid::Uuid::new_v4().simple());
+    let database = format!("chiron_horizon_db_{}", uuid::Uuid::new_v4().simple());
     let db = client.database(&database);
     db.run_command(doc! { "create": "records", "validator": { "score": { "$gte": 0 } }, "validationLevel": "strict", "collation": { "locale": "en", "strength": 2 } }).await.unwrap();
     db.collection("records")
@@ -626,7 +630,7 @@ async fn official_database_tools_round_trip_through_dbx() {
             }
             assert!(release_mongodb_restore_source(&preview.source_ref));
 
-            let output = files.path().join(format!("dbx-{tag}"));
+            let output = files.path().join(format!("chiron-horizon-{tag}"));
             let dump = MongoDatabaseDumpRequest {
                 task_id: uuid::Uuid::new_v4().to_string(),
                 connection_id: connection_id.into(),

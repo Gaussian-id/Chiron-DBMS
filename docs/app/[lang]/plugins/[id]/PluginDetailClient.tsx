@@ -30,15 +30,15 @@ const i18n = {
     permissionsTitle: "Permissions",
     permissionsCount: (count: number) => `${count} permission${count === 1 ? "" : "s"}`,
     permissionsNote: "Permission codes are granted at install time and shown verbatim from the manifest.",
-    installTitle: "Install in DBX",
-    installSteps: "Click Install in DBX and confirm in the app. Prefer manual steps? Open the DBX Plugin Center, choose Install from URL, and paste the link for your platform — packages are signature-checked before install.",
-    deepLinkInstall: "Install in DBX",
-    deepLinkHint: "DBX didn't open? Copy the install URL and paste it in the Plugin Center, or download DBX first.",
-    downloadApp: "Download DBX",
+    installTitle: "Install in Chiron Horizon",
+    installSteps: "Click Install in Chiron Horizon and confirm in the app. Prefer manual steps? Open the Chiron Horizon Plugin Center, choose Install from URL, and paste the link for your platform — packages are signature-checked before install.",
+    deepLinkInstall: "Install in Chiron Horizon",
+    deepLinkHint: "Chiron Horizon didn't open? Copy the install URL and paste it in the Plugin Center, or download Chiron Horizon first.",
+    downloadApp: "Download Chiron Horizon",
     copyUrl: "Copy install URL",
     copied: "Copied",
     downloadShort: "Download",
-    download: "Download .dbxp",
+    download: "Download .chiron-horizonp",
     sha256: "SHA-256",
     size: "Size",
     platform: "Platform",
@@ -65,15 +65,15 @@ const i18n = {
     permissionsTitle: "权限",
     permissionsCount: (count: number) => `${count} 项权限`,
     permissionsNote: "权限代码在安装时授予，此处按 manifest 原文展示。",
-    installTitle: "在 DBX 中安装",
-    installSteps: "点击“在 DBX 中安装”并在应用中确认即可。也可以手动安装：打开 DBX 插件中心，选择“从 URL 安装”，粘贴对应平台的链接——安装前会校验制品签名。",
-    deepLinkInstall: "在 DBX 中安装",
-    deepLinkHint: "没有唤起 DBX？可复制安装 URL 到插件中心手动安装，或先下载安装 DBX。",
-    downloadApp: "下载 DBX",
+    installTitle: "在 Chiron Horizon 中安装",
+    installSteps: "点击“在 Chiron Horizon 中安装”并在应用中确认即可。也可以手动安装：打开 Chiron Horizon 插件中心，选择“从 URL 安装”，粘贴对应平台的链接——安装前会校验制品签名。",
+    deepLinkInstall: "在 Chiron Horizon 中安装",
+    deepLinkHint: "没有唤起 Chiron Horizon？可复制安装 URL 到插件中心手动安装，或先下载安装 Chiron Horizon。",
+    downloadApp: "下载 Chiron Horizon",
     copyUrl: "复制安装 URL",
     copied: "已复制",
     downloadShort: "下载",
-    download: "下载 .dbxp",
+    download: "下载 .chiron-horizonp",
     sha256: "SHA-256",
     size: "大小",
     platform: "平台",
@@ -304,7 +304,7 @@ export function PluginDetailClient({
                       <div className="mt-4">
                         <div className="flex flex-wrap items-center gap-3">
                           <a
-                            href={`dbx://plugins/install?url=${encodeURIComponent(preferredArtifact.url)}`}
+                            href={`chiron_horizon://plugins/install?url=${encodeURIComponent(preferredArtifact.url)}`}
                             onClick={handleDeepLinkInstall}
                             className="inline-flex h-10 items-center gap-2 rounded-lg bg-[#f0f1f4] px-4 text-[13px] font-[720] text-[#0a0b0e] transition hover:bg-white"
                           >

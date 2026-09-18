@@ -18,27 +18,27 @@ describe("buildTableSelectTemplate", () => {
     expect(
       buildTableSelectTemplate({
         databaseType: "dameng",
-        tableName: "DBX_TEST",
+        tableName: "CHIRON_HORIZON_TEST",
         columns: [
           { name: "ORDER", data_type: "VARCHAR" },
           { name: "CUSTOMER_NAME", data_type: "VARCHAR" },
         ],
         quoteIdentifiers: false,
       }),
-    ).toBe('SELECT "ORDER", CUSTOMER_NAME\nFROM DBX_TEST;');
+    ).toBe('SELECT "ORDER", CUSTOMER_NAME\nFROM CHIRON_HORIZON_TEST;');
   });
 
   it("applies the same identifier policy to update templates", () => {
     expect(
       buildTableUpdateTemplate({
         databaseType: "oracle",
-        tableName: "DBX_TEST",
+        tableName: "CHIRON_HORIZON_TEST",
         columns: [
           { name: "ID", data_type: "NUMBER", is_primary_key: true },
           { name: "ORDER", data_type: "VARCHAR" },
         ],
         quoteIdentifiers: false,
       }),
-    ).toBe("UPDATE DBX_TEST\nSET \"ORDER\" = 'ORDER_value'\nWHERE ID = 0;");
+    ).toBe("UPDATE CHIRON_HORIZON_TEST\nSET \"ORDER\" = 'ORDER_value'\nWHERE ID = 0;");
   });
 });

@@ -1723,11 +1723,11 @@ mod tests {
         let dir = tempfile::tempdir().unwrap();
         let manifest: PluginManifest = serde_json::from_value(serde_json::json!({
             "manifest_version": 1,
-            "id": "io.dbx.conditions",
+            "id": "chiron.horizon.conditions",
             "name": "Conditions",
             "version": "1.0.0",
             "publisher": "example",
-            "engines": { "dbx": ">=0.1.0", "host_api": "^1.0" },
+            "engines": { "chiron_horizon": ">=0.1.0", "host_api": "^1.0" },
             "contributions": [{
                 "type": "connection-provider",
                 "id": "conditions.connection",
@@ -1769,11 +1769,11 @@ mod tests {
         let dir = tempfile::tempdir().unwrap();
         let malformed = serde_json::from_value::<PluginManifest>(serde_json::json!({
             "manifest_version": 1,
-            "id": "io.dbx.conditions",
+            "id": "chiron.horizon.conditions",
             "name": "Conditions",
             "version": "1.0.0",
             "publisher": "example",
-            "engines": { "dbx": ">=0.1.0", "host_api": "^1.0" },
+            "engines": { "chiron_horizon": ">=0.1.0", "host_api": "^1.0" },
             "contributions": [{
                 "type": "connection-provider",
                 "id": "conditions.connection",
@@ -1795,11 +1795,11 @@ mod tests {
 
         let manifest: PluginManifest = serde_json::from_value(serde_json::json!({
             "manifest_version": 1,
-            "id": "io.dbx.conditions",
+            "id": "chiron.horizon.conditions",
             "name": "Conditions",
             "version": "1.0.0",
             "publisher": "example",
-            "engines": { "dbx": ">=0.1.0", "host_api": "^1.0" },
+            "engines": { "chiron_horizon": ">=0.1.0", "host_api": "^1.0" },
             "contributions": [{
                 "type": "connection-provider",
                 "id": "conditions.connection",

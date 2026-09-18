@@ -169,16 +169,16 @@ mod tests {
     #[test]
     fn filters_plugin_install_deep_links() {
         let links = plugin_install_deep_links_from_args([
-            "chiron-horizon://plugins/install?url=https%3A%2F%2Fdl.dbxio.com%2Fplugins%2Fio.dbx.ssh%2F0.4.73%2Fio.dbx.ssh-0.4.73-darwin-arm64.dbxp",
+            "chiron-horizon://plugins/install?url=https%3A%2F%2Fdl.chiron-horizon.com%2Fplugins%2Fchiron.horizon.ssh%2F0.4.73%2Fchiron.horizon.ssh-0.4.73-darwin-arm64.chiron-horizonp",
             "--flag",
-            "chiron-horizon://plugins/installed?url=https://example.com/plugin.dbxp",
-            "chiron-horizon://plugins/installation?url=https://example.com/plugin.dbxp",
+            "chiron-horizon://plugins/installed?url=https://example.com/plugin.chiron-horizonp",
+            "chiron-horizon://plugins/installation?url=https://example.com/plugin.chiron-horizonp",
             "chiron-horizon://connection/new?type=mysql",
         ]);
 
         assert_eq!(
             links,
-            vec!["chiron-horizon://plugins/install?url=https%3A%2F%2Fdl.dbxio.com%2Fplugins%2Fio.dbx.ssh%2F0.4.73%2Fio.dbx.ssh-0.4.73-darwin-arm64.dbxp".to_string()]
+            vec!["chiron-horizon://plugins/install?url=https%3A%2F%2Fdl.chiron-horizon.com%2Fplugins%2Fchiron.horizon.ssh%2F0.4.73%2Fchiron.horizon.ssh-0.4.73-darwin-arm64.chiron-horizonp".to_string()]
         );
     }
 
@@ -198,14 +198,14 @@ mod tests {
         state.push_connection_links(vec!["chiron-horizon://connection/new?type=mysql".to_string()]);
         state.push_ai_config_links(vec!["chiron-horizon://settings/ai/new?provider=openai-compatible".to_string()]);
         state.push_plugin_install_links(vec![
-            "chiron-horizon://plugins/install?url=https://example.com/plugin.dbxp".to_string()
+            "chiron-horizon://plugins/install?url=https://example.com/plugin.chiron-horizonp".to_string(),
         ]);
 
         assert_eq!(state.drain_connection_links(), vec!["chiron-horizon://connection/new?type=mysql"]);
         assert_eq!(state.drain_ai_config_links(), vec!["chiron-horizon://settings/ai/new?provider=openai-compatible"]);
         assert_eq!(
             state.drain_plugin_install_links(),
-            vec!["chiron-horizon://plugins/install?url=https://example.com/plugin.dbxp"]
+            vec!["chiron-horizon://plugins/install?url=https://example.com/plugin.chiron-horizonp"]
         );
         assert!(state.drain_connection_links().is_empty());
         assert!(state.drain_ai_config_links().is_empty());

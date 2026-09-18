@@ -1,21 +1,21 @@
 {
-  "name": "dbx-plugin-stats",
+  "name": "chiron-horizon-plugin-stats",
   "compatibility_date": "2026-05-07",
   "main": "worker.ts",
   "routes": [
     {
-      "pattern": "dl.dbxio.com/plugins/*",
-      "zone_name": "dbxio.com"
+      "pattern": "dl.chiron-horizon.com/plugins/*",
+      "zone_name": "chiron-horizon.com"
     },
     {
-      "pattern": "dbxio.com/api/plugins/*",
-      "zone_name": "dbxio.com"
+      "pattern": "chiron-horizon.com/api/plugins/*",
+      "zone_name": "chiron-horizon.com"
     }
   ],
   "analytics_engine_datasets": [
     {
       "binding": "PLUGIN_STATS",
-      "dataset": "DBX_PLUGIN_STATS"
+      "dataset": "CHIRON_HORIZON_PLUGIN_STATS"
     }
   ],
   "kv_namespaces": [

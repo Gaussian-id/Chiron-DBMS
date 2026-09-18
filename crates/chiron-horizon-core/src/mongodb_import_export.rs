@@ -1511,7 +1511,7 @@ pub fn preview_mongodb_import_bytes(
         MongoImportFormat::Ndjson => "ndjson",
         MongoImportFormat::Bson => "bson",
     };
-    let dir = std::env::temp_dir().join(format!("dbx-mongo-import-preview-{}", uuid::Uuid::new_v4()));
+    let dir = std::env::temp_dir().join(format!("chiron-horizon-mongo-import-preview-{}", uuid::Uuid::new_v4()));
     std::fs::create_dir_all(&dir).map_err(|error| MongoImportIssue::new("FILE_UNREADABLE", error.to_string()))?;
     let path = dir.join(format!("preview.{extension}"));
     std::fs::write(&path, bytes).map_err(|error| MongoImportIssue::new("FILE_UNREADABLE", error.to_string()))?;
@@ -2101,7 +2101,7 @@ pub struct MongoExportSummary {
 
 fn temp_export_path(target: &Path) -> PathBuf {
     let name = target.file_name().and_then(|name| name.to_str()).unwrap_or("export");
-    target.with_file_name(format!(".{name}.{}.dbx-export.tmp", uuid::Uuid::new_v4()))
+    target.with_file_name(format!(".{name}.{}.chiron-horizon-export.tmp", uuid::Uuid::new_v4()))
 }
 
 fn cleanup_temp(path: &Path) {
@@ -3041,7 +3041,7 @@ mod tests {
         format: MongoImportFormat,
         parse_options: &MongoImportParseOptions,
     ) -> Vec<serde_json::Value> {
-        let dir = std::env::temp_dir().join(format!("dbx-mongo-import-exec-{}", uuid::Uuid::new_v4()));
+        let dir = std::env::temp_dir().join(format!("chiron-horizon-mongo-import-exec-{}", uuid::Uuid::new_v4()));
         std::fs::create_dir_all(&dir).unwrap();
         let path = dir.join(format!("data.{extension}"));
         std::fs::write(&path, bytes).unwrap();
@@ -3900,14 +3900,17 @@ mod tests {
     fn csv_export_reimport_with_default_options_restores_objectid_and_nested_types() {
         let document = serde_json::json!({
             "_id": {"$oid": "6a79d867ca9ee056337c36ed"},
-            "_dbx_issue_5792_all_types": true,
+            "_chiron_horizon_issue_5792_all_types": true,
             "scenario": "clone-all-bson-types",
             "text": "ordinary text",
             "nested": {"ok": true},
             "count": {"$numberInt": "42"}
         });
         let fields = csv_fields_from_extended_documents(std::slice::from_ref(&document)).unwrap();
-        assert_eq!(fields, vec!["_id", "_dbx_issue_5792_all_types", "scenario", "text", "nested.ok", "count"]);
+        assert_eq!(
+            fields,
+            vec!["_id", "_chiron_horizon_issue_5792_all_types", "scenario", "text", "nested.ok", "count"]
+        );
         let mut csv = fields.join(",");
         csv.push('\n');
         csv.push_str(&format_csv_document_line(&fields, &document));
@@ -3916,7 +3919,7 @@ mod tests {
         let imported =
             execute_source(csv.as_bytes(), "csv", MongoImportFormat::Csv, &MongoImportParseOptions::default());
         assert_eq!(imported[0]["_id"]["$oid"], "6a79d867ca9ee056337c36ed");
-        assert_eq!(imported[0]["_dbx_issue_5792_all_types"], true);
+        assert_eq!(imported[0]["_chiron_horizon_issue_5792_all_types"], true);
         assert_eq!(imported[0]["scenario"], "clone-all-bson-types");
         assert_eq!(imported[0]["nested"]["ok"], true);
         assert_eq!(imported[0]["count"]["$numberInt"], "42");
@@ -4048,7 +4051,8 @@ for line in sys.stdin:
     #[cfg(unix)]
     #[tokio::test]
     async fn legacy_agent_imports_extended_json_with_unordered_insert_many() {
-        let source_dir = std::env::temp_dir().join(format!("dbx-mongo-legacy-import-{}", uuid::Uuid::new_v4()));
+        let source_dir =
+            std::env::temp_dir().join(format!("chiron-horizon-mongo-legacy-import-{}", uuid::Uuid::new_v4()));
         std::fs::create_dir_all(&source_dir).unwrap();
         let path = source_dir.join("data.ndjson");
         std::fs::write(&path, "{\"_id\":{\"$oid\":\"507f1f77bcf86cd799439011\"},\"name\":\"Ada\"}\n").unwrap();
@@ -4105,7 +4109,8 @@ def handle(request):
     #[cfg(unix)]
     #[tokio::test]
     async fn legacy_agent_exports_ndjson_through_find_cursor() {
-        let target = std::env::temp_dir().join(format!("dbx-mongo-legacy-export-{}.ndjson", uuid::Uuid::new_v4()));
+        let target =
+            std::env::temp_dir().join(format!("chiron-horizon-mongo-legacy-export-{}.ndjson", uuid::Uuid::new_v4()));
         let (state, _directory) = legacy_mongo_import_export_state(
             r#"
 def handle(request):
@@ -4160,7 +4165,8 @@ def handle(request):
     #[cfg(unix)]
     #[tokio::test]
     async fn legacy_agent_export_falls_back_to_paged_find_without_cursor_capability() {
-        let target = std::env::temp_dir().join(format!("dbx-mongo-legacy-export-page-{}.ndjson", uuid::Uuid::new_v4()));
+        let target = std::env::temp_dir()
+            .join(format!("chiron-horizon-mongo-legacy-export-page-{}.ndjson", uuid::Uuid::new_v4()));
         let (state, _directory) = legacy_mongo_import_export_state(
             r#"
 def handle(request):
@@ -4211,8 +4217,8 @@ def handle(request):
     #[cfg(unix)]
     #[tokio::test]
     async fn legacy_agent_export_pages_by_id_without_skipping() {
-        let target =
-            std::env::temp_dir().join(format!("dbx-mongo-legacy-export-keyset-{}.ndjson", uuid::Uuid::new_v4()));
+        let target = std::env::temp_dir()
+            .join(format!("chiron-horizon-mongo-legacy-export-keyset-{}.ndjson", uuid::Uuid::new_v4()));
         let (state, _directory) = legacy_mongo_import_export_state(
             r#"
 PAGE = {"index": 0}
@@ -4283,8 +4289,8 @@ def handle(request):
     #[cfg(unix)]
     #[tokio::test]
     async fn legacy_agent_export_stops_when_a_keyset_page_repeats() {
-        let target =
-            std::env::temp_dir().join(format!("dbx-mongo-legacy-export-stall-{}.ndjson", uuid::Uuid::new_v4()));
+        let target = std::env::temp_dir()
+            .join(format!("chiron-horizon-mongo-legacy-export-stall-{}.ndjson", uuid::Uuid::new_v4()));
         let (state, _directory) = legacy_mongo_import_export_state(
             r#"
 def handle(request):
@@ -4334,8 +4340,8 @@ def handle(request):
     #[cfg(unix)]
     #[tokio::test]
     async fn legacy_agent_export_keeps_offset_paging_for_an_explicit_sort() {
-        let target =
-            std::env::temp_dir().join(format!("dbx-mongo-legacy-export-offset-{}.ndjson", uuid::Uuid::new_v4()));
+        let target = std::env::temp_dir()
+            .join(format!("chiron-horizon-mongo-legacy-export-offset-{}.ndjson", uuid::Uuid::new_v4()));
         let (state, _directory) = legacy_mongo_import_export_state(
             r#"
 def handle(request):
@@ -4390,8 +4396,8 @@ def handle(request):
     #[cfg(unix)]
     #[tokio::test]
     async fn legacy_agent_export_does_not_use_display_find_documents() {
-        let target =
-            std::env::temp_dir().join(format!("dbx-mongo-legacy-export-display-{}.ndjson", uuid::Uuid::new_v4()));
+        let target = std::env::temp_dir()
+            .join(format!("chiron-horizon-mongo-legacy-export-display-{}.ndjson", uuid::Uuid::new_v4()));
         let (state, _directory) = legacy_mongo_import_export_state(
             r#"
 def handle(request):
@@ -4442,7 +4448,8 @@ def handle(request):
     #[cfg(unix)]
     #[tokio::test]
     async fn legacy_agent_import_records_partial_insert_errors_when_skipping_rows() {
-        let source_dir = std::env::temp_dir().join(format!("dbx-mongo-legacy-import-errors-{}", uuid::Uuid::new_v4()));
+        let source_dir =
+            std::env::temp_dir().join(format!("chiron-horizon-mongo-legacy-import-errors-{}", uuid::Uuid::new_v4()));
         std::fs::create_dir_all(&source_dir).unwrap();
         let path = source_dir.join("data.ndjson");
         std::fs::write(

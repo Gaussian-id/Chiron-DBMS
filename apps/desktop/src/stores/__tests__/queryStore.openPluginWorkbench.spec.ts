@@ -18,7 +18,7 @@ describe("queryStore openPluginWorkbench reuse", () => {
   it("reopening an open workbench surfaces the tab as-is without replacing its context", async () => {
     const queryStore = useQueryStore();
 
-    const firstId = queryStore.openPluginWorkbench("io.dbx.ssh", "workbench", {
+    const firstId = queryStore.openPluginWorkbench("chiron.horizon.ssh", "workbench", {
       title: "hktkosl1103",
       connectionId: "conn-1",
       context: { connectionId: "conn-1", workbenchId: "wb-original" },
@@ -28,7 +28,7 @@ describe("queryStore openPluginWorkbench reuse", () => {
     // context; the tab must keep the original one — a replacement would
     // deep-reload the plugin webview (full flash) and orphan the sidecar
     // session bound to the original workbench id.
-    const secondId = queryStore.openPluginWorkbench("io.dbx.ssh", "workbench", {
+    const secondId = queryStore.openPluginWorkbench("chiron.horizon.ssh", "workbench", {
       title: "hktkosl1103",
       connectionId: "conn-1",
       context: { connectionId: "conn-1", workbenchId: "wb-fresh" },
@@ -43,11 +43,11 @@ describe("queryStore openPluginWorkbench reuse", () => {
   it("a different connection still opens its own workbench tab", () => {
     const queryStore = useQueryStore();
 
-    const firstId = queryStore.openPluginWorkbench("io.dbx.ssh", "workbench", {
+    const firstId = queryStore.openPluginWorkbench("chiron.horizon.ssh", "workbench", {
       connectionId: "conn-1",
       context: { connectionId: "conn-1", workbenchId: "wb-1" },
     });
-    const secondId = queryStore.openPluginWorkbench("io.dbx.ssh", "workbench", {
+    const secondId = queryStore.openPluginWorkbench("chiron.horizon.ssh", "workbench", {
       connectionId: "conn-2",
       context: { connectionId: "conn-2", workbenchId: "wb-2" },
     });
@@ -59,7 +59,7 @@ describe("queryStore openPluginWorkbench reuse", () => {
   it("registers the workbench tab into the focused group so the group tab strip can render it", () => {
     const queryStore = useQueryStore();
 
-    const id = queryStore.openPluginWorkbench("io.dbx.ssh", "workbench", {
+    const id = queryStore.openPluginWorkbench("chiron.horizon.ssh", "workbench", {
       connectionId: "conn-1",
       context: { connectionId: "conn-1" },
     });
@@ -76,7 +76,7 @@ describe("queryStore openPluginWorkbench reuse", () => {
   it("adopts a legacy ownerless workbench tab back into the workspace when reopened", () => {
     const queryStore = useQueryStore();
 
-    const id = queryStore.openPluginWorkbench("io.dbx.ssh", "workbench", {
+    const id = queryStore.openPluginWorkbench("chiron.horizon.ssh", "workbench", {
       connectionId: "conn-1",
       context: { connectionId: "conn-1" },
     });
@@ -84,7 +84,7 @@ describe("queryStore openPluginWorkbench reuse", () => {
     // edge: strip it from its group, then reopen from the sidebar.
     queryStore.groups = [{ id: "main", tabIds: [], activeTabId: null }];
 
-    const reopenedId = queryStore.openPluginWorkbench("io.dbx.ssh", "workbench", {
+    const reopenedId = queryStore.openPluginWorkbench("chiron.horizon.ssh", "workbench", {
       connectionId: "conn-1",
       context: { connectionId: "conn-1", workbenchId: "wb-fresh" },
     });

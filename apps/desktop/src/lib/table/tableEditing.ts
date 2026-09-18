@@ -1,8 +1,8 @@
 import type { ColumnInfo, DatabaseType, IndexInfo } from "@/types/database";
 import { getDatabaseCapability } from "@/lib/database/databaseCapabilities";
 
-export const CHIRON_HORIZON_ROWID_COLUMN = "__DBX_ROWID";
-export const CHIRON_HORIZON_NEO4J_ELEMENT_ID_COLUMN = "__DBX_ELEMENT_ID";
+export const CHIRON_HORIZON_ROWID_COLUMN = "__CHIRON_HORIZON_ROWID";
+export const CHIRON_HORIZON_NEO4J_ELEMENT_ID_COLUMN = "__CHIRON_HORIZON_ELEMENT_ID";
 export const CHIRON_HORIZON_TDENGINE_TBNAME_COLUMN = "tbname";
 
 function isViewTableType(tableType?: string): boolean {

@@ -42,7 +42,7 @@ export default function NotFound() {
           <a href="/cn/plugins" style={{ ...button, border: "1px solid rgba(173,176,182,0.3)", color: "#9c9ea3" }}>
             插件中心
           </a>
-          <a href="/cn/docs/what-is-dbx" style={{ ...button, border: "1px solid rgba(173,176,182,0.3)", color: "#9c9ea3" }}>
+          <a href="/cn/docs/what-is-chiron_horizon" style={{ ...button, border: "1px solid rgba(173,176,182,0.3)", color: "#9c9ea3" }}>
             文档
           </a>
         </div>

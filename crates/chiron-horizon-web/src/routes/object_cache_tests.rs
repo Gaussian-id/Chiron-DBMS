@@ -12,22 +12,25 @@ use chiron_horizon_core::{
     query::QueryExecutionOptions,
     storage::{McpGlobalPolicy, Storage},
 };
-use chiron_horizon_mcp::{DbxBackend, LocalBackend, WebBackend};
+use chiron_horizon_mcp::{ChironHorizonBackend, LocalBackend, WebBackend};
 use serde_json::{json, Value};
 use std::sync::Arc;
 
 async fn run_object_cache_regression(postgres: bool) {
-    let dir = std::env::temp_dir().join(format!("dbx-object-cache-{}", uuid::Uuid::new_v4()));
+    let dir = std::env::temp_dir().join(format!("chiron-horizon-object-cache-{}", uuid::Uuid::new_v4()));
     std::fs::create_dir_all(&dir).unwrap();
     let storage = Storage::open(&dir.join("storage.db")).await.unwrap();
-    let database =
-        if postgres { std::env::var("DBX_LIVE_POSTGRES_DATABASE").expect("test database") } else { "main".into() };
+    let database = if postgres {
+        std::env::var("CHIRON_HORIZON_LIVE_POSTGRES_DATABASE").expect("test database")
+    } else {
+        "main".into()
+    };
     let config: ConnectionConfig = serde_json::from_value(json!({
         "id": "cache:中文%", "name": "cache regression", "db_type": if postgres { "postgres" } else { "sqlite" },
-        "host": if postgres { std::env::var("DBX_LIVE_POSTGRES_HOST").expect("test host") } else { dir.join("query.db").to_str().unwrap().to_string() },
-        "port": if postgres { std::env::var("DBX_LIVE_POSTGRES_PORT").expect("test port").parse::<u16>().unwrap() } else { 0 },
-        "username": if postgres { std::env::var("DBX_LIVE_POSTGRES_USER").expect("test user") } else { String::new() },
-        "password": if postgres { std::env::var("DBX_LIVE_POSTGRES_PASSWORD").expect("test password") } else { String::new() },
+        "host": if postgres { std::env::var("CHIRON_HORIZON_LIVE_POSTGRES_HOST").expect("test host") } else { dir.join("query.db").to_str().unwrap().to_string() },
+        "port": if postgres { std::env::var("CHIRON_HORIZON_LIVE_POSTGRES_PORT").expect("test port").parse::<u16>().unwrap() } else { 0 },
+        "username": if postgres { std::env::var("CHIRON_HORIZON_LIVE_POSTGRES_USER").expect("test user") } else { String::new() },
+        "password": if postgres { std::env::var("CHIRON_HORIZON_LIVE_POSTGRES_PASSWORD").expect("test password") } else { String::new() },
         "database": database, "save_password": true
     })).unwrap();
     if !postgres {
@@ -59,7 +62,8 @@ async fn run_object_cache_regression(postgres: bool) {
     let local = LocalBackend::from_app_state(app.clone(), dir.clone());
     let web = WebBackend::new(base.clone(), String::new()).unwrap();
     let client = reqwest::Client::new();
-    let schema_name = if postgres { format!("dbx_cache_{}", uuid::Uuid::new_v4().simple()) } else { "main".into() };
+    let schema_name =
+        if postgres { format!("chiron_horizon_cache_{}", uuid::Uuid::new_v4().simple()) } else { "main".into() };
     if postgres {
         local.execute_query(&config, &database, &format!("CREATE SCHEMA {schema_name}"), None, None).await.unwrap();
     }
@@ -120,7 +124,7 @@ async fn run_object_cache_regression(postgres: bool) {
         let column = format!("added_{mode}");
         let sql = format!("ALTER TABLE {table} ADD COLUMN {column} INTEGER");
         if mode == 0 || mode == 2 {
-            let backend: &dyn DbxBackend = if mode == 0 { &local } else { &web };
+            let backend: &dyn ChironHorizonBackend = if mode == 0 { &local } else { &web };
             let result = backend
                 .execute_agent_tool(
                     &config,
@@ -132,7 +136,7 @@ async fn run_object_cache_regression(postgres: bool) {
                 .await;
             assert!(!result.is_error, "{}", result.content);
         } else if mode == 1 || mode == 3 {
-            let backend: &dyn DbxBackend = if mode == 1 { &local } else { &web };
+            let backend: &dyn ChironHorizonBackend = if mode == 1 { &local } else { &web };
             let results = backend
                 .execute_batch(
                     &config,
@@ -208,7 +212,7 @@ async fn ddl_schema_cache_real_web_handlers_and_mcp_backends() {
 }
 
 #[tokio::test]
-#[ignore = "requires isolated writable DBX_LIVE_POSTGRES_HOST/PORT/USER/PASSWORD/DATABASE"]
+#[ignore = "requires isolated writable CHIRON_HORIZON_LIVE_POSTGRES_HOST/PORT/USER/PASSWORD/DATABASE"]
 async fn ddl_schema_cache_live_postgres_web_handlers_and_mcp_backends() {
     run_object_cache_regression(true).await;
 }

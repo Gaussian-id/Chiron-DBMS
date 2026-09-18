@@ -12,7 +12,7 @@ const MAX_BRIDGE_SAVE_BYTES = 512 * 1024 * 1024;
 
 export interface PluginBridgeTheme {
   appearance: "light" | "dark";
-  /** Resolved DBX design tokens (`--color-*`, `--radius-*`, ...) for the current theme. */
+  /** Resolved Chiron Horizon design tokens (`--color-*`, `--radius-*`, ...) for the current theme. */
   tokens: Record<string, string>;
 }
 
@@ -124,7 +124,7 @@ export class PluginHostBridge {
     this.post({ source: HOST_MESSAGE_SOURCE, version: BRIDGE_VERSION, type: "env", locale });
   }
 
-  /** Push resolved theme tokens so the plugin UI can follow DBX light/dark and palette changes. */
+  /** Push resolved theme tokens so the plugin UI can follow Chiron Horizon light/dark and palette changes. */
   updateTheme(theme: PluginBridgeTheme): void {
     this.theme = clonePluginData(theme);
     this.post({ source: HOST_MESSAGE_SOURCE, version: BRIDGE_VERSION, type: "env", locale: this.locale, theme: this.theme });
@@ -295,7 +295,7 @@ export function pluginBootThemeCss(theme?: PluginBridgeTheme): string {
 
 /**
  * Minimal official component kit for plugin workbenches. Every class is built
- * on the DBX design tokens the host pushes through the bridge, so plugin UI
+ * on the Chiron Horizon design tokens the host pushes through the bridge, so plugin UI
  * follows light/dark and palette changes without any plugin-side logic.
  */
 export function pluginUiKitCss(): string {

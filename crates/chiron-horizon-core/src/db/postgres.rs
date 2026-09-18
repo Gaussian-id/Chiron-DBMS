@@ -9982,12 +9982,14 @@ mod tests {
     fn opengauss_package_catalog_fallback_rebuilds_spec_ddl() {
         // Real shape captured from openGauss-lite 5.0.1 gs_package.pkgspecsrc.
         let fragment = " PACKAGE  DECLARE  g_version VARCHAR2(20) := '1.0';\n  PROCEDURE log_message(p_message IN VARCHAR2);\n  FUNCTION add_numbers(p_left IN INTEGER, p_right IN INTEGER) RETURN INTEGER;\nEND ";
-        let ddl = opengauss_package_spec_source("public", "dbx_test_pkg_math", fragment, false).unwrap();
-        assert!(ddl.starts_with("CREATE OR REPLACE PACKAGE \"public\".\"dbx_test_pkg_math\" AUTHID CURRENT_USER AS\n"));
+        let ddl = opengauss_package_spec_source("public", "chiron_horizon_test_pkg_math", fragment, false).unwrap();
+        assert!(ddl.starts_with(
+            "CREATE OR REPLACE PACKAGE \"public\".\"chiron_horizon_test_pkg_math\" AUTHID CURRENT_USER AS\n"
+        ));
         assert!(ddl.contains("AUTHID CURRENT_USER"));
         assert!(ddl.contains("g_version VARCHAR2(20) := '1.0';"));
         assert!(ddl.contains("PROCEDURE log_message(p_message IN VARCHAR2);"));
-        assert!(ddl.ends_with("END \"dbx_test_pkg_math\";"));
+        assert!(ddl.ends_with("END \"chiron_horizon_test_pkg_math\";"));
         assert!(!ddl.contains("END  "));
         assert_eq!(ddl.matches("END").count(), 1);
     }
@@ -10005,21 +10007,21 @@ mod tests {
         // Real shapes from gs_package.pkgbodydeclsrc / pkgbodyinitsrc.
         let decl = " PACKAGE  DECLARE  PROCEDURE log_message(p_message IN VARCHAR2) IS\n  BEGIN\n    NULL;\n  END;\n\n  FUNCTION add_numbers(p_left IN INTEGER, p_right IN INTEGER) RETURN INTEGER IS\n  BEGIN\n    RETURN p_left + p_right;\n  END;\n\nEND\n";
         let init = " INSTANTIATION \nBEGIN\n  g_version := '1.1';\nEND\n";
-        let ddl = opengauss_package_body_source("public", "dbx_test_pkg_math", decl, init).unwrap();
-        assert!(ddl.starts_with("CREATE OR REPLACE PACKAGE BODY \"public\".\"dbx_test_pkg_math\" AS\n"));
+        let ddl = opengauss_package_body_source("public", "chiron_horizon_test_pkg_math", decl, init).unwrap();
+        assert!(ddl.starts_with("CREATE OR REPLACE PACKAGE BODY \"public\".\"chiron_horizon_test_pkg_math\" AS\n"));
         assert!(ddl.contains("PROCEDURE log_message(p_message IN VARCHAR2) IS"));
         assert!(ddl.contains("FUNCTION add_numbers(p_left IN INTEGER, p_right IN INTEGER) RETURN INTEGER IS"));
         assert!(ddl.contains("g_version := '1.1';"));
-        assert!(ddl.ends_with("END \"dbx_test_pkg_math\";"));
+        assert!(ddl.ends_with("END \"chiron_horizon_test_pkg_math\";"));
     }
 
     #[test]
     fn opengauss_package_catalog_fallback_rebuilds_body_without_init_ddl() {
         let decl = " PACKAGE  DECLARE  FUNCTION format_value(p_value IN INTEGER) RETURN VARCHAR2 IS\n  BEGIN\n    RETURN 'x';\n  END;\nEND ";
-        let ddl = opengauss_package_body_source("public", "dbx_test_pkg_overload", decl, "").unwrap();
-        assert!(ddl.starts_with("CREATE OR REPLACE PACKAGE BODY \"public\".\"dbx_test_pkg_overload\" AS\n"));
+        let ddl = opengauss_package_body_source("public", "chiron_horizon_test_pkg_overload", decl, "").unwrap();
+        assert!(ddl.starts_with("CREATE OR REPLACE PACKAGE BODY \"public\".\"chiron_horizon_test_pkg_overload\" AS\n"));
         assert!(ddl.contains("FUNCTION format_value(p_value IN INTEGER) RETURN VARCHAR2 IS"));
-        assert!(ddl.ends_with("END \"dbx_test_pkg_overload\";"));
+        assert!(ddl.ends_with("END \"chiron_horizon_test_pkg_overload\";"));
         assert!(!ddl.contains("INSTANTIATION"));
     }
 
@@ -10106,9 +10108,9 @@ mod tests {
     }
 
     #[tokio::test]
-    #[ignore = "requires DBX_TEST_POSTGRES_URL pointing at a PostgreSQL database"]
+    #[ignore = "requires CHIRON_HORIZON_TEST_POSTGRES_URL pointing at a PostgreSQL database"]
     async fn postgres_command_query_preserves_notice_capture() {
-        let url = std::env::var("DBX_TEST_POSTGRES_URL").expect("DBX_TEST_POSTGRES_URL");
+        let url = std::env::var("CHIRON_HORIZON_TEST_POSTGRES_URL").expect("CHIRON_HORIZON_TEST_POSTGRES_URL");
         let pool = connect_with_local_timezone(&url, Duration::from_secs(10), "UTC")
             .await
             .expect("connect PostgreSQL database");
@@ -10116,12 +10118,15 @@ mod tests {
         // `execute_query_with_max_rows` is the public command helper (used by
         // DROP DATABASE and the transfer/export fallback). A statement with no
         // result set must still attach the notices it raised.
-        let result =
-            execute_query_with_max_rows(&pool, "DO $$ BEGIN RAISE NOTICE 'dbx public notice regression'; END $$", None)
-                .await
-                .expect("execute statement with notice");
+        let result = execute_query_with_max_rows(
+            &pool,
+            "DO $$ BEGIN RAISE NOTICE 'chiron_horizon public notice regression'; END $$",
+            None,
+        )
+        .await
+        .expect("execute statement with notice");
 
-        assert!(result.messages.iter().any(|message| message.message == "dbx public notice regression"));
+        assert!(result.messages.iter().any(|message| message.message == "chiron_horizon public notice regression"));
     }
 
     #[test]

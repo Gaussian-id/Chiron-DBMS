@@ -1017,7 +1017,7 @@ const pendingCompaction = ref<{ summary: string; compactedMessages: number } | n
 
 const AI_TEXTAREA_MIN_HEIGHT_PX = 64;
 const AI_TEXTAREA_MAX_PANEL_RATIO = 0.5;
-const AI_TEXTAREA_HEIGHT_STORAGE_KEY = "dbx-ai-textarea-height";
+const AI_TEXTAREA_HEIGHT_STORAGE_KEY = "chiron-horizon-ai-textarea-height";
 
 const textareaHeight = ref<number>(AI_TEXTAREA_MIN_HEIGHT_PX);
 const assistantRootRef = ref<HTMLElement | null>(null);
@@ -1769,7 +1769,7 @@ function agentEventToStep(event: AgentEvent, index: number, now: number): AiAgen
   }
 
   // tool_call_end: produce a final step; toolArgs will be merged from the start step by upsert if missing.
-  const isExecuteQuery = event.tool_name === "execute_query" || event.tool_name === "dbx_execute_query";
+  const isExecuteQuery = event.tool_name === "execute_query" || event.tool_name === "chiron_horizon_execute_query";
   const labelKey = isExecuteQuery ? (event.is_error ? "ai.agentSteps.executeBlocked" : "ai.agentSteps.executeSafe") : event.is_error ? "ai.agentSteps.toolError" : "ai.agentSteps.toolDone";
   const tone: AiAgentStepTone = event.is_error ? "danger" : "success";
 
@@ -2621,7 +2621,7 @@ function enqueueAttachmentTask(task: (expectedEpoch: number) => Promise<void>, e
     })
     .catch((error) => {
       if (expectedEpoch !== attachmentDraftEpoch) return;
-      console.error("[DBX][ai-attachment] Attachment task failed", error);
+      console.error("[Chiron Horizon][ai-attachment] Attachment task failed", error);
       toast(t("ai.attachmentReadFailed"), 4000);
     })
     .finally(() => {
@@ -2737,7 +2737,7 @@ function addDroppedAttachmentPaths(paths: string[]) {
         await addTextAttachmentBytes(name, data, metadata.size, expectedEpoch);
       } catch (error) {
         if (expectedEpoch !== attachmentDraftEpoch) return;
-        console.error("[DBX][ai-attachment] Failed to add dropped attachment", { name, error });
+        console.error("[Chiron Horizon][ai-attachment] Failed to add dropped attachment", { name, error });
         toast(t("ai.attachmentReadFailed"), 4000);
       }
     }
@@ -3355,7 +3355,7 @@ async function send() {
         if (!runIsVisible() && !detachedRun.cancelRequested) {
           toast(t(writeConfirmationRequired ? "ai.backgroundRunNeedsConfirmation" : "ai.backgroundRunCompleted"), 5000, {
             label: t("ai.openPanel"),
-            onClick: () => window.dispatchEvent(new CustomEvent("dbx:ai-run-notify", { detail: { conversationId: runConversationId, status: runSettledStatus } })),
+            onClick: () => window.dispatchEvent(new CustomEvent("chiron_horizon:ai-run-notify", { detail: { conversationId: runConversationId, status: runSettledStatus } })),
           });
         }
         // Auto-send the conversation's queued input once this run reaches a
@@ -4406,7 +4406,7 @@ onMounted(async () => {
   }).catch(() => undefined);
 
   window.addEventListener("resize", handlePanelResize);
-  document.addEventListener("dbx:tauri-file-drop", onTauriFileDrop as EventListener);
+  document.addEventListener("chiron_horizon:tauri-file-drop", onTauriFileDrop as EventListener);
   window.addEventListener(CHIRON_HORIZON_TABLE_REFERENCE_DROP_EVENT, onTableReferenceDropEvent);
   if (typeof ResizeObserver !== "undefined" && assistantRootRef.value) {
     promptPanelResizeObserver = new ResizeObserver(handlePanelResize);
@@ -4487,7 +4487,7 @@ onUnmounted(() => {
   document.body.style.userSelect = "";
   document.body.style.cursor = "";
   window.removeEventListener("resize", handlePanelResize);
-  document.removeEventListener("dbx:tauri-file-drop", onTauriFileDrop as EventListener);
+  document.removeEventListener("chiron_horizon:tauri-file-drop", onTauriFileDrop as EventListener);
   window.removeEventListener(CHIRON_HORIZON_TABLE_REFERENCE_DROP_EVENT, onTableReferenceDropEvent);
   promptPanelResizeObserver?.disconnect();
 });

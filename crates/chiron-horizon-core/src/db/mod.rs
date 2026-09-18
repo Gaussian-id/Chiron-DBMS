@@ -390,7 +390,7 @@ mod tls_tests {
                 "-days",
                 "1",
                 "-subj",
-                "/CN=dbx-test-ca",
+                "/CN=chiron-horizon-test-ca",
             ])
             .output();
         let _ = Command::new("openssl")
@@ -404,7 +404,7 @@ mod tls_tests {
                 "-out",
                 csr.to_str().unwrap(),
                 "-subj",
-                "/CN=dbx-test-client",
+                "/CN=chiron-horizon-test-client",
             ])
             .output();
         let _ = Command::new("openssl")
@@ -431,7 +431,7 @@ mod tls_tests {
 
     #[test]
     fn apply_tls_certificates_builds_with_ca_and_client_cert() {
-        let dir = std::env::temp_dir().join(format!("dbx-tls-test-{}", std::process::id()));
+        let dir = std::env::temp_dir().join(format!("chiron-horizon-tls-test-{}", std::process::id()));
         std::fs::create_dir_all(&dir).unwrap();
         let (ca, client_crt, client_key) = gen_certs(&dir);
 

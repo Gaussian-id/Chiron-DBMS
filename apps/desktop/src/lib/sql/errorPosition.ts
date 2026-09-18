@@ -25,11 +25,11 @@ export interface SqlErrorOffsetOptions {
  *
  * Failures are always logged (they explain the "position unavailable" toast).
  * Successful resolutions are verbose-only: run
- * `localStorage.setItem("dbx:debug:sql-error-position", "1")` once (then reload)
+ * `localStorage.setItem("chiron_horizon:debug:sql-error-position", "1")` once (then reload)
  * to also inspect the drift/offset details.
  */
-const LOG_TAG = "[DBX][sql-error-position]";
-const DEBUG_FLAG_KEY = "dbx:debug:sql-error-position";
+const LOG_TAG = "[Chiron Horizon][sql-error-position]";
+const DEBUG_FLAG_KEY = "chiron_horizon:debug:sql-error-position";
 
 export function isSqlErrorPositionDebugEnabled(): boolean {
   try {
@@ -91,7 +91,7 @@ function logDiagnostics(stage: string, options: SqlErrorOffsetOptions, extra: Re
  * current editor document.
  *
  * The backend reports the position against the statement text it actually sent.
- * DBX frequently rewrites the user's statement before execution (pagination
+ * Chiron Horizon frequently rewrites the user's statement before execution (pagination
  * wrappers, appended LIMIT/OFFSET, injected hidden key columns), so the position
  * is first resolved inside `executedStatement` and then projected back onto the
  * user's `sourceStatement` before it is placed in the editor.

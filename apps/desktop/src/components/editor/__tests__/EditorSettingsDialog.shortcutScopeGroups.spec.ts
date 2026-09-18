@@ -53,7 +53,7 @@ describe("EditorSettingsDialog shortcut scope grouping", () => {
 
   it("keeps the capture pill's measured-width contract untouched", () => {
     // The non-editing pill branch is a separate, deliberate formula (see
-    // .trellis/spec/dbx/frontend/keyboard-shortcuts.md, contract 5) — do not
+    // .trellis/spec/chiron-horizon/frontend/keyboard-shortcuts.md, contract 5) — do not
     // unify it with the measured capture-input width.
     expect(shortcutsTab).toContain("Math.max(4, formatShortcutPill(editShortcuts[definition.id]).length + 3)}ch");
     expect(shortcutsTab).toContain("editingShortcutId === definition.id ? shortcutPressShortcutInputWidth");

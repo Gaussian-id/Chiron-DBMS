@@ -10020,14 +10020,18 @@ for line in sys.stdin:
     #[tokio::test]
     #[ignore = "requires a reachable openGauss A-compatibility instance via environment variables"]
     async fn live_opengauss_package_feature() {
-        let host = std::env::var("DBX_TEST_OPENGAUSS_HOST").expect("DBX_TEST_OPENGAUSS_HOST not set");
-        let port = std::env::var("DBX_TEST_OPENGAUSS_PORT")
-            .expect("DBX_TEST_OPENGAUSS_PORT not set")
+        let host =
+            std::env::var("CHIRON_HORIZON_TEST_OPENGAUSS_HOST").expect("CHIRON_HORIZON_TEST_OPENGAUSS_HOST not set");
+        let port = std::env::var("CHIRON_HORIZON_TEST_OPENGAUSS_PORT")
+            .expect("CHIRON_HORIZON_TEST_OPENGAUSS_PORT not set")
             .parse::<u16>()
-            .expect("DBX_TEST_OPENGAUSS_PORT should be a u16");
-        let username = std::env::var("DBX_TEST_OPENGAUSS_USER").expect("DBX_TEST_OPENGAUSS_USER not set");
-        let password = std::env::var("DBX_TEST_OPENGAUSS_PASSWORD").expect("DBX_TEST_OPENGAUSS_PASSWORD not set");
-        let database = std::env::var("DBX_TEST_OPENGAUSS_DATABASE").unwrap_or_else(|_| "postgres".to_string());
+            .expect("CHIRON_HORIZON_TEST_OPENGAUSS_PORT should be a u16");
+        let username =
+            std::env::var("CHIRON_HORIZON_TEST_OPENGAUSS_USER").expect("CHIRON_HORIZON_TEST_OPENGAUSS_USER not set");
+        let password = std::env::var("CHIRON_HORIZON_TEST_OPENGAUSS_PASSWORD")
+            .expect("CHIRON_HORIZON_TEST_OPENGAUSS_PASSWORD not set");
+        let database =
+            std::env::var("CHIRON_HORIZON_TEST_OPENGAUSS_DATABASE").unwrap_or_else(|_| "postgres".to_string());
 
         let mut config = live_postgres_like_config(DatabaseType::OpenGauss, &host, port, &username, &password, None);
         config.id = "opengauss-live".to_string();
@@ -10105,7 +10109,7 @@ for line in sys.stdin:
         }
 
         let schema_name = "public";
-        let pkg = "dbx_live_pkg";
+        let pkg = "chiron_horizon_live_pkg";
         let _ = db::postgres::execute_query(&pool, &format!("DROP PACKAGE BODY IF EXISTS {schema_name}.{pkg}")).await;
         let _ = db::postgres::execute_query(&pool, &format!("DROP PACKAGE IF EXISTS {schema_name}.{pkg}")).await;
 

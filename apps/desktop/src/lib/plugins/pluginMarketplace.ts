@@ -64,7 +64,7 @@ export function listingRepositoryCanVerify(repository: PluginRepository): boolea
   return repository.kind === "official" || repository.kind === "enterprise";
 }
 
-const INSTALL_BEACON_URL = "https://dbxio.com/api/plugins/install";
+const INSTALL_BEACON_URL = "https://chiron-horizon.com/api/plugins/install";
 
 // Fire-and-forget install beacon for marketplace statistics; never blocks or fails the install.
 export function beaconPluginInstall(pluginId: string, version: string): void {

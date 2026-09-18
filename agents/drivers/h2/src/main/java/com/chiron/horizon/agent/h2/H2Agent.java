@@ -1,20 +1,20 @@
-package com.dbx.agent.h2;
+package com.chiron.horizon.agent.h2;
 
-import com.dbx.agent.AbstractJdbcAgent;
-import com.dbx.agent.ColumnInfo;
-import com.dbx.agent.ConnectParams;
-import com.dbx.agent.DatabaseInfo;
-import com.dbx.agent.ForeignKeyInfo;
-import com.dbx.agent.IndexInfo;
-import com.dbx.agent.JdbcExecutor;
-import com.dbx.agent.JdbcIdentifiers;
-import com.dbx.agent.MultiSessionJsonRpcServer;
-import com.dbx.agent.MetadataListConstraints;
-import com.dbx.agent.MetadataSqlSupport;
-import com.dbx.agent.ObjectInfo;
-import com.dbx.agent.ObjectSource;
-import com.dbx.agent.TableInfo;
-import com.dbx.agent.TriggerInfo;
+import com.chiron.horizon.agent.AbstractJdbcAgent;
+import com.chiron.horizon.agent.ColumnInfo;
+import com.chiron.horizon.agent.ConnectParams;
+import com.chiron.horizon.agent.DatabaseInfo;
+import com.chiron.horizon.agent.ForeignKeyInfo;
+import com.chiron.horizon.agent.IndexInfo;
+import com.chiron.horizon.agent.JdbcExecutor;
+import com.chiron.horizon.agent.JdbcIdentifiers;
+import com.chiron.horizon.agent.MultiSessionJsonRpcServer;
+import com.chiron.horizon.agent.MetadataListConstraints;
+import com.chiron.horizon.agent.MetadataSqlSupport;
+import com.chiron.horizon.agent.ObjectInfo;
+import com.chiron.horizon.agent.ObjectSource;
+import com.chiron.horizon.agent.TableInfo;
+import com.chiron.horizon.agent.TriggerInfo;
 
 import java.nio.charset.StandardCharsets;
 import java.sql.Connection;
@@ -413,7 +413,7 @@ public class H2Agent extends AbstractJdbcAgent {
             String extraColumns = isVersion2OrLater()
                 ? "IS_GENERATED, IS_IDENTITY, IDENTITY_GENERATION, "
                 : "IS_COMPUTED, SEQUENCE_NAME, ";
-            String columnSql = "SELECT COLUMN_NAME, " + typeColumn + " AS DBX_DATA_TYPE, IS_NULLABLE, COLUMN_DEFAULT, " + extraColumns
+            String columnSql = "SELECT COLUMN_NAME, " + typeColumn + " AS CHIRON_HORIZON_DATA_TYPE, IS_NULLABLE, COLUMN_DEFAULT, " + extraColumns
                 + "NUMERIC_PRECISION, NUMERIC_SCALE, CHARACTER_MAXIMUM_LENGTH, REMARKS "
                 + "FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = ? AND TABLE_NAME = ? ORDER BY ORDINAL_POSITION";
             try (var stmt = requireConnected().prepareStatement(columnSql)) {
@@ -436,7 +436,7 @@ public class H2Agent extends AbstractJdbcAgent {
                         }
                         result.add(new ColumnInfo(
                             columnName,
-                            rs.getString("DBX_DATA_TYPE"),
+                            rs.getString("CHIRON_HORIZON_DATA_TYPE"),
                             "YES".equals(rs.getString("IS_NULLABLE")),
                             rs.getString("COLUMN_DEFAULT"),
                             primaryKeys.contains(columnName),

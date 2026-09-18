@@ -83,7 +83,7 @@ describe("plugin marketplace listings", () => {
   });
 
   it("treats a repository URL and its homepage URL as one link", () => {
-    expect(marketplaceHomepageUrl("https://github.com/dbxio/example/", "https://github.com/dbxio/example#readme")).toBeUndefined();
-    expect(marketplaceHomepageUrl("https://github.com/dbxio/example", "https://dbxio.com/plugins/example")).toBe("https://dbxio.com/plugins/example");
+    expect(marketplaceHomepageUrl("https://github.com/chiron-horizon/example/", "https://github.com/chiron-horizon/example#readme")).toBeUndefined();
+    expect(marketplaceHomepageUrl("https://github.com/chiron-horizon/example", "https://chiron-horizon.com/plugins/example")).toBe("https://chiron-horizon.com/plugins/example");
   });
 });

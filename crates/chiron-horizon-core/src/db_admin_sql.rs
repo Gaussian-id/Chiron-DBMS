@@ -291,7 +291,7 @@ fn build_create_database_statement(options: &CreateDatabaseSqlOptions) -> Result
         // Informix has no charset clause in `CREATE DATABASE`; the new database inherits the
         // creating session's DB_LOCALE. Carry the chosen locale as a directive the GBase 8s agent
         // honors by running the statement on a sysmaster session pinned to that DB_LOCALE.
-        return Ok(format!("-- DBX_DB_LOCALE={locale}\nCREATE DATABASE {name};"));
+        return Ok(format!("-- CHIRON_HORIZON_DB_LOCALE={locale}\nCREATE DATABASE {name};"));
     }
     let name = quote_table_identifier(options.database_type, &options.name);
     let charset = clean_sql_option(options.charset.as_deref());
@@ -1487,7 +1487,7 @@ mod tests {
                 collation: None,
             })
             .unwrap(),
-            "-- DBX_DB_LOCALE=zh_CN.utf8\nCREATE DATABASE app_db;"
+            "-- CHIRON_HORIZON_DB_LOCALE=zh_CN.utf8\nCREATE DATABASE app_db;"
         );
     }
 

@@ -248,7 +248,7 @@ function translateStructuredBackendError(t: BackendErrorTranslate, error: Backen
     detail = detail.slice(summary.length + 2).trim() || undefined;
   }
   // An unclassified message still goes through the same catalog the raw transports use, so a
-  // message DBX knows reads the same whether it arrived wrapped or bare.
+  // message Chiron Horizon knows reads the same whether it arrived wrapped or bare.
   if (error.code === LEGACY_BACKEND_ERROR_CODE && detail) {
     const known = translateKnownMessage(t, detail);
     if (known) return known;

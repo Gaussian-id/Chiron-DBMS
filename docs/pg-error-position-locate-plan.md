@@ -13,12 +13,12 @@
 tokio_postgres::Error
   └─ DbError.position() = ErrorPosition::Original(cursorpos)   ← 位置信息在这里，当前被丢弃
         │
-        │  crates/dbx-core/src/db/postgres.rs::pg_error_to_string()
+        │  crates/chiron-horizon-core/src/db/postgres.rs::pg_error_to_string()
         │  (只取 err.as_db_error().map(ToString::to_string))     ← 只保留文本，未保留 cursorpos
         ▼
 Result<db::QueryResult, String>            ← db 层统一用 String 承载错误
         │
-        │  crates/dbx-core/src/query.rs::do_execute_typed() 尾部 .map_err(...)
+        │  crates/chiron-horizon-core/src/query.rs::do_execute_typed() 尾部 .map_err(...)
         ▼
 QueryExecutionError::{Legacy|Sql}(String)   ← 仍是纯文本
         │
@@ -52,10 +52,10 @@ DataGrid ErrorBanner（apps/desktop/src/components/grid/DataGrid.vue:11835）
 
 | 层 | 文件 | 作用 |
 | --- | --- | --- |
-| 驱动 | `crates/dbx-core/src/db/postgres.rs` | 从 `DbError` 提取 cursorpos |
-| 新模块 | `crates/dbx-core/src/sql_error_position.rs`（新增） | 位置类型、行列换算、marker 编解码 |
-| 查询层 | `crates/dbx-core/src/query.rs` | 还原位置、挂到 `QueryExecutionError` |
-| 契约 | `crates/dbx-core/src/backend_error.rs` | `BackendError.errorPosition` 字段与构造器 |
+| 驱动 | `crates/chiron-horizon-core/src/db/postgres.rs` | 从 `DbError` 提取 cursorpos |
+| 新模块 | `crates/chiron-horizon-core/src/sql_error_position.rs`（新增） | 位置类型、行列换算、marker 编解码 |
+| 查询层 | `crates/chiron-horizon-core/src/query.rs` | 还原位置、挂到 `QueryExecutionError` |
+| 契约 | `crates/chiron-horizon-core/src/backend_error.rs` | `BackendError.errorPosition` 字段与构造器 |
 | 契约文档 | `docs/backend-error-handling.md` | 记录新可选字段 |
 | 前端类型 | `apps/desktop/src/lib/backend/errorUtils.ts` | TS `BackendError.errorPosition` + 校验 |
 | 前端映射 | `apps/desktop/src/lib/sql/errorPosition.ts`（新增） | 语句内行列 → 编辑器 offset |
@@ -72,7 +72,7 @@ DataGrid ErrorBanner（apps/desktop/src/components/grid/DataGrid.vue:11835）
 PG server cursorpos (字符下标)
    │  ① 提取
    ▼
-pg_error_to_string() 追加临时 marker: "\nDBX_SQL_ERROR_POSITION:<cursor>"
+pg_error_to_string() 追加临时 marker: "\nCHIRON_HORIZON_SQL_ERROR_POSITION:<cursor>"
    │  ② 沿既有 String ABI 冒泡（不改各函数签名）
    ▼
 query.rs::do_execute_typed() 尾部 .map_err：
@@ -95,7 +95,7 @@ QueryEditor.focusErrorPosition(offset)：selection + scrollIntoView + 高亮
 设计取舍：
 
 - **位置换算放在后端**：后端在 `do_execute_typed` 处同时掌握「原始 SQL 文本」和「cursorpos」，直接算出行列，前端只做「语句范围 → 文档 offset」的平移，避免前端再次处理字符/字节/码点差异。
-- **跨层用 marker**：`db::postgres` 全链路是 `Result<_, String>`，引入类型化错误代价大且风险高。用与仓库既有 `DBX_AGENT_ERROR_DATA`（`agent_driver.rs:385`）同款「结构化后缀 marker」把类型化事实无损穿过 String 边界，并在第一层知道 SQL 的 `query.rs` 立即还原并剥离。marker 是**位置载体**而非分类依据，符合契约边界。
+- **跨层用 marker**：`db::postgres` 全链路是 `Result<_, String>`，引入类型化错误代价大且风险高。用与仓库既有 `CHIRON_HORIZON_AGENT_ERROR_DATA`（`agent_driver.rs:385`）同款「结构化后缀 marker」把类型化事实无损穿过 String 边界，并在第一层知道 SQL 的 `query.rs` 立即还原并剥离。marker 是**位置载体**而非分类依据，符合契约边界。
 - **两级安全网**：`BackendError` 的 `detail` 清洗（`bounded_detail` / `bounded_native_detail`）里也剥离 marker，保证元数据/连接等旁路错误即使没走到 PG 分支也不会把 marker 泄漏到界面。
 
 > 备选方案（更「类型化」但改动大）：把 `db::postgres` 用户查询链路（`execute_query_with_max_rows_and_cancel` → `execute_postgres_user_query(_with_mode)` → `execute_query_with_max_rows_inner` 及其等待包装）的返回错误从 `String` 改为 `PostgresQueryError { message, position }`，并给 `String` 提供 `From` 以便内部 `?` 继续工作。优点是彻底无 marker；缺点是触及 `postgres.rs` 多处签名与等待辅助函数。若团队不接受 marker，可切换到该方案，`query.rs` 以上的设计不变。
@@ -104,13 +104,13 @@ QueryEditor.focusErrorPosition(offset)：selection + scrollIntoView + 高亮
 
 ## 3. 后端改造
 
-### 3.1 新模块 `crates/dbx-core/src/sql_error_position.rs`
+### 3.1 新模块 `crates/chiron-horizon-core/src/sql_error_position.rs`
 
 ```rust
 use serde::{Deserialize, Serialize};
 
 /// 跨 String 边界携带 PG cursorpos 的临时后缀。
-pub const SQL_ERROR_POSITION_MARKER: &str = "\nDBX_SQL_ERROR_POSITION:";
+pub const SQL_ERROR_POSITION_MARKER: &str = "\nCHIRON_HORIZON_SQL_ERROR_POSITION:";
 
 /// 相对「实际下发的那条语句文本」的出错位置。
 /// line/column 为 1-based、按 Unicode 码点计数；offset 为 0-based 码点下标。
@@ -178,7 +178,7 @@ pub fn resolve_message(message: &str, executed_sql: &str) -> Option<(String, Sql
 }
 ```
 
-> 在 `crates/dbx-core/src/lib.rs` 注册 `pub mod sql_error_position;`（仓库若已有模块清单，按现有顺序追加）。
+> 在 `crates/chiron-horizon-core/src/lib.rs` 注册 `pub mod sql_error_position;`（仓库若已有模块清单，按现有顺序追加）。
 
 ### 3.2 `db/postgres.rs`：提取 cursorpos
 
@@ -491,7 +491,7 @@ executionSummary: {
 
 ### Phase 1 — 后端位置提取与透传（不影响 UI）
 
-- [ ] 新增 `crates/dbx-core/src/sql_error_position.rs` 并在 `lib.rs` 注册；写 `from_pg_cursor` / marker 的单测（多行、`\r\n`、含 emoji、越界钳制）。
+- [ ] 新增 `crates/chiron-horizon-core/src/sql_error_position.rs` 并在 `lib.rs` 注册；写 `from_pg_cursor` / marker 的单测（多行、`\r\n`、含 emoji、越界钳制）。
 - [ ] `postgres.rs::pg_error_to_string` 追加 marker（仅 `ErrorPosition::Original`）。
 - [ ] `backend_error.rs`：加 `error_position` 字段、`from_sql_detail_with_position`、`error_position()`，`new()` 补默认；在 `bounded_detail`/`bounded_native_detail` 内 `strip_marker`。
 - [ ] `query.rs`：新增 `QueryExecutionError::SqlWithPosition`，补齐所有 match 分支，在 `do_execute_typed` 尾部 PG 分支解析。
@@ -537,9 +537,9 @@ executionSummary: {
 **Rust 单测**
 
 ```text
-cargo test -j 1 -p dbx-core --no-default-features --lib sql_error_position::tests
-cargo test -j 1 -p dbx-core --no-default-features --lib backend_error::tests
-cargo test -j 1 -p dbx-core --no-default-features --lib query::tests  # QueryExecutionError 分支
+cargo test -j 1 -p chiron-horizon-core --no-default-features --lib sql_error_position::tests
+cargo test -j 1 -p chiron-horizon-core --no-default-features --lib backend_error::tests
+cargo test -j 1 -p chiron-horizon-core --no-default-features --lib query::tests  # QueryExecutionError 分支
 ```
 
 **前端**
@@ -584,7 +584,7 @@ PG 的出错行列一直存在于 `DbError::position()`，只是被 `pg_error_to
 
 ## 10. 实现补充：下发语句漂移的处理（已落地）
 
-「位置相对实际下发语句」在本方案实现后暴露出一个高频问题：DBX 常在下发前改写语句（追加 `LIMIT/OFFSET`、用 `SELECT * FROM (…)` 包裹分页、为可编辑查询注入隐藏主键列），导致后端位置与用户原文对不上，定位会失败或偏移。已在前端增加一层投影，无需改动后端协议：
+「位置相对实际下发语句」在本方案实现后暴露出一个高频问题：Chiron Horizon 常在下发前改写语句（追加 `LIMIT/OFFSET`、用 `SELECT * FROM (…)` 包裹分页、为可编辑查询注入隐藏主键列），导致后端位置与用户原文对不上，定位会失败或偏移。已在前端增加一层投影，无需改动后端协议：
 
 1. `annotateQueryResultSources` 额外接收本次实际下发的 SQL（`sqlToExecute`），当某个 result 的语句文本与 `sourceStatement` 不同时，把实际下发的语句文本记录到 `QueryResult.executedStatement`（仅在前端内部使用）。
 2. `sqlErrorEditorOffset` 先把后端 `line/column` 解析到 `executedStatement`（位置本就相对它），再用 `mapExecutedOffsetToSource` 投影回 `sourceStatement`：

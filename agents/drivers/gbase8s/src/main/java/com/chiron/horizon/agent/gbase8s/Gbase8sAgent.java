@@ -43,13 +43,13 @@ public final class Gbase8sAgent extends ConfiguredJdbcAgent {
     /**
      * Leading directive comment emitted by the Rust admin-SQL layer for GBase 8s / Informix
      * "Create Database" when the user picks a character set, e.g.
-     * {@code -- DBX_DB_LOCALE=zh_CN.utf8\nCREATE DATABASE mydb;}. Informix cannot express a new
+     * {@code -- CHIRON_HORIZON_DB_LOCALE=zh_CN.utf8\nCREATE DATABASE mydb;}. Informix cannot express a new
      * database's codeset in {@code CREATE DATABASE} — it inherits the creating session's DB_LOCALE —
      * so the chosen locale is carried out-of-band and honored here by opening a sysmaster session
      * pinned to that DB_LOCALE.
      */
     private static final Pattern CREATE_DATABASE_LOCALE_DIRECTIVE = Pattern.compile(
-        "^\\s*--\\s*DBX_DB_LOCALE\\s*=\\s*(\\S+)\\s*\\r?\\n(.*)$", Pattern.DOTALL);
+        "^\\s*--\\s*CHIRON_HORIZON_DB_LOCALE\\s*=\\s*(\\S+)\\s*\\r?\\n(.*)$", Pattern.DOTALL);
 
     public static final JdbcAgentProfile GBASE8S_PROFILE = new JdbcAgentProfile(
         "com.gbasedbt.jdbc.Driver",

@@ -19,7 +19,7 @@ use crate::db::mongo_driver::MongoDocumentResult;
 use crate::models::connection::{ConnectionConfig, DatabaseType};
 use crate::object_source_sql::{build_executable_object_source_statements, EditableObjectSourceSqlInput};
 use crate::query::{
-    agent_execute_query_params, is_dbx_query_timeout_error, pool_error_action, query_timeout_duration,
+    agent_execute_query_params, is_chiron_horizon_query_timeout_error, pool_error_action, query_timeout_duration,
     wait_for_query_opt, PoolErrorAction, QueryExecutionOptions, StreamProgressClock, AGENT_PROTOCOL_MAX_ROWS,
 };
 use crate::sql::{split_sql_statements, split_sql_statements_for_database};
@@ -5956,7 +5956,7 @@ fn client_session_id_from_pool_key(pool_key: &str) -> Option<&str> {
 
 fn is_transfer_query_timeout(error: &str) -> bool {
     let lower = error.to_ascii_lowercase();
-    is_dbx_query_timeout_error(&lower) || lower.contains("查询超时") || lower.contains("查詢逾時")
+    is_chiron_horizon_query_timeout_error(&lower) || lower.contains("查询超时") || lower.contains("查詢逾時")
 }
 
 async fn execute_on_pool_with_options(
@@ -13303,8 +13303,8 @@ PARTITION p_old VALUES LESS THAN (TO_DAYS('2026-01-01')))";
 
         let rewritten = rewrite_transfer_source_table_ddl(
             ddl,
-            "dbx_src",
-            "dbx_dst",
+            "chiron_horizon_src",
+            "chiron_horizon_dst",
             &DatabaseType::Mysql,
             &DatabaseType::Mysql,
             "orders_plain",

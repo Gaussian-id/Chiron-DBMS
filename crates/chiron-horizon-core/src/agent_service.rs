@@ -2491,11 +2491,11 @@ fn tar_zstd_jre_package_info(package_path: &Path) -> Result<Option<TarZstdJrePac
         let mut entry = entry.map_err(|error| error.to_string())?;
         let name = safe_archive_entry_name(&entry.path().map_err(|error| error.to_string())?)?;
         has_registry |= name == "agent-registry.json";
-        invalid_jre_entry |= !(name == "dbx-jre" || name.starts_with("dbx-jre/"))
+        invalid_jre_entry |= !(name == "chiron-horizon-jre" || name.starts_with("chiron-horizon-jre/"))
             || !(entry.header().entry_type().is_file()
                 || entry.header().entry_type().is_dir()
                 || (entry.header().entry_type().is_symlink() && standalone_jre_link_is_safe(&entry, &name)?));
-        if name == "dbx-jre/release" {
+        if name == "chiron-horizon-jre/release" {
             if release.is_some() || !entry.header().entry_type().is_file() || entry.size() > 64 * 1024 {
                 return Err("Invalid offline JRE release metadata".to_string());
             }
@@ -2540,7 +2540,7 @@ fn standalone_jre_link_is_safe<R: Read>(entry: &tar::Entry<'_, R>, name: &str) -
             _ => return Ok(false),
         }
     }
-    Ok(parts.first() == Some(&"dbx-jre"))
+    Ok(parts.first() == Some(&"chiron-horizon-jre"))
 }
 
 fn extract_and_validate_standalone_jre(

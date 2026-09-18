@@ -209,7 +209,7 @@ fn sql_risk_allowed(risk: SqlRisk, permissions: AgentSqlPermissions) -> bool {
     }
 }
 
-/// Returns true when an Agent attempted a write or DDL call before DBX has a
+/// Returns true when an Agent attempted a write or DDL call before Chiron Horizon has a
 /// user-confirmed SQL binding for the current run. The caller must turn that
 /// attempt into a confirmation proposal instead of sending it to the database.
 pub fn write_requires_confirmation(
@@ -441,7 +441,7 @@ fn execute_query_tool(sql_permissions: AgentSqlPermissions) -> ToolDefinition {
     } else if sql_permissions.allow_writes {
         "Execute SQL after the user explicitly confirmed this operation. Read queries and non-DDL writes are allowed for this run."
     } else {
-        "Execute a read-only SQL query and return results (max 50 rows). Cross-database reads may use fully qualified names such as database.table (or database.schema.table for SQL Server) without switching the current database. This run cannot execute writes or DDL because no specific SQL has been confirmed yet; this does not mean the database itself is read-only. When the user requests a write, first propose the exact SQL in one ```sql code block and ask for confirmation. After confirmation, DBX starts a new run that can execute only that exact SQL. Only SELECT, WITH, SHOW, DESCRIBE, EXPLAIN statements may be executed in this run."
+        "Execute a read-only SQL query and return results (max 50 rows). Cross-database reads may use fully qualified names such as database.table (or database.schema.table for SQL Server) without switching the current database. This run cannot execute writes or DDL because no specific SQL has been confirmed yet; this does not mean the database itself is read-only. When the user requests a write, first propose the exact SQL in one ```sql code block and ask for confirmation. After confirmation, Chiron Horizon starts a new run that can execute only that exact SQL. Only SELECT, WITH, SHOW, DESCRIBE, EXPLAIN statements may be executed in this run."
     };
     ToolDefinition {
         name: "execute_query",
@@ -471,7 +471,7 @@ fn execute_query_tool(sql_permissions: AgentSqlPermissions) -> ToolDefinition {
                 },
                 "client_session_id": {
                     "type": "string",
-                    "description": "Opaque DBX session handle that pins this query to the same backend connection as earlier queries in the session (preserves USE/SET/session state). Managed by DBX; agents should not invent values."
+                    "description": "Opaque Chiron Horizon session handle that pins this query to the same backend connection as earlier queries in the session (preserves USE/SET/session state). Managed by Chiron Horizon; agents should not invent values."
                 }
             },
             "required": ["sql"]
@@ -872,7 +872,7 @@ async fn execute_execute_query(
     );
 
     if targets_production {
-        return Err("Blocked: AI agents cannot execute writes or DDL on a production database. Return the SQL for the user to review and execute manually in DBX.".to_string());
+        return Err("Blocked: AI agents cannot execute writes or DDL on a production database. Return the SQL for the user to review and execute manually in Chiron Horizon.".to_string());
     }
     if !risk_allowed {
         if risk == SqlRisk::Transaction {
@@ -944,7 +944,7 @@ async fn execute_mongo_query(
     })?;
     if command.is_mutating() {
         return Err(
-            "Blocked: MongoDB Agent queries are read-only. Return the command for the user to review and execute manually in DBX."
+            "Blocked: MongoDB Agent queries are read-only. Return the command for the user to review and execute manually in Chiron Horizon."
                 .to_string(),
         );
     }
@@ -1802,28 +1802,30 @@ for line in sys.stdin:
 
     #[test]
     fn query_result_formatter_marks_the_default_character_window() {
-        let value = format!("{}DBX_ISSUE_5620_SENTINEL", "A".repeat(200));
+        let value = format!("{}CHIRON_HORIZON_ISSUE_5620_SENTINEL", "A".repeat(200));
         let result = query_result(vec!["message"], vec![vec![serde_json::json!(value)]], 0);
 
         let output = format_query_result_as_text(&result, 50, QueryCellWindow::from_options(None, None)).unwrap();
 
         assert!(output.contains(&format!("{}... [chars 0..200; next cell_char_offset=200]", "A".repeat(200))));
-        assert!(!output.contains("DBX_ISSUE_5620_SENTINEL"));
+        assert!(!output.contains("CHIRON_HORIZON_ISSUE_5620_SENTINEL"));
     }
 
     #[test]
     fn query_result_formatter_supports_expanded_and_sliding_character_windows() {
-        let value = format!("{}DBX_ISSUE_5620_SENTINEL{}", "A".repeat(200), "Z".repeat(20));
+        let value = format!("{}CHIRON_HORIZON_ISSUE_5620_SENTINEL{}", "A".repeat(200), "Z".repeat(20));
         let result = query_result(vec!["message"], vec![vec![serde_json::json!(value)]], 0);
 
         let expanded =
             format_query_result_as_text(&result, 50, QueryCellWindow::from_options(None, Some(400))).unwrap();
-        assert!(expanded.contains("DBX_ISSUE_5620_SENTINEL"));
+        assert!(expanded.contains("CHIRON_HORIZON_ISSUE_5620_SENTINEL"));
         assert!(!expanded.contains("next cell_char_offset"));
 
         let sliding =
             format_query_result_as_text(&result, 50, QueryCellWindow::from_options(Some(200), Some(23))).unwrap();
-        assert!(sliding.contains("...DBX_ISSUE_5620_SENTINEL... [chars 200..223; next cell_char_offset=223]"));
+        assert!(
+            sliding.contains("...CHIRON_HORIZON_ISSUE_5620_SENTINEL... [chars 200..223; next cell_char_offset=223]")
+        );
     }
 
     #[test]

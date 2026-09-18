@@ -298,7 +298,7 @@ function close() {
       }
     "
   >
-    <DialogScrollContent class="flex max-h-[calc(var(--dbx-viewport-height)-4rem)] min-h-0 flex-col overflow-hidden sm:max-w-[860px]">
+    <DialogScrollContent class="flex max-h-[calc(var(--chiron-horizon-viewport-height)-4rem)] min-h-0 flex-col overflow-hidden sm:max-w-[860px]">
       <DialogHeader class="shrink-0 pr-8"
         ><DialogTitle class="flex items-center gap-2 text-base"><DatabaseBackup class="h-4 w-4" />{{ t(restoring ? "mongoDump.restoreTitle" : "mongoDump.dumpTitle") }}</DialogTitle></DialogHeader
       >

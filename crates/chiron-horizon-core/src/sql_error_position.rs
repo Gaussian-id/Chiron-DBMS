@@ -15,7 +15,7 @@ use serde::{Deserialize, Serialize};
 
 /// Suffix appended to a driver error message to carry a raw PostgreSQL cursor
 /// position across the `Result<_, String>` boundary of the `db` layer.
-pub const SQL_ERROR_POSITION_MARKER: &str = "\nDBX_SQL_ERROR_POSITION:";
+pub const SQL_ERROR_POSITION_MARKER: &str = "\nCHIRON_HORIZON_SQL_ERROR_POSITION:";
 
 /// A SQL error position relative to the statement text that was actually sent
 /// to the database.

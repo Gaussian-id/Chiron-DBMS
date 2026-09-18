@@ -114,7 +114,7 @@ const filteredMarketplaceListings = computed(() => filterMarketplacePluginListin
 const catalogErrors = computed(() => catalogResults.value.filter((result) => result.error));
 const customRepositories = computed(() => repositories.value.filter((repository) => !repository.managed));
 const showCustomRepositoryTrustSettings = computed(() => customRepositories.value.length > 0 || trustedKeys.value.length > 0);
-const pluginDevelopmentDocsUrl = computed(() => `https://dbxio.com/${appLocale.value.startsWith("zh") ? "cn" : "en"}/docs/plugin-development`);
+const pluginDevelopmentDocsUrl = computed(() => `https://chiron-horizon.com/${appLocale.value.startsWith("zh") ? "cn" : "en"}/docs/plugin-development`);
 
 function marketplaceActionClass(listing: MarketplacePluginListing): string {
   if (listing.status === "update") return "text-blue-600 hover:bg-gray-200 dark:text-blue-400 dark:hover:bg-gray-700";
@@ -347,7 +347,7 @@ async function choosePluginPackage() {
     return;
   }
   const { open } = await import("@tauri-apps/plugin-dialog");
-  const path = await open({ multiple: false, filters: [{ name: t("pluginPlatform.packageFileType"), extensions: ["dbxp"] }] });
+  const path = await open({ multiple: false, filters: [{ name: t("pluginPlatform.packageFileType"), extensions: ["chiron_horizonp"] }] });
   if (typeof path === "string") await installPlugin(path);
 }
 
@@ -359,11 +359,11 @@ async function handleWebPackage(event: Event) {
 }
 
 // Fire-and-forget install beacon for the marketplace stats worker
-// (deploy/plugin-stats-worker, POST dbxio.com/api/plugins/install).
+// (deploy/plugin-stats-worker, POST chiron-horizon.com/api/plugins/install).
 // Decorative counters only: no auth, no PII, failures are never surfaced.
 function reportInstallBeacon(result: PluginInstallResult) {
   try {
-    void fetch("https://dbxio.com/api/plugins/install", {
+    void fetch("https://chiron-horizon.com/api/plugins/install", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ id: result.plugin.manifest.id, version: result.plugin.manifest.version }),
@@ -444,7 +444,7 @@ const urlProgressLabel = computed(() => {
 });
 
 function isPluginPackagePath(path: string): boolean {
-  return /\.dbxp$/i.test(path);
+  return /\.chiron-horizonp$/i.test(path);
 }
 
 function webDropPluginPackage(event: DragEvent): File | null {
@@ -585,17 +585,17 @@ watch(allowUnsigned, (value) => {
 });
 onMounted(() => {
   void refresh();
-  if (isTauriRuntime()) document.addEventListener("dbx:tauri-file-drop", onTauriPluginDrop);
+  if (isTauriRuntime()) document.addEventListener("chiron_horizon:tauri-file-drop", onTauriPluginDrop);
 });
 watch(marketplaceViewMode, (mode) => safeLocalStorageSet(MARKETPLACE_VIEW_MODE_STORAGE_KEY, mode));
 onBeforeUnmount(() => {
-  if (isTauriRuntime()) document.removeEventListener("dbx:tauri-file-drop", onTauriPluginDrop);
+  if (isTauriRuntime()) document.removeEventListener("chiron_horizon:tauri-file-drop", onTauriPluginDrop);
 });
 </script>
 
 <template>
   <div ref="panelRootRef" class="plugin-center-view relative mx-auto flex h-full w-full max-w-6xl flex-col gap-4 overflow-hidden px-6 py-6" @dragenter="onWebDragEnter" @dragover="onWebDragOver" @dragleave="onWebDragLeave" @drop="onWebDrop">
-    <input ref="webFileInput" type="file" accept=".dbxp" class="hidden" @change="handleWebPackage" />
+    <input ref="webFileInput" type="file" accept=".chiron-horizonp" class="hidden" @change="handleWebPackage" />
     <div v-if="error" class="shrink-0 rounded-lg border border-destructive/30 bg-destructive/5 px-3 py-2 text-xs text-destructive">{{ error }}</div>
 
     <Tabs v-model="activeSection" class="min-h-0 flex-1 gap-3">

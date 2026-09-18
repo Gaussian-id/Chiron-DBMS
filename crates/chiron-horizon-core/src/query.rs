@@ -32,7 +32,7 @@ pub const QUERY_TIMEOUT: Duration = Duration::from_secs(30);
 pub const MAX_ROWS: usize = 10000;
 pub const AGENT_PROTOCOL_MAX_ROWS: usize = i32::MAX as usize;
 pub const QUERY_CANCELED: &str = "Query canceled";
-pub const METADATA_POOL_BUSY_ERROR: &str = "DBX metadata pool is busy; please retry";
+pub const METADATA_POOL_BUSY_ERROR: &str = "Chiron Horizon metadata pool is busy; please retry";
 pub const MANUAL_TRANSACTION_IDLE_TIMEOUT_SECS: u64 = 300;
 pub const MANUAL_TRANSACTION_SESSION_NOT_FOUND_ERROR: &str =
     "Transaction session not found or expired; it may have been auto-rolled back due to inactivity";
@@ -49,7 +49,8 @@ pub fn is_manual_transaction_session_expired_error(error: &str) -> bool {
 /// shared-pool reconnect.
 pub fn is_pool_saturation_error(err: &str) -> bool {
     let lower = err.to_lowercase();
-    lower.contains("connection pool checkout timed out [stage=wait") || lower.contains("dbx metadata pool is busy")
+    lower.contains("connection pool checkout timed out [stage=wait")
+        || lower.contains("chiron_horizon metadata pool is busy")
 }
 /// Fallback when a Mongo connection hits the generic SQL executor instead of the shell path.
 /// Wording must match packages/mongo-shell `MONGO_SHELL_COMMAND_HINT`
@@ -1306,7 +1307,10 @@ pub fn agent_close_query_session_params(session_id: &str) -> serde_json::Value {
 
 pub fn is_connection_error(err: &str) -> bool {
     let lower = err.to_lowercase();
-    if is_dbx_query_timeout_error(&lower) || is_agent_rpc_timeout_error(&lower) || is_pool_saturation_error(err) {
+    if is_chiron_horizon_query_timeout_error(&lower)
+        || is_agent_rpc_timeout_error(&lower)
+        || is_pool_saturation_error(err)
+    {
         return false;
     }
     lower.contains("connection")
@@ -1340,7 +1344,7 @@ pub fn is_connection_error(err: &str) -> bool {
         || is_os_connection_error(&lower)
 }
 
-pub(crate) fn is_dbx_query_timeout_error(lower: &str) -> bool {
+pub(crate) fn is_chiron_horizon_query_timeout_error(lower: &str) -> bool {
     lower.starts_with("query timed out after ")
 }
 
@@ -1372,7 +1376,7 @@ pub fn pool_error_action(db_type: Option<DatabaseType>, err: &str) -> PoolErrorA
     }
     let lower = err.to_lowercase();
     if db::sqlserver::is_driver_panic_error(err)
-        || (is_dbx_query_timeout_error(&lower) && should_discard_pool_after_query_timeout(db_type))
+        || (is_chiron_horizon_query_timeout_error(&lower) && should_discard_pool_after_query_timeout(db_type))
         || is_schema_reset_cleanup_error(&lower)
         || is_postgres_transaction_cleanup_error(&lower)
     {
@@ -1610,7 +1614,7 @@ fn postgres_transaction_statement_error(
 ) -> QueryExecutionError {
     let detail = query_error_with_omitted_sql_context(&format!("Statement {statement_index} failed: {message}"), sql);
     let lower = message.to_ascii_lowercase();
-    if is_dbx_query_timeout_error(&lower) {
+    if is_chiron_horizon_query_timeout_error(&lower) {
         QueryExecutionError::Timeout(detail)
     } else if message == QUERY_CANCELED {
         canceled_query_execution_error()
@@ -1978,7 +1982,7 @@ async fn do_execute_typed(
                 Ok(result) => Ok(result),
                 Err(error) => {
                     let is_control_error = error.message == QUERY_CANCELED
-                        || is_dbx_query_timeout_error(&error.message.to_ascii_lowercase());
+                        || is_chiron_horizon_query_timeout_error(&error.message.to_ascii_lowercase());
                     if !is_control_error {
                         typed_duckdb_error = Some(error.clone());
                     }
@@ -2444,7 +2448,9 @@ async fn do_execute_typed(
 fn classify_query_error(db_type: Option<DatabaseType>, error: QueryExecutionError) -> QueryExecutionError {
     match error {
         QueryExecutionError::Legacy(message) if message == QUERY_CANCELED => canceled_query_execution_error(),
-        QueryExecutionError::Legacy(message) if is_dbx_query_timeout_error(&message.to_ascii_lowercase()) => {
+        QueryExecutionError::Legacy(message)
+            if is_chiron_horizon_query_timeout_error(&message.to_ascii_lowercase()) =>
+        {
             QueryExecutionError::Timeout(message)
         }
         QueryExecutionError::Legacy(message) if is_native_sql_server_error(db_type, &message) => {
@@ -2486,7 +2492,7 @@ async fn invoke_external_driver_query_page(
     match session.invoke_with_timeout::<db::QueryResult>("executeQueryPage", params.clone(), plugin_timeout).await {
         Ok(result) => Ok(result),
         Err(error) if is_external_driver_method_unsupported(&error, "executeQueryPage") => {
-            // Plugins installed by older DBX releases predate cursor pagination. Keep
+            // Plugins installed by older Chiron Horizon releases predate cursor pagination. Keep
             // basic queries usable until the user updates the plugin, without retrying
             // actual JDBC/SQL failures that may have side effects.
             log::warn!("[query][external-driver] executeQueryPage unsupported; falling back to executeQuery");
@@ -2933,7 +2939,7 @@ async fn recover_postgres_create_table_after_connection_error(
         .map(|schema_name| format!("n.nspname = {}", db::postgres::pg_quote_literal(&schema_name)))
         .unwrap_or_else(|| "n.nspname = current_schema()".to_string());
     let verify_sql = format!(
-        "SELECT EXISTS (SELECT 1 FROM pg_catalog.pg_class c JOIN pg_catalog.pg_namespace n ON n.oid = c.relnamespace WHERE {} AND c.relname = {}) AS dbx_create_table_applied",
+        "SELECT EXISTS (SELECT 1 FROM pg_catalog.pg_class c JOIN pg_catalog.pg_namespace n ON n.oid = c.relnamespace WHERE {} AND c.relname = {}) AS chiron_horizon_create_table_applied",
         schema_predicate,
         db::postgres::pg_quote_literal(&table_name),
     );
@@ -5119,7 +5125,7 @@ async fn exec_tx_sqlite_inner(
                             // The watchdog interrupt aborts the statement with
                             // SQLITE_INTERRUPT; surface it as a query timeout
                             // (matching `mysql_query_iter_with_timeout` wording so
-                            // `is_dbx_query_timeout_error` recognizes it). The
+                            // `is_chiron_horizon_query_timeout_error` recognizes it). The
                             // interrupt is detected by the SQLITE_INTERRUPT error
                             // code, never by matching "interrupt" in the message
                             // text (user/trigger/constraint text could otherwise
@@ -5683,7 +5689,7 @@ pub struct ManualTransactionExecutionOptions {
     pub result_session_id: Option<String>,
     /// User-facing SQL to classify (Oracle-only). When present, the core
     /// classifies each split statement of this SQL rather than the rewritten
-    /// execution SQL, pairing them by count and position so DBX-owned
+    /// execution SQL, pairing them by count and position so CHIRON-HORIZON-owned
     /// read-preserving rewrites (hidden primary keys, sort wrappers,
     /// pagination) do not change toolbar semantics. Fail-closed on mismatch.
     pub classification_sql: Option<String>,
@@ -6787,7 +6793,7 @@ mod tests {
         sqlite
             .with_connection(|conn| {
                 conn.create_scalar_function(
-                    "dbx_test_query_started",
+                    "chiron_horizon_test_query_started",
                     0,
                     rusqlite::functions::FunctionFlags::SQLITE_UTF8,
                     move |_ctx| {
@@ -6809,7 +6815,7 @@ mod tests {
                 first_state.as_ref(),
                 connection_id,
                 "",
-                "INSERT INTO t (value) SELECT 'slow' FROM (WITH RECURSIVE cnt(x) AS (SELECT dbx_test_query_started() UNION ALL SELECT x + 1 FROM cnt WHERE x < 100000000) SELECT x FROM cnt)",
+                "INSERT INTO t (value) SELECT 'slow' FROM (WITH RECURSIVE cnt(x) AS (SELECT chiron_horizon_test_query_started() UNION ALL SELECT x + 1 FROM cnt WHERE x < 100000000) SELECT x FROM cnt)",
                 None,
                 Some(registered.token()),
                 QueryExecutionOptions {
@@ -7065,7 +7071,7 @@ for line in sys.stdin:
 
     #[tokio::test]
     async fn query_and_transaction_paths_resolve_catalog_dialect_from_connection() {
-        let dir = std::env::temp_dir().join(format!("dbx-catalog-dialect-{}", uuid::Uuid::new_v4()));
+        let dir = std::env::temp_dir().join(format!("chiron-horizon-catalog-dialect-{}", uuid::Uuid::new_v4()));
         std::fs::create_dir_all(&dir).unwrap();
         let storage = Storage::open(&dir.join("storage.db")).await.unwrap();
         let state = AppState::new(storage);
@@ -7318,16 +7324,17 @@ for line in sys.stdin:
 
     #[cfg(feature = "dynamodb")]
     #[tokio::test]
-    #[ignore = "requires DBX_DYNAMODB_ENDPOINT and an orders table"]
+    #[ignore = "requires CHIRON_HORIZON_DYNAMODB_ENDPOINT and an orders table"]
     async fn live_dynamodb_editor_scan_serializes_one_thousand_rows() {
-        let endpoint = std::env::var("DBX_DYNAMODB_ENDPOINT").expect("DBX_DYNAMODB_ENDPOINT is required");
+        let endpoint =
+            std::env::var("CHIRON_HORIZON_DYNAMODB_ENDPOINT").expect("CHIRON_HORIZON_DYNAMODB_ENDPOINT is required");
         let (ssl, address) = endpoint
             .strip_prefix("https://")
             .map(|address| (true, address))
             .or_else(|| endpoint.strip_prefix("http://").map(|address| (false, address)))
             .expect("DynamoDB endpoint must start with http:// or https://");
         let (host, port) = address.rsplit_once(':').expect("DynamoDB endpoint must include a port");
-        let dir = std::env::temp_dir().join(format!("dbx-query-dynamodb-{}", uuid::Uuid::new_v4()));
+        let dir = std::env::temp_dir().join(format!("chiron-horizon-query-dynamodb-{}", uuid::Uuid::new_v4()));
         std::fs::create_dir_all(&dir).unwrap();
         let storage = Storage::open(&dir.join("storage.db")).await.unwrap();
         let state = AppState::new(storage);
@@ -7351,7 +7358,7 @@ for line in sys.stdin:
             &state,
             &config.id,
             "us-east-1",
-            "DBX DYNAMODB SCAN\ntable: \"orders\"\nlimit: 1000",
+            "Chiron Horizon DYNAMODB SCAN\ntable: \"orders\"\nlimit: 1000",
             None,
             None,
             QueryExecutionOptions { max_rows: Some(1000), ..Default::default() },
@@ -7371,7 +7378,7 @@ for line in sys.stdin:
 
     async fn sqlserver_agent_echo_state(
     ) -> (AppState, std::path::PathBuf, std::sync::Arc<crate::db::agent_driver::AgentRuntimeClient>) {
-        let dir = std::env::temp_dir().join(format!("dbx-query-sqlserver-agent-{}", uuid::Uuid::new_v4()));
+        let dir = std::env::temp_dir().join(format!("chiron-horizon-query-sqlserver-agent-{}", uuid::Uuid::new_v4()));
         std::fs::create_dir_all(&dir).unwrap();
         let script_path = dir.join("agent.py");
         std::fs::write(
@@ -7485,7 +7492,7 @@ for line in sys.stdin:
     async fn agent_error_state(
         disposition: &str,
     ) -> (AppState, std::path::PathBuf, std::sync::Arc<crate::db::agent_driver::AgentRuntimeClient>) {
-        let dir = std::env::temp_dir().join(format!("dbx-query-agent-error-{}", uuid::Uuid::new_v4()));
+        let dir = std::env::temp_dir().join(format!("chiron-horizon-query-agent-error-{}", uuid::Uuid::new_v4()));
         std::fs::create_dir_all(&dir).unwrap();
         let script_path = dir.join("agent.py");
         std::fs::write(
@@ -7591,7 +7598,7 @@ for line in sys.stdin:
 
     #[tokio::test]
     async fn native_pre_dispatch_cancellation_stays_typed() {
-        let dir = std::env::temp_dir().join(format!("dbx-query-native-cancel-{}", uuid::Uuid::new_v4()));
+        let dir = std::env::temp_dir().join(format!("chiron-horizon-query-native-cancel-{}", uuid::Uuid::new_v4()));
         std::fs::create_dir_all(&dir).unwrap();
         let storage = Storage::open(&dir.join("storage.db")).await.unwrap();
         let state = AppState::new(storage);
@@ -7901,7 +7908,7 @@ for line in sys.stdin:
     }
 
     async fn assert_sqlite_batch_error_behavior(failure_first: bool, continue_on_error: bool) {
-        let dir = std::env::temp_dir().join(format!("dbx-query-batch-error-{}", uuid::Uuid::new_v4()));
+        let dir = std::env::temp_dir().join(format!("chiron-horizon-query-batch-error-{}", uuid::Uuid::new_v4()));
         std::fs::create_dir_all(&dir).unwrap();
         let storage = Storage::open(&dir.join("storage.db")).await.unwrap();
         let state = AppState::new(storage);
@@ -7952,7 +7959,7 @@ for line in sys.stdin:
 
     #[tokio::test]
     async fn transactional_sqlite_batch_rolls_back_when_a_later_statement_fails() {
-        let dir = std::env::temp_dir().join(format!("dbx-query-transaction-{}", uuid::Uuid::new_v4()));
+        let dir = std::env::temp_dir().join(format!("chiron-horizon-query-transaction-{}", uuid::Uuid::new_v4()));
         std::fs::create_dir_all(&dir).unwrap();
         let storage = Storage::open(&dir.join("storage.db")).await.unwrap();
         let state = AppState::new(storage);
@@ -7995,7 +8002,8 @@ for line in sys.stdin:
 
     #[tokio::test]
     async fn transactional_batch_rejects_an_unsupported_backend_before_execution() {
-        let dir = std::env::temp_dir().join(format!("dbx-query-unsupported-transaction-{}", uuid::Uuid::new_v4()));
+        let dir =
+            std::env::temp_dir().join(format!("chiron-horizon-query-unsupported-transaction-{}", uuid::Uuid::new_v4()));
         std::fs::create_dir_all(&dir).unwrap();
         let storage = Storage::open(&dir.join("storage.db")).await.unwrap();
         let state = AppState::new(storage);
@@ -8056,7 +8064,8 @@ for line in sys.stdin:
 
     #[tokio::test]
     async fn connection_pool_is_sqlserver_agent_detects_agent_and_native_pools() {
-        let dir = std::env::temp_dir().join(format!("dbx-query-sqlserver-agent-flag-{}", uuid::Uuid::new_v4()));
+        let dir =
+            std::env::temp_dir().join(format!("chiron-horizon-query-sqlserver-agent-flag-{}", uuid::Uuid::new_v4()));
         std::fs::create_dir_all(&dir).unwrap();
         let storage = Storage::open(&dir.join("storage.db")).await.unwrap();
         let state = AppState::new(storage);
@@ -8092,7 +8101,7 @@ for line in sys.stdin:
         // use_transaction error never leaks to callers that share the kernel but do
         // not set it (schema-diff deploy, imports), which document a mixed outcome
         // on failure for DDL that cannot be rolled back.
-        let dir = std::env::temp_dir().join(format!("dbx-query-tx-predispatch-{}", uuid::Uuid::new_v4()));
+        let dir = std::env::temp_dir().join(format!("chiron-horizon-query-tx-predispatch-{}", uuid::Uuid::new_v4()));
         std::fs::create_dir_all(&dir).unwrap();
         let storage = Storage::open(&dir.join("storage.db")).await.unwrap();
         let state = AppState::new(storage);
@@ -8166,7 +8175,8 @@ for line in sys.stdin:
 
     #[tokio::test]
     async fn gaussdb_on_error_stop_overrides_continue_on_error() {
-        let dir = std::env::temp_dir().join(format!("dbx-query-gaussdb-on-error-stop-{}", uuid::Uuid::new_v4()));
+        let dir =
+            std::env::temp_dir().join(format!("chiron-horizon-query-gaussdb-on-error-stop-{}", uuid::Uuid::new_v4()));
         std::fs::create_dir_all(&dir).unwrap();
         let storage = Storage::open(&dir.join("storage.db")).await.unwrap();
         let state = AppState::new(storage);
@@ -8758,7 +8768,7 @@ for line in sys.stdin:
         assert_eq!(results.len(), 2);
         assert_eq!(results.iter().map(|result| result.statement_index).collect::<Vec<_>>(), vec![Some(0), Some(1)]);
         assert!(results[1].execution_error);
-        assert_eq!(results[1].error.as_ref().map(|error| error.code()), Some("DBX-LEGACY-0001"));
+        assert_eq!(results[1].error.as_ref().map(|error| error.code()), Some("CHIRON-HORIZON-LEGACY-0001"));
         assert_eq!(error_action, Some(PoolErrorAction::ReconnectAndRetry));
     }
 
@@ -8787,7 +8797,7 @@ for line in sys.stdin:
         assert_eq!(failure.get("columns"), Some(&serde_json::json!(["Error"])));
         assert_eq!(
             failure.get("error").and_then(|value| value.get("code")),
-            Some(&serde_json::json!("DBX-LEGACY-0001"))
+            Some(&serde_json::json!("CHIRON-HORIZON-LEGACY-0001"))
         );
 
         let redacted = serde_json::to_value(
@@ -9043,9 +9053,11 @@ for line in sys.stdin:
     fn postgres_server_error_preserves_sql_catalog_identity_and_detail() {
         let error = classify_query_error(
             Some(DatabaseType::Postgres),
-            QueryExecutionError::Legacy("ERROR: relation \"dbx_table_that_does_not_exist\" does not exist".to_string()),
+            QueryExecutionError::Legacy(
+                "ERROR: relation \"chiron_horizon_table_that_does_not_exist\" does not exist".to_string(),
+            ),
         )
-        .with_omitted_sql_context("SELECT * FROM dbx_table_that_does_not_exist");
+        .with_omitted_sql_context("SELECT * FROM chiron_horizon_table_that_does_not_exist");
         let backend_error = error.into_backend_error();
 
         assert_eq!(backend_error.code(), "Chiron Horizon-JDBC-4001");
@@ -9056,7 +9068,7 @@ for line in sys.stdin:
         assert_eq!(
             backend_error.detail(),
             Some(
-                "ERROR: relation \"dbx_table_that_does_not_exist\" does not exist\nSQL text omitted from user-facing error; enable debug SQL diagnostics to inspect the original statement."
+                "ERROR: relation \"chiron_horizon_table_that_does_not_exist\" does not exist\nSQL text omitted from user-facing error; enable debug SQL diagnostics to inspect the original statement."
             )
         );
     }
@@ -9090,9 +9102,11 @@ for line in sys.stdin:
     fn single_statement_multi_result_preserves_sql_error_type() {
         let error = classify_query_error(
             Some(DatabaseType::Postgres),
-            QueryExecutionError::Legacy("ERROR: relation \"dbx_table_that_does_not_exist\" does not exist".to_string()),
+            QueryExecutionError::Legacy(
+                "ERROR: relation \"chiron_horizon_table_that_does_not_exist\" does not exist".to_string(),
+            ),
         )
-        .with_omitted_sql_context("SELECT * FROM dbx_table_that_does_not_exist");
+        .with_omitted_sql_context("SELECT * FROM chiron_horizon_table_that_does_not_exist");
 
         let error = single_statement_multi_result(Err(error), false).unwrap_err();
         let backend_error = error.into_backend_error();
@@ -9102,7 +9116,7 @@ for line in sys.stdin:
         assert_eq!(
             backend_error.detail(),
             Some(
-                "ERROR: relation \"dbx_table_that_does_not_exist\" does not exist\nSQL text omitted from user-facing error; enable debug SQL diagnostics to inspect the original statement."
+                "ERROR: relation \"chiron_horizon_table_that_does_not_exist\" does not exist\nSQL text omitted from user-facing error; enable debug SQL diagnostics to inspect the original statement."
             )
         );
     }
@@ -9111,8 +9125,8 @@ for line in sys.stdin:
     fn postgres_transaction_statement_error_preserves_sql_catalog_identity() {
         let error = postgres_transaction_statement_error(
             1,
-            "ERROR: relation \"dbx_table_that_does_not_exist\" does not exist",
-            "SELECT * FROM dbx_table_that_does_not_exist",
+            "ERROR: relation \"chiron_horizon_table_that_does_not_exist\" does not exist",
+            "SELECT * FROM chiron_horizon_table_that_does_not_exist",
             true,
         );
         let backend_error = error.into_backend_error();
@@ -9122,7 +9136,7 @@ for line in sys.stdin:
         assert_eq!(
             backend_error.detail(),
             Some(
-                "Statement 1 failed: ERROR: relation \"dbx_table_that_does_not_exist\" does not exist\nSQL text omitted from user-facing error; enable debug SQL diagnostics to inspect the original statement."
+                "Statement 1 failed: ERROR: relation \"chiron_horizon_table_that_does_not_exist\" does not exist\nSQL text omitted from user-facing error; enable debug SQL diagnostics to inspect the original statement."
             )
         );
     }
@@ -9182,12 +9196,12 @@ for line in sys.stdin:
             "SELECT \"id\", left(\"description\", 140) AS \"description\", ",
             "left(\"metadata\"::text, 141) AS \"metadata\", ",
             "'left(\"literal\", 1)' AS \"note\", ",
-            "'T:139' AS \"__DBX_LARGE_VALUE_BYTES_T_1\" FROM \"job_details\" WHERE left(note, 1) = 'x' LIMIT 100"
+            "'T:139' AS \"__CHIRON_HORIZON_LARGE_VALUE_BYTES_T_1\" FROM \"job_details\" WHERE left(note, 1) = 'x' LIMIT 100"
         );
         assert_eq!(
             external_driver_preview_fallback_sql(sql).as_deref(),
             Some(
-                "SELECT \"id\", \"description\" AS \"description\", \"metadata\"::text AS \"metadata\", 'left(\"literal\", 1)' AS \"note\", 'T:139' AS \"__DBX_LARGE_VALUE_BYTES_T_1\" FROM \"job_details\" WHERE left(note, 1) = 'x' LIMIT 100"
+                "SELECT \"id\", \"description\" AS \"description\", \"metadata\"::text AS \"metadata\", 'left(\"literal\", 1)' AS \"note\", 'T:139' AS \"__CHIRON_HORIZON_LARGE_VALUE_BYTES_T_1\" FROM \"job_details\" WHERE left(note, 1) = 'x' LIMIT 100"
             )
         );
     }
@@ -9197,12 +9211,12 @@ for line in sys.stdin:
         let sql = concat!(
             "SELECT left(coalesce(\"description\", concat('a,b', \"fallback\")), 140) AS \"description\", ",
             "'FROM left(\"literal\", 1)' AS \"note\", ",
-            "'T:140' AS \"__DBX_LARGE_VALUE_BYTES_T_0\" FROM \"job_details\""
+            "'T:140' AS \"__CHIRON_HORIZON_LARGE_VALUE_BYTES_T_0\" FROM \"job_details\""
         );
         assert_eq!(
             external_driver_preview_fallback_sql(sql).as_deref(),
             Some(
-                "SELECT coalesce(\"description\", concat('a,b', \"fallback\")) AS \"description\", 'FROM left(\"literal\", 1)' AS \"note\", 'T:140' AS \"__DBX_LARGE_VALUE_BYTES_T_0\" FROM \"job_details\""
+                "SELECT coalesce(\"description\", concat('a,b', \"fallback\")) AS \"description\", 'FROM left(\"literal\", 1)' AS \"note\", 'T:140' AS \"__CHIRON_HORIZON_LARGE_VALUE_BYTES_T_0\" FROM \"job_details\""
             )
         );
     }
@@ -9215,7 +9229,7 @@ for line in sys.stdin:
         )
         .is_none());
         assert!(external_driver_preview_fallback_sql(
-            "SELECT left(value, 10) AS value FROM t WHERE note = '__DBX_LARGE_VALUE_BYTES_T_0'"
+            "SELECT left(value, 10) AS value FROM t WHERE note = '__CHIRON_HORIZON_LARGE_VALUE_BYTES_T_0'"
         )
         .is_none());
     }
@@ -9235,13 +9249,13 @@ for line in sys.stdin:
         let options = QueryExecutionOptions { table_data_preview: true, ..Default::default() };
         let sql = concat!(
             "SELECT \"id\", left(\"content\", 227) AS \"content\", ",
-            "'T:226' AS \"__DBX_LARGE_VALUE_BYTES_T_1\" FROM \"t_large\" LIMIT 100"
+            "'T:226' AS \"__CHIRON_HORIZON_LARGE_VALUE_BYTES_T_1\" FROM \"t_large\" LIMIT 100"
         );
         let error = "ERROR: invalid byte sequence for encoding \"UTF8\": 0xe5 0xa4";
         assert_eq!(
             postgres_preview_fallback_retry_sql(&options, error, sql).as_deref(),
             Some(
-                "SELECT \"id\", \"content\" AS \"content\", 'T:226' AS \"__DBX_LARGE_VALUE_BYTES_T_1\" FROM \"t_large\" LIMIT 100"
+                "SELECT \"id\", \"content\" AS \"content\", 'T:226' AS \"__CHIRON_HORIZON_LARGE_VALUE_BYTES_T_1\" FROM \"t_large\" LIMIT 100"
             )
         );
 
@@ -9257,14 +9271,14 @@ for line in sys.stdin:
     async fn external_driver_preview_retry_preserves_marker_truncation() {
         use std::os::unix::fs::PermissionsExt;
 
-        let dir = std::env::temp_dir().join(format!("dbx-jdbc-preview-retry-test-{}", uuid::Uuid::new_v4()));
+        let dir = std::env::temp_dir().join(format!("chiron-horizon-jdbc-preview-retry-test-{}", uuid::Uuid::new_v4()));
         std::fs::create_dir_all(&dir).unwrap();
         let executable = dir.join("plugin.sh");
         let calls = dir.join("calls.log");
         std::fs::write(
             &executable,
             format!(
-                "#!/bin/sh\nwhile IFS= read -r line; do\n  id=$(printf '%s' \"$line\" | sed -E 's/.*\"id\":([0-9]+).*/\\1/')\n  case \"$line\" in\n    *'\"method\":\"executeQueryPage\"'*)\n      echo executeQueryPage >> '{}'\n      case \"$line\" in\n        *'left('*) printf '{{\"id\":%s,\"error\":{{\"message\":\"ERROR: invalid byte sequence for encoding UTF8: 0xe2\"}}}}\\n' \"$id\" ;;\n        *) printf '{{\"id\":%s,\"result\":{{\"columns\":[\"id\",\"description\",\"__DBX_LARGE_VALUE_BYTES_T_1\"],\"column_types\":[\"integer\",\"text\",\"text\"],\"rows\":[[1,\"abcdef\",\"T:3\"]],\"affected_rows\":0,\"execution_time_ms\":1,\"truncated\":false}}}}\\n' \"$id\" ;;\n      esac\n      ;;\n    *'\"method\":\"executeQuery\"'*)\n      echo executeQuery >> '{}'\n      case \"$line\" in\n        *'left('*) printf '{{\"id\":%s,\"error\":{{\"message\":\"ERROR: invalid byte sequence for encoding UTF8: 0xe2\"}}}}\\n' \"$id\" ;;\n        *) printf '{{\"id\":%s,\"result\":{{\"columns\":[\"id\",\"description\",\"__DBX_LARGE_VALUE_BYTES_T_1\"],\"column_types\":[\"integer\",\"text\",\"text\"],\"rows\":[[1,\"abcdef\",\"T:3\"]],\"affected_rows\":0,\"execution_time_ms\":1,\"truncated\":false}}}}\\n' \"$id\" ;;\n      esac\n      ;;\n  esac\ndone\n",
+                "#!/bin/sh\nwhile IFS= read -r line; do\n  id=$(printf '%s' \"$line\" | sed -E 's/.*\"id\":([0-9]+).*/\\1/')\n  case \"$line\" in\n    *'\"method\":\"executeQueryPage\"'*)\n      echo executeQueryPage >> '{}'\n      case \"$line\" in\n        *'left('*) printf '{{\"id\":%s,\"error\":{{\"message\":\"ERROR: invalid byte sequence for encoding UTF8: 0xe2\"}}}}\\n' \"$id\" ;;\n        *) printf '{{\"id\":%s,\"result\":{{\"columns\":[\"id\",\"description\",\"__CHIRON_HORIZON_LARGE_VALUE_BYTES_T_1\"],\"column_types\":[\"integer\",\"text\",\"text\"],\"rows\":[[1,\"abcdef\",\"T:3\"]],\"affected_rows\":0,\"execution_time_ms\":1,\"truncated\":false}}}}\\n' \"$id\" ;;\n      esac\n      ;;\n    *'\"method\":\"executeQuery\"'*)\n      echo executeQuery >> '{}'\n      case \"$line\" in\n        *'left('*) printf '{{\"id\":%s,\"error\":{{\"message\":\"ERROR: invalid byte sequence for encoding UTF8: 0xe2\"}}}}\\n' \"$id\" ;;\n        *) printf '{{\"id\":%s,\"result\":{{\"columns\":[\"id\",\"description\",\"__CHIRON_HORIZON_LARGE_VALUE_BYTES_T_1\"],\"column_types\":[\"integer\",\"text\",\"text\"],\"rows\":[[1,\"abcdef\",\"T:3\"]],\"affected_rows\":0,\"execution_time_ms\":1,\"truncated\":false}}}}\\n' \"$id\" ;;\n      esac\n      ;;\n  esac\ndone\n",
                 calls.display(),
                 calls.display()
             ),
@@ -9362,7 +9376,7 @@ for line in sys.stdin:
     async fn external_driver_manual_transaction_executes_commits_and_releases_session_pool() {
         use std::os::unix::fs::PermissionsExt;
 
-        let dir = std::env::temp_dir().join(format!("dbx-jdbc-manual-txn-test-{}", uuid::Uuid::new_v4()));
+        let dir = std::env::temp_dir().join(format!("chiron-horizon-jdbc-manual-txn-test-{}", uuid::Uuid::new_v4()));
         std::fs::create_dir_all(&dir).unwrap();
         let executable = dir.join("plugin.sh");
         let calls = dir.join("calls.log");
@@ -9412,14 +9426,14 @@ for line in sys.stdin:
         let state = AppState::new(storage);
         let mut config = test_connection_config(DatabaseType::Jdbc);
         config.id = "jdbc-conn".to_string();
-        config.database = Some("dbx_test".to_string());
+        config.database = Some("chiron_horizon_test".to_string());
         config.connection_string = Some("jdbc:test".to_string());
         state.configs.write().await.insert(config.id.clone(), config.clone());
 
         session
             .invoke::<serde_json::Value>(
                 "beginManualTransaction",
-                serde_json::json!({ "connection": &config, "database": "dbx_test" }),
+                serde_json::json!({ "connection": &config, "database": "chiron_horizon_test" }),
             )
             .await
             .unwrap();
@@ -9439,8 +9453,10 @@ for line in sys.stdin:
                 );
             })
             .await;
-        let cleanup_guard =
-            state.workload_session_pool_cleanup_guard("jdbc-conn", Some("dbx_test"), client_session_id).await.unwrap();
+        let cleanup_guard = state
+            .workload_session_pool_cleanup_guard("jdbc-conn", Some("chiron_horizon_test"), client_session_id)
+            .await
+            .unwrap();
         state.transaction_sessions.write().await.insert(
             "txn-test".to_string(),
             TransactionSession {
@@ -9448,20 +9464,22 @@ for line in sys.stdin:
                     session,
                     config,
                     client_session_id: client_session_id.to_string(),
-                    database: Some("dbx_test".to_string()),
+                    database: Some("chiron_horizon_test".to_string()),
                     cleanup_guard,
                 })),
                 pool_key: pool_key.to_string(),
                 last_activity: std::time::Instant::now(),
                 busy: false,
                 connection_id: "jdbc-conn".to_string(),
-                database: "dbx_test".to_string(),
+                database: "chiron_horizon_test".to_string(),
                 schema: None,
             },
         );
 
         let results =
-            execute_in_manual_transaction(&state, "txn-test", "SELECT 42", "dbx_test", None, Some(10)).await.unwrap();
+            execute_in_manual_transaction(&state, "txn-test", "SELECT 42", "chiron_horizon_test", None, Some(10))
+                .await
+                .unwrap();
         assert_eq!(results[0].rows, vec![vec![serde_json::json!(42)]]);
         commit_manual_transaction(&state, "txn-test").await.unwrap();
         assert!(state.pool_handle(pool_key).await.is_none());
@@ -9479,7 +9497,7 @@ for line in sys.stdin:
     async fn external_driver_query_page_falls_back_to_legacy_execute_query() {
         use std::os::unix::fs::PermissionsExt;
 
-        let dir = std::env::temp_dir().join(format!("dbx-legacy-jdbc-plugin-test-{}", uuid::Uuid::new_v4()));
+        let dir = std::env::temp_dir().join(format!("chiron-horizon-legacy-jdbc-plugin-test-{}", uuid::Uuid::new_v4()));
         std::fs::create_dir_all(&dir).unwrap();
         let executable = dir.join("plugin.sh");
         let calls = dir.join("calls.log");
@@ -9544,7 +9562,7 @@ for line in sys.stdin:
     async fn external_driver_query_page_does_not_retry_jdbc_errors() {
         use std::os::unix::fs::PermissionsExt;
 
-        let dir = std::env::temp_dir().join(format!("dbx-jdbc-query-error-test-{}", uuid::Uuid::new_v4()));
+        let dir = std::env::temp_dir().join(format!("chiron-horizon-jdbc-query-error-test-{}", uuid::Uuid::new_v4()));
         std::fs::create_dir_all(&dir).unwrap();
         let executable = dir.join("plugin.sh");
         let calls = dir.join("calls.log");
@@ -10620,7 +10638,7 @@ for line in sys.stdin:
         .await
         .unwrap();
 
-        let dir = std::env::temp_dir().join(format!("dbx-manual-txn-{}", uuid::Uuid::new_v4().simple()));
+        let dir = std::env::temp_dir().join(format!("chiron-horizon-manual-txn-{}", uuid::Uuid::new_v4().simple()));
         std::fs::create_dir_all(&dir).unwrap();
         let storage = Storage::open(&dir.join("storage.db")).await.unwrap();
         let state = AppState::new(storage);
@@ -10767,8 +10785,8 @@ for line in sys.stdin:
 
     #[test]
     fn structured_agent_disposition_controls_pool_recovery() {
-        let quarantined = "Agent RPC error (-1): lost\nDBX_AGENT_ERROR_DATA:{\"category\":\"connection\",\"sessionDisposition\":\"quarantine\"}";
-        let replace_runtime = "Agent RPC error (-1): saturated\nDBX_AGENT_ERROR_DATA:{\"category\":\"resource\",\"sessionDisposition\":\"replace_runtime\"}";
+        let quarantined = "Agent RPC error (-1): lost\nCHIRON_HORIZON_AGENT_ERROR_DATA:{\"category\":\"connection\",\"sessionDisposition\":\"quarantine\"}";
+        let replace_runtime = "Agent RPC error (-1): saturated\nCHIRON_HORIZON_AGENT_ERROR_DATA:{\"category\":\"resource\",\"sessionDisposition\":\"replace_runtime\"}";
 
         assert!(should_discard_agent_pool_after_error(quarantined));
         assert!(should_discard_agent_pool_after_error(replace_runtime));
@@ -10881,9 +10899,9 @@ for line in sys.stdin:
             columns: vec![
                 "id".to_string(),
                 "payload".to_string(),
-                "__dbx_large_value_bytes_t_1".to_string(),
+                "__chiron_horizon_large_value_bytes_t_1".to_string(),
                 "note".to_string(),
-                "__dbx_large_value_bytes_t_2".to_string(),
+                "__chiron_horizon_large_value_bytes_t_2".to_string(),
             ],
             column_types: vec![
                 "integer".to_string(),

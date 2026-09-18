@@ -769,7 +769,7 @@ export interface EditorSettings {
   executeMode: "all" | "current";
   executeModeDefaultVersion: number;
   executeAllOnBlankLine: boolean;
-  /** Whether DBX blocks Redis commands classified as high risk. */
+  /** Whether Chiron Horizon blocks Redis commands classified as high risk. */
   blockDangerousRedisCommands: boolean;
   globalConnectTimeoutSecs: number;
   connectTimeoutInheritConnectionIds: string[];

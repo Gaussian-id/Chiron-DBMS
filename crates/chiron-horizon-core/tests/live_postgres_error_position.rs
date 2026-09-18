@@ -2,15 +2,15 @@
 //! Live PostgreSQL verification of the SQL error-position plumbing.
 //!
 //! Requires a connectable PostgreSQL-family server pointed at by
-//! `DBX_LIVE_POSTGRES_*` (same variables as the other `live_postgres_*` tests).
-//! `DBX_LIVE_PG_FAMILY=opengauss` switches the full-funnel test to an openGauss
+//! `CHIRON_HORIZON_LIVE_POSTGRES_*` (same variables as the other `live_postgres_*` tests).
+//! `CHIRON_HORIZON_LIVE_PG_FAMILY=opengauss` switches the full-funnel test to an openGauss
 //! connection config, to prove the position is not gated on `DatabaseType::Postgres`.
 //!
 //! ```text
-//! DBX_LIVE_POSTGRES_HOST=... DBX_LIVE_POSTGRES_PORT=... \
-//! DBX_LIVE_POSTGRES_USER=... DBX_LIVE_POSTGRES_PASSWORD=... \
-//! DBX_LIVE_POSTGRES_DATABASE=... \
-//! cargo test -p dbx-core --no-default-features --test live_postgres_error_position -- --ignored
+//! CHIRON_HORIZON_LIVE_POSTGRES_HOST=... CHIRON_HORIZON_LIVE_POSTGRES_PORT=... \
+//! CHIRON_HORIZON_LIVE_POSTGRES_USER=... CHIRON_HORIZON_LIVE_POSTGRES_PASSWORD=... \
+//! CHIRON_HORIZON_LIVE_POSTGRES_DATABASE=... \
+//! cargo test -p chiron-horizon-core --no-default-features --test live_postgres_error_position -- --ignored
 //! ```
 
 use std::time::Duration;
@@ -27,11 +27,12 @@ use chiron_horizon_core::sql_error_position::{
 use chiron_horizon_core::storage::Storage;
 
 fn live_env() -> (String, u16, String, String, String) {
-    let host = std::env::var("DBX_LIVE_POSTGRES_HOST").unwrap_or_else(|_| "127.0.0.1".to_string());
-    let port = std::env::var("DBX_LIVE_POSTGRES_PORT").ok().and_then(|value| value.parse().ok()).unwrap_or(5432);
-    let user = std::env::var("DBX_LIVE_POSTGRES_USER").unwrap_or_else(|_| "postgres".to_string());
-    let password = std::env::var("DBX_LIVE_POSTGRES_PASSWORD").unwrap_or_default();
-    let database = std::env::var("DBX_LIVE_POSTGRES_DATABASE").unwrap_or_else(|_| "postgres".to_string());
+    let host = std::env::var("CHIRON_HORIZON_LIVE_POSTGRES_HOST").unwrap_or_else(|_| "127.0.0.1".to_string());
+    let port =
+        std::env::var("CHIRON_HORIZON_LIVE_POSTGRES_PORT").ok().and_then(|value| value.parse().ok()).unwrap_or(5432);
+    let user = std::env::var("CHIRON_HORIZON_LIVE_POSTGRES_USER").unwrap_or_else(|_| "postgres".to_string());
+    let password = std::env::var("CHIRON_HORIZON_LIVE_POSTGRES_PASSWORD").unwrap_or_default();
+    let database = std::env::var("CHIRON_HORIZON_LIVE_POSTGRES_DATABASE").unwrap_or_else(|_| "postgres".to_string());
     (host, port, user, password, database)
 }
 
@@ -56,7 +57,7 @@ fn encode_userinfo(value: &str) -> String {
 }
 
 fn live_db_type() -> DatabaseType {
-    if std::env::var("DBX_LIVE_PG_FAMILY").is_ok_and(|value| value.eq_ignore_ascii_case("opengauss")) {
+    if std::env::var("CHIRON_HORIZON_LIVE_PG_FAMILY").is_ok_and(|value| value.eq_ignore_ascii_case("opengauss")) {
         DatabaseType::OpenGauss
     } else {
         DatabaseType::Postgres
@@ -73,11 +74,11 @@ fn expected_position(sql: &str, offending: &str) -> SqlErrorPosition {
 }
 
 #[tokio::test]
-#[ignore = "requires DBX_LIVE_POSTGRES_* pointing at a PostgreSQL-family database"]
+#[ignore = "requires CHIRON_HORIZON_LIVE_POSTGRES_* pointing at a PostgreSQL-family database"]
 async fn live_pg_error_positions_resolve_against_the_executed_statement() {
     let pool = postgres::connect(&postgres_url(), Duration::from_secs(10)).await.expect("connect");
 
-    // (sql, offending token). The first case is the exact shape DBX sends for the
+    // (sql, offending token). The first case is the exact shape Chiron Horizon sends for the
     // user's `select  * from no_such_table` after pagination appends LIMIT.
     let cases = [
         ("select  * from no_such_table LIMIT 100", "no_such_table"),
@@ -105,14 +106,14 @@ async fn live_pg_error_positions_resolve_against_the_executed_statement() {
 
 /// Full backend funnel: AppState + connection config → `execute_multi_core` →
 /// `BackendError`. This is where the old `pool_db_type == Postgres` gate lived, so
-/// running it with `DBX_LIVE_PG_FAMILY=opengauss` guards the regression.
+/// running it with `CHIRON_HORIZON_LIVE_PG_FAMILY=opengauss` guards the regression.
 #[tokio::test]
-#[ignore = "requires DBX_LIVE_POSTGRES_* pointing at a PostgreSQL-family database"]
+#[ignore = "requires CHIRON_HORIZON_LIVE_POSTGRES_* pointing at a PostgreSQL-family database"]
 async fn live_pg_multi_core_reports_error_position_in_the_backend_envelope() {
     let (host, port, user, password, database) = live_env();
     let db_type = live_db_type();
 
-    let dir = std::env::temp_dir().join(format!("dbx-live-pg-position-{}", uuid::Uuid::new_v4().simple()));
+    let dir = std::env::temp_dir().join(format!("chiron-horizon-live-pg-position-{}", uuid::Uuid::new_v4().simple()));
     std::fs::create_dir_all(&dir).unwrap();
     let storage = Storage::open(&dir.join("storage.db")).await.unwrap();
     let state = AppState::new(storage);

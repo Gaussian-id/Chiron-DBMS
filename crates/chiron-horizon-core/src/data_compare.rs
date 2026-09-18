@@ -2580,7 +2580,7 @@ mod tests {
                 25,
                 50,
             ),
-            "SELECT \"ID\", \"TENANT_ID\", \"NAME\", \"CREATED_AT\" FROM (SELECT dbx_inner.*, ROWNUM AS \"__dbx_row_num\" FROM (SELECT \"ID\", \"TENANT_ID\", \"NAME\", \"CREATED_AT\" FROM \"APP\".\"EVENTS\" ORDER BY \"ID\" ASC, \"TENANT_ID\" ASC) dbx_inner WHERE ROWNUM <= 75) WHERE \"__dbx_row_num\" > 50"
+            "SELECT \"ID\", \"TENANT_ID\", \"NAME\", \"CREATED_AT\" FROM (SELECT chiron_horizon_inner.*, ROWNUM AS \"__chiron_horizon_row_num\" FROM (SELECT \"ID\", \"TENANT_ID\", \"NAME\", \"CREATED_AT\" FROM \"APP\".\"EVENTS\" ORDER BY \"ID\" ASC, \"TENANT_ID\" ASC) chiron_horizon_inner WHERE ROWNUM <= 75) WHERE \"__chiron_horizon_row_num\" > 50"
         );
     }
 

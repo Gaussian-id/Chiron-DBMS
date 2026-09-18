@@ -45,14 +45,14 @@ export type PluginCatalog = {
 };
 
 // Same source the in-app plugin center consumes (R2 primary, GitHub raw fallback);
-// R2 responds with a dbxio.com CORS header, so the browser refresh path works too.
+// R2 responds with a chiron-horizon.com CORS header, so the browser refresh path works too.
 export const PLUGIN_CATALOG_URLS = [
-  "https://dl.dbxio.com/catalog/index.json",
-  "https://raw.githubusercontent.com/t8y2/dbx-store/main/catalog/index.json",
+  "https://dl.chiron-horizon.com/catalog/index.json",
+  "https://raw.githubusercontent.com/Gaussian-id/Gauss-Horizon-store/main/catalog/index.json",
 ] as const;
 
-export const DBX_STORE_URL = "https://github.com/t8y2/dbx-store";
-export const DBX_STORE_CONTRIBUTING_URL = "https://github.com/t8y2/dbx-store/blob/main/CONTRIBUTING.md";
+export const CHIRON_HORIZON_STORE_URL = "https://github.com/Gaussian-id/Gauss-Horizon-store";
+export const CHIRON_HORIZON_STORE_CONTRIBUTING_URL = "https://github.com/Gaussian-id/Gauss-Horizon-store/blob/main/CONTRIBUTING.md";
 
 function isPluginCatalog(value: unknown): value is PluginCatalog {
   return (

@@ -1,4 +1,4 @@
-package com.dbx.agent;
+package com.chiron.horizon.agent;
 
 /**
  * Oracle-compatible object privilege row used when reconstructing GRANT DDL.

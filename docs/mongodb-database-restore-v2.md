@@ -164,7 +164,7 @@ promised after the write phase begins.
 
 ## Resource Limits
 
-- Reuse `DBX_MAX_UPLOAD_MB` for Web uploads. The current test service uses 8192 MiB;
+- Reuse `CHIRON_HORIZON_MAX_UPLOAD_MB` for Web uploads. The current test service uses 8192 MiB;
   this design does not change the project default or SQL upload settings.
 - Expose the effective upload limit for frontend checks before sending data. Apply
   it to the selected directory upload total or the whole archive, plus a separate
@@ -182,11 +182,11 @@ promised after the write phase begins.
 
 ## Code Boundaries
 
-- `dbx-core/src/mongodb_dump/directory.rs`: separate metadata catalog discovery from
+- `chiron-horizon-core/src/mongodb_dump/directory.rs`: separate metadata catalog discovery from
   selected input validation. No data reader calls during directory inspection.
-- `dbx-core/src/mongodb_dump/archive.rs`: separate prelude inspection from full
+- `chiron-horizon-core/src/mongodb_dump/archive.rs`: separate prelude inspection from full
   validation/demultiplexing; preserve official CRC and interleaving compatibility.
-- `dbx-core/src/mongodb_dump.rs`: source states, frozen plans, acquisition ownership,
+- `chiron-horizon-core/src/mongodb_dump.rs`: source states, frozen plans, acquisition ownership,
   preflight validation and restore phase transitions.
 - Web routes/Tauri commands: file transport, task lifecycle, progress/cancel and
   limits. Keep existing export tasks and collection workflows unchanged.
@@ -235,4 +235,4 @@ Required regressions:
   collection, confirmed a different target database and restored two documents
   and two indexes. Desktop/mobile screenshots are under `output/playwright/metadata-v2-*`.
 - Final Web HTTP integration, Vue type checking and Tauri compile checking passed.
-  The main local Web service was restarted with `DBX_MAX_UPLOAD_MB=8192`.
+  The main local Web service was restarted with `CHIRON_HORIZON_MAX_UPLOAD_MB=8192`.

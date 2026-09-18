@@ -1,11 +1,11 @@
-//! One-shot plugin installer for local DBX app stores:
-//!   cargo run -p dbx-core --example install_plugin -- <plugins-root> <dbxp> <app-version> [--rollback-plugin <id>]
+//! One-shot plugin installer for local Chiron Horizon app stores:
+//!   cargo run -p chiron-horizon-core --example install_plugin -- <plugins-root> <chiron_horizonp> <app-version> [--rollback-plugin <id>]
 use chiron_horizon_core::plugins::{PluginInstallPolicy, PluginPackageInstaller};
 
 fn main() {
     let args: Vec<String> = std::env::args().skip(1).collect();
     if args.len() < 3 {
-        eprintln!("usage: install_plugin <plugins-root> <package.dbxp> <app-version>");
+        eprintln!("usage: install_plugin <plugins-root> <package.chiron-horizonp> <app-version>");
         std::process::exit(2);
     }
     let installer = PluginPackageInstaller::new(std::path::PathBuf::from(&args[0]), &args[2]).expect("installer");

@@ -1,6 +1,6 @@
 /** Compatibility-only identifiers for reading pre-Chiron Horizon data. Never emitted by exports. */
-export const LEGACY_ENCRYPTED_FORMAT = "dbx-encrypted";
-export const LEGACY_CONFIG_FORMAT = "dbx-config";
+export const LEGACY_ENCRYPTED_FORMAT = "chiron-horizon-encrypted";
+export const LEGACY_CONFIG_FORMAT = "chiron-horizon-config";
 export function migrateLegacyBrowserStorage(storage: Storage): void {
   const marker = "chiron-horizon-legacy-storage-migrated-v2";
   if (storage.getItem(marker)) return;
@@ -18,4 +18,4 @@ export function migrateLegacyBrowserStorage(storage: Storage): void {
   storage.setItem(marker, "1");
 }
 
-export const LEGACY_SQLSERVER_LINKED_SCHEMA_PREFIX = "__dbx_sqlserver_linked__:";
+export const LEGACY_SQLSERVER_LINKED_SCHEMA_PREFIX = "__chiron_horizon_sqlserver_linked__:";

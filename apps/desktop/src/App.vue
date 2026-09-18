@@ -1117,7 +1117,6 @@ function openDriverStorePage(target?: DriverStoreTab | DriverStoreFocus | null) 
   }
   driverStoreTabOpen.value = true;
   activateMainContentSurface("driverStore");
-  pluginCenterActive.value = false;
 }
 
 function closeDriverStorePage() {

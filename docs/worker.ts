@@ -109,7 +109,7 @@ export function staticAssetCacheControl(pathname: string): string | null {
 }
 
 // Plugin detail pages are statically exported only for catalog ids known at build
-// time (for SEO). dbx-store merges do not rebuild the site, so plugin pages the
+// time (for SEO). chiron-horizon-store merges do not rebuild the site, so plugin pages the
 // snapshot missed fall back to the /plugins/detail shell, which renders the plugin
 // client-side from the live catalog. The pretty URL is preserved.
 export function pluginDetailShellRequest(url: URL, request: Request): Request | null {
