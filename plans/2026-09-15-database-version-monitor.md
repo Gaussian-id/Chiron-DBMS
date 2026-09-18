@@ -6,11 +6,11 @@ Add an internal GitHub Actions automation that discovers supported database and 
 
 The automation belongs in the Chiron Horizon repository. A separate bot repository is not part of v1. The designated self-hosted Linux runner executes the scheduled monitor and pull-request checks, including Docker-based database compatibility tests.
 
-The pilot uses the repository-provided `GITHUB_TOKEN`, so it needs no GitHub App, App ID, private key, personal access token, or new secret. GitHub marks pull-request workflows created by `GITHUB_TOKEN` as approval-required; a maintainer with write access approves the compatibility run from the PR. A GitHub App is an optional post-pilot improvement only if fully unattended PR CI is required.
+The monitor uses the repository-provided `GITHUB_TOKEN`, so it needs no GitHub App, App ID, private key, personal access token, or new secret. GitHub marks pull-request workflows created by `GITHUB_TOKEN` as approval-required; a maintainer with write access approves the compatibility run from the PR. A GitHub App is an optional post-pilot improvement only if fully unattended PR CI is required.
 
 ## Scope and policy
 
-Start with three targets, each exercising a different source type:
+Monitor every Docker-backed database environment in Chiron Horizon and the bundled DuckDB driver. Each target is pinned to its existing supported release channel; the bot does not jump major versions.
 
 | Target | Update being monitored | Authoritative source | Repository change |
 | --- | --- | --- | --- |
@@ -70,7 +70,7 @@ A database server recipe alone does not publish an app update or claim global su
 
 ## Pilot exit and expansion
 
-The pilot is successful only when all of the following are true:
+The rollout is successful only when all of the following are true:
 
 1. Each of PostgreSQL, MySQL, and DuckDB has completed one end-to-end proposal using a controlled update fixture or a real upstream update: detection, one bot PR, required CI, maintainer review, merge, and the applicable release path.
 2. Four consecutive scheduled runs complete without duplicate PRs, unintended repository mutations, secret exposure, or unresolved workflow failures.
