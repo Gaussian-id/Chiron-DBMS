@@ -2,7 +2,7 @@ schemaVersion: 1
 order: 350
 dbType: yashandb
 rustVariant: Yashandb
-label: 崖山 YashanDB
+label: YashanDB
 dialect: YashanDB
 runtimeMode: agent
 mcpMode: bridge

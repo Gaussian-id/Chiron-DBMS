@@ -2,7 +2,7 @@ schemaVersion: 1
 order: 630
 dbType: sundb
 rustVariant: Sundb
-label: 科蓝 SUNDB
+label: SUNDB
 dialect: SunDB
 runtimeMode: agent
 mcpMode: bridge

@@ -7589,7 +7589,7 @@ function openExternalUrl(url: string) {
                       <Input v-model.number="mqttConnectTimeoutSecs" type="number" class="col-span-3 w-32" min="1" max="300" />
                     </div>
                     <div class="grid grid-cols-4 items-center gap-4">
-                      <Label :class="connectionLabelClass">最大报文（字节）</Label>
+                      <Label :class="connectionLabelClass">Maximum packet size (bytes)</Label>
                       <Input v-model.number="mqttMaxPacketSizeBytes" type="number" class="col-span-3 w-40" min="1024" max="268435455" />
                     </div>
                   </template>

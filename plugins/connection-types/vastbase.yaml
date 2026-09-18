@@ -2,7 +2,7 @@ schemaVersion: 1
 order: 300
 dbType: vastbase
 rustVariant: Vastbase
-label: 海量 Vastbase
+label: Vastbase
 dialect: Vastbase
 runtimeMode: agent
 mcpMode: bridge

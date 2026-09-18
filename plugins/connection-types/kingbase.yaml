@@ -2,7 +2,7 @@ schemaVersion: 1
 order: 270
 dbType: kingbase
 rustVariant: Kingbase
-label: 金仓KingbaseES
+label: KingbaseES
 dialect: Kingbase
 runtimeMode: agent
 mcpMode: bridge

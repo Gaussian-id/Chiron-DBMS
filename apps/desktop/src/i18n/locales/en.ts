@@ -6983,7 +6983,7 @@ export default {
     loadingFonts: "Loading fonts...",
     noFontsFound: "No fonts found",
     useCustomFont: "Use “{font}”",
-    languageTitle: "Language / 语言",
+    languageTitle: "Language",
     fontSize: "Font Size",
     toolbarTitle: "Toolbar",
     toolbarHiddenHint: 'Some hidden or overflowed buttons appear in the "More" dropdown.',

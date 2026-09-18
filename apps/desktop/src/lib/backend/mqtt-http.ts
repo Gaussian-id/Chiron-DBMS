@@ -2,7 +2,7 @@
 // Throw descriptive errors so the user knows this isn't available.
 
 function mqttWebNotAvailable(name: string): never {
-  throw new Error(`MQTT ${name}: MQTT 功能暂不支持 Web/Docker 模式。请使用桌面版。`);
+  throw new Error(`MQTT ${name}: MQTT is not supported in web or Docker mode. Use the desktop app.`);
 }
 
 export async function mqttGetBrokerInfo(_connectionId: string) {

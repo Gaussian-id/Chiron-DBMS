@@ -61,35 +61,35 @@ const SUPPORTS_OKLCH = typeof CSS !== "undefined" && typeof CSS.supports === "fu
 // 在这里修改你喜欢的颜色！
 
 const customThemeColors = {
-  lineNumber: "#6c7086", // 行号颜色
-  lineNumberActive: "#cdd6f4", // 当前行号颜色
-  selection: "#313244", // 选中文本背景
-  cursor: "#f5e0dc", // 光标颜色
+  lineNumber: "#6c7086", // Line number color
+  lineNumberActive: "#cdd6f4", // Active line number color
+  selection: "#313244", // Selected-text background
+  cursor: "#f5e0dc", // Cursor color
 
   // 语法高亮颜色
-  keyword: "#cba6f7", // 关键字 (SELECT, FROM, WHERE 等)
-  string: "#a6e3a1", // 字符串
-  number: "#fab387", // 数字
-  comment: "#6c7086", // 注释
-  type: "#89b4fa", // 类型 (INTEGER, TEXT 等)
-  variable: "#f38ba8", // 变量
-  function: "#89dceb", // 函数
-  operator: "#89b4fa", // 运算符
-  punctuation: "#9399b2", // 标点符号
-  property: "#f9e2af", // 属性/字段名
-  tag: "#cba6f7", // XML/HTML 标签
-  attribute: "#fab387", // 属性名
-  className: "#f9e2af", // 类名
+  keyword: "#cba6f7", // Keywords (SELECT, FROM, WHERE, etc.)
+  string: "#a6e3a1", // String literal
+  number: "#fab387", // Number
+  comment: "#6c7086", // Comment
+  type: "#89b4fa", // Type (INTEGER, TEXT, etc.)
+  variable: "#f38ba8", // Variable
+  function: "#89dceb", // Function
+  operator: "#89b4fa", // Operator
+  punctuation: "#9399b2", // Punctuation
+  property: "#f9e2af", // Property or field name
+  tag: "#cba6f7", // XML/HTML tag
+  attribute: "#fab387", // Attribute name
+  className: "#f9e2af", // Class name
 
   // UI 元素
-  gutterBackground: "#181825", // 侧边栏背景
-  activeLine: "#313244", // 当前行高亮
-  matchingBracket: "#45475a", // 匹配括号背景
+  gutterBackground: "#181825", // Gutter background
+  activeLine: "#313244", // Active-line highlight
+  matchingBracket: "#45475a", // Matching-bracket background
 
   // 特殊
-  builtin: "#89dceb", // 内置函数
-  meta: "#cdd6f4", // 元信息
-  invalid: "#f38ba8", // 无效字符
+  builtin: "#89dceb", // Built-in function
+  meta: "#cdd6f4", // Metadata
+  invalid: "#f38ba8", // Invalid character
 };
 
 export function resolveCustomThemeBackgrounds(colors?: Pick<CustomThemeColors, "background">, isDark: boolean = true): { background: string; gutterBackground: string } {
@@ -169,7 +169,7 @@ function createCustomTheme(EditorView: typeof import("@codemirror/view").EditorV
     { tag: tags.blockComment, color: c.comment, fontStyle: "italic" },
     { tag: tags.typeName, color: c.type },
     { tag: tags.typeOperator, color: c.type },
-    { tag: tags.name, color: c.variable }, // ← 添加：普通标识符（字段名、表名等）
+    { tag: tags.name, color: c.variable }, // General identifiers, including fields and table names
     { tag: tags.variableName, color: c.variable },
     { tag: tags.definition(tags.variableName), color: c.variable },
     { tag: tags.function(tags.variableName), color: c.function },

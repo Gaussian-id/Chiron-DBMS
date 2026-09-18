@@ -86,7 +86,7 @@ test("all-database export uses the database as schema for non-schema-aware datab
 });
 
 test("all-database export treats selected items as schemas for single-database types (dameng)", () => {
-  // 达梦等单数据库架构：选中的"数据库"就是 schema 本身，不应做笛卡尔积展开
+  // For single-database architectures such as Dameng, the selected "database" is the schema itself and must not be expanded as a Cartesian product.
   const plan = buildAllDatabaseExportPlan({
     databases: ["COSIMULATION", "DATAMANAGE"],
     schemaAware: true,
