@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "vitest";
-import { issueRedirectPath, sanitizeReturnTo, signPayload, staticAssetCacheControl, verifySignedPayload } from "../worker";
+import { issueRedirectPath, pluginDetailShellRequest, sanitizeReturnTo, signPayload, staticAssetCacheControl, verifySignedPayload } from "../worker";
 
 test("signed OAuth payloads round-trip and reject tampering", async () => {
   const signed = await signPayload({ login: "chiron-horizon-user" }, "test-secret");
@@ -26,4 +26,20 @@ test("static assets receive browser cache headers without caching HTML", () => {
   assert.equal(staticAssetCacheControl("/screenshots/chiron-horizon-light-1280.webp"), "public, max-age=86400, stale-while-revalidate=604800");
   assert.equal(staticAssetCacheControl("/cn"), null);
   assert.equal(staticAssetCacheControl("/cn/changelog.txt"), null);
+});
+
+test("plugin detail fallback maps unknown ids onto the shell route", () => {
+  const shell = pluginDetailShellRequest(new URL("https://chiron-horizon.com/cn/plugins/io.github.t8y2.s3"), new Request("https://chiron-horizon.com/cn/plugins/io.github.t8y2.s3"));
+  assert.equal(shell?.url, "https://chiron-horizon.com/cn/plugins/detail?id=io.github.t8y2.s3");
+
+  const encoded = pluginDetailShellRequest(new URL("https://chiron-horizon.com/en/plugins/a%20b"), new Request("https://chiron-horizon.com/en/plugins/a%20b"));
+  assert.equal(encoded?.url, "https://chiron-horizon.com/en/plugins/detail?id=a%2520b");
+
+  // The shell route itself and non-GET requests must pass through untouched.
+  assert.equal(pluginDetailShellRequest(new URL("https://chiron-horizon.com/en/plugins/detail"), new Request("https://chiron-horizon.com/en/plugins/detail")), null);
+  assert.equal(
+    pluginDetailShellRequest(new URL("https://chiron-horizon.com/en/plugins/chiron.horizon.ssh"), new Request("https://chiron-horizon.com/en/plugins/chiron.horizon.ssh", { method: "POST" })),
+    null,
+  );
+  assert.equal(pluginDetailShellRequest(new URL("https://chiron-horizon.com/en/plugins"), new Request("https://chiron-horizon.com/en/plugins")), null);
 });

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { buildMcpCherryStudioConfig, buildMcpCodexConfig, buildMcpDeepSeekHarnessConfig, buildMcpJsonConfig, buildMcpOpenCodeConfig, buildMcpPiConfig, buildMcpQoderConfig, buildMcpTraeConfig, buildMcpVsCodeConfig, mcpWebBackendUrl } from "@/lib/mcp/mcpConfigTemplates";
+import { buildMcpCherryStudioConfig, buildMcpCodexConfig, buildMcpDeepSeekHarnessConfig, buildMcpJsonConfig, buildMcpOpenCodeConfig, buildMcpPiConfig, buildMcpQoderConfig, buildMcpTraeConfig, buildMcpVsCodeConfig, buildMcpWorkBuddyConfig, mcpWebBackendUrl } from "@/lib/mcp/mcpConfigTemplates";
 
 describe("MCP config templates", () => {
   it("builds the standard mcpServers JSON used by Claude, Cursor, TRAE, and Windsurf", () => {
@@ -35,6 +35,16 @@ describe("MCP config templates", () => {
       },
     });
     expect(buildMcpPiConfig({ command: "npx", args: ["-y", "@chiron-horizon/mcp-server"] })).toContain('"npx"');
+  });
+
+  it("builds the standard mcpServers JSON used by WorkBuddy", () => {
+    const launch = { command: "chiron-horizon-mcp-server", env: { CHIRON_HORIZON_DATA_DIR: "D:\\Chiron Horizon Data" } };
+
+    expect(JSON.parse(buildMcpWorkBuddyConfig(launch))).toEqual({
+      mcpServers: {
+        chiron_horizon: launch,
+      },
+    });
   });
 
   it("builds standard JSON configs with a direct node launch command", () => {

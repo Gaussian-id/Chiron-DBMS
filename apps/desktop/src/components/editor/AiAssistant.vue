@@ -30,7 +30,6 @@ import {
   Maximize2,
   MessageSquarePlus,
   Minimize2,
-  MoreHorizontal,
   Pencil,
   Plus,
   RefreshCw,
@@ -51,7 +50,6 @@ import {
 } from "@lucide/vue";
 import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Popover, PopoverAnchor, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
@@ -153,15 +151,11 @@ import { createAiMessageRenderer } from "@/lib/ai/aiMessageRender";
 import { formatAiInlineMarkdown, handleAiMarkdownLinkClick } from "@/lib/ai/aiMarkdown";
 import { aiCancelStream, saveAiConversation, saveAiRun, saveAiRunState, loadAiConversations, loadAiRuns, deleteAiConversation, listSchemas, listTables, type AiConversation, type AiRun, type AiRunStatus } from "@/lib/backend/api";
 import type { AiMessage } from "@/lib/backend/api";
-import { chirondbRequest, vectorListCollections } from "@/lib/backend/api";
-import type { ChironAssistantRequest, ChironTranscript } from "@/types/chirondb";
-import ChironAssistantResult from "./ChironAssistantResult.vue";
-import { buildChironPrompt } from "@/lib/ai/chironPrompt";
 import type { AiConfigItem, AiEffortCapability, AiEffortOption, AiEffortSelection } from "@/types/ai";
 import type { ConnectionConfig, QueryTab, SavedSqlFile, TableInfo } from "@/types/database";
 import { fetchNamespaceOptionsForConnection, useDatabaseOptions } from "@/composables/useDatabaseOptions";
 import { useSchemaOptions } from "@/composables/useSchemaOptions";
-import { decodeSelectableDatabaseValue, encodeSelectableDatabaseValue, formatDatabaseLabel, resolveDefaultDatabase } from "@/lib/database/defaultDatabase";
+import { encodeSelectableDatabaseValue, formatDatabaseLabel, resolveDefaultDatabase } from "@/lib/database/defaultDatabase";
 import { normalizeSqliteNamespace } from "@/lib/database/sqliteNamespace";
 import { isQueryExecutionErrorResult } from "@/lib/query/queryResultError";
 import { isSchemaAware, isSingleDatabase } from "@/lib/database/databaseCapabilities";
@@ -246,8 +240,6 @@ type AiReferenceMessageMention = Extract<AiMessageMention, { kind: "table" | "sq
 type AiAttachmentMessageMention = Extract<AiMessageMention, { kind: "csvFile" | "file" | "image" }>;
 
 interface ChatMessage {
-  /** Local-only native results. Never serialize into provider history. */
-  chiron?: ChironTranscript;
   role: "user" | "assistant";
   content: string;
   /** Connection that produced this assistant response; ephemeral export metadata. */
@@ -315,26 +307,6 @@ watch(
 const currentSessionId = ref("");
 const conversationId = ref("");
 const conversations = ref<AiConversation[]>([]);
-const renameChatId = ref("");
-const renameChatTitle = ref("");
-function openRenameChat(conv: AiConversation) {
-  renameChatId.value = conv.id;
-  renameChatTitle.value = conv.title;
-}
-async function renameChat() {
-  const title = renameChatTitle.value.trim().slice(0, 120);
-  if (!title || chironBusy.value) return;
-  try {
-    const conv = (await loadAiConversations()).find((c) => c.id === renameChatId.value);
-    if (!conv) throw new Error("Chat no longer exists");
-    const renamed = { ...conv, title, updatedAt: new Date().toISOString() };
-    await saveAiConversation(renamed);
-    syncPersistedConversation(renamed);
-    renameChatId.value = "";
-  } catch (error) {
-    toast(`Unable to rename chat: ${String(error)}`);
-  }
-}
 function restoreInitialConversation() {
   if (!assistantViewMounted || initialConversationRestored || !initialConversationStateLoaded || !settings.isAiConfigLoaded) return;
   initialConversationRestored = true;
@@ -351,6 +323,10 @@ const conversationSearchInput = ref<HTMLInputElement | null>(null);
 const conversationSearchIndex = computed(() => buildAiConversationSearchIndex(conversations.value));
 const filteredConversations = computed(() => filterAiConversationSearchIndex(conversationSearchIndex.value, conversationSearchQuery.value));
 const showConversationList = ref(false);
+const renamingConversationId = ref<string | null>(null);
+const renamingConversationTitle = ref("");
+const renamingConversationInput = ref<HTMLInputElement | null>(null);
+const renamedConversationTitles = reactive(new Map<string, string>());
 const showTemplateSelector = ref(false);
 const modeActionOpen = ref(false);
 // A normal-send FIFO run recovered at startup as an editable pending draft.
@@ -572,7 +548,6 @@ watch(
 );
 
 function toggleTemplateId(id: string) {
-  if (chironBusy.value) return;
   if (activeTemplateIds.value.includes(id)) {
     activeTemplateIds.value = activeTemplateIds.value.filter((tid) => tid !== id);
   } else {
@@ -590,7 +565,6 @@ function toggleTemplateId(id: string) {
 }
 
 function deselectAllTemplates() {
-  if (chironBusy.value) return;
   activeTemplateIds.value = [];
 }
 
@@ -740,7 +714,7 @@ const statusLongRunningHintVisible = computed(() => generationStatus.value.phase
 const statusLiveAnnouncement = computed(() => liveAnnouncementText(generationStatus.value, statusNow.value, t));
 
 function startEditMessage(visibleIndex: number) {
-  if (isGenerating.value || chironBusy.value) return;
+  if (isGenerating.value) return;
   editingMessageIndex.value = visibleIndex;
   const msg = visibleMessages.value[visibleIndex];
   editingContent.value = msg.content;
@@ -770,7 +744,7 @@ function cancelEdit() {
 }
 
 function submitEdit(visibleIndex: number) {
-  if (isAttachmentProcessing.value || chironBusy.value) return;
+  if (isAttachmentProcessing.value) return;
   const content = editingContent.value.trim();
   if (!content && !editingMentions.value.length && !editingCsvAttachments.value.length && !editingImageAttachments.value.length) return;
   const actualIndex = visibleToActualIndex(messages.value, visibleIndex);
@@ -785,7 +759,6 @@ function submitEdit(visibleIndex: number) {
     toast(imageAttachmentSupportErrorMessage(imageError), 5000);
     return;
   }
-  if (props.connection?.db_type === "chirondb") chironEpoch.value++;
   messages.value = messages.value.slice(0, actualIndex);
   editingMessageIndex.value = null;
   editingContent.value = "";
@@ -1103,18 +1076,14 @@ const previewImageAttachment = ref<AiImageAttachment | null>(null);
 const isAttachmentDragging = ref(false);
 const pendingAttachmentReads = ref(0);
 const isAttachmentProcessing = computed(() => pendingAttachmentReads.value > 0);
-const canSubmitPrompt = computed(
-  () =>
-    !chironBusy.value &&
-    (props.connection?.db_type === "chirondb"
-      ? !!props.connection && !!settings.activeModel && !isAttachmentProcessing.value && (!!prompt.value.trim() || !!selectedCsvAttachments.value.length || !!selectedImageAttachments.value.length)
-      : canSubmitAiPrompt({
-          prompt: prompt.value,
-          contextItemCount: selectedMentions.value.length + selectedSqlFileMentions.value.length + selectedCsvAttachments.value.length + selectedImageAttachments.value.length,
-          isAttachmentProcessing: isAttachmentProcessing.value,
-          hasTab: !!props.tab,
-          hasConnection: !!props.connection,
-        })),
+const canSubmitPrompt = computed(() =>
+  canSubmitAiPrompt({
+    prompt: prompt.value,
+    contextItemCount: selectedMentions.value.length + selectedSqlFileMentions.value.length + selectedCsvAttachments.value.length + selectedImageAttachments.value.length,
+    isAttachmentProcessing: isAttachmentProcessing.value,
+    hasTab: !!props.tab,
+    hasConnection: !!props.connection,
+  }),
 );
 let browserAttachmentDragDepth = 0;
 let attachmentDraftEpoch = 0;
@@ -1162,11 +1131,6 @@ const agentActionButtons: AiActionButton[] = [
   // `generate` is shared with Ask so users can still request SQL-only output without execution.
   { action: "generate", icon: Wand2, key: "ai.actions.generateNoExec" },
 ];
-
-function actionLabel(key: string): string {
-  const label = t(key);
-  return props.connection?.db_type === "chirondb" ? label.replace(/\bSQL\b/g, "ChironQL") : label;
-}
 
 const actionButtons = computed<AiActionButton[]>(() => (assistantMode.value === "agent" ? agentActionButtons : askActionButtons));
 const isRedisConnection = computed(() => props.connection?.db_type === "redis");
@@ -1242,8 +1206,6 @@ function messagesForAgentHistory(historyMessages: ChatMessage[]): AiMessage[] {
 }
 
 const chatTitle = computed(() => {
-  const savedTitle = conversations.value.find((c) => c.id === conversationId.value)?.title;
-  if (savedTitle) return savedTitle;
   const first = messages.value.find((m) => m.role === "user" && m.kind !== "contextSummary");
   return first ? messageTitle(first).slice(0, 30) : t("ai.newChat");
 });
@@ -1401,11 +1363,10 @@ const selectedActionButton = computed<AiActionButton | undefined>(() => actionBu
 const modeActionTriggerLabel = computed(() => {
   const modePart = `${modeLabel.value}`;
   if (!showActionButtons.value || !selectedActionButton.value) return modePart;
-  return `${modePart} · ${actionLabel(selectedActionButton.value.key)}`;
+  return `${modePart} · ${t(selectedActionButton.value.key)}`;
 });
 
 function switchModeActionTab(mode: "ask" | "agent") {
-  if (chironBusy.value) return;
   activeAction.value = resolveDefaultAction(mode);
   if (assistantMode.value !== mode) {
     // Set the mode after the action so the tab label and picker stay aligned.
@@ -1414,7 +1375,6 @@ function switchModeActionTab(mode: "ask" | "agent") {
 }
 
 function selectModeActionItem(action: AiAction) {
-  if (chironBusy.value) return;
   // Vector databases only support generation; keep this constraint at the selection boundary.
   if (!showActionButtons.value) return;
   selectAction(action);
@@ -1448,18 +1408,48 @@ const dbSelectOptions = computed(() => {
   }));
 });
 
-const selectedNamespace = computed(() => (props.connection && props.tab ? resolveAiNamespaceSelection(props.tab, props.connection).value : ""));
+// AI can inspect more than the tab's active database. Keep this selection local
+// to the composer so changing the visible query tab does not rewrite SQL state.
+const selectedDatabases = ref<string[]>([]);
+const databaseSearchQuery = ref("");
+const filteredDbSelectOptions = computed(() => {
+  const query = databaseSearchQuery.value.trim().toLowerCase();
+  if (!query) return dbSelectOptions.value;
+  return dbSelectOptions.value.filter((option) => option.label.toLowerCase().includes(query) || option.database.toLowerCase().includes(query));
+});
 
-const selectedDatabaseSelectValue = computed(() => (props.connection ? encodeSelectableDatabaseValue(props.connection.db_type, selectedNamespace.value) : ""));
-
+const selectedDatabaseValues = computed(() => new Set(selectedDatabases.value));
 const selectedDatabaseLabel = computed(() => {
   if (!props.connection) return t("editor.selectDatabase");
-  if (!props.tab) return t("editor.selectDatabase");
-  return formatDatabaseLabel(props.connection, selectedNamespace.value, {
-    defaultDatabase: t("editor.defaultDatabase"),
-    noDatabase: t("editor.noDatabase"),
-  });
+  const labels = dbSelectOptions.value.filter((option) => selectedDatabaseValues.value.has(option.database)).map((option) => option.label);
+  return labels.length ? labels.join(", ") : t("editor.selectDatabase");
 });
+
+function syncSelectedDatabases() {
+  const active = selectedNamespace.value;
+  const available = dbSelectOptions.value.map((option) => option.database);
+  const retained = selectedDatabases.value.filter((database) => available.includes(database));
+  selectedDatabases.value = retained.length ? retained : active ? [active] : [];
+}
+
+function toggleDatabase(database: string) {
+  if (selectedDatabaseValues.value.has(database)) {
+    if (selectedDatabases.value.length === 1) return;
+    selectedDatabases.value = selectedDatabases.value.filter((item) => item !== database);
+  } else {
+    selectedDatabases.value = [...selectedDatabases.value, database];
+  }
+}
+
+const selectedNamespace = computed(() => (props.connection && props.tab ? resolveAiNamespaceSelection(props.tab, props.connection).value : ""));
+
+watch(
+  () => `${props.connection?.id ?? ""}:${props.tab?.id ?? ""}`,
+  () => {
+    selectedDatabases.value = selectedNamespace.value ? [selectedNamespace.value] : [];
+  },
+);
+watch([dbSelectOptions, selectedNamespace], syncSelectedDatabases, { immediate: true });
 
 const showAiSchemaSelector = computed(() => {
   const connection = props.connection;
@@ -1498,7 +1488,6 @@ async function loadDatabases(connection = props.connection): Promise<string[]> {
 }
 
 async function changeConnection(connectionId: string) {
-  if (chironBusy.value) return;
   const conn = connectionStore.getConfig(connectionId);
   if (!conn) return;
   if (props.connection?.id === connectionId) return;
@@ -1519,20 +1508,6 @@ async function changeConnection(connectionId: string) {
   } catch (e: unknown) {
     const message = e instanceof Error ? e.message : String(e);
     toast(t("connection.connectFailed", { message: translateBackendError(t, message) }), 5000);
-  }
-}
-
-function changeNamespace(value: string) {
-  const tab = props.tab;
-  const connection = props.connection;
-  if (!tab || !connection) return;
-  const namespace = decodeSelectableDatabaseValue(connection.db_type, value);
-  if (resolveAiNamespaceSelection(tab, connection).value === namespace) return;
-  clearContextReferences();
-  if (resolveAiNamespaceSelection(tab, connection).kind === "schema") {
-    queryStore.updateSchema(tab.id, namespace || undefined);
-  } else {
-    queryStore.updateDatabase(tab.id, namespace);
   }
 }
 
@@ -2350,11 +2325,6 @@ function scrollMentionSelectedIntoView() {
 
 function refreshMentionState() {
   clearTimeout(mentionTimer);
-  if (props.connection?.db_type === "chirondb") {
-    mentionOpen.value = false;
-    commandOpen.value = false;
-    return;
-  }
 
   // 优先检测斜杠命令（仅在输入内容为空时触发）
   const textarea = promptTextareaRef.value;
@@ -2422,16 +2392,6 @@ function insertMention(candidate: AiMentionCandidate) {
 
 function onPromptKeydown(event: KeyboardEvent) {
   if (isAiPromptImeCompositionEvent(event, promptCompositionActive.value)) return;
-  if (chironBusy.value) {
-    if (event.key === "Enter") event.preventDefault();
-    return;
-  }
-  // Native point references (@id) are not SQL mentions or slash commands.
-  if (props.connection?.db_type === "chirondb" && shouldSubmitAiPromptOnKeydown(event, false)) {
-    event.preventDefault();
-    void send();
-    return;
-  }
 
   // 斜杠命令菜单键盘导航
   if (commandOpen.value) {
@@ -2542,7 +2502,7 @@ async function loadReferencedSqlFiles(mentions: AiSqlFileMention[]): Promise<AiS
 }
 
 function selectCsvFile() {
-  if (!isGenerating.value && !chironBusy.value) csvFileInputRef.value?.click();
+  if (!isGenerating.value) csvFileInputRef.value?.click();
 }
 
 function isImageAttachment(file: File): boolean {
@@ -2678,7 +2638,7 @@ function queueAttachmentFiles(files: File[], expectedEpoch = attachmentDraftEpoc
 
 function onPromptPaste(event: ClipboardEvent) {
   const images = Array.from(event.clipboardData?.files || []).filter(isImageAttachment);
-  if (!images.length || isGenerating.value || chironBusy.value) return;
+  if (!images.length || isGenerating.value) return;
   event.preventDefault();
   void queueAttachmentFiles(images);
 }
@@ -2691,7 +2651,7 @@ function onAttachmentDragEnter(event: DragEvent) {
   if (!hasDraggedFiles(event)) return;
   event.preventDefault();
   event.stopPropagation();
-  if (isGenerating.value || chironBusy.value) {
+  if (isGenerating.value) {
     browserAttachmentDragDepth = 0;
     isAttachmentDragging.value = false;
     return;
@@ -2704,7 +2664,7 @@ function onAttachmentDragOver(event: DragEvent) {
   if (!hasDraggedFiles(event)) return;
   event.preventDefault();
   event.stopPropagation();
-  if (isGenerating.value || chironBusy.value) {
+  if (isGenerating.value) {
     isAttachmentDragging.value = false;
     return;
   }
@@ -2725,7 +2685,7 @@ function onAttachmentDrop(event: DragEvent) {
   event.stopPropagation();
   browserAttachmentDragDepth = 0;
   isAttachmentDragging.value = false;
-  if (isGenerating.value || chironBusy.value) return;
+  if (isGenerating.value) return;
   void queueAttachmentFiles(files);
 }
 
@@ -2801,13 +2761,13 @@ function onTauriFileDrop(event: Event) {
   if (payload.type === "enter" || payload.type === "over") {
     const insideAssistant = tauriDropInsideAssistant(payload);
     if (insideAssistant) routedEvent.preventDefault();
-    isAttachmentDragging.value = !isGenerating.value && !chironBusy.value && insideAssistant;
+    isAttachmentDragging.value = !isGenerating.value && insideAssistant;
     return;
   }
   isAttachmentDragging.value = false;
   if (!tauriDropInsideAssistant(payload)) return;
   routedEvent.preventDefault();
-  if (isGenerating.value || chironBusy.value) return;
+  if (isGenerating.value) return;
   void addDroppedAttachmentPaths(payload.paths);
 }
 
@@ -2827,188 +2787,7 @@ function onTableReferenceDropEvent(event: Event) {
   });
 }
 
-const chironCollection = ref("");
-const chironCollections = ref<string[]>([]);
-const chironBusy = ref(false);
-const chironPhase = ref("");
-const chironElapsed = ref(0);
-const chironPrivacy = "Ask generates ChironQL without running it. Agent runs reads; every write still needs approval. Your prompt, attached files/images, selected templates and relevant query text are shared; results stay local.";
-let chironTimer: ReturnType<typeof setInterval> | undefined;
-let chironActivityId = 0;
-function beginChiron(phase: string, connectionId: string, requestId?: string) {
-  const activityId = ++chironActivityId;
-  chironBusy.value = true;
-  chironPhase.value = phase;
-  chironElapsed.value = 0;
-  const started = Date.now();
-  let polling = false;
-  chironTimer = setInterval(async () => {
-    chironElapsed.value = Math.floor((Date.now() - started) / 1000);
-    if (!requestId || polling) return;
-    polling = true;
-    try {
-      const response = await chirondbRequest(connectionId, { operation: "assistant", request: { action: "status", request_id: requestId } });
-      if (chironBusy.value && activityId === chironActivityId && response.body.phase && response.body.phase !== "Finished") chironPhase.value = response.body.phase;
-    } catch {
-      /* The main request reports errors; status polling never retries execution. */
-    } finally {
-      polling = false;
-    }
-  }, 1000);
-}
-function finishChiron() {
-  chironActivityId++;
-  clearInterval(chironTimer);
-  chironTimer = undefined;
-  chironBusy.value = false;
-}
-onUnmounted(() => clearInterval(chironTimer));
-const chironEpoch = ref(0);
-watch(
-  () => props.connection?.id,
-  async (connectionId) => {
-    chironEpoch.value++;
-    chironCollection.value = "";
-    chironCollections.value = [];
-    if (!connectionId || props.connection?.db_type !== "chirondb") return;
-    try {
-      const collections = await vectorListCollections(connectionId, "default");
-      if (props.connection?.id === connectionId) chironCollections.value = collections.map((c) => c.name);
-    } catch (error) {
-      toast(String(error));
-    }
-  },
-  { immediate: true },
-);
-watch(chironCollection, () => {
-  chironEpoch.value++;
-});
-function chironStale(msg: ChatMessage) {
-  return !msg.chiron || msg.chiron.epoch !== chironEpoch.value || props.connection?.id !== msg.chiron.connectionId || chironCollection.value !== msg.chiron.collection;
-}
-async function sendChiron() {
-  const connection = props.connection;
-  const selected = settings.activeModel ? { ...settings.activeModel } : undefined;
-  if (chironBusy.value || isAttachmentProcessing.value || (!prompt.value.trim() && !selectedCsvAttachments.value.length && !selectedImageAttachments.value.length)) return;
-  if (!connection || !selected) {
-    toast("Select a connection and saved AI model first.");
-    return;
-  }
-  if (selectedMentions.value.length || selectedSqlFileMentions.value.length) {
-    toast("Table and SQL-library mentions are unavailable for ChironDB. Attach a text file or paste the query instead.");
-    return;
-  }
-  const imageError = activeImageAttachmentSupportError(selectedImageAttachments.value);
-  if (imageError) {
-    toast(imageAttachmentSupportErrorMessage(imageError), 5000);
-    return;
-  }
-  const text = prompt.value.trim() || "Describe the attached files.";
-  const csvAttachments = selectedCsvAttachments.value.map((file) => ({ ...file }));
-  const imageAttachments = selectedImageAttachments.value.map((image) => ({ ...image }));
-  const action = activeAction.value;
-  const mode = assistantMode.value;
-  const currentQuery = props.tab?.sql ?? "";
-  const templateIds = [...activeTemplateIds.value];
-  let epoch = chironEpoch.value;
-  const collection = chironCollection.value.trim();
-  const targetMessages = messages.value;
-  if (!conversationId.value) conversationId.value = uuid();
-  const chatId = conversationId.value;
-  targetMessages.push({ role: "user", content: text, mentions: selectedMessageMentions([], [], csvAttachments, imageAttachments), csvAttachments, imageAttachments });
-  attachmentDraftEpoch += 1;
-  selectedCsvAttachments.value = [];
-  selectedImageAttachments.value = [];
-  prompt.value = "";
-  const requestId = uuid();
-  beginChiron("Preparing request", connection.id, requestId);
-  scrollToBottom({ force: true });
-  try {
-    await persistConversationSnapshot(chatId, targetMessages, connection.name, collection);
-    if (!(await promptTemplateStore.ensureLoaded())) throw new Error(t("ai.customInstructionsLoadFailed"));
-    const requestPrompt = buildChironPrompt({
-      action,
-      mode,
-      prompt: text,
-      currentQuery,
-      custom: {
-        globalInstructions: promptTemplateStore.globalInstructions,
-        activeTemplates: promptTemplateStore.templates.filter((template) => templateIds.includes(template.id)),
-      },
-    });
-    settings.recordLastUsedTemplates(connection.db_type, templateIds);
-    const response = await chirondbRequest(connection.id, {
-      operation: "assistant",
-      request: {
-        action: "generate",
-        config_id: selected.configId,
-        model: selected.modelId,
-        prompt: requestPrompt.prompt,
-        text_attachments: csvAttachments.map(({ name, content, truncated }) => ({ name, content, truncated: !!truncated })),
-        images: imageAttachments.map(({ mediaType, data }) => ({ mediaType, data })),
-        collection,
-        generate_only: requestPrompt.generateOnly,
-        request_id: requestId,
-        conversation_id: chatId,
-      },
-    });
-    if (epoch !== chironEpoch.value && response.body.run_id) {
-      await chirondbRequest(connection.id, { operation: "assistant", request: { action: "cancel", run_id: response.body.run_id } });
-      response.body.approval_token = null;
-    }
-    if (epoch === chironEpoch.value && response.body.collection && response.body.collection !== collection) {
-      chironCollection.value = response.body.collection;
-      await nextTick();
-      epoch = chironEpoch.value;
-    }
-    targetMessages.push({
-      role: "assistant",
-      content: response.body.message ?? response.body.error ?? "Native ChironQL response",
-      chiron: { value: response.body, connectionId: connection.id, connectionName: connection.name, collection: response.body.collection ?? collection, model: selected.modelId, epoch },
-    });
-  } catch (error) {
-    targetMessages.push({ role: "assistant", content: String(error), failed: true });
-  } finally {
-    await persistConversationSnapshot(chatId, targetMessages, connection.name, chironCollection.value);
-    finishChiron();
-    scrollToBottom({ force: true });
-  }
-}
-async function chironAction(msg: ChatMessage, request: ChironAssistantRequest) {
-  if (!msg.chiron || chironBusy.value || (request.action !== "cancel" && chironStale(msg))) return;
-  beginChiron(request.action === "approve" ? "Validating and executing approved query" : request.action === "explain" ? "Thinking — explaining your approved preview" : "Cancelling proposal", msg.chiron.connectionId);
-  // Approval is consumed before awaiting; no retry button can replay it.
-  if (request.action === "approve") msg.chiron.value.approval_token = null;
-  try {
-    const response = await chirondbRequest(msg.chiron.connectionId, { operation: "assistant", request });
-    msg.chiron.value = { ...msg.chiron.value, approval_token: null, ...response.body };
-    msg.content = response.body.message ?? "Native ChironQL response";
-    if (request.action === "approve" && response.body.result?.status === 200) {
-      const collections = await vectorListCollections(msg.chiron.connectionId, "default").catch(() => []);
-      chironCollections.value = collections.map((c) => c.name);
-    }
-  } catch (error) {
-    msg.chiron.value.message = `${String(error)} No automatic retry was made.`;
-  } finally {
-    await persistConversation();
-    finishChiron();
-  }
-}
-function openChiron(msg: ChatMessage, query: string) {
-  if (!msg.chiron || props.connection?.id !== msg.chiron.connectionId) return;
-  queryStore.createTab(msg.chiron.connectionId, msg.chiron.collection, "ChironQL proposal", "query", undefined, query, undefined, { forceNew: true });
-}
-
 async function send() {
-  if (chironBusy.value) return;
-  if (props.connection?.db_type === "chirondb") {
-    if (pendingAutoSends.shift()) {
-      toast("Automatic SQL retries are disabled for ChironDB. Review and send a new native request.");
-      return;
-    }
-    await sendChiron();
-    return;
-  }
   // Auto-send (queued input / retry) overrides the view: the send runs against
   // the target conversation's own history instead of the visible chat. Consumed
   // once so a second unrelated send() cannot inherit a stale target.
@@ -3033,6 +2812,9 @@ async function send() {
     clearPendingWriteGrant();
     return;
   }
+  // Capture the selection before context loading or queued run scheduling can
+  // yield to another conversation. Dameng's top-level selector is a schema.
+  const runDatabases = resolveAiNamespaceSelection(tab, connection).kind === "database" ? [...selectedDatabases.value] : [];
   const activeConfig = activeFullConfig.value;
   if (!activeConfig) {
     clearPendingWriteGrant();
@@ -3326,11 +3108,21 @@ async function send() {
     // paying for buildAiContext() too; it can do real backend/schema work that
     // would be entirely wasted on an already-abandoned request.
     if (!generationCanContinue()) return;
-    const context = await buildAiContext(tab, connection, {
-      mentionedTables,
-      sqlFiles,
-      csvFiles: csvAttachments,
-    });
+    const requestDatabase = runDatabases[0] ?? tab.database;
+    const context = await buildAiContext(
+      {
+        ...tab,
+        database: requestDatabase,
+        schema: runDatabases.length > 1 || requestDatabase !== tab.database ? undefined : tab.schema,
+      },
+      connection,
+      {
+        mentionedTables,
+        sqlFiles,
+        csvFiles: csvAttachments,
+      },
+    );
+    context.selectedDatabases = runDatabases;
     // Superseded while awaiting buildAiContext() above — must bail before ever
     // calling runAgentStream(), not just before writing its results. Without
     // this recheck, a clear/switch/unmount that fires during context
@@ -3359,6 +3151,7 @@ async function send() {
         confirmedConnectionId: confirmedTargetConnId,
         confirmedDatabase: confirmedTargetDb,
         confirmedSchema: confirmedTargetSchema,
+        promptCacheKey: conversationId.value || undefined,
       },
       history,
       (event: AgentEvent) => {
@@ -3562,7 +3355,7 @@ async function send() {
         if (!runIsVisible() && !detachedRun.cancelRequested) {
           toast(t(writeConfirmationRequired ? "ai.backgroundRunNeedsConfirmation" : "ai.backgroundRunCompleted"), 5000, {
             label: t("ai.openPanel"),
-            onClick: () => window.dispatchEvent(new CustomEvent("chiron-horizon:ai-run-notify", { detail: { conversationId: runConversationId, status: runSettledStatus } })),
+            onClick: () => window.dispatchEvent(new CustomEvent("chiron_horizon:ai-run-notify", { detail: { conversationId: runConversationId, status: runSettledStatus } })),
           });
         }
         // Auto-send the conversation's queued input once this run reaches a
@@ -4009,7 +3802,6 @@ async function exportConversationAs(format: AiConversationExportFormat) {
 }
 
 function clearMessages() {
-  if (chironBusy.value) return;
   // If a request is still in flight, abandon it before wiping the transcript it
   // was writing into. abandonInFlightRequest() invalidates the active generation
   // synchronously, so the in-flight send()'s callbacks/catch/finally become
@@ -4054,15 +3846,15 @@ function clearAttachmentDraftState() {
 function buildConversationSnapshot(targetConversationId: string, targetMessages: ChatMessage[], connectionName: string, database: string, createdAt = new Date().toISOString()): AiConversation | null {
   if (!targetConversationId || !targetMessages.length) return null;
   const first = targetMessages.find((m) => m.role === "user" && m.kind !== "contextSummary");
+  const existingConversation = conversations.value.find((conversation) => conversation.id === targetConversationId);
   return {
     id: targetConversationId,
-    title: conversations.value.find((c) => c.id === targetConversationId)?.title || (first ? messageTitle(first).slice(0, 50) : "Untitled"),
+    title: renamedConversationTitles.get(targetConversationId) || existingConversation?.title || (first ? messageTitle(first).slice(0, 50) : "Untitled"),
     connectionName,
     database,
     messages: targetMessages.map((m) => ({
       role: m.role,
       content: m.content,
-      ...(m.chiron ? { chiron: { ...m.chiron, epoch: -1, value: { ...m.chiron.value, run_id: undefined, approval_token: null, sharing_preview: null } } } : {}),
       ...(m.mentions?.length ? { mentions: m.mentions } : {}),
       ...(m.reasoning ? { reasoning: m.reasoning } : {}),
       ...(m.kind ? { kind: m.kind } : {}),
@@ -4071,7 +3863,7 @@ function buildConversationSnapshot(targetConversationId: string, targetMessages:
     // The conversation's single queued "send later" input, persisted so it
     // survives a restart (parent PRD §5).
     queuedInput: queuedInputs.get(targetConversationId)?.text,
-    createdAt: conversations.value.find((c) => c.id === targetConversationId)?.createdAt || createdAt,
+    createdAt,
     updatedAt: new Date().toISOString(),
   };
 }
@@ -4081,7 +3873,7 @@ async function persistConversationSnapshot(targetConversationId: string, targetM
   if (!conversation) return;
   await saveAiConversation(conversation)
     .then(() => syncPersistedConversation(conversation))
-    .catch((error) => toast(`Chat history could not be saved: ${String(error)}`));
+    .catch(() => {});
 }
 
 async function persistDesktopRunSnapshot(run: DesktopAiRunRuntime<ChatMessage>) {
@@ -4208,16 +4000,39 @@ async function setConversationListOpen(open: boolean) {
     conversationSearchQuery.value = "";
     await nextTick();
     conversationSearchInput.value?.focus();
-    await refreshConversationHistory();
+    conversations.value = await loadAiConversations().catch(() => []);
   }
 }
 
-async function refreshConversationHistory() {
+async function startRenameConversation(conv: AiConversation) {
+  renamingConversationId.value = conv.id;
+  renamingConversationTitle.value = conv.title;
+  await nextTick();
+  renamingConversationInput.value?.focus();
+  renamingConversationInput.value?.select();
+}
+function cancelRenameConversation() {
+  renamingConversationId.value = null;
+  renamingConversationTitle.value = "";
+}
+async function commitRenameConversation(conv: AiConversation) {
+  const title = renamingConversationTitle.value.trim().slice(0, 50);
+  if (!title || title === conv.title) return cancelRenameConversation();
   try {
-    conversations.value = await loadAiConversations();
-  } catch (error) {
-    // A failed fetch is not an empty history. Keep the last known saved chats.
-    toast(`Could not load chat history. Sign in if needed, then reopen History. ${String(error)}`);
+    const activeRun = desktopAiRun<ChatMessage>(conv.id);
+    if (activeRun) await runSnapshotScheduler.save(activeRun);
+    const latestConversation = conversations.value.find((item) => item.id === conv.id) ?? conv;
+    const updated = { ...latestConversation, title, updatedAt: new Date().toISOString() };
+    // Claim the title before the async save so a throttled snapshot firing
+    // during the await window cannot persist the previous title over it.
+    renamedConversationTitles.set(conv.id, title);
+    await saveAiConversation(updated);
+    const i = conversations.value.findIndex((item) => item.id === conv.id);
+    if (i >= 0) conversations.value[i] = updated;
+  } catch {
+    toast(t("ai.conversationRenameFailed"), 5000);
+  } finally {
+    cancelRenameConversation();
   }
 }
 
@@ -4225,7 +4040,6 @@ function chatMessagesFromConversation(conv: AiConversation): ChatMessage[] {
   return conv.messages.map((m) => ({
     role: m.role as "user" | "assistant",
     content: m.content,
-    chiron: m.chiron ? { ...m.chiron, epoch: -1, value: { ...m.chiron.value, approval_token: null, run_id: undefined, sharing_preview: null } } : undefined,
     sourceConnectionName: m.role === "assistant" ? conv.connectionName : undefined,
     mentions: Array.isArray(m.mentions) ? (m.mentions as AiMessageMention[]) : undefined,
     reasoning: m.reasoning,
@@ -4235,8 +4049,6 @@ function chatMessagesFromConversation(conv: AiConversation): ChatMessage[] {
 }
 
 function selectConversation(conv: AiConversation) {
-  if (chironBusy.value) return;
-  chironEpoch.value++;
   // Same guard as clearMessages(): switching away from an in-flight request must
   // abandon it first — abandonInFlightRequest() invalidates the generation so
   // the old send() can't write its deltas/result into this (different)
@@ -4327,7 +4139,6 @@ function conversationHasActiveTask(id: string): boolean {
 }
 
 async function deleteConversation(id: string) {
-  if (chironBusy.value && id === conversationId.value) return;
   if (backgroundAiRunsEnabled && conversationHasActiveTask(id)) {
     deleteConfirmConversationId.value = id;
     return;
@@ -4367,12 +4178,12 @@ async function performDeleteConversation(id: string) {
     currentConversationId: () => conversationId.value,
     isGenerating: () => !backgroundAiRunsEnabled && isGenerating.value,
     abandon: () => abandonInFlightRequest(),
-    deletePersisted: () => deleteAiConversation(id),
+    deletePersisted: () => deleteAiConversation(id).catch(() => {}),
     afterDelete: () => {
       conversations.value = conversations.value.filter((c) => c.id !== id);
       if (conversationId.value === id) clearMessages();
     },
-  }).catch((error) => toast(`Could not delete chat: ${String(error)}`));
+  });
 }
 
 /** Removes a recovered pending-input draft and the `pending_recoverable` run
@@ -4391,8 +4202,6 @@ function discardRecoveredDraft() {
 }
 
 function startNewChat() {
-  if (chironBusy.value) return;
-  chironEpoch.value++;
   clearMessages();
   showConversationList.value = false;
   // A fresh conversation starts from the configured default mode.
@@ -4499,7 +4308,7 @@ onMounted(async () => {
     }
   }
 
-  await refreshConversationHistory();
+  conversations.value = await loadAiConversations().catch(() => []);
   // Restore per-conversation queued "send later" inputs (parent PRD §5) — they
   // are persisted with the conversation and must surface again after a restart.
   for (const conversation of conversations.value) {
@@ -4597,7 +4406,7 @@ onMounted(async () => {
   }).catch(() => undefined);
 
   window.addEventListener("resize", handlePanelResize);
-  document.addEventListener("chiron-horizon:tauri-file-drop", onTauriFileDrop as EventListener);
+  document.addEventListener("chiron_horizon:tauri-file-drop", onTauriFileDrop as EventListener);
   window.addEventListener(CHIRON_HORIZON_TABLE_REFERENCE_DROP_EVENT, onTableReferenceDropEvent);
   if (typeof ResizeObserver !== "undefined" && assistantRootRef.value) {
     promptPanelResizeObserver = new ResizeObserver(handlePanelResize);
@@ -4678,7 +4487,7 @@ onUnmounted(() => {
   document.body.style.userSelect = "";
   document.body.style.cursor = "";
   window.removeEventListener("resize", handlePanelResize);
-  document.removeEventListener("chiron-horizon:tauri-file-drop", onTauriFileDrop as EventListener);
+  document.removeEventListener("chiron_horizon:tauri-file-drop", onTauriFileDrop as EventListener);
   window.removeEventListener(CHIRON_HORIZON_TABLE_REFERENCE_DROP_EVENT, onTableReferenceDropEvent);
   promptPanelResizeObserver?.disconnect();
 });
@@ -4719,7 +4528,12 @@ function clearContextReferences() {
   mentionError.value = "";
 }
 
-defineExpose({ triggerAction, setPrompt, addTableMention, clearContextReferences, selectConversationById });
+function focusSearch(): boolean {
+  void setConversationListOpen(true);
+  return true;
+}
+
+defineExpose({ triggerAction, setPrompt, addTableMention, clearContextReferences, selectConversationById, focusSearch });
 
 const messageRenderer = computed(() => {
   const appearance = aiCodeAppearance.value;
@@ -4735,8 +4549,6 @@ const messageRenderer = computed(() => {
  * already-finished segments, so a frame only re-parses the growing tail.
  */
 function renderMessageSegments(msg: ChatMessage) {
-  // Native messages have their own plain-text diagnostics and query/result card.
-  if (msg.chiron) return [];
   return messageRenderer.value.render(msg.content, { streaming: isStreamingMessage(msg) });
 }
 
@@ -4772,7 +4584,7 @@ async function openExternalUrl(url: string) {
           <DropdownMenuItem @click="exportConversationAs('html')">{{ t("ai.conversationExportHtml") }}</DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
-      <Button variant="ghost" size="icon" class="h-6 w-6" :disabled="chironBusy" @click="startNewChat" :title="t('ai.newChat')">
+      <Button variant="ghost" size="icon" class="h-6 w-6" @click="startNewChat" :title="t('ai.newChat')">
         <MessageSquarePlus class="h-3.5 w-3.5" />
       </Button>
       <Popover :open="showConversationList" @update:open="setConversationListOpen">
@@ -4792,6 +4604,7 @@ async function openExternalUrl(url: string) {
             <Search class="pointer-events-none absolute left-3 h-3 w-3 text-muted-foreground" />
             <input
               ref="conversationSearchInput"
+              data-ai-conversation-search
               v-model="conversationSearchQuery"
               type="search"
               :aria-label="t('history.conversationSearch')"
@@ -4811,7 +4624,22 @@ async function openExternalUrl(url: string) {
           </div>
           <div v-else class="max-h-64 overflow-auto p-1">
             <div v-for="conv in filteredConversations" :key="conv.id" class="flex min-w-0 cursor-pointer items-center gap-2 rounded-md px-2 py-1.5 text-xs hover:bg-muted" :class="{ 'bg-muted': conv.id === conversationId }" @click="selectConversation(conv)">
-              <span class="min-w-0 flex-1 truncate" :title="conv.title">{{ conv.title }}</span>
+              <input
+                v-if="renamingConversationId === conv.id"
+                :ref="
+                  (element) => {
+                    renamingConversationInput = element as HTMLInputElement | null;
+                  }
+                "
+                v-model="renamingConversationTitle"
+                class="min-w-0 flex-1 rounded border bg-background px-1 py-0.5 text-xs"
+                @click.stop
+                @keydown.enter.stop.prevent="commitRenameConversation(conv)"
+                @keydown.esc.stop.prevent="cancelRenameConversation"
+                @blur="commitRenameConversation(conv)"
+              />
+              <span v-else class="min-w-0 flex-1 truncate" :title="conv.title">{{ conv.title }}</span>
+              <button v-if="renamingConversationId !== conv.id" type="button" class="shrink-0 rounded p-0.5 text-muted-foreground hover:text-foreground" :title="t('ai.renameConversation')" @click.stop="startRenameConversation(conv)"><Pencil class="h-3 w-3" /></button>
               <span v-if="conversationRowDetail(conv).hasQueuedInput" class="shrink-0 rounded border border-primary/40 bg-primary/10 px-1 py-px text-[10px] text-primary" :aria-label="t('ai.rowQueuedInput')" :title="t('ai.rowQueuedInput')">{{ t("ai.rowQueuedInput") }}</span>
               <span v-if="conversationRowDetail(conv).status === 'preparing' || conversationRowDetail(conv).status === 'running'" class="flex min-w-0 shrink-0 items-center gap-1 text-muted-foreground" :aria-label="t('ai.runStatusRunning')" :title="t('ai.runStatusRunning')">
                 <Loader2 class="h-3 w-3 shrink-0 animate-spin" />
@@ -4851,20 +4679,14 @@ async function openExternalUrl(url: string) {
                 <CircleSlash class="h-3 w-3 text-muted-foreground" />
               </span>
               <span v-if="conversationRowDetail(conv).unread" class="h-1.5 w-1.5 shrink-0 rounded-full bg-primary" :aria-label="t('ai.runUnread')" :title="t('ai.runUnread')" />
-              <DropdownMenu>
-                <DropdownMenuTrigger as-child>
-                  <button class="shrink-0 rounded p-0.5 text-muted-foreground hover:bg-background" :disabled="chironBusy" :aria-label="`More options for ${conv.title}`" @click.stop><MoreHorizontal class="h-3.5 w-3.5" /></button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" @click.stop>
-                  <DropdownMenuItem @select="openRenameChat(conv)"><Pencil class="mr-2 h-3.5 w-3.5" />Rename chat</DropdownMenuItem>
-                  <DropdownMenuItem @select="deleteConversation(conv.id)"><Trash2 class="mr-2 h-3.5 w-3.5" />Delete chat</DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
+              <button class="shrink-0 rounded p-0.5 text-muted-foreground hover:bg-background hover:text-destructive" :title="t('ai.deleteConversation')" :aria-label="t('ai.deleteConversation')" @click.stop="deleteConversation(conv.id)">
+                <X class="h-3 w-3" />
+              </button>
             </div>
           </div>
         </PopoverContent>
       </Popover>
-      <Button variant="ghost" size="icon" class="h-6 w-6" :disabled="chironBusy" @click="clearMessages" :title="t('ai.clear')">
+      <Button variant="ghost" size="icon" class="h-6 w-6" @click="clearMessages" :title="t('ai.clear')">
         <Trash2 class="h-3.5 w-3.5" />
       </Button>
       <Button variant="ghost" size="icon" class="h-6 w-6" :title="props.maximized ? t('ai.restore') : t('ai.maximize')" :aria-label="props.maximized ? t('ai.restore') : t('ai.maximize')" :aria-pressed="props.maximized" @click="emit('toggleMaximize')">
@@ -4878,7 +4700,7 @@ async function openExternalUrl(url: string) {
 
     <div v-if="messages.length === 0" class="flex-1 min-h-0 flex flex-col items-center justify-center text-center text-muted-foreground">
       <Bot class="h-10 w-10 mb-3 opacity-30" />
-      <p class="text-sm">{{ connection?.db_type === "chirondb" ? "Ask a question or describe a task for your ChironDB collection." : t("ai.welcome") }}</p>
+      <p class="text-sm">{{ t("ai.welcome") }}</p>
     </div>
     <div v-else class="relative min-h-0 flex-1">
       <ScrollArea ref="scrollRef" class="ai-message-scroll h-full overflow-hidden">
@@ -4964,7 +4786,7 @@ async function openExternalUrl(url: string) {
                   <div class="min-w-0">
                     <!-- Keep the hover action out of normal flow so message wrapping stays stable. -->
                     <button
-                      v-if="!isGenerating && !chironBusy"
+                      v-if="!isGenerating"
                       class="pointer-events-none absolute right-full top-1 mr-1 flex h-5 w-5 items-center justify-center rounded text-muted-foreground opacity-0 transition-opacity hover:bg-muted hover:text-foreground focus:pointer-events-auto focus:opacity-100 group-hover:pointer-events-auto group-hover:opacity-100"
                       :title="t('ai.editMessage')"
                       @click="startEditMessage(i)"
@@ -5017,7 +4839,7 @@ async function openExternalUrl(url: string) {
                           <span class="truncate">{{ mention.kind === "table" ? [mention.schema, mention.table].filter(Boolean).join(".") : mention.name }}</span>
                         </button>
                       </div>
-                      <div v-if="msg.content" class="whitespace-pre-wrap">{{ msg.content }}</div>
+                      <div v-if="msg.content" data-ai-user-message-content class="whitespace-pre-wrap">{{ msg.content }}</div>
                     </div>
                     <div v-if="canCopyMessage(msg)" class="mt-1 flex justify-end">
                       <button
@@ -5125,11 +4947,10 @@ async function openExternalUrl(url: string) {
                         </button>
                       </div>
                     </div>
-                    <pre class="ai-code-block whitespace-pre-wrap break-words p-3 text-xs leading-relaxed text-zinc-900 dark:text-zinc-100"><code v-html="seg.html"></code></pre>
+                    <pre class="ai-code-block whitespace-pre-wrap break-words [overflow-wrap:anywhere] p-3 text-xs leading-relaxed text-zinc-900 dark:text-zinc-100"><code v-html="seg.html"></code></pre>
                   </div>
                 </template>
-                <ChironAssistantResult v-if="msg.chiron" :value="msg.chiron.value" :busy="chironBusy" :stale="chironStale(msg)" :connection-name="msg.chiron.connectionName" :model="msg.chiron.model" @action="chironAction(msg, $event)" @open="openChiron(msg, $event)" />
-                <div v-if="!msg.chiron && msg === proposalConfirmMessage" class="mt-2 flex gap-2" :title="t('ai.proposalConfirmTitle')">
+                <div v-if="msg === proposalConfirmMessage" class="mt-2 flex gap-2" :title="t('ai.proposalConfirmTitle')">
                   <Button size="sm" variant="default" class="h-7 gap-1 text-[11px]" @click="sendProposalReply(true)">
                     <Check class="h-3 w-3" />
                     {{ t(isActionableWriteProposalMessage(msg) ? "ai.writeSqlConfirmYes" : "ai.proposalConfirmYes") }}
@@ -5162,15 +4983,6 @@ async function openExternalUrl(url: string) {
               </div>
             </div>
           </template>
-
-          <div v-if="chironBusy" data-chiron-response-progress class="flex w-full max-w-[95%] min-w-0 flex-col rounded-lg bg-muted px-3 py-3 text-xs leading-relaxed">
-            <span class="mb-1 text-[11px] font-medium text-muted-foreground">Assistant</span>
-            <div class="flex min-w-0 items-start gap-2">
-              <Loader2 class="mt-0.5 h-3.5 w-3.5 shrink-0 animate-spin" aria-hidden="true" />
-              <span class="min-w-0 flex-1 break-words" role="status" aria-live="polite">{{ chironPhase }}…</span>
-              <span class="shrink-0 tabular-nums text-muted-foreground" aria-label="Elapsed seconds">{{ chironElapsed }}s</span>
-            </div>
-          </div>
 
           <!-- Live generation-status line (Issue #6743 feature 1). Replaces the old
                "Thinking..." placeholder and covers the WHOLE generation period
@@ -5232,7 +5044,6 @@ async function openExternalUrl(url: string) {
               <DatabaseIcon v-if="connection" :db-type="connectionIconType(connection)" class="h-3 w-3 shrink-0" />
               <Server v-else class="h-3 w-3 shrink-0" />
               <ConnectionTreeSelect
-                :disabled="chironBusy"
                 :model-value="connection?.id || ''"
                 :connections="connectionStore.connections"
                 :layout="connectionStore.sidebarLayout"
@@ -5244,47 +5055,35 @@ async function openExternalUrl(url: string) {
                 list-class="w-72 max-w-[calc(100vw-2rem)]"
                 @update:model-value="(v) => changeConnection(v)"
               />
-              <template v-if="connection?.db_type === 'chirondb'">
-                <Layers class="h-3 w-3 shrink-0 text-foreground/40" />
-                <SearchableSelect
-                  v-model="chironCollection"
-                  :options="chironCollections"
-                  placeholder="Select collection"
-                  search-placeholder="Search or enter a collection…"
-                  :empty-text="t('grid.noSearchResults')"
-                  :disabled="chironBusy"
-                  allow-custom
-                  clearable
-                  trigger-variant="ghost"
-                  trigger-class="h-5 min-w-0 max-w-56 p-0 px-1 text-foreground/80"
-                  trigger-icon-class="h-3 w-3"
-                  list-class="w-64"
-                  aria-label="Collection"
-                />
-              </template>
-              <template v-if="connection && connection.db_type !== 'chirondb'">
+              <template v-if="connection">
                 <Database class="h-3 w-3 shrink-0 text-foreground/40" />
-                <Select
-                  :model-value="selectedDatabaseSelectValue"
-                  @update:model-value="
-                    (v) => {
-                      if (typeof v === 'string') changeNamespace(v);
-                    }
-                  "
+                <Popover
                   @update:open="
                     (open: boolean) => {
                       if (open) loadDatabases();
                     }
                   "
                 >
-                  <SelectTrigger :class="['h-5 w-auto border-0 rounded-md bg-transparent dark:bg-transparent p-0 px-1 text-xs text-foreground/80 shadow-none focus:ring-0 focus-visible:ring-0 [&_svg]:size-3', showAiSchemaSelector && 'min-w-0 max-w-56 flex-1']">
-                    <SelectValue :placeholder="t('editor.selectDatabase')">{{ selectedDatabaseLabel }}</SelectValue>
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem v-for="option in dbSelectOptions" :key="option.value" :value="option.value">{{ option.label }}</SelectItem>
-                    <SelectItem v-if="!dbSelectOptions.length && connection && tab" :value="selectedDatabaseSelectValue">{{ selectedDatabaseLabel }}</SelectItem>
-                  </SelectContent>
-                </Select>
+                  <PopoverTrigger as-child>
+                    <Button variant="ghost" :class="['h-5 max-w-64 justify-start border-0 p-0 px-1 text-xs font-normal text-foreground/80 shadow-none', showAiSchemaSelector && 'min-w-0 flex-1']">
+                      <span class="truncate">{{ selectedDatabaseLabel }}</span>
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent align="start" class="w-64 p-1">
+                    <div class="relative mb-1 flex items-center border-b px-2 py-1">
+                      <Search class="pointer-events-none absolute left-3 h-3 w-3 text-muted-foreground" />
+                      <input v-model="databaseSearchQuery" type="search" class="h-6 w-full bg-transparent pl-5 text-xs outline-none placeholder:text-muted-foreground" :placeholder="t('ai.searchDatabases')" />
+                    </div>
+                    <button v-if="selectedDatabases.length > 1" type="button" class="mb-1 flex w-full items-center justify-end gap-1 border-b px-2 py-1 text-xs" @click.stop="selectedDatabases = []"><X class="h-3 w-3" />{{ t("ai.clearDatabaseSelection") }}</button>
+                    <div class="max-h-64 overflow-y-auto overscroll-contain">
+                      <button v-for="option in filteredDbSelectOptions" :key="option.value" type="button" class="flex w-full items-center gap-2 rounded-sm px-2 py-1.5 text-left text-sm hover:bg-muted" @click="toggleDatabase(option.database)">
+                        <Check :class="['h-4 w-4', selectedDatabaseValues.has(option.database) ? 'opacity-100' : 'opacity-0']" />
+                        <span class="truncate">{{ option.label }}</span>
+                      </button>
+                      <div v-if="!filteredDbSelectOptions.length" class="px-2 py-1.5 text-sm text-muted-foreground">{{ t("ai.noDatabasesFound") }}</div>
+                    </div>
+                  </PopoverContent>
+                </Popover>
                 <template v-if="showAiSchemaSelector">
                   <Layers class="h-3 w-3 shrink-0 text-foreground/40" />
                   <SearchableSelect
@@ -5317,7 +5116,6 @@ async function openExternalUrl(url: string) {
                   type="button"
                   class="ai-template-selector-trigger flex min-w-0 max-w-[40%] items-center gap-1 rounded-[6px] border px-2 py-0.5 text-[11px] text-muted-foreground hover:bg-muted hover:text-foreground"
                   :aria-label="templateSelectorTriggerLabel"
-                  :disabled="chironBusy"
                   :title="templateSelectorTriggerLabel"
                 >
                   <FileCode class="h-3 w-3" />
@@ -5402,7 +5200,7 @@ async function openExternalUrl(url: string) {
               >
                 <component :is="cmd.icon" class="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
                 <span class="font-medium">/{{ cmd.action }}</span>
-                <span class="ml-auto text-[11px] text-muted-foreground">{{ actionLabel(cmd.key) }}</span>
+                <span class="ml-auto text-[11px] text-muted-foreground">{{ t(cmd.key) }}</span>
               </button>
             </div>
           </div>
@@ -5486,10 +5284,9 @@ async function openExternalUrl(url: string) {
           <textarea
             ref="promptTextareaRef"
             v-model="prompt"
-            :disabled="chironBusy"
             :style="{ height: `${textareaHeight}px`, maxHeight: `${maxTextareaHeight()}px` }"
             class="w-full resize-none bg-transparent text-xs outline-none placeholder:text-muted-foreground mb-1"
-            :placeholder="connection?.db_type === 'chirondb' ? 'Describe your task for the selected collection…' : activePlaceholder"
+            :placeholder="activePlaceholder"
             @input="refreshMentionState"
             @click="refreshMentionState"
             @keyup="onPromptKeyup"
@@ -5508,26 +5305,20 @@ async function openExternalUrl(url: string) {
           <div class="flex min-w-0 flex-nowrap items-center gap-1.5 overflow-hidden">
             <Tooltip>
               <TooltipTrigger as-child>
-                <Button variant="ghost" size="icon" class="h-7 w-7 shrink-0" :disabled="isGenerating || chironBusy" @click="selectCsvFile">
+                <Button variant="ghost" size="icon" class="h-7 w-7 shrink-0" :disabled="isGenerating" @click="selectCsvFile">
                   <Loader2 v-if="isAttachmentProcessing" class="h-3.5 w-3.5 animate-spin" />
                   <Plus v-else class="h-3.5 w-3.5" />
                   <span class="sr-only">{{ t("ai.attachmentSelect") }}</span>
                 </Button>
               </TooltipTrigger>
               <TooltipContent side="top" align="start" class="max-w-72 text-xs leading-relaxed">
-                {{ connection?.db_type === "chirondb" ? "Attach images or text files. Selected content is sent to your AI provider with this message; query results stay local." : t("ai.attachmentSelectHint") }}
+                {{ t("ai.attachmentSelectHint") }}
               </TooltipContent>
             </Tooltip>
             <!-- Combined mode + action selector -->
             <Popover v-model:open="modeActionOpen">
               <PopoverTrigger as-child>
-                <button
-                  type="button"
-                  class="flex shrink-0 items-center gap-1 whitespace-nowrap rounded-[6px] border px-2 py-0.5 text-[11px] text-muted-foreground hover:bg-muted hover:text-foreground"
-                  :aria-label="modeActionTriggerLabel"
-                  :disabled="chironBusy"
-                  :title="connection?.db_type === 'chirondb' ? chironPrivacy : modeActionTriggerLabel"
-                >
+                <button type="button" class="flex shrink-0 items-center gap-1 whitespace-nowrap rounded-[6px] border px-2 py-0.5 text-[11px] text-muted-foreground hover:bg-muted hover:text-foreground" :aria-label="modeActionTriggerLabel">
                   <component :is="modeIcon" class="h-3 w-3" />
                   <span>{{ modeActionTriggerLabel }}</span>
                   <svg class="h-3 w-3 shrink-0 opacity-60" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m6 9 6 6 6-6" /></svg>
@@ -5555,14 +5346,13 @@ async function openExternalUrl(url: string) {
                     {{ t("ai.modes.agent") }}
                   </button>
                 </div>
-                <p v-if="connection?.db_type === 'chirondb'" class="border-t px-2 pt-2 pb-1 text-[11px] leading-relaxed text-muted-foreground">{{ chironPrivacy }}</p>
                 <template v-if="showActionButtons">
                   <div class="border-t my-1" />
                   <!-- Action list -->
                   <div class="max-h-56 overflow-auto">
                     <button v-for="button in actionButtons" :key="button.action" type="button" class="flex w-full items-center gap-2 rounded-sm px-2 py-1.5 text-xs" :class="activeAction === button.action ? 'bg-accent' : 'hover:bg-muted'" @click="selectModeActionItem(button.action)">
                       <component :is="button.icon" class="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
-                      <span class="flex-1 text-left">{{ actionLabel(button.key) }}</span>
+                      <span class="flex-1 text-left">{{ t(button.key) }}</span>
                       <Check v-if="activeAction === button.action" class="h-3.5 w-3.5 shrink-0" />
                     </button>
                   </div>
@@ -5574,7 +5364,7 @@ async function openExternalUrl(url: string) {
               <!-- Combined provider + model selector -->
               <Popover v-model:open="providerSelectorOpen">
                 <PopoverTrigger as-child>
-                  <button type="button" :disabled="chironBusy" class="min-w-0 flex shrink items-center gap-1.5 max-w-[220px] rounded-[6px] border px-2 py-0.5 text-[11px] text-muted-foreground hover:bg-muted hover:text-foreground">
+                  <button type="button" class="min-w-0 flex shrink items-center gap-1.5 max-w-[220px] rounded-[6px] border px-2 py-0.5 text-[11px] text-muted-foreground hover:bg-muted hover:text-foreground">
                     <AiProviderLogo
                       :provider="activeFullConfig?.provider ?? 'claude'"
                       :label="aiConfigProviderLabel(activeFullConfig)"
@@ -5771,8 +5561,7 @@ async function openExternalUrl(url: string) {
                 </PopoverContent>
               </Popover>
             </template>
-            <button v-if="chironBusy" disabled aria-label="ChironQL request in progress" class="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-primary/20"><Loader2 class="h-4 w-4 animate-spin" /></button>
-            <button v-else-if="isGenerating" class="h-7 w-7 shrink-0 rounded-full bg-destructive text-destructive-foreground flex items-center justify-center" :title="t('ai.stopGenerating')" @click="cancelStream">
+            <button v-if="isGenerating" class="h-7 w-7 shrink-0 rounded-full bg-destructive text-destructive-foreground flex items-center justify-center" :title="t('ai.stopGenerating')" @click="cancelStream">
               <Square class="h-3.5 w-3.5" />
             </button>
             <button v-else-if="hasActiveRunForCurrentConversation" class="h-7 shrink-0 items-center gap-1 rounded-full bg-foreground px-2.5 text-[11px] font-medium text-background disabled:opacity-30 flex" :disabled="!canSubmitPrompt" :title="t('ai.queueSendHint')" @click="onSendClick">
@@ -5789,22 +5578,6 @@ async function openExternalUrl(url: string) {
     </div>
   </div>
 
-  <Dialog
-    :open="!!renameChatId"
-    @update:open="
-      (open) => {
-        if (!open) renameChatId = '';
-      }
-    "
-  >
-    <DialogContent class="sm:max-w-md">
-      <DialogHeader><DialogTitle>Rename chat</DialogTitle><DialogDescription>Choose a title for this saved conversation.</DialogDescription></DialogHeader>
-      <form class="space-y-4" @submit.prevent="renameChat">
-        <input v-model="renameChatTitle" aria-label="Chat title" maxlength="120" class="w-full rounded border bg-background p-2 text-sm focus-visible:ring-2 focus-visible:ring-ring" />
-        <DialogFooter><Button type="button" variant="outline" @click="renameChatId = ''">Cancel</Button><Button type="submit" :disabled="!renameChatTitle.trim() || chironBusy">Save title</Button></DialogFooter>
-      </form>
-    </DialogContent>
-  </Dialog>
   <Dialog
     :open="!!previewImageAttachment"
     @update:open="
@@ -6007,6 +5780,10 @@ html.chiron-horizon-legacy-webview.dark .ai-markdown :deep(.ai-markdown-table-wr
 
 .ai-message-scroll :deep([data-slot="scroll-area-viewport"]) {
   overflow-anchor: none;
+}
+
+.ai-message-scroll :deep([data-ai-user-message-content]) {
+  overflow-wrap: anywhere;
 }
 
 .resize-handle {

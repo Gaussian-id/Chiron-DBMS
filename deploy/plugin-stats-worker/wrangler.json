@@ -1,0 +1,35 @@
+{
+  "name": "chiron-horizon-plugin-stats",
+  "compatibility_date": "2026-05-07",
+  "main": "worker.ts",
+  "routes": [
+    {
+      "pattern": "dl.chiron-horizon.com/plugins/*",
+      "zone_name": "chiron-horizon.com"
+    },
+    {
+      "pattern": "chiron-horizon.com/api/plugins/*",
+      "zone_name": "chiron-horizon.com"
+    }
+  ],
+  "analytics_engine_datasets": [
+    {
+      "binding": "PLUGIN_STATS",
+      "dataset": "CHIRON_HORIZON_PLUGIN_STATS"
+    }
+  ],
+  "kv_namespaces": [
+    {
+      "binding": "PLUGIN_ARCHIVE",
+      "id": "0cc9e49a117f4edeb931464fa0256834"
+    }
+  ],
+  "vars": {
+    "CF_ACCOUNT_ID": "7ad3349ede62c17968a90108d39fd4d0"
+  },
+  "triggers": {
+    "crons": [
+      "30 0 * * *"
+    ]
+  }
+}

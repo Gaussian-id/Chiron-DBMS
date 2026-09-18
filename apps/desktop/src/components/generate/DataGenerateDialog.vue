@@ -32,6 +32,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Database, Table, Columns, Loader2, Save, Upload, Settings, ChevronRight, X, AlertCircle, ArrowUp, ArrowDown } from "@lucide/vue";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { uuid } from "@/lib/common/utils";
 
 const { t } = useI18n();
 const store = useConnectionStore();
@@ -607,8 +608,11 @@ function sqlStatementsForTable(r: GeneratedTableResult): string[] {
     stmts.push(...r.statements);
   } else {
     const colList = r.columns.map((c) => quoteTableIdentifier(dbType.value, c)).join(", ");
+    // Match by column name: rows may carry a leading tbname (TDengine stable),
+    // so positional indexes into resolvedColumns would drift.
+    const dataTypeByName = new Map(r.resolvedColumns.map((c) => [c.columnName.toLowerCase(), c.dataType]));
     for (const row of r.rows) {
-      const vals = row.map((value) => formatGeneratedValue(value)).join(", ");
+      const vals = row.map((value, index) => formatGeneratedValue(value, dbType.value, dataTypeByName.get(r.columns[index]?.toLowerCase() ?? ""))).join(", ");
       stmts.push(`INSERT INTO ${targetTable} (${colList}) VALUES (${vals});`);
     }
   }
@@ -749,7 +753,7 @@ async function startInsert() {
       execute: async () => {
         executing.value = true;
         insertCancelled.value = false;
-        const executionId = crypto.randomUUID();
+        const executionId = uuid();
         activeExecutionId = executionId;
         const startedAt = performance.now();
         const perTable: TableResult[] = [];

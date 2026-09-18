@@ -3,6 +3,7 @@ use std::sync::Mutex;
 
 const CONNECTION_DEEP_LINK_PREFIX: &str = "chiron-horizon://connection/new";
 const AI_CONFIG_DEEP_LINK_PREFIX: &str = "chiron-horizon://settings/ai/new";
+const PLUGIN_INSTALL_DEEP_LINK_PREFIX: &str = "chiron-horizon://plugins/install";
 const APP_OPEN_DEEP_LINK_PREFIX: &str = "chiron-horizon://open";
 
 #[tauri::command]
@@ -15,10 +16,16 @@ pub fn pending_open_ai_config_links(state: tauri::State<'_, DeepLinkOpenState>) 
     dedupe_links(state.drain_ai_config_links())
 }
 
+#[tauri::command]
+pub fn pending_open_plugin_install_links(state: tauri::State<'_, DeepLinkOpenState>) -> Vec<String> {
+    dedupe_links(state.drain_plugin_install_links())
+}
+
 #[derive(Default)]
 pub struct DeepLinkOpenState {
     pending_connection_links: Mutex<Vec<String>>,
     pending_ai_config_links: Mutex<Vec<String>>,
+    pending_plugin_install_links: Mutex<Vec<String>>,
 }
 
 impl DeepLinkOpenState {
@@ -40,12 +47,25 @@ impl DeepLinkOpenState {
         }
     }
 
+    pub fn push_plugin_install_links(&self, links: Vec<String>) {
+        if links.is_empty() {
+            return;
+        }
+        if let Ok(mut pending) = self.pending_plugin_install_links.lock() {
+            pending.extend(links);
+        }
+    }
+
     fn drain_connection_links(&self) -> Vec<String> {
         self.pending_connection_links.lock().map(|mut pending| pending.drain(..).collect()).unwrap_or_default()
     }
 
     fn drain_ai_config_links(&self) -> Vec<String> {
         self.pending_ai_config_links.lock().map(|mut pending| pending.drain(..).collect()).unwrap_or_default()
+    }
+
+    fn drain_plugin_install_links(&self) -> Vec<String> {
+        self.pending_plugin_install_links.lock().map(|mut pending| pending.drain(..).collect()).unwrap_or_default()
     }
 }
 
@@ -73,6 +93,19 @@ where
 pub fn ai_config_deep_link_from_arg(arg: &str) -> Option<String> {
     let trimmed = arg.trim();
     matches_deep_link_target(trimmed, AI_CONFIG_DEEP_LINK_PREFIX).then(|| trimmed.to_string())
+}
+
+pub fn plugin_install_deep_links_from_args<I, S>(args: I) -> Vec<String>
+where
+    I: IntoIterator<Item = S>,
+    S: AsRef<str>,
+{
+    args.into_iter().filter_map(|arg| plugin_install_deep_link_from_arg(arg.as_ref())).collect()
+}
+
+pub fn plugin_install_deep_link_from_arg(arg: &str) -> Option<String> {
+    let trimmed = arg.trim();
+    matches_deep_link_target(trimmed, PLUGIN_INSTALL_DEEP_LINK_PREFIX).then(|| trimmed.to_string())
 }
 
 pub fn is_app_open_deep_link(arg: &str) -> bool {
@@ -134,6 +167,22 @@ mod tests {
     }
 
     #[test]
+    fn filters_plugin_install_deep_links() {
+        let links = plugin_install_deep_links_from_args([
+            "chiron-horizon://plugins/install?url=https%3A%2F%2Fdl.chiron-horizon.com%2Fplugins%2Fchiron.horizon.ssh%2F0.4.73%2Fchiron.horizon.ssh-0.4.73-darwin-arm64.chiron-horizonp",
+            "--flag",
+            "chiron-horizon://plugins/installed?url=https://example.com/plugin.chiron-horizonp",
+            "chiron-horizon://plugins/installation?url=https://example.com/plugin.chiron-horizonp",
+            "chiron-horizon://connection/new?type=mysql",
+        ]);
+
+        assert_eq!(
+            links,
+            vec!["chiron-horizon://plugins/install?url=https%3A%2F%2Fdl.chiron-horizon.com%2Fplugins%2Fchiron.horizon.ssh%2F0.4.73%2Fchiron.horizon.ssh-0.4.73-darwin-arm64.chiron-horizonp".to_string()]
+        );
+    }
+
+    #[test]
     fn recognizes_app_open_deep_links() {
         assert!(is_app_open_deep_link("chiron-horizon://open"));
         assert!(is_app_open_deep_link(" chiron-horizon://open?source=sponsor "));
@@ -148,11 +197,19 @@ mod tests {
         let state = DeepLinkOpenState::default();
         state.push_connection_links(vec!["chiron-horizon://connection/new?type=mysql".to_string()]);
         state.push_ai_config_links(vec!["chiron-horizon://settings/ai/new?provider=openai-compatible".to_string()]);
+        state.push_plugin_install_links(vec![
+            "chiron-horizon://plugins/install?url=https://example.com/plugin.chiron-horizonp".to_string(),
+        ]);
 
         assert_eq!(state.drain_connection_links(), vec!["chiron-horizon://connection/new?type=mysql"]);
         assert_eq!(state.drain_ai_config_links(), vec!["chiron-horizon://settings/ai/new?provider=openai-compatible"]);
+        assert_eq!(
+            state.drain_plugin_install_links(),
+            vec!["chiron-horizon://plugins/install?url=https://example.com/plugin.chiron-horizonp"]
+        );
         assert!(state.drain_connection_links().is_empty());
         assert!(state.drain_ai_config_links().is_empty());
+        assert!(state.drain_plugin_install_links().is_empty());
     }
 
     #[test]

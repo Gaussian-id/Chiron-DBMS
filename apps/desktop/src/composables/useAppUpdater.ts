@@ -1,4 +1,3 @@
-const APP_UPDATES_ENABLED = false;
 import { computed, ref, watch, onScopeDispose } from "vue";
 import { useI18n } from "vue-i18n";
 import { isTauriRuntime } from "@/lib/backend/tauriRuntime";
@@ -8,6 +7,7 @@ import type { UpdateDownloadSource as SettingsUpdateDownloadSource } from "@/sto
 import type { UpdateDownloadProgress } from "@/lib/backend/tauri";
 import { currentLocale } from "@/i18n";
 import { shouldBlockAppUpdate } from "@/lib/app/appUpdateTaskGuard";
+import { uuid } from "@/lib/common/utils";
 
 interface UseAppUpdaterOptions {
   getActiveTaskCount?: () => number;
@@ -78,6 +78,13 @@ export function isUpdateIgnored(info: api.UpdateInfo | null, ignoredVersion: str
   return compareParsedUpdateVersions(parsedLatest, parsedIgnored) <= 0;
 }
 
+export function isNewerRemoteVersion(latest: string, cached: string): boolean {
+  const parsedLatest = parseUpdateVersion(latest);
+  const parsedCached = parseUpdateVersion(cached);
+  if (!parsedLatest || !parsedCached) return normalizeUpdateVersion(latest) !== normalizeUpdateVersion(cached);
+  return compareParsedUpdateVersions(parsedLatest, parsedCached) > 0;
+}
+
 export function normalizeUpdateDownloadSource(value: unknown): SettingsUpdateDownloadSource {
   // Old persisted AtomGit preferences should retain their mainland mirror behavior.
   if (value === "atomgit") return "cnb";
@@ -92,9 +99,9 @@ export function tagVersion(version: string): string {
 export function resolveUpdateReleaseUrl(info: api.UpdateInfo | null, source: unknown, fallbackUrl: string): string {
   const normalizedSource = normalizeUpdateDownloadSource(source);
   if (normalizedSource === "cnb" && info?.latest_version) {
-    return `https://distribution-disabled.invalid/-/releases/tag/${tagVersion(info.latest_version)}`;
+    return `https://cnb.cool/chiron-horizon.com/chiron-horizon/-/releases/tag/${tagVersion(info.latest_version)}`;
   }
-  if (normalizedSource === "cnb") return "https://distribution-disabled.invalid/-/releases";
+  if (normalizedSource === "cnb") return "https://cnb.cool/chiron-horizon.com/chiron-horizon/-/releases";
   return info?.release_url || fallbackUrl;
 }
 
@@ -128,12 +135,17 @@ export function useAppUpdater(options: UseAppUpdaterOptions = {}) {
   const updateReady = computed(() => phase.value === "restart");
   const activeTaskCount = computed(() => Math.max(0, Math.trunc(options.getActiveTaskCount?.() ?? 0)));
   const notificationsEnabled = computed(() => settingsStore.editorSettings.updateNotificationsEnabled !== false);
+  const autoDownloadEnabled = computed(() => settingsStore.editorSettings.autoDownloadUpdates === true);
   const hasUpdateAvailable = computed(
-    () => notificationsEnabled.value && (updateDownloaded.value || updateReady.value || (updateInfo.value?.update_available === true && (!isTauriRuntime() || updateInfo.value.manual_update_only))) && !isUpdateIgnored(updateInfo.value, settingsStore.editorSettings.ignoredUpdateVersion),
+    () =>
+      notificationsEnabled.value &&
+      (updateDownloaded.value || updateReady.value || (updateInfo.value?.update_available === true && (!autoDownloadEnabled.value || !isTauriRuntime() || updateInfo.value.manual_update_only))) &&
+      !isUpdateIgnored(updateInfo.value, settingsStore.editorSettings.ignoredUpdateVersion),
   );
   const latestReleaseUrl = "https://github.com/Gaussian-id/Gauss-Horizon/releases/latest";
   let generation = 0;
   let activeDownload: Promise<void> | undefined;
+  let automaticDownload = false;
   let cancellation: Promise<void> | undefined;
   let cancelOperation: Promise<void> | undefined;
   let retryTimer: ReturnType<typeof setTimeout> | undefined;
@@ -184,15 +196,10 @@ export function useAppUpdater(options: UseAppUpdaterOptions = {}) {
     clearError();
   }
   function openUrl(url: string) {
-    if (url.includes("distribution-disabled.invalid")) {
-      updateCheckMessage.value = "This Chiron Horizon service is not available in 0.1.0.";
-      return;
-    }
     if (isTauriRuntime()) void import("@tauri-apps/plugin-shell").then(({ open }) => open(url));
     else window.open(url, "_blank", "noopener,noreferrer");
   }
   function openLatestRelease() {
-    if (!APP_UPDATES_ENABLED) return;
     openUrl(resolveUpdateReleaseUrl(updateInfo.value, settingsStore.editorSettings.updateDownloadSource, latestReleaseUrl));
   }
   function formatUpdateError(message: string): string {
@@ -203,10 +210,11 @@ export function useAppUpdater(options: UseAppUpdaterOptions = {}) {
     return t("updates.downloadFailed", { error: message });
   }
   async function checkUpdates(checkOptions: { silent?: boolean } = {}) {
-    if (!APP_UPDATES_ENABLED) return;
     if (disposed || isIgnoringUpdate.value) return;
     if (!checkOptions.silent) showUpdateDialog.value = true;
-    if (phase.value !== "idle" || downloaded.value || (checkOptions.silent && !notificationsEnabled.value)) return;
+    // A downloaded-but-uninstalled update keeps the app in the ready phase; checks
+    // continue so a newer release can replace the cached package.
+    if ((phase.value !== "idle" && phase.value !== "ready") || (checkOptions.silent && !notificationsEnabled.value)) return;
     clearRetry();
     const token = ++generation;
     phase.value = "checking";
@@ -215,24 +223,51 @@ export function useAppUpdater(options: UseAppUpdaterOptions = {}) {
       const info = await api.checkForUpdates(currentLocale(), normalizeUpdateDownloadSource(settingsStore.editorSettings.updateDownloadSource));
       if (token !== generation || disposed) return;
       updateInfo.value = info;
-      phase.value = "idle";
+      // Installation may have started while the check was in flight; only restore
+      // the phase this check itself owns.
+      if (phase.value === "checking") phase.value = downloaded.value ? "ready" : "idle";
       if (!info.update_available) updateCheckMessage.value = t("updates.upToDate", { version: info.current_version });
       if (canDownloadAndInstallUpdate(info, isTauriRuntime()) && !isUpdateIgnored(info, settingsStore.editorSettings.ignoredUpdateVersion)) {
-        await downloadUpdateInBackground();
+        const cached = downloaded.value;
+        if (cached && !isNewerRemoteVersion(info.latest_version, cached.version)) {
+          // Keep a prepared package installable without replacing it automatically.
+          if (!autoDownloadEnabled.value || !notificationsEnabled.value) setDownloaded(cached);
+          return;
+        }
+        // A cached package older than the remote release must not mask the newer version.
+        if (cached && !(await discardSupersededUpdate(cached))) return;
+        if (!autoDownloadEnabled.value || !notificationsEnabled.value) return;
+        await downloadUpdateInBackground(true);
       }
     } catch (error) {
       if (token !== generation || disposed) return;
-      phase.value = "idle";
+      if (phase.value === "checking") phase.value = downloaded.value ? "ready" : "idle";
       fail(error);
       scheduleRetry();
     }
   }
-  async function downloadUpdateInBackground() {
-    if (!APP_UPDATES_ENABLED) return;
+  async function discardSupersededUpdate(cache: api.DownloadedUpdate): Promise<boolean> {
+    if (isInstallingUpdate.value || isIgnoringUpdate.value) return false;
+    try {
+      await api.discardDownloadedUpdate(cache.cache_id);
+      if (downloaded.value?.cache_id === cache.cache_id) {
+        downloaded.value = null;
+        downloadProgress.value = null;
+        if (phase.value === "ready" || phase.value === "checking") phase.value = "idle";
+      }
+      return true;
+    } catch (error) {
+      fail(error);
+      return false;
+    }
+  }
+  async function downloadUpdateInBackground(automatic = false) {
     if (disposed || isIgnoringUpdate.value || phase.value !== "idle" || downloaded.value || !canDownloadAndInstallUpdate(updateInfo.value, isTauriRuntime())) return;
+    if (automatic && (!autoDownloadEnabled.value || !notificationsEnabled.value)) return;
+    automaticDownload = automatic;
     const version = updateInfo.value!.latest_version;
     const token = ++generation;
-    const attemptId = crypto.randomUUID();
+    const attemptId = uuid();
     phase.value = "downloading";
     downloadProgress.value = null;
     clearError();
@@ -271,6 +306,7 @@ export function useAppUpdater(options: UseAppUpdaterOptions = {}) {
     activeDownload = run();
     await activeDownload;
     activeDownload = undefined;
+    automaticDownload = false;
   }
   function cancelDownload(): Promise<void> {
     if (cancelOperation) return cancelOperation;
@@ -300,7 +336,6 @@ export function useAppUpdater(options: UseAppUpdaterOptions = {}) {
     }
   }
   async function changeUpdateDownloadSource(source: SettingsUpdateDownloadSource) {
-    if (!APP_UPDATES_ENABLED) return;
     if (isIgnoringUpdate.value || isInstallingUpdate.value) return;
     try {
       await settingsStore.updateEditorSettingsAndPersist({ updateDownloadSource: source });
@@ -313,7 +348,6 @@ export function useAppUpdater(options: UseAppUpdaterOptions = {}) {
     }
   }
   async function ignoreCurrentVersion() {
-    if (!APP_UPDATES_ENABLED) return;
     const version = updateInfo.value?.latest_version;
     if (!version || isIgnoringUpdate.value || isInstallingUpdate.value || updateReady.value) return;
     isIgnoringUpdate.value = true;
@@ -332,7 +366,6 @@ export function useAppUpdater(options: UseAppUpdaterOptions = {}) {
     }
   }
   async function performInstall(restartOnly: boolean) {
-    if (!APP_UPDATES_ENABLED) return;
     if (!isTauriRuntime() || isInstallingUpdate.value || isIgnoringUpdate.value || (!restartOnly && !downloaded.value)) return;
     const cache = downloaded.value;
     let release: (() => void) | undefined;
@@ -387,7 +420,6 @@ export function useAppUpdater(options: UseAppUpdaterOptions = {}) {
     if (updateReady.value) await performInstall(true);
   }
   async function initialize() {
-    if (!APP_UPDATES_ENABLED) return;
     if (initialized || disposed) return;
     initialized = true;
     if (isTauriRuntime()) {
@@ -427,11 +459,26 @@ export function useAppUpdater(options: UseAppUpdaterOptions = {}) {
       })
       .catch(fail);
   });
+  const stopAutoDownloadWatch = watch(autoDownloadEnabled, (enabled) => {
+    if (disposed) return;
+    if (!enabled) {
+      clearRetry();
+      if (automaticDownload) void cancelDownload().catch(fail);
+      return;
+    }
+    if (!initialized || !notificationsEnabled.value) return;
+    void (cancelOperation ?? Promise.resolve())
+      .then(() => {
+        if (autoDownloadEnabled.value && notificationsEnabled.value && !disposed) void checkUpdates({ silent: true });
+      })
+      .catch(fail);
+  });
   function dispose() {
     disposed = true;
     clearRetry();
     clearInterval(hourlyTimer);
     stopSettingsWatch();
+    stopAutoDownloadWatch();
     updatePreparationRelease?.();
     updatePreparationRelease = undefined;
     void cancelDownload().catch(() => {});

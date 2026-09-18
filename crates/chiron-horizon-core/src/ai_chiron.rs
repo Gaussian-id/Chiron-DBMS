@@ -280,6 +280,7 @@ async fn model(
         task_contract: None,
         // Respect the user's output budget, including reasoning-model needs.
         max_tokens: None,
+        prompt_cache_key: None,
     };
     // No automatic provider/model substitution, and no result history or compaction.
     let response = tokio::time::timeout(Duration::from_secs(180), ai::complete(&request)).await
