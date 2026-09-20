@@ -62,10 +62,10 @@
     ],
     "linux": {
       "deb": {
-        "desktopTemplate": "linux/Chiron Horizon.desktop"
+        "desktopTemplate": "linux/ChironHorizon.desktop"
       },
       "rpm": {
-        "desktopTemplate": "linux/Chiron Horizon.desktop"
+        "desktopTemplate": "linux/ChironHorizon.desktop"
       }
     },
     "macOS": {
