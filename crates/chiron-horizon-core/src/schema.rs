@@ -193,6 +193,10 @@ fn mysql_database_list_timeout(config: Option<&ConnectionConfig>) -> Duration {
         .unwrap_or_else(db::connection_timeout)
 }
 
+pub(crate) fn is_chirondb_relational_config(config: &ConnectionConfig) -> bool {
+    config.driver_profile.as_deref().is_some_and(|profile| profile.eq_ignore_ascii_case("chirondb-relational"))
+}
+
 pub async fn list_databases_core(state: &AppState, connection_id: &str) -> Result<Vec<db::DatabaseInfo>, String> {
     retry_metadata_connection(state, connection_id, None, || list_databases_once(state, connection_id)).await
 }
@@ -712,6 +716,12 @@ pub async fn resolve_external_doris_catalog(
 async fn list_databases_once(state: &AppState, connection_id: &str) -> Result<Vec<db::DatabaseInfo>, String> {
     log::info!("[list_databases] connection_id={connection_id}");
     let db_config = connection_config(state, connection_id).await;
+    if let Some(config) = db_config.as_ref().filter(|config| is_chirondb_relational_config(config)) {
+        return Ok(vec![db::DatabaseInfo {
+            name: config.database.clone().filter(|value| !value.trim().is_empty()).unwrap_or_else(|| "gaussdb".into()),
+            ..Default::default()
+        }]);
+    }
     {
         let pool_handle = state.pool_handle(connection_id).await;
         if let Some(PoolKind::ExternalDriver { config, session, .. }) = pool_handle.as_ref() {
@@ -766,6 +776,9 @@ async fn list_databases_once(state: &AppState, connection_id: &str) -> Result<Ve
         }
         PoolKind::Mysql(p, mode) if *mode == MysqlMode::OceanBaseOracle => db::ob_oracle::list_databases(p).await,
         PoolKind::Mysql(p, _) => db::mysql::list_databases_with_timeout(p, mysql_database_list_timeout).await,
+        PoolKind::Postgres(p) if db_config.as_ref().is_some_and(|config| config.db_type == DatabaseType::OpenGauss) => {
+            db::postgres::list_opengauss_databases(p).await
+        }
         PoolKind::Postgres(p) => db::postgres::list_databases(p).await,
         PoolKind::Sqlite(p) => db::sqlite::list_databases(p).await,
         PoolKind::Rqlite(client) => db::rqlite_driver::list_databases(client).await,
@@ -906,6 +919,9 @@ async fn list_schemas_once(
 ) -> Result<Vec<String>, String> {
     let pool_key = state.get_or_create_metadata_pool_for_session(connection_id, Some(database), None).await?;
     let db_config = connection_config(state, connection_id).await;
+    if db_config.as_ref().is_some_and(is_chirondb_relational_config) {
+        return Ok(vec!["public".to_string()]);
+    }
     let show_system_schemas = db_config.as_ref().is_some_and(|config| config.show_system_schemas);
     let visible_schema_filter = visible_schema_filter(db_config.as_ref(), database, apply_visible_filter);
 
@@ -1229,6 +1245,18 @@ async fn get_table_comment_core_for_session(
         {
             let pool_handle = state.pool_handle(&pool_key).await;
             try_sqlserver!(pool_handle, get_table_comment, schema, table);
+            if let Some(PoolKind::ExternalDriver { config, session, .. }) = pool_handle.as_ref() {
+                if is_oracle_external_driver_config(config.as_ref()) {
+                    return external_driver_oracle_table_comment(
+                        session.clone(),
+                        config.as_ref(),
+                        database,
+                        schema,
+                        table,
+                    )
+                    .await;
+                }
+            }
             if let Some(client) = extract_pool!(pool_handle.as_ref(), Agent) {
                 if db_config.as_ref().is_some_and(|config| {
                     matches!(config.db_type, DatabaseType::Oracle | DatabaseType::OceanbaseOracle)
@@ -2288,6 +2316,7 @@ fn message_queue_topic_tables(topics: Vec<crate::mq::TopicInfo>) -> Vec<db::Tabl
         .map(|topic| db::TableInfo {
             name: topic.name,
             table_type: "TOPIC".to_string(),
+            valid: None,
             comment: None,
             parent_schema: topic.namespace,
             parent_name: None,
@@ -2691,6 +2720,11 @@ async fn list_tables_once(
                 db::cloudberry::list_tables_filtered(p, schema, filter, limit, offset).await
             }
         }
+        PoolKind::Postgres(p) if db_config.as_ref().is_some_and(is_chirondb_relational_config) => {
+            db::postgres::list_chirondb_relational_tables(p, schema)
+                .await
+                .map(|tables| filter_table_infos(tables, filter, limit, offset, object_types, table_name_filter))
+        }
         PoolKind::Postgres(p) => {
             if requests_table_objects_only(object_types) && table_name_filter.is_none_or(TableNameFilter::is_empty) {
                 db::postgres::list_table_objects_filtered(p, schema, filter, limit, offset).await
@@ -2747,6 +2781,7 @@ fn collection_names_to_tables(names: Vec<String>, table_type: &str) -> Vec<db::T
         .map(|name| db::TableInfo {
             name,
             table_type: table_type.to_string(),
+            valid: None,
             comment: None,
             parent_schema: None,
             parent_name: None,
@@ -3030,6 +3065,7 @@ fn presto_like_tables_from_query_result(result: &db::QueryResult) -> Vec<db::Tab
                 table_type: normalize_information_schema_table_type(
                     query_result_cell_string(row, 1).as_deref().unwrap_or("TABLE"),
                 ),
+                valid: None,
                 comment: None,
                 parent_schema: None,
                 parent_name: None,
@@ -3177,12 +3213,12 @@ mod tests {
         presto_like_columns_from_query_result, presto_like_information_schema_columns_sql,
         presto_like_information_schema_tables_sql, presto_like_tables_from_query_result,
         reference_key_columns_from_indexes, reference_keys_from_indexes, replace_metadata_runtime,
-        should_query_oracle_columns_via_sql_first, table_comments_from_query_result, table_name_filter_matches,
-        tdengine_table_comment_like_pattern, tdengine_table_comment_sql, tdengine_table_comments_sql,
-        uses_mongodb_agent_collection_listing, visible_schema_filter, ExternalDriverStatisticsDialect,
-        MetadataErrorAction, MysqlTableListSource, OracleObjectRef, OracleSynonymResolver, ReferenceKeyInfo,
-        TableNameFilter, ORACLE_CURRENT_SCHEMA_SQL, ORACLE_SYNONYM_MAX_DEPTH, TDENGINE_COMMENT_SEARCH_TIMEOUT,
-        TDENGINE_LIKE_PATTERN_MAX_BYTES,
+        should_append_oracle_style_comment_ddl, should_query_oracle_columns_via_sql_first,
+        table_comments_from_query_result, table_name_filter_matches, tdengine_table_comment_like_pattern,
+        tdengine_table_comment_sql, tdengine_table_comments_sql, uses_mongodb_agent_collection_listing,
+        visible_schema_filter, ExternalDriverStatisticsDialect, MetadataErrorAction, MysqlTableListSource,
+        OracleObjectRef, OracleSynonymResolver, ReferenceKeyInfo, TableNameFilter, ORACLE_CURRENT_SCHEMA_SQL,
+        ORACLE_SYNONYM_MAX_DEPTH, TDENGINE_COMMENT_SEARCH_TIMEOUT, TDENGINE_LIKE_PATTERN_MAX_BYTES,
     };
     use super::{list_databases_core, list_tables_core};
     use super::{
@@ -3704,6 +3740,270 @@ done
 
         config.db_type = DatabaseType::Oracle;
         assert!(!is_oracle_external_driver_config(&config));
+    }
+
+    #[cfg(unix)]
+    mod oracle_ddl_regression_tests {
+        use super::*;
+        use crate::types::ObjectSourceKind;
+        use serde_json::{json, Value};
+        use std::os::unix::fs::PermissionsExt;
+        use std::path::PathBuf;
+
+        async fn scripted_oracle_driver(source: Value, columns: Value, comment: Value) -> (AppState, PathBuf) {
+            let dir = std::env::temp_dir().join(format!("chiron-horizon-oracle-ddl-test-{}", uuid::Uuid::new_v4()));
+            std::fs::create_dir_all(&dir).unwrap();
+            for (method, response) in [("getObjectSource", source), ("getColumns", columns), ("executeQuery", comment)]
+            {
+                std::fs::write(dir.join(format!("{method}.json")), response.to_string()).unwrap();
+            }
+            let executable = dir.join("plugin.sh");
+            std::fs::write(
+                &executable,
+                r#"#!/bin/sh
+base=$(dirname "$0")
+while IFS= read -r line; do
+  printf '%s\n' "$line" >> "$base/calls.log"
+  id=$(printf '%s' "$line" | sed -E 's/.*"id":([0-9]+).*/\1/')
+  method=$(printf '%s' "$line" | sed -E 's/.*"method":"([^"]+)".*/\1/')
+  case "$method" in
+    getObjectSource|getColumns|executeQuery)
+      response=$(cat "$base/$method.json")
+      printf '%s\n' "$response" | sed 's/^{/{"id":'"$id"',/'
+      ;;
+    *) printf '{"id":%s,"error":{"message":"unsupported test method"}}\n' "$id" ;;
+  esac
+done
+"#,
+            )
+            .unwrap();
+            std::fs::set_permissions(&executable, std::fs::Permissions::from_mode(0o755)).unwrap();
+            let plugin = InstalledPlugin {
+                manifest: PluginManifest {
+                    id: "jdbc".into(),
+                    name: "JDBC".into(),
+                    version: "test".into(),
+                    protocol_version: 1,
+                    executable: Some("plugin.sh".into()),
+                    drivers: vec![PluginDriverManifest {
+                        id: "jdbc".into(),
+                        label: "JDBC".into(),
+                        kind: "external".into(),
+                        database_type: Some("jdbc".into()),
+                    }],
+                    ..Default::default()
+                },
+                path: dir.clone(),
+                compatibility: crate::plugins::PluginCompatibility {
+                    compatible: true,
+                    backend_executable: Some(executable),
+                    ..Default::default()
+                },
+            };
+            let session = std::sync::Arc::new(
+                PluginDriverSession::start_for_test(plugin, "jdbc".into(), PluginRuntimeEnv::default()).await.unwrap(),
+            );
+            let state = AppState::new(Storage::open(&dir.join("storage.db")).await.unwrap());
+            let mut config = test_connection_config(DatabaseType::Jdbc);
+            config.id = "oracle-ddl".into();
+            config.database = Some("demo".into());
+            config.connection_string = Some("jdbc:oracle:thin:@127.0.0.1:1521/demo".into());
+            config.jdbc_driver_class = Some("oracle.jdbc.OracleDriver".into());
+            state.configs.write().await.insert(config.id.clone(), config.clone());
+            state
+                .update_connection_pools(|connections| {
+                    connections.insert(
+                        config.id.clone(),
+                        PoolKind::ExternalDriver {
+                            driver_id: "jdbc".into(),
+                            config: std::sync::Arc::new(config),
+                            session,
+                        },
+                    );
+                })
+                .await;
+            (state, dir)
+        }
+
+        fn column_response() -> Value {
+            json!({"result": [db::ColumnInfo {
+                name: "ID".into(), comment: Some("Column's comment".into()), ..Default::default()
+            }]})
+        }
+
+        fn comment_response() -> Value {
+            json!({"result": {"columns": ["COMMENTS"], "rows": [["View's comment"]], "affected_rows": 0, "execution_time_ms": 0}})
+        }
+
+        fn driver_calls(dir: &std::path::Path) -> Vec<Value> {
+            std::fs::read_to_string(dir.join("calls.log"))
+                .unwrap()
+                .lines()
+                .map(|line| serde_json::from_str(line).unwrap())
+                .collect()
+        }
+
+        #[tokio::test]
+        async fn canonical_schema_reaches_queries_and_identifiers() {
+            for (requested, returned, expected) in [
+                ("hr", Some(json!("HR")), "HR"),
+                ("", Some(json!("HR")), "HR"),
+                ("mixed_owner", Some(json!("mixed_owner")), "mixed_owner"),
+                ("Mixed\"Owner", Some(json!("Mixed\"Owner")), "Mixed\"Owner"),
+                ("FallbackOwner", None, "FallbackOwner"),
+                ("FallbackOwner", Some(Value::Null), "FallbackOwner"),
+                ("FallbackOwner", Some(json!("")), "FallbackOwner"),
+                ("FallbackOwner", Some(json!("  ")), "FallbackOwner"),
+                ("", None, ""),
+            ] {
+                for shape in ["table", "view body", "view ddl"] {
+                    let object_type = (shape != "table").then_some(ObjectSourceKind::View);
+                    let qualified = if expected.is_empty() {
+                        "\"ORDERS\"".to_string()
+                    } else {
+                        format!("{}.\"ORDERS\"", crate::schema::oracle_ident(expected))
+                    };
+                    let source = match shape {
+                        "table" => format!("CREATE TABLE {qualified} (\"ID\" NUMBER)"),
+                        "view ddl" => format!("CREATE VIEW {qualified} AS SELECT 1 FROM DUAL -- tail;"),
+                        _ => "SELECT 1 FROM DUAL -- tail;".to_string(),
+                    };
+                    let mut result = json!({"name": "ORDERS", "object_type": if object_type.is_some() { "VIEW" } else { "TABLE" }, "source": source});
+                    if let Some(returned) = returned.clone() {
+                        result["schema"] = returned;
+                    }
+                    let (state, dir) =
+                        scripted_oracle_driver(json!({"result": result}), column_response(), comment_response()).await;
+                    let ddl = crate::schema::get_table_display_ddl_core(
+                        &state,
+                        "oracle-ddl",
+                        "demo",
+                        requested,
+                        "ORDERS",
+                        object_type,
+                    )
+                    .await
+                    .unwrap();
+                    assert!(
+                        ddl.starts_with(&format!(
+                            "CREATE {} {qualified}",
+                            if shape == "table" { "TABLE" } else { "VIEW" }
+                        )),
+                        "{ddl}"
+                    );
+                    assert!(ddl.contains(&format!("COMMENT ON TABLE {qualified} IS 'View''s comment';")), "{ddl}");
+                    assert!(
+                        ddl.contains(&format!("COMMENT ON COLUMN {qualified}.\"ID\" IS 'Column''s comment';")),
+                        "{ddl}"
+                    );
+                    assert_eq!(
+                        crate::sql::split_sql_statements_for_database(&ddl, DatabaseType::Oracle).len(),
+                        3,
+                        "{ddl}"
+                    );
+                    let calls = driver_calls(&dir);
+                    let source_call = calls.iter().find(|call| call["method"] == "getObjectSource").unwrap();
+                    assert_eq!(source_call["params"]["schema"], requested);
+                    let columns_call = calls.iter().find(|call| call["method"] == "getColumns").unwrap();
+                    assert_eq!(columns_call["params"]["schema"], expected);
+                    let comment_call = calls
+                        .iter()
+                        .find(|call| call["params"]["sql"].as_str().is_some_and(|sql| sql.contains("ALL_TAB_COMMENTS")))
+                        .unwrap();
+                    assert_eq!(comment_call["params"]["schema"], expected);
+                    assert_eq!(
+                        comment_call["params"]["sql"],
+                        crate::schema::oracle_table_comment_sql(expected, "ORDERS")
+                    );
+                    state.shutdown(Duration::from_secs(1)).await;
+                    std::fs::remove_dir_all(dir).unwrap();
+                }
+            }
+        }
+
+        #[tokio::test]
+        async fn optional_metadata_failures_preserve_source_and_available_comments() {
+            let error = json!({"error": {"message": "dictionary denied"}});
+            for (columns, comment, comment_count) in [
+                (
+                    json!({"result": []}),
+                    json!({"result": {"columns": ["COMMENTS"], "rows": [], "affected_rows": 0, "execution_time_ms": 0}}),
+                    0,
+                ),
+                (error.clone(), comment_response(), 1),
+                (column_response(), error.clone(), 1),
+                (error.clone(), error, 0),
+            ] {
+                for object_type in [None, Some(ObjectSourceKind::View)] {
+                    let source = if object_type.is_none() {
+                        "CREATE TABLE \"HR\".\"ORDERS\" (\"ID\" NUMBER);"
+                    } else {
+                        "CREATE VIEW \"HR\".\"ORDERS\" AS SELECT 1 FROM DUAL -- tail;"
+                    };
+                    let (state, dir) = scripted_oracle_driver(
+                        json!({"result": {"name": "ORDERS", "object_type": if object_type.is_some() { "VIEW" } else { "TABLE" }, "schema": "HR", "source": source}}),
+                        columns.clone(), comment.clone(),
+                    ).await;
+                    let ddl = crate::schema::get_table_display_ddl_core(
+                        &state,
+                        "oracle-ddl",
+                        "demo",
+                        "hr",
+                        "ORDERS",
+                        object_type,
+                    )
+                    .await
+                    .unwrap();
+                    assert!(ddl.starts_with(source), "{ddl}");
+                    assert_eq!(ddl.matches("COMMENT ON").count(), comment_count, "{ddl}");
+                    assert_eq!(
+                        crate::sql::split_sql_statements_for_database(&ddl, DatabaseType::Oracle).len(),
+                        1 + comment_count,
+                        "{ddl}"
+                    );
+                    state.shutdown(Duration::from_secs(1)).await;
+                    std::fs::remove_dir_all(dir).unwrap();
+                }
+            }
+        }
+
+        #[tokio::test]
+        async fn missing_or_failed_source_stops_before_comment_lookups() {
+            for (object_type, response) in [
+                (None, json!({"result": {}})),
+                (None, json!({"result": {"source": "  "}})),
+                (None, json!({"error": {"message": "source denied"}})),
+                (Some(ObjectSourceKind::View), json!({"error": {"message": "source denied"}})),
+            ] {
+                let (state, dir) = scripted_oracle_driver(response, column_response(), comment_response()).await;
+                let result = crate::schema::get_table_display_ddl_core(
+                    &state,
+                    "oracle-ddl",
+                    "demo",
+                    "hr",
+                    "ORDERS",
+                    object_type,
+                )
+                .await;
+                assert!(result.is_err());
+                assert!(driver_calls(&dir).iter().all(|call| call["method"] == "getObjectSource"));
+                state.shutdown(Duration::from_secs(1)).await;
+                std::fs::remove_dir_all(dir).unwrap();
+            }
+        }
+    }
+
+    #[test]
+    fn should_append_oracle_style_comment_ddl_for_oracle_family() {
+        assert!(should_append_oracle_style_comment_ddl(Some(&test_connection_config(DatabaseType::Oracle))));
+        assert!(should_append_oracle_style_comment_ddl(Some(&test_connection_config(DatabaseType::OceanbaseOracle))));
+        assert!(should_append_oracle_style_comment_ddl(Some(&test_connection_config(DatabaseType::Dameng))));
+        assert!(!should_append_oracle_style_comment_ddl(Some(&test_connection_config(DatabaseType::Mysql))));
+        assert!(!should_append_oracle_style_comment_ddl(None));
+
+        let mut jdbc_oracle = test_connection_config(DatabaseType::Jdbc);
+        jdbc_oracle.connection_string = Some("jdbc:oracle:thin:@localhost:1521/ORCL".to_string());
+        assert!(should_append_oracle_style_comment_ddl(Some(&jdbc_oracle)));
     }
 
     #[test]
@@ -4461,6 +4761,7 @@ for line in sys.stdin:
         super::db::TableInfo {
             name: name.to_string(),
             table_type: "BASE TABLE".to_string(),
+            valid: None,
             comment: None,
             parent_schema: None,
             parent_name: None,
@@ -4630,6 +4931,7 @@ for line in sys.stdin:
             super::db::TableInfo {
                 name: "t_order_view".to_string(),
                 table_type: "VIEW".to_string(),
+                valid: None,
                 comment: None,
                 parent_schema: None,
                 parent_name: None,
@@ -4756,6 +5058,7 @@ for line in sys.stdin:
             super::db::TableInfo {
                 name: "active_orders".to_string(),
                 table_type: "VIEW".to_string(),
+                valid: None,
                 comment: None,
                 parent_schema: None,
                 parent_name: None,
@@ -4764,6 +5067,7 @@ for line in sys.stdin:
             super::db::TableInfo {
                 name: "active_users".to_string(),
                 table_type: "VIEW".to_string(),
+                valid: None,
                 comment: None,
                 parent_schema: None,
                 parent_name: None,
@@ -4784,6 +5088,7 @@ for line in sys.stdin:
             super::db::TableInfo {
                 name: "orders_view".to_string(),
                 table_type: "VIEW".to_string(),
+                valid: None,
                 comment: None,
                 parent_schema: None,
                 parent_name: None,
@@ -4791,6 +5096,7 @@ for line in sys.stdin:
             super::db::TableInfo {
                 name: "daily_orders_mv".to_string(),
                 table_type: "MATERIALIZED_VIEW".to_string(),
+                valid: None,
                 comment: None,
                 parent_schema: None,
                 parent_name: None,
@@ -4798,6 +5104,7 @@ for line in sys.stdin:
             super::db::TableInfo {
                 name: "monthly_orders_mv".to_string(),
                 table_type: "MATERIALIZED_VIEW".to_string(),
+                valid: None,
                 comment: None,
                 parent_schema: None,
                 parent_name: None,
@@ -5547,6 +5854,7 @@ for line in sys.stdin:
             super::db::TableInfo {
                 name: "ORDERS".to_string(),
                 table_type: "TABLE".to_string(),
+                valid: None,
                 comment: None,
                 parent_schema: None,
                 parent_name: None,
@@ -5554,6 +5862,7 @@ for line in sys.stdin:
             super::db::TableInfo {
                 name: "PRODUCTS".to_string(),
                 table_type: "TABLE".to_string(),
+                valid: None,
                 comment: Some("Existing".to_string()),
                 parent_schema: None,
                 parent_name: None,
@@ -5826,7 +6135,26 @@ pub async fn completion_assistant_search_core(
                 PoolKind::Postgres(pool) => Some(pool.clone()),
                 _ => None,
             }) {
-                return db::postgres::completion_assistant_search(&pool, &request).await;
+                let db_config = connection_config(state, &request.connection_id).await;
+                if db_config.as_ref().is_some_and(|config| config.db_type == DatabaseType::OpenGauss)
+                    && request.parent_name.as_deref().is_some_and(|name| !name.trim().is_empty())
+                    && request.object_kinds.iter().any(db::CompletionAssistantObjectKind::is_routine_like)
+                {
+                    let response = db::postgres::opengauss_package_members(&pool, &request).await?;
+                    // fallback_used marks "parent is not a package": continue with
+                    // the ordinary routine completion instead of returning nothing.
+                    if !response.fallback_used {
+                        return Ok(response);
+                    }
+                }
+                return if db_config.as_ref().is_some_and(|config| config.db_type == DatabaseType::OpenGauss) {
+                    // openGauss variant excludes package/private members from the
+                    // ordinary routine lookup, so the fallback stays consistent
+                    // with the package-aware path above.
+                    db::postgres::opengauss_completion_assistant_search(&pool, &request).await
+                } else {
+                    db::postgres::completion_assistant_search(&pool, &request).await
+                };
             }
         }
 
@@ -6337,9 +6665,29 @@ async fn list_objects_once(
             let include_routines = object_types_include_routines(object_types);
             let include_custom_types = db_config.as_ref().is_some_and(supports_pg_custom_type_objects)
                 && object_types_include_custom_types(object_types);
-            db::postgres::list_objects(p, schema, include_relations, include_routines, include_custom_types)
-                .await
-                .map(unpaged_object_list)
+            let mut objects = if db_config.as_ref().is_some_and(|config| config.db_type == DatabaseType::OpenGauss) {
+                // openGauss variant excludes package members (propackage=true)
+                // from the top-level routine list; they are surfaced under
+                // their PACKAGE nodes below.
+                db::postgres::list_opengauss_objects(
+                    p,
+                    schema,
+                    include_relations,
+                    include_routines,
+                    include_custom_types,
+                )
+                .await?
+            } else {
+                db::postgres::list_objects(p, schema, include_relations, include_routines, include_custom_types).await?
+            };
+            if db_config.as_ref().is_some_and(|config| config.db_type == DatabaseType::OpenGauss) {
+                let (include_package_spec, include_package_body) = object_types_include_packages(object_types);
+                objects.extend(
+                    db::postgres::list_opengauss_packages(p, schema, include_package_spec, include_package_body)
+                        .await?,
+                );
+            }
+            Ok(unpaged_object_list(objects))
         }
         _ => Ok(unpaged_object_list(
             list_tables_core(state, connection_id, database, schema, None, None, None, None, None)
@@ -6466,6 +6814,11 @@ async fn list_completion_objects_once(
         PoolKind::Postgres(p) if db_config.as_ref().is_some_and(|config| config.db_type == DatabaseType::Redshift) => {
             db::postgres::list_redshift_objects(p, schema, false, true).await.map(filter_completion_objects)
         }
+        PoolKind::Postgres(p) if db_config.as_ref().is_some_and(|config| config.db_type == DatabaseType::OpenGauss) => {
+            let mut objects = db::postgres::list_opengauss_objects(p, schema, false, true, false).await?;
+            objects.extend(db::postgres::list_opengauss_packages(p, schema, true, true).await?);
+            Ok(filter_completion_objects_with_packages(objects))
+        }
         PoolKind::Postgres(p) => {
             db::postgres::list_objects(p, schema, true, true, false).await.map(filter_completion_objects)
         }
@@ -6484,6 +6837,19 @@ fn filter_completion_objects(objects: Vec<db::ObjectInfo>) -> Vec<db::ObjectInfo
         .filter(|object| {
             let object_type = object.object_type.to_ascii_uppercase();
             object_type.contains("PROCEDURE") || object_type.contains("FUNCTION") || object_type.contains("TRIGGER")
+        })
+        .collect()
+}
+
+fn filter_completion_objects_with_packages(objects: Vec<db::ObjectInfo>) -> Vec<db::ObjectInfo> {
+    objects
+        .into_iter()
+        .filter(|object| {
+            let object_type = object.object_type.to_ascii_uppercase();
+            object_type.contains("PROCEDURE")
+                || object_type.contains("FUNCTION")
+                || object_type.contains("TRIGGER")
+                || object_type == "PACKAGE"
         })
         .collect()
 }
@@ -7020,6 +7386,9 @@ async fn get_columns_core_for_session_inner(
             {
                 db::postgres::get_redshift_columns(p, schema, table).await.map(deduplicate_column_infos)
             }
+            PoolKind::Postgres(p) if db_config.as_ref().is_some_and(is_chirondb_relational_config) => {
+                db::postgres::get_chirondb_relational_columns(p, schema, table).await.map(deduplicate_column_infos)
+            }
             PoolKind::Postgres(p) => db::postgres::get_columns(p, schema, table).await.map(deduplicate_column_infos),
             PoolKind::Sqlite(p) => db::sqlite::get_columns(p, schema, table).await.map(deduplicate_column_infos),
             PoolKind::Rqlite(client) => {
@@ -7290,6 +7659,7 @@ async fn list_indexes_core_for_session(
             {
                 Ok(vec![])
             }
+            PoolKind::Postgres(_) if db_config.as_ref().is_some_and(is_chirondb_relational_config) => Ok(vec![]),
             PoolKind::Postgres(p) => db::postgres::list_indexes(p, schema, table).await,
             PoolKind::Sqlite(p) => db::sqlite::list_indexes(p, schema, table).await,
             PoolKind::Rqlite(client) => db::rqlite_driver::list_indexes(client, schema, table).await,
@@ -7364,6 +7734,7 @@ async fn list_foreign_keys_core_for_session(
             PoolKind::Postgres(p) if db_config.as_ref().is_some_and(is_opengauss_constraint_config) => {
                 db::postgres::list_opengauss_foreign_keys(p, schema, table).await
             }
+            PoolKind::Postgres(_) if db_config.as_ref().is_some_and(is_chirondb_relational_config) => Ok(vec![]),
             PoolKind::Postgres(p) => db::postgres::list_foreign_keys(p, schema, table).await,
             PoolKind::Sqlite(p) => db::sqlite::list_foreign_keys(p, schema, table).await,
             PoolKind::Rqlite(client) => db::rqlite_driver::list_foreign_keys(client, schema, table).await,
@@ -8042,18 +8413,37 @@ async fn get_table_ddl_core_with_options(
             None,
         )
         .await?;
-        let database_type = connection_config(state, connection_id).await.map(|config| config.db_type);
+        let db_config = connection_config(state, connection_id).await;
+        let append_oracle_comments = should_append_oracle_style_comment_ddl(db_config.as_ref());
+        let schema = if append_oracle_comments {
+            source.schema.as_deref().filter(|schema| !schema.trim().is_empty()).unwrap_or(schema)
+        } else {
+            schema
+        };
+        let database_type = db_config.as_ref().map(|config| {
+            if is_oracle_external_driver_config(config) {
+                DatabaseType::Oracle
+            } else {
+                config.db_type
+            }
+        });
         // Kingbase MySQL compatibility mode reports a backtick identifier
         // quote; thread it through so the view DDL wraps hyphenated schema
         // names in backticks instead of double quotes the server rejects.
         let identifier_quote = state.connection_identifier_quote(connection_id, Some(database)).await.ok().flatten();
-        return Ok(crate::object_source_sql::build_view_ddl_sql(crate::object_source_sql::BuildViewDdlInput {
+        let ddl = crate::object_source_sql::build_view_ddl_sql(crate::object_source_sql::BuildViewDdlInput {
             database_type,
             schema: if schema.trim().is_empty() { None } else { Some(schema.to_string()) },
             name: table.to_string(),
             source: source.source,
             identifier_quote,
-        }));
+        });
+        // Oracle-family comments live in dictionary tables, not inside CREATE VIEW.
+        // Append COMMENT ON so table-properties DDL / hover match the structure editor.
+        if append_oracle_comments {
+            return Ok(enrich_ddl_with_oracle_style_comments(state, connection_id, database, schema, table, &ddl).await);
+        }
+        return Ok(ddl);
     }
     if matches!(object_type, Some(db::ObjectSourceKind::MaterializedView)) {
         let source = get_object_source_core(
@@ -8302,6 +8692,16 @@ fn object_types_include_routines(object_types: Option<&[String]>) -> bool {
 fn object_types_include_custom_types(object_types: Option<&[String]>) -> bool {
     object_types
         .is_none_or(|types| types.iter().any(|t| t.eq_ignore_ascii_case("TYPE") || t.eq_ignore_ascii_case("TYPE_BODY")))
+}
+
+fn object_types_include_packages(object_types: Option<&[String]>) -> (bool, bool) {
+    match object_types {
+        None => (true, true),
+        Some(types) => (
+            types.iter().any(|value| value.eq_ignore_ascii_case("PACKAGE")),
+            types.iter().any(|value| value.eq_ignore_ascii_case("PACKAGE_BODY")),
+        ),
+    }
 }
 
 /// Whether the object-type filter exclusively asks for user-defined types.
@@ -9484,6 +9884,18 @@ async fn get_object_source_once(
                     mysql_object_source(pool, mysql_table_metadata_catalog(database, schema), name, &object_type)
                         .await?
                 }
+                PoolKind::Postgres(pool)
+                    if db_config.as_ref().is_some_and(|config| config.db_type == DatabaseType::OpenGauss)
+                        && matches!(object_type, db::ObjectSourceKind::Package | db::ObjectSourceKind::PackageBody) =>
+                {
+                    db::postgres::opengauss_package_source(
+                        pool,
+                        schema,
+                        name,
+                        matches!(object_type, db::ObjectSourceKind::PackageBody),
+                    )
+                    .await?
+                }
                 PoolKind::Postgres(pool) if db_config.as_ref().is_some_and(is_questdb_config) => {
                     // only view
                     db::questdb::questdb_object_source(pool, name).await?
@@ -9538,7 +9950,14 @@ async fn get_object_source_once(
         }
     };
 
-    let editable = if matches!(object_type, db::ObjectSourceKind::Trigger)
+    let editable = if db_config.as_ref().is_some_and(|config| config.db_type == DatabaseType::OpenGauss)
+        && matches!(object_type, db::ObjectSourceKind::Package | db::ObjectSourceKind::PackageBody)
+    {
+        // gs_source returns the original CREATE text. Re-executing CREATE for an
+        // existing package is not a safe edit operation unless the user changes
+        // it to CREATE OR REPLACE explicitly, so keep the initial implementation read-only.
+        Some(false)
+    } else if matches!(object_type, db::ObjectSourceKind::Trigger)
         && db_config.as_ref().is_some_and(|config| {
             matches!(
                 config.db_type,
@@ -9553,7 +9972,8 @@ async fn get_object_source_once(
                     | DatabaseType::Uxdb
                     | DatabaseType::Vastbase
             )
-        }) {
+        })
+    {
         Some(false)
     } else {
         None
@@ -9701,11 +10121,10 @@ fn append_oracle_comments_to_ddl(
     table_comment: Option<&str>,
     columns: &[db::ColumnInfo],
 ) -> String {
-    let mut result = ddl.trim_end().trim_end_matches(';').to_string();
+    let mut result = crate::object_source_sql::ensure_oracle_ddl_terminated(ddl);
     if result.trim().is_empty() {
         return result;
     }
-    result.push(';');
     let existing_ddl_upper = ddl.to_ascii_uppercase();
 
     let table_ref = if schema.trim().is_empty() {
@@ -9731,6 +10150,75 @@ fn append_oracle_comments_to_ddl(
         }
     }
     result
+}
+
+fn should_append_oracle_style_comment_ddl(config: Option<&ConnectionConfig>) -> bool {
+    config.is_some_and(|config| {
+        matches!(config.db_type, DatabaseType::Oracle | DatabaseType::OceanbaseOracle | DatabaseType::Dameng)
+            || is_oracle_external_driver_config(config)
+    })
+}
+
+/// Enrich display DDL with dictionary comments for Oracle-family engines.
+/// Failures are logged and the original DDL is returned unchanged.
+async fn enrich_ddl_with_oracle_style_comments(
+    state: &AppState,
+    connection_id: &str,
+    database: &str,
+    schema: &str,
+    table: &str,
+    ddl: &str,
+) -> String {
+    let columns = match get_columns_core(state, connection_id, database, schema, table).await {
+        Ok(columns) => columns,
+        Err(error) => {
+            log::debug!(
+                "[schema][oracle:display-ddl:columns-for-comments-failed] connection_id={} schema={} table={} error={}",
+                connection_id,
+                schema,
+                table,
+                error
+            );
+            Vec::new()
+        }
+    };
+    let table_comment = match get_table_comment_core(state, connection_id, database, schema, table).await {
+        Ok(comment) => comment,
+        Err(error) => {
+            log::debug!(
+                "[schema][oracle:display-ddl:table-comment-failed] connection_id={} schema={} table={} error={}",
+                connection_id,
+                schema,
+                table,
+                error
+            );
+            None
+        }
+    };
+    append_oracle_comments_to_ddl(ddl, schema, table, table_comment.as_deref(), &columns)
+}
+
+async fn external_driver_oracle_table_comment(
+    session: std::sync::Arc<crate::plugins::PluginDriverSession>,
+    config: &ConnectionConfig,
+    database: &str,
+    schema: &str,
+    table: &str,
+) -> Result<Option<String>, String> {
+    let result: db::QueryResult = session
+        .invoke_with_timeout(
+            "executeQuery",
+            serde_json::json!({
+                "connection": config,
+                "database": database,
+                "schema": schema,
+                "sql": oracle_table_comment_sql(schema, table),
+                "maxRows": 1
+            }),
+            agent_metadata_timeout(Some(config)),
+        )
+        .await?;
+    oracle_table_comment_from_query_result(result)
 }
 
 async fn db2_agent_table_ddl(
@@ -10370,6 +10858,95 @@ mod object_source_tests {
         assert!(ddl.contains("COMMENT ON TABLE \"HR\".\"USERS\" IS 'User table';"));
         assert!(ddl.contains("COMMENT ON COLUMN \"HR\".\"USERS\".\"DISPLAY\"\"NAME\" IS 'User''s display name';"));
         assert!(!ddl.contains("EMPTY_COMMENT\" IS"));
+    }
+
+    #[test]
+    fn appends_oracle_comments_to_view_ddl() {
+        let column = db::ColumnInfo {
+            name: "STATUS".to_string(),
+            data_type: "VARCHAR2(20)".to_string(),
+            is_nullable: true,
+            column_default: None,
+            is_primary_key: false,
+            extra: None,
+            comment: Some("Order status".to_string()),
+            numeric_precision: None,
+            numeric_scale: None,
+            character_maximum_length: None,
+            enum_values: None,
+            ..Default::default()
+        };
+
+        let ddl = append_oracle_comments_to_ddl(
+            "CREATE OR REPLACE VIEW \"HR\".\"ACTIVE_ORDERS\" AS\nSELECT \"STATUS\" FROM \"HR\".\"ORDERS\"",
+            "HR",
+            "ACTIVE_ORDERS",
+            Some("Open orders view"),
+            &[column],
+        );
+
+        assert!(ddl.contains("CREATE OR REPLACE VIEW \"HR\".\"ACTIVE_ORDERS\" AS"));
+        assert!(ddl.contains("COMMENT ON TABLE \"HR\".\"ACTIVE_ORDERS\" IS 'Open orders view';"));
+        assert!(ddl.contains("COMMENT ON COLUMN \"HR\".\"ACTIVE_ORDERS\".\"STATUS\" IS 'Order status';"));
+    }
+
+    #[test]
+    fn oracle_view_comment_ddl_preserves_statement_boundaries() {
+        use crate::object_source_sql::{build_view_ddl_sql, BuildViewDdlInput};
+        use crate::sql::split_sql_statements_for_database;
+
+        let column =
+            db::ColumnInfo { name: "ID".into(), comment: Some("Column's comment".into()), ..Default::default() };
+        for (source, terminated) in [
+            ("SELECT 1 FROM DUAL", "SELECT 1 FROM DUAL;"),
+            ("SELECT 1 FROM DUAL;", "SELECT 1 FROM DUAL;"),
+            ("SELECT 1 FROM DUAL -- tail", "SELECT 1 FROM DUAL -- tail\n;"),
+            ("SELECT 1 FROM DUAL -- tail;\n", "SELECT 1 FROM DUAL -- tail;\n;"),
+            ("SELECT 1 FROM DUAL -- tail /", "SELECT 1 FROM DUAL -- tail /\n;"),
+            ("SELECT 1 FROM DUAL; -- tail;", "SELECT 1 FROM DUAL; -- tail;"),
+            ("SELECT 1 FROM DUAL; /* tail; */", "SELECT 1 FROM DUAL; /* tail; */"),
+            ("SELECT 1 FROM DUAL /* tail; */", "SELECT 1 FROM DUAL /* tail; */;"),
+            ("SELECT '--;' AS \"--ID\" FROM DUAL -- tail", "SELECT '--;' AS \"--ID\" FROM DUAL -- tail\n;"),
+        ] {
+            for database_type in [DatabaseType::Oracle, DatabaseType::OceanbaseOracle, DatabaseType::Dameng] {
+                for full_source in [false, true] {
+                    let prefix = "CREATE VIEW \"HR\".\"ACTIVE_ORDERS\" AS\n";
+                    let ddl = build_view_ddl_sql(BuildViewDdlInput {
+                        database_type: Some(database_type),
+                        schema: Some("HR".into()),
+                        name: "ACTIVE_ORDERS".into(),
+                        source: if full_source { format!("{prefix}{source}") } else { source.to_string() },
+                        identifier_quote: None,
+                    });
+                    let expected_base = format!("{prefix}{terminated}");
+                    assert_eq!(ddl, expected_base, "{database_type:?}: {source}");
+                    for table_comment in [None, Some("View's comment")] {
+                        for columns in [&[][..], std::slice::from_ref(&column)] {
+                            let enriched =
+                                append_oracle_comments_to_ddl(&ddl, "HR", "ACTIVE_ORDERS", table_comment, columns);
+                            let mut expected = expected_base.clone();
+                            if table_comment.is_some() {
+                                expected.push_str("\nCOMMENT ON TABLE \"HR\".\"ACTIVE_ORDERS\" IS 'View''s comment';");
+                            }
+                            if !columns.is_empty() {
+                                expected.push_str(
+                                    "\nCOMMENT ON COLUMN \"HR\".\"ACTIVE_ORDERS\".\"ID\" IS 'Column''s comment';",
+                                );
+                            }
+                            assert_eq!(enriched, expected);
+                            let statements = split_sql_statements_for_database(&enriched, database_type);
+                            assert_eq!(
+                                statements.len(),
+                                1 + usize::from(table_comment.is_some()) + columns.len(),
+                                "{enriched}"
+                            );
+                            assert!(!statements[0].contains("COMMENT ON"), "{enriched}");
+                        }
+                    }
+                }
+            }
+        }
+        assert_eq!(append_oracle_comments_to_ddl("", "HR", "EMPTY", Some("ignored"), &[column]), "");
     }
 
     #[test]
@@ -11161,7 +11738,7 @@ mod ddl_tests {
         let ddl = render_postgres_table_ddl("public", "aaa_1", &columns, &[], &foreign_keys, None);
 
         assert!(ddl.contains(
-            "CONSTRAINT \"aaa_1\" FOREIGN KEY (\"a\", \"b\", \"c\") REFERENCES \"aaa_2\"(\"a\", \"b\", \"c\")"
+            "CONSTRAINT \"aaa_1\" FOREIGN KEY (\"a\", \"b\", \"c\") REFERENCES \"public\".\"aaa_2\"(\"a\", \"b\", \"c\")"
         ));
         assert_eq!(ddl.matches("CONSTRAINT \"aaa_1\" FOREIGN KEY").count(), 1);
     }
@@ -11594,12 +12171,53 @@ async fn external_driver_oracle_ddl(
             agent_metadata_timeout(Some(config)),
         )
         .await?;
-    result
+    let ddl = result
         .get("source")
         .and_then(serde_json::Value::as_str)
         .filter(|source| !source.trim().is_empty())
         .map(str::to_string)
-        .ok_or_else(|| "JDBC Oracle plugin returned no table DDL".to_string())
+        .ok_or_else(|| "JDBC Oracle plugin returned no table DDL".to_string())?;
+    let schema = result
+        .get("schema")
+        .and_then(serde_json::Value::as_str)
+        .filter(|schema| !schema.trim().is_empty())
+        .unwrap_or(schema);
+
+    // DBMS_METADATA.GET_DDL omits dictionary comments; append COMMENT ON like the native agent path.
+    let columns = session
+        .invoke_with_timeout::<Vec<db::ColumnInfo>>(
+            "getColumns",
+            serde_json::json!({
+                "connection": config,
+                "database": database,
+                "schema": schema,
+                "table": table,
+            }),
+            agent_metadata_timeout(Some(config)),
+        )
+        .await
+        .unwrap_or_else(|error| {
+            log::debug!(
+                "[schema][jdbc-oracle:get_table_ddl:columns-for-comments-failed] schema={} table={} error={}",
+                schema,
+                table,
+                error
+            );
+            Vec::new()
+        });
+    let table_comment = match external_driver_oracle_table_comment(session, config, database, schema, table).await {
+        Ok(comment) => comment,
+        Err(error) => {
+            log::debug!(
+                "[schema][jdbc-oracle:get_table_ddl:table-comment-failed] schema={} table={} error={}",
+                schema,
+                table,
+                error
+            );
+            None
+        }
+    };
+    Ok(append_oracle_comments_to_ddl(&ddl, schema, table, table_comment.as_deref(), &columns))
 }
 
 /// External JDBC connections that match no vendor DDL dialect (JDBCX wrappers,
@@ -12656,11 +13274,14 @@ fn render_postgres_table_ddl_with_constraints_and_partition_info(
         }
         let columns = fk_group.iter().map(|fk| pg_ident(&fk.column)).collect::<Vec<_>>().join(", ");
         let ref_columns = fk_group.iter().map(|fk| pg_ident(&fk.ref_column)).collect::<Vec<_>>().join(", ");
+        let referenced_schema =
+            first_fk.ref_schema.as_deref().filter(|value| !value.trim().is_empty()).unwrap_or(schema);
+        let referenced_table = format!("{}.{}", pg_ident(referenced_schema), pg_ident(&first_fk.ref_table));
         definition_lines.push(format!(
             "  CONSTRAINT {} FOREIGN KEY ({}) REFERENCES {}({})",
             pg_ident(&first_fk.name),
             columns,
-            pg_ident(&first_fk.ref_table),
+            referenced_table,
             ref_columns
         ));
     }

@@ -1,4 +1,7 @@
 <script setup lang="ts">
+import { applyDdlStoragePreference } from "@/lib/sql/ddlStorage";
+import DdlStorageToggle from "@/components/objects/DdlStorageToggle.vue";
+
 import { computed, createApp, nextTick, onActivated, onBeforeUnmount, ref, watch, type Component } from "vue";
 import { RecycleScroller } from "vue-virtual-scroller";
 import { useSqlHighlighter } from "@/composables/useSqlHighlighter";
@@ -72,7 +75,7 @@ import type { ColumnInfo, ConnectionConfig, ConstraintInfo, ForeignKeyInfo, Inde
 import { sortTablesByFkDependency, type TableWithFk } from "@/lib/table/tableDependencySort";
 import { isSchemaAware, supportsTableVacuum, supportsTransfer } from "@/lib/database/databaseCapabilities";
 import { supportsAiAssistantContext, supportsSchemaDiagram, supportsTableImport, supportsTableStructureEditing, supportsTableTruncate } from "@/lib/database/databaseFeatureSupport";
-import { codeMirrorSqlDialect, connectionObjectTreeNodeSchema, connectionUsesDatabaseObjectTreeMode, effectiveDatabaseTypeForConnection, objectListSchemaForConnection, tableStructureDatabaseTypeForConnection } from "@/lib/database/jdbcDialect";
+import { codeMirrorSqlDialect, connectionObjectTreeNodeSchema, connectionTableSqlSchema, connectionUsesDatabaseObjectTreeMode, effectiveDatabaseTypeForConnection, objectListSchemaForConnection, tableStructureDatabaseTypeForConnection } from "@/lib/database/jdbcDialect";
 import { getTableMetadataCapabilities, type TableMetadataCapabilities } from "@/lib/table/tableMetadataCapabilities";
 import { constraintsForConstraintsTab } from "@/lib/table/constraintPresentation";
 import { buildTableSelectSql } from "@/lib/table/tableSelectSql";
@@ -124,6 +127,7 @@ import { isCancelSearchShortcut } from "@/lib/editor/keyboardShortcuts";
 import { executeWithProductionSqlGuard } from "@/lib/database/productionExecutionGuard";
 import { connectionIsEffectivelyReadOnly } from "@/lib/database/readOnlyWriteAccess";
 import { buildXuguCompileSql } from "@/lib/database/xuguCompileSql";
+import { buildDamengCompileViewSql } from "@/lib/database/damengCompileSql";
 import { formatShortcut } from "@/lib/editor/shortcutRegistry";
 import { batchTableEmptyFeedback, buildBatchTableEmptyPlan, runBatchTableEmpty, type BatchTableEmptyPlanItem } from "@/lib/sidebar/batchTableEmpty";
 import { runBatchTableDrop } from "@/lib/table/batchTableDrop";
@@ -224,6 +228,9 @@ const sourceError = ref("");
 const sourceRow = ref<ObjectBrowserRow | null>(null);
 const sourceEditing = ref(false);
 const sourceCanEdit = ref(true);
+const showCompileErrorDialog = ref(false);
+const compileErrorTitle = ref("");
+const compileErrorMessage = ref("");
 // --- Right-side panel state ---
 // Unified panel: either "table-info" (for tables) or "source" (for views/procedures/etc.)
 const sidePanelRow = ref<ObjectBrowserRow | null>(null);
@@ -242,7 +249,8 @@ const tableInfoTab = ref<TableInfoTab>("ddl");
 const tableColumns = ref<ColumnInfo[]>([]);
 const tableColumnsLoading = ref(false);
 const tableColumnsLoaded = ref(false);
-const tableDdlContent = ref("");
+const rawTableDdlContent = ref("");
+const tableDdlContent = computed(() => applyDdlStoragePreference(rawTableDdlContent.value, effectiveDatabaseType.value, settingsStore.editorSettings.excludeDdlStorage));
 const tableDdlLoading = ref(false);
 const tableDdlLoaded = ref(false);
 const tableIndexes = ref<IndexInfo[]>([]);
@@ -1130,7 +1138,7 @@ async function openTableInfo(row: ObjectBrowserRow, initialTab?: TableInfoTab) {
   sidePanelGuard.bump();
   // Reset state
   tableColumns.value = [];
-  tableDdlContent.value = "";
+  rawTableDdlContent.value = "";
   tableIndexes.value = [];
   tableForeignKeys.value = [];
   tableTriggers.value = [];
@@ -1181,11 +1189,11 @@ async function fetchTableDdl(force = settingsStore.editorSettings.refreshDdlOnOp
     const { ddl } = await loadObjectDdl(tableMetadataRequest(row), { force });
     if (sidePanelGuard.isStale(epoch)) return;
     const formatDialect = sqlFormatDialectForDbType(effectiveDatabaseType.value);
-    tableDdlContent.value = settingsStore.editorSettings.generateSqlQuoteIdentifiers ? ddl : omitDdlIdentifierQuotes(ddl, formatDialect);
+    rawTableDdlContent.value = settingsStore.editorSettings.generateSqlQuoteIdentifiers ? ddl : omitDdlIdentifierQuotes(ddl, formatDialect);
     loadedSuccessfully = true;
   } catch (e: any) {
     if (sidePanelGuard.isStale(epoch)) return;
-    tableDdlContent.value = `-- Error: ${e?.message || e}`;
+    rawTableDdlContent.value = `-- Error: ${e?.message || e}`;
   } finally {
     if (sidePanelGuard.isFresh(epoch)) {
       tableDdlLoaded.value = loadedSuccessfully;
@@ -1319,7 +1327,7 @@ async function refreshActiveTableInfo() {
   sidePanelGuard.bump();
 
   if (tableInfoTab.value === "ddl") {
-    tableDdlContent.value = "";
+    rawTableDdlContent.value = "";
     tableDdlLoaded.value = false;
     await fetchTableDdl(true);
   } else if (tableInfoTab.value === "columns") {
@@ -2086,7 +2094,7 @@ async function exportStructure(row: ObjectBrowserRow) {
   try {
     const schema = row.schema || selectedSchema.value || props.database;
     const ddl = await api.getTableDdl(props.connection.id, props.database, schema, row.name, tableDdlObjectType(row.type), props.catalog, true);
-    await saveFileContent(buildSingleDdlExportFileContent(ddl), `${row.name}.sql`, "SQL", "sql");
+    await saveFileContent(buildSingleDdlExportFileContent(applyDdlStoragePreference(ddl, effectiveDatabaseType.value, settingsStore.editorSettings.excludeDdlStorage)), `${row.name}.sql`, "SQL", "sql");
   } catch (e: any) {
     console.error("Export structure failed:", e);
   }
@@ -2531,7 +2539,7 @@ async function confirmPasteTable() {
 function tableAdminSqlOptions(row: ObjectBrowserRow, options?: { cascade?: boolean }): TableAdminSqlOptions {
   const result: TableAdminSqlOptions = {
     databaseType: effectiveDatabaseType.value,
-    schema: row.schema || selectedSchema.value,
+    schema: connectionTableSqlSchema(props.connection, row.schema || selectedSchema.value),
     tableName: row.name,
     // Cloud Spanner's dialect decides the quote; the static per-type mapping cannot.
     identifierQuote: connectionStore.connectionIdentifierQuote?.(props.connection.id),
@@ -2567,6 +2575,24 @@ async function compileXuguObject(row: ObjectBrowserRow) {
     await connectionStore.refreshObjectListTreeNode(props.connection.id, props.database, row.schema || selectedSchema.value);
   } catch (e: any) {
     toast(t("contextMenu.tableOperationFailed", { message: e?.message || String(e) }), 5000);
+  }
+}
+
+async function compileDamengView(row: ObjectBrowserRow) {
+  if (effectiveDatabaseType.value !== "dameng" || row.type !== "VIEW") return;
+  const schema = row.schema || selectedSchema.value;
+  const sql = buildDamengCompileViewSql({ schema, name: row.name });
+  if (!sql) return;
+  try {
+    const executed = await executeObjectBrowserSqlWithProductionGuard(sql, () => api.executeQuery(props.connection.id, props.database, sql, schema));
+    if (!executed) return;
+    toast(t("contextMenu.compileObjectSuccess", { name: row.name }));
+    await reload();
+    await connectionStore.refreshObjectListTreeNode(props.connection.id, props.database, schema);
+  } catch (e: any) {
+    compileErrorTitle.value = t("contextMenu.compileObjectFailedTitle");
+    compileErrorMessage.value = t("contextMenu.compileObjectFailedMessage", { name: row.name, message: e?.message || String(e) });
+    showCompileErrorDialog.value = true;
   }
 }
 
@@ -3047,7 +3073,16 @@ function getSearchInput(): HTMLInputElement | null {
   return rootRef.value?.querySelector<HTMLInputElement>("[data-object-search-input]") ?? null;
 }
 
-function focusSearch(): boolean {
+function focusSearch(target: Element | null = null): boolean {
+  const tableInfoPanel = target?.closest<HTMLElement>("[data-object-table-info-panel]");
+  if (tableInfoPanel) {
+    const input = tableInfoPanel.querySelector<HTMLInputElement>("[data-table-info-search]");
+    if (input) {
+      input.focus();
+      input.select();
+      return true;
+    }
+  }
   const input = getSearchInput();
   if (!input) return false;
   input.focus();
@@ -3235,6 +3270,7 @@ function getViewMenuItems(item: ObjectBrowserRow): ContextMenuItem[] {
     { label: t("contextMenu.viewData"), action: () => openViewData(item), icon: Table2 },
     { label: t("contextMenu.editView"), action: () => openSource(item), icon: PencilLine },
     { label: t("contextMenu.viewSource"), action: () => openSource(item), icon: Code2 },
+    ...(effectiveDatabaseType.value === "dameng" && item.type === "VIEW" && buildDamengCompileViewSql({ schema: item.schema || selectedSchema.value, name: item.name }) ? [{ label: t("contextMenu.compileObject"), action: () => compileDamengView(item), icon: Wrench }] : []),
     {
       label: t("contextMenu.viewDdl"),
       action: () => openTableInfo(item, "ddl"),
@@ -3487,7 +3523,7 @@ function getObjectBrowserMenuItems(item: ObjectBrowserRow): ContextMenuItem[] {
     <div v-else-if="error" class="flex flex-1 items-center justify-center px-6 text-center text-sm text-destructive">
       {{ error }}
     </div>
-    <div v-else-if="filteredRows.length === 0" class="flex flex-1 items-center justify-center text-sm text-muted-foreground">
+    <div v-else-if="filteredRows.length === 0 && !isEventEditor" class="flex flex-1 items-center justify-center text-sm text-muted-foreground">
       {{ t("objects.empty") }}
     </div>
     <div v-else class="flex min-h-0 min-w-0 flex-1" :class="{ 'event-editor-layout': isEventEditor }">
@@ -3624,7 +3660,12 @@ function getObjectBrowserMenuItems(item: ObjectBrowserRow): ContextMenuItem[] {
                       {{ t("objects.partitions", { count: item.partitionCount }) }}
                     </span>
                   </div>
-                  <div class="truncate text-xs text-muted-foreground">{{ typeLabel(item) }}</div>
+                  <div class="flex min-w-0 items-center gap-1.5 truncate text-xs text-muted-foreground">
+                    <span class="truncate">{{ typeLabel(item) }}</span>
+                    <span v-if="item.type === 'VIEW' && item.valid != null" class="shrink-0 rounded border px-1 py-px text-[10px] font-medium" :class="item.valid ? 'border-emerald-500/30 text-emerald-600' : 'border-destructive/30 text-destructive'">
+                      {{ t(item.valid ? "objects.validStatus" : "objects.invalidStatus") }}
+                    </span>
+                  </div>
                   <div v-if="showObjectRowStats" class="truncate text-xs tabular-nums text-muted-foreground" :title="item.estimatedRows == null ? '' : formatObjectBrowserCount(item.estimatedRows)">
                     {{ formatObjectBrowserCount(item.estimatedRows) }}
                   </div>
@@ -3670,6 +3711,9 @@ function getObjectBrowserMenuItems(item: ObjectBrowserRow): ContextMenuItem[] {
                     <span class="w-full truncate text-sm font-medium leading-tight text-foreground">{{ item.displayName }}</span>
                     <div class="flex items-center gap-1.5">
                       <span class="text-xs text-muted-foreground">{{ typeLabel(item) }}</span>
+                      <span v-if="item.type === 'VIEW' && item.valid != null" class="rounded border px-1 py-px text-[10px] font-medium" :class="item.valid ? 'border-emerald-500/30 text-emerald-600' : 'border-destructive/30 text-destructive'">
+                        {{ t(item.valid ? "objects.validStatus" : "objects.invalidStatus") }}
+                      </span>
                       <span v-if="showObjectRowStats && item.estimatedRows != null && item.estimatedRows > 0" class="object-browser-stat-badge object-browser-stat-badge-rows rounded-full bg-primary/10 px-1.5 py-0.5 text-[10px] font-medium tabular-nums text-primary">{{
                         formatObjectBrowserCount(item.estimatedRows)
                       }}</span>
@@ -3694,7 +3738,13 @@ function getObjectBrowserMenuItems(item: ObjectBrowserRow): ContextMenuItem[] {
         </div>
       </div>
       <!-- Right-side panel: table info or source -->
-      <div v-if="sidePanelRow || isEventEditor" class="object-browser-side-panel relative flex min-h-0 min-w-0 shrink-0 flex-col border-l bg-background" :class="{ 'side-panel-resizing': isResizingSidePanel }" :style="{ width: `min(${sidePanelWidth}px, 100%)` }">
+      <div
+        v-if="sidePanelRow || isEventEditor"
+        :data-object-table-info-panel="sidePanelMode === 'table-info' ? '' : undefined"
+        class="object-browser-side-panel relative flex min-h-0 min-w-0 shrink-0 flex-col border-l bg-background"
+        :class="{ 'side-panel-resizing': isResizingSidePanel }"
+        :style="{ width: `min(${sidePanelWidth}px, 100%)` }"
+      >
         <div class="absolute left-0 top-0 bottom-0 z-20 w-1.5 -translate-x-1/2 cursor-col-resize hover:bg-primary/30" @mousedown.prevent="onSidePanelResizeStart" />
         <!-- Table info mode -->
         <template v-if="sidePanelMode === 'table-info'">
@@ -3735,7 +3785,7 @@ function getObjectBrowserMenuItems(item: ObjectBrowserRow): ContextMenuItem[] {
           <div class="flex items-center gap-1 px-2 py-1.5 border-b shrink-0 bg-background">
             <div class="relative min-w-0 flex-1">
               <Search class="absolute left-2 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
-              <input v-model="tableInfoSearchQuery" :placeholder="t('grid.tableInfoSearch')" class="w-full h-7 pl-7 pr-6 text-xs bg-muted/50 rounded border border-border focus:outline-none focus:border-primary/50" @keydown.escape="tableInfoSearchQuery = ''" />
+              <input v-model="tableInfoSearchQuery" data-table-info-search :placeholder="t('grid.tableInfoSearch')" class="w-full h-7 pl-7 pr-6 text-xs bg-muted/50 rounded border border-border focus:outline-none focus:border-primary/50" @keydown.escape="tableInfoSearchQuery = ''" />
               <button v-if="tableInfoSearchQuery" class="absolute right-1.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground" @click="tableInfoSearchQuery = ''">
                 <X class="w-3 h-3" />
               </button>
@@ -3743,6 +3793,9 @@ function getObjectBrowserMenuItems(item: ObjectBrowserRow): ContextMenuItem[] {
             <Button variant="ghost" size="icon" class="h-7 w-7 shrink-0" :disabled="activeTableInfoLoading" :title="t('structureEditor.refresh')" :aria-label="t('structureEditor.refresh')" @click="refreshActiveTableInfo">
               <RefreshCw class="h-3.5 w-3.5" :class="{ 'animate-spin': activeTableInfoLoading }" />
             </Button>
+          </div>
+          <div v-if="tableInfoTab === 'ddl' && effectiveDatabaseType === 'oceanbase-oracle'" class="border-b px-3 py-2">
+            <DdlStorageToggle :database-type="effectiveDatabaseType" :disabled="tableDdlLoading" />
           </div>
           <div v-if="tableInfoTab === 'columns'" class="flex-1 min-h-0 overflow-auto">
             <div v-if="tableColumnsLoading" class="h-full flex items-center justify-center">
@@ -4039,6 +4092,18 @@ function getObjectBrowserMenuItems(item: ObjectBrowserRow): ContextMenuItem[] {
         <Button :disabled="!renameInput.trim() || renameInput.trim() === renameTarget?.name" @click="confirmRename">
           {{ t("contextMenu.renameObject") }}
         </Button>
+      </DialogFooter>
+    </DialogContent>
+  </Dialog>
+
+  <Dialog v-model:open="showCompileErrorDialog">
+    <DialogContent class="sm:max-w-[560px]">
+      <DialogHeader>
+        <DialogTitle>{{ compileErrorTitle }}</DialogTitle>
+      </DialogHeader>
+      <pre class="max-h-72 overflow-auto whitespace-pre-wrap break-words rounded bg-destructive/5 p-3 text-sm text-destructive">{{ compileErrorMessage }}</pre>
+      <DialogFooter>
+        <Button @click="showCompileErrorDialog = false">{{ t("common.close") }}</Button>
       </DialogFooter>
     </DialogContent>
   </Dialog>

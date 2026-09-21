@@ -156,8 +156,8 @@ const previewVisible = computed(() => open.value && !!props.source);
 
 <template>
   <Dialog v-model:open="open">
-    <!-- 对话框整体限高：高度上限跟随 --chiron-horizon-viewport-height（兼容旧版 WebView 中 vh 不准的情况）；
-         内部采用纵向 flex 布局，header/footer 固定，只有中间预览区滚动，保证底部按钮始终可见 -->
+    <!-- The dialog height follows --chiron-horizon-viewport-height to support older WebViews with inaccurate vh sizing.
+         Its vertical flex layout fixes the header and footer so only the preview scrolls and the bottom actions stay visible. -->
     <DialogContent class="flex max-h-[calc(var(--chiron-horizon-viewport-height)-2rem)] flex-col overflow-hidden border border-border !bg-background text-foreground shadow-2xl !backdrop-blur-none sm:max-w-[860px]">
       <DialogHeader>
         <DialogTitle class="flex items-center gap-2">

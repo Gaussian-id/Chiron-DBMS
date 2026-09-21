@@ -2441,6 +2441,45 @@ html.chiron-horizon-legacy-webview [data-slot="dialog-content"][class*="sm:max-w
 }
 
 /* Splitpanes */
+/* Splitpanes dragging optimization:
+   While dragging any panel boundary (sidebar, sql-files, or workspace splitters),
+   isolate expensive subtrees (CodeMirror editor and DataGrid results) from triggering
+   continuous forced layout reflows and pointer recalculations on every frame. */
+body.chiron-horizon-is-resizing,
+.splitpanes--dragging {
+  cursor: col-resize !important;
+  user-select: none !important;
+}
+
+body.chiron-horizon-is-resizing *,
+.splitpanes--dragging * {
+  user-select: none !important;
+}
+
+body.chiron-horizon-is-resizing .cm-editor,
+body.chiron-horizon-is-resizing [data-shared-result-surface],
+.splitpanes--dragging .cm-editor,
+.splitpanes--dragging [data-shared-result-surface] {
+  pointer-events: none !important;
+}
+
+/* 核心优化：在拖拽期间，锁定 CodeMirror 的视口测量与内部 reflow，
+   同时让内容区域以固定 layout 运行，拖拽结束再恢复真实排版 */
+body.chiron-horizon-is-resizing .cm-editor,
+.splitpanes--dragging .cm-editor {
+  contain: strict !important;
+  overflow: hidden !important;
+}
+
+body.chiron-horizon-is-resizing .cm-scroller,
+.splitpanes--dragging .cm-scroller {
+  overflow: hidden !important;
+}
+
+.splitpanes--horizontal.splitpanes--dragging {
+  cursor: row-resize !important;
+}
+
 .splitpanes--horizontal .splitpanes__pane {
   transition: none !important;
 }
@@ -2523,6 +2562,7 @@ html.theme-vscode .app-tab-scroll.wrap-mode .app-tab-pill[data-active-tab="false
   bottom: 0;
   width: 7px;
   cursor: col-resize;
+  touch-action: none;
   z-index: 10;
   background: transparent;
 }

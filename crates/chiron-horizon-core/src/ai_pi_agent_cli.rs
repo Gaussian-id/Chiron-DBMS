@@ -264,7 +264,7 @@ async fn pi_agent_process_env(
     config: &AiConfig,
     command: &CliAgentCommandSpec,
 ) -> Result<Vec<(String, String)>, String> {
-    let inherited_path = crate::legacy::var("PATH").ok();
+    let inherited_path = env::var("PATH").ok();
     let values = pi_agent_process_env_with_paths(config, command, None, inherited_path.as_deref())?;
     #[cfg(not(windows))]
     if pi_environment_needs_shell_path(command, &values) {
@@ -370,7 +370,7 @@ fn parse_shell_path(stdout: &str) -> Option<String> {
 
 #[cfg(not(windows))]
 fn user_shell() -> String {
-    crate::legacy::var("SHELL").ok().filter(|value| !value.trim().is_empty()).unwrap_or_else(|| {
+    env::var("SHELL").ok().filter(|value| !value.trim().is_empty()).unwrap_or_else(|| {
         if Path::new("/bin/zsh").exists() {
             "/bin/zsh".to_string()
         } else {
@@ -452,7 +452,7 @@ fn classify_pi_run_error(message: &str) -> String {
         || lower.contains("please login")
     {
         format!("[piAgentNotAuthenticated] {message}")
-    } else if lower.contains("chiron-horizon mcp") || lower.contains("chiron-horizon-mcp") {
+    } else if lower.contains("chiron_horizon mcp") || lower.contains("chiron-horizon-mcp") {
         format!("[piAgentMcpStartupFailed] {message}")
     } else if message.starts_with('[') {
         message.to_string()
@@ -593,7 +593,7 @@ fn configure_pi_bridge(
     options: &PiAgentRunOptions,
 ) -> Result<(), String> {
     let mcp = options.mcp_server_command.as_ref().ok_or_else(|| {
-        "[chironHorizonMcpMissing] Chiron Horizon MCP server was not resolved for Pi Coding Agent".to_string()
+        "[chiron_horizonMcpMissing] Chiron Horizon MCP server was not resolved for Pi Coding Agent".to_string()
     })?;
     process.env("CHIRON_HORIZON_PI_MCP_PROGRAM", &mcp.program);
     process.env(
@@ -1016,6 +1016,7 @@ mod tests {
             connection_id: "connection-1".to_string(),
             connection_name: "Test connection".to_string(),
             database: "chiron_horizon_test".to_string(),
+            selected_databases: Vec::new(),
             schema: Some("reporting".to_string()),
             agent_mode: true,
             allow_writes: true,

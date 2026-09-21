@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { qualifiedTableName, qualifyTableReferencesInSql, quoteTableDataIdentifier, quoteTableIdentifier } from "@/lib/table/tableSelectSql";
+import { encodeSqlServerLinkedSchema } from "@/lib/database/sqlServerLinkedServers";
+import { qualifiedTableName, qualifyTableReferencesInSql, quoteTableDataIdentifier, quoteTableIdentifier, quoteTableIdentifierIfNeeded, tableMetaWithoutOptionalDatabaseQualifier } from "@/lib/table/tableSelectSql";
 
 describe("qualifiedTableName — Doris/StarRocks multi-catalog", () => {
   it("prefixes external catalog for Doris (no schema)", () => {
@@ -119,6 +120,13 @@ describe("qualifiedTableName — SQLite attached databases", () => {
   });
 });
 
+describe("qualifiedTableName — SQL Server linked servers", () => {
+  it("retains required brackets when optional quoting is disabled", () => {
+    const schema = encodeSqlServerLinkedSchema({ server: "REMOTE SERVER", catalog: "sales", schema: "dbo" });
+    expect(qualifiedTableName({ databaseType: "sqlserver", schema, tableName: "order", quoteIdentifiers: false })).toBe("[REMOTE SERVER].sales.dbo.[order]");
+  });
+});
+
 describe("qualifiedTableName — schema-aware JDBC profiles", () => {
   it("qualifies Phoenix tables without forcing identifier quotes", () => {
     expect(qualifiedTableName({ databaseType: "jdbc", driverProfile: "phoenix", schema: "DEMO", tableName: "STUDENT" })).toBe("DEMO.STUDENT");
@@ -130,6 +138,72 @@ describe("qualifiedTableName — schema-aware JDBC profiles", () => {
 
   it("keeps an unscoped JDBC table unqualified", () => {
     expect(qualifiedTableName({ databaseType: "jdbc", driverProfile: "phoenix", tableName: "STUDENT" })).toBe("STUDENT");
+  });
+});
+
+describe("qualifiedTableName — includeDatabaseName on quoted-identifier paths (#9110)", () => {
+  it("drops the schema qualifier for JDBC-reported Postgres-family connections", () => {
+    expect(qualifiedTableName({ databaseType: "postgres", identifierQuote: '"', schema: "public", tableName: "Users", includeDatabaseName: false })).toBe('"Users"');
+  });
+
+  it("keeps the schema qualifier by default for quoted-identifier connections", () => {
+    expect(qualifiedTableName({ databaseType: "postgres", identifierQuote: '"', schema: "public", tableName: "Users" })).toBe('public."Users"');
+  });
+
+  it("drops the schema qualifier for kingbase JDBC connections", () => {
+    expect(qualifiedTableName({ databaseType: "kingbase", identifierQuote: '"', schema: "app", tableName: "orders", includeDatabaseName: false })).toBe('"orders"');
+  });
+
+  it("drops the schema qualifier for generic JDBC profiles that qualify schemas", () => {
+    expect(qualifiedTableName({ databaseType: "jdbc", driverProfile: "phoenix", identifierQuote: '"', schema: "MY_SCHEMA", tableName: "ORDER", includeDatabaseName: false })).toBe('"ORDER"');
+  });
+
+  it("drops the schema qualifier for native Informix connections", () => {
+    expect(qualifiedTableName({ databaseType: "informix", identifierQuote: "", schema: "gbasedbt", tableName: "connection_smoke", includeDatabaseName: false })).toBe("connection_smoke");
+  });
+
+  it("keeps the qualifier for databases that require fully qualified names", () => {
+    expect(qualifiedTableName({ databaseType: "sqlserver", schema: "dbo", tableName: "users", includeDatabaseName: false })).toBe("[dbo].[users]");
+  });
+});
+
+describe("tableMetaWithoutOptionalDatabaseQualifier — copy extractors (#9326)", () => {
+  const mysqlMeta = { schema: "analytics", database: "analytics", tableName: "events" };
+
+  it("strips MySQL schema/database when includeDatabaseName is false", () => {
+    expect(tableMetaWithoutOptionalDatabaseQualifier(mysqlMeta, "mysql", false)).toEqual({ schema: undefined, database: undefined, tableName: "events" });
+  });
+
+  it("keeps MySQL schema when includeDatabaseName is true or unset", () => {
+    expect(tableMetaWithoutOptionalDatabaseQualifier(mysqlMeta, "mysql", true)).toBe(mysqlMeta);
+    expect(tableMetaWithoutOptionalDatabaseQualifier(mysqlMeta, "mysql")).toBe(mysqlMeta);
+  });
+
+  it("keeps schema for dialects that require fully qualified names", () => {
+    expect(tableMetaWithoutOptionalDatabaseQualifier({ schema: "dbo", tableName: "users" }, "sqlserver", false)).toEqual({ schema: "dbo", tableName: "users" });
+  });
+
+  it("matches SELECT-template dropsSchemaQualifier for Oracle/Postgres", () => {
+    // Same rule as #9110: when the setting is off, optional schema prefixes are
+    // dropped so the active connection schema applies.
+    expect(tableMetaWithoutOptionalDatabaseQualifier({ schema: "SCOTT", tableName: "EMP" }, "oracle", false)).toEqual({ schema: undefined, tableName: "EMP" });
+    expect(tableMetaWithoutOptionalDatabaseQualifier({ schema: "public", tableName: "users" }, "postgres", false)).toEqual({ schema: undefined, tableName: "users" });
+  });
+
+  it("returns undefined tableMeta unchanged", () => {
+    expect(tableMetaWithoutOptionalDatabaseQualifier(undefined, "mysql", false)).toBeUndefined();
+  });
+
+  it("keeps qualifiers for Doris/StarRocks external catalogs", () => {
+    // External-catalog tables are only addressable as catalog.database.table,
+    // mirroring the SELECT-template rule in qualifiedTableName.
+    const externalCatalogMeta = { catalog: "ext", database: "db", tableName: "t" };
+    expect(tableMetaWithoutOptionalDatabaseQualifier(externalCatalogMeta, "doris", false)).toBe(externalCatalogMeta);
+    expect(tableMetaWithoutOptionalDatabaseQualifier(externalCatalogMeta, "starrocks", false)).toBe(externalCatalogMeta);
+  });
+
+  it("still strips the internal-catalog database qualifier", () => {
+    expect(tableMetaWithoutOptionalDatabaseQualifier({ catalog: "internal", database: "db", tableName: "t" }, "doris", false)).toEqual({ catalog: "internal", schema: undefined, database: undefined, tableName: "t" });
   });
 });
 
@@ -145,6 +219,24 @@ describe("qualifiedTableName — GBase 8s", () => {
 });
 
 describe("quoteTableIdentifier", () => {
+  it("keeps only required quotes when identifier quoting is disabled", () => {
+    expect(quoteTableIdentifierIfNeeded("oracle", "CHIRON_HORIZON_TEST")).toBe("CHIRON_HORIZON_TEST");
+    expect(quoteTableIdentifierIfNeeded("oracle", "Order")).toBe('"Order"');
+    expect(quoteTableIdentifierIfNeeded("oracle", "ORDER")).toBe('"ORDER"');
+    expect(quoteTableIdentifierIfNeeded("dameng", "CHIRON_HORIZON_TEST")).toBe("CHIRON_HORIZON_TEST");
+    expect(quoteTableIdentifierIfNeeded("dameng", "order detail")).toBe('"order detail"');
+    expect(quoteTableIdentifierIfNeeded("postgres", "chiron_horizon_test")).toBe("chiron_horizon_test");
+    expect(quoteTableIdentifierIfNeeded("postgres", "Order")).toBe('"Order"');
+    expect(quoteTableIdentifierIfNeeded("mysql", "chiron_horizon_test")).toBe("chiron_horizon_test");
+    expect(quoteTableIdentifierIfNeeded("mysql", "order")).toBe("`order`");
+  });
+
+  it("uses a JDBC driver's reported quote for required identifiers", () => {
+    expect(quoteTableIdentifierIfNeeded("jdbc", "student", '"')).toBe("student");
+    expect(quoteTableIdentifierIfNeeded("jdbc", "Order", '"')).toBe('"Order"');
+    expect(quoteTableIdentifierIfNeeded("jdbc", "order detail", "`")).toBe("`order detail`");
+  });
+
   it("backtick-quotes mysql identifiers", () => {
     expect(quoteTableIdentifier("mysql", "orders")).toBe("`orders`");
   });

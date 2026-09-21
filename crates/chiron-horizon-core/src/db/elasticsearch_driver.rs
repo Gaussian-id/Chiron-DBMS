@@ -10,7 +10,7 @@ use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 use std::time::Duration;
 
-use super::{http_client_builder, with_connection_timeout};
+use super::{apply_tls_certificates, http_client_builder, with_connection_timeout};
 use crate::db::document_result::DocumentQueryResult;
 use crate::types::QueryResult;
 
@@ -39,6 +39,9 @@ const KIBANA_PROXY_STATUS_HEADER: &str = "x-console-proxy-status-code";
 const ELASTICSEARCH_REST_TABLE_MAX_BODY_BYTES: usize = 8 * 1024 * 1024;
 const ELASTICSEARCH_REST_TABLE_MAX_ROWS: usize = 2_000;
 const ELASTICSEARCH_REST_TABLE_MAX_CELLS: usize = 200_000;
+const ELASTICSEARCH_MAPPING_MAX_DEPTH: u8 = 32;
+const ELASTICSEARCH_MAPPING_MAX_COLUMNS: usize = 2_000;
+const ELASTICSEARCH_MAPPING_THREAD_STACK: usize = 16 * 1024 * 1024;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 enum ElasticsearchTransportMode {
@@ -83,9 +86,14 @@ impl EsClient {
             "/".to_string(),
             false,
             None,
+            None,
+            None,
+            None,
         )
+        .expect("failed to build Elasticsearch HTTP client")
     }
 
+    #[allow(clippy::too_many_arguments)]
     fn new_with_mode(
         url: &str,
         username: Option<&str>,
@@ -96,19 +104,24 @@ impl EsClient {
         connectivity_check_path: String,
         connectivity_check_disabled: bool,
         index_grouping: Option<Regex>,
-    ) -> Self {
+        ca_cert_path: Option<&str>,
+        client_cert_path: Option<&str>,
+        client_key_path: Option<&str>,
+    ) -> Result<Self, String> {
         let base_url = url.trim_end_matches('/').to_string();
         let auth = match (username, password) {
             (Some(u), Some(p)) if !u.is_empty() => Some((u.to_string(), p.to_string())),
             _ => None,
         };
         let mut builder = http_client_builder(timeout).danger_accept_invalid_certs(accept_invalid_certs);
+        builder = apply_tls_certificates(builder, ca_cert_path, client_cert_path, client_key_path)?;
         if let Some(addrs) = elasticsearch_localhost_resolve_addrs(&base_url, connectivity_check_disabled) {
             builder = builder.resolve_to_addrs("localhost", &addrs);
         }
-        let http = builder.build().unwrap_or_else(|_| HttpClient::new());
+        let http =
+            builder.build().map_err(|error| format!("Failed to initialize Elasticsearch HTTP client: {error}"))?;
         let fallback_base_urls = elasticsearch_base_url_fallbacks(&base_url);
-        Self {
+        Ok(Self {
             http,
             base_url,
             fallback_base_urls,
@@ -118,7 +131,7 @@ impl EsClient {
             connectivity_check_disabled,
             index_grouping,
             pit_search_supported: Arc::new(AtomicBool::new(true)),
-        }
+        })
     }
 
     pub fn from_config(
@@ -129,7 +142,10 @@ impl EsClient {
         url_params: Option<&str>,
         external_config: Option<&Value>,
         timeout: Duration,
-    ) -> Self {
+        ca_cert_path: Option<&str>,
+        client_cert_path: Option<&str>,
+        client_key_path: Option<&str>,
+    ) -> Result<Self, String> {
         let kibana_base_path = elasticsearch_kibana_base_path(external_config);
         let transport_mode = if kibana_base_path.is_some() {
             ElasticsearchTransportMode::KibanaProxy
@@ -150,6 +166,9 @@ impl EsClient {
             connectivity_check_path,
             connectivity_check_disabled,
             index_grouping,
+            ca_cert_path,
+            client_cert_path,
+            client_key_path,
         )
     }
 
@@ -695,20 +714,12 @@ pub async fn get_columns(client: &EsClient, index: &str) -> Result<Vec<crate::db
         return Err(format!("Elasticsearch error: {body}"));
     }
 
-    let body: Value = resp.json().await.map_err(|e| format!("Elasticsearch parse error: {e}"))?;
-    let mut seen = HashSet::new();
-    let mut columns = Vec::new();
-
-    if let Some(indices) = body.as_object() {
-        for index_mapping in indices.values() {
-            if let Some(properties) = mapping_properties(index_mapping) {
-                collect_mapping_columns("", properties, &mut seen, &mut columns);
-            }
-        }
-    }
-
-    columns.sort_by(|left, right| left.name.cmp(&right.name));
-    Ok(columns)
+    let bytes = resp.bytes().await.map_err(|e| format!("Elasticsearch read error: {e}"))?;
+    // serde_json parsing is recursive. Tokio worker stacks are ~2MB in debug and
+    // abort the process on overflow, so flatten on a dedicated larger stack.
+    tokio::task::spawn_blocking(move || mapping_bytes_to_columns_on_large_stack(bytes.to_vec()))
+        .await
+        .map_err(|error| format!("Elasticsearch mapping task failed: {error}"))?
 }
 
 fn mapping_properties(mapping: &Value) -> Option<&serde_json::Map<String, Value>> {
@@ -723,32 +734,85 @@ fn mapping_properties(mapping: &Value) -> Option<&serde_json::Map<String, Value>
         .find_map(|typed_mapping| typed_mapping.get("properties").and_then(Value::as_object))
 }
 
+fn mapping_bytes_to_columns_on_large_stack(bytes: Vec<u8>) -> Result<Vec<crate::db::ColumnInfo>, String> {
+    let (tx, rx) = std::sync::mpsc::sync_channel(1);
+    std::thread::Builder::new()
+        .name("es-mapping-columns".into())
+        .stack_size(ELASTICSEARCH_MAPPING_THREAD_STACK)
+        .spawn(move || {
+            let _ = tx.send(mapping_bytes_to_columns(&bytes));
+        })
+        .map_err(|error| format!("Elasticsearch mapping thread failed: {error}"))?;
+    rx.recv().map_err(|error| format!("Elasticsearch mapping thread failed: {error}"))?
+}
+
+fn mapping_bytes_to_columns(bytes: &[u8]) -> Result<Vec<crate::db::ColumnInfo>, String> {
+    let body: Value = serde_json::from_slice(bytes).map_err(|e| format!("Elasticsearch parse error: {e}"))?;
+    let mut seen = HashSet::new();
+    let mut columns = Vec::new();
+    if let Some(indices) = body.as_object() {
+        for index_mapping in indices.values() {
+            if let Some(properties) = mapping_properties(index_mapping) {
+                collect_mapping_columns("", properties, &mut seen, &mut columns);
+            }
+        }
+    }
+    columns.sort_by(|left, right| left.name.cmp(&right.name));
+    drop_json_iteratively(body);
+    Ok(columns)
+}
+
 fn collect_mapping_columns(
     prefix: &str,
     properties: &serde_json::Map<String, Value>,
     seen: &mut HashSet<String>,
     columns: &mut Vec<crate::db::ColumnInfo>,
 ) {
-    for (name, definition) in properties {
-        let field_name = if prefix.is_empty() { name.clone() } else { format!("{prefix}.{name}") };
-        let field_type = definition.get("type").and_then(Value::as_str);
-        let children = definition.get("properties").and_then(Value::as_object);
-
-        if let Some(data_type) = field_type {
-            push_mapping_column(&field_name, data_type, seen, columns);
-        } else if children.is_some() {
-            // Elasticsearch infers `object` for a field with `properties` when
-            // the mapping omits an explicit type. Return the parent too because
-            // the document grid renders top-level object values as one column.
-            push_mapping_column(&field_name, "object", seen, columns);
+    // Walk nested `properties` / multi-`fields` on the heap with hard caps.
+    // Recursive walks overflow tokio worker stacks on indexes like `chiron_horizon_all_types`.
+    let mut stack = vec![(prefix.to_string(), properties, 0_u8)];
+    while let Some((prefix, properties, depth)) = stack.pop() {
+        if columns.len() >= ELASTICSEARCH_MAPPING_MAX_COLUMNS {
+            break;
         }
+        for (name, definition) in properties {
+            if columns.len() >= ELASTICSEARCH_MAPPING_MAX_COLUMNS {
+                break;
+            }
+            let field_name = if prefix.is_empty() { name.clone() } else { format!("{prefix}.{name}") };
+            let field_type = definition.get("type").and_then(Value::as_str);
+            let nested_properties = definition.get("properties").and_then(Value::as_object);
+            let nested_fields = definition.get("fields").and_then(Value::as_object);
 
-        if let Some(fields) = definition.get("fields").and_then(Value::as_object) {
-            collect_mapping_columns(&field_name, fields, seen, columns);
+            if let Some(data_type) = field_type {
+                push_mapping_column(&field_name, data_type, seen, columns);
+            } else if nested_properties.is_some() {
+                // Elasticsearch infers `object` for a field with `properties` when
+                // the mapping omits an explicit type. Return the parent too because
+                // the document grid renders top-level object values as one column.
+                push_mapping_column(&field_name, "object", seen, columns);
+            }
+
+            if depth + 1 >= ELASTICSEARCH_MAPPING_MAX_DEPTH {
+                continue;
+            }
+            if let Some(properties) = nested_properties {
+                stack.push((field_name.clone(), properties, depth + 1));
+            }
+            if let Some(fields) = nested_fields {
+                stack.push((field_name, fields, depth + 1));
+            }
         }
+    }
+}
 
-        if let Some(children) = children {
-            collect_mapping_columns(&field_name, children, seen, columns);
+fn drop_json_iteratively(value: Value) {
+    let mut stack = vec![value];
+    while let Some(node) = stack.pop() {
+        match node {
+            Value::Array(items) => stack.extend(items),
+            Value::Object(map) => stack.extend(map.into_iter().map(|(_, child)| child)),
+            _ => {}
         }
     }
 }
@@ -3202,6 +3266,23 @@ mod tests {
     }
 
     #[test]
+    fn mapping_columns_do_not_overflow_on_deep_nested_objects() {
+        let mut current = json!({ "type": "keyword" });
+        for depth in 0..512 {
+            current = json!({ "properties": { format!("n{depth}"): current } });
+        }
+        let properties = current.get("properties").and_then(|value| value.as_object()).unwrap();
+        let mut seen = std::collections::HashSet::new();
+        let mut columns = Vec::new();
+
+        super::collect_mapping_columns("", properties, &mut seen, &mut columns);
+
+        assert!(columns.iter().any(|column| column.name == "n511" && column.data_type == "object"));
+        assert_eq!(columns.len(), super::ELASTICSEARCH_MAPPING_MAX_DEPTH as usize);
+        super::drop_json_iteratively(current);
+    }
+
+    #[test]
     fn connectivity_check_disabled_parses_bool_and_string() {
         use super::elasticsearch_connectivity_check_disabled as disabled;
         assert!(!disabled(None));
@@ -3536,7 +3617,11 @@ mod tests {
             None,
             Some(&json!({ "connectivityCheckDisabled": "yes" })),
             Duration::from_secs(2),
-        );
+            None,
+            None,
+            None,
+        )
+        .expect("failed to build Elasticsearch test client");
         super::test_connection(&mut client, Duration::from_secs(2)).await.unwrap();
         let response = client.get("/_cluster/health").send().await.unwrap();
 
@@ -3554,7 +3639,11 @@ mod tests {
             Some("sslmode=disable"),
             None,
             Duration::from_secs(1),
-        );
+            None,
+            None,
+            None,
+        )
+        .expect("failed to build Elasticsearch test client");
 
         assert_eq!(client.base_url, "https://localhost:9200");
         assert_eq!(client.fallback_base_urls, vec!["https://127.0.0.1:9200"]);
@@ -3589,7 +3678,11 @@ mod tests {
                 "connectivityCheckPath": "GET pro-logs-*/_search"
             })),
             Duration::from_secs(1),
-        );
+            None,
+            None,
+            None,
+        )
+        .expect("failed to build Elasticsearch test client");
         assert_eq!(client.connectivity_check_path, "/pro-logs-*/_search");
     }
 
@@ -3622,7 +3715,11 @@ mod tests {
             None,
             Some(&json!({ "connectivityCheckPath": "/pro-logs-*/_search" })),
             Duration::from_secs(2),
-        );
+            None,
+            None,
+            None,
+        )
+        .expect("failed to build Elasticsearch test client");
         super::test_connection(&mut client, Duration::from_secs(2)).await.unwrap();
         server.await.unwrap();
     }
@@ -3638,7 +3735,11 @@ mod tests {
             None,
             Some(&external_config),
             Duration::from_secs(1),
-        );
+            None,
+            None,
+            None,
+        )
+        .expect("failed to build Elasticsearch test client");
 
         assert_eq!(client.base_url, "https://localhost:5601/kibana/s/analytics");
         assert_eq!(client.fallback_base_urls, vec!["https://127.0.0.1:5601/kibana/s/analytics"]);
@@ -5146,7 +5247,11 @@ mod tests {
             None,
             Some(&external_config),
             Duration::from_secs(1),
-        );
+            None,
+            None,
+            None,
+        )
+        .expect("failed to build Elasticsearch test client");
         let result =
             super::execute_rest_query(&client, "DELETE /missing/_doc/1?refresh=true\n{\"reason\":\"cleanup\"}")
                 .await
@@ -5500,7 +5605,11 @@ mod tests {
             None,
             Some(&external_config),
             Duration::from_secs(20),
-        );
+            None,
+            None,
+            None,
+        )
+        .expect("failed to build Elasticsearch test client");
         super::test_connection(&mut client, Duration::from_secs(20)).await.unwrap();
 
         let index = format!("chiron-horizon-kibana-proxy-{}", uuid::Uuid::new_v4().simple());
@@ -5590,5 +5699,51 @@ mod tests {
             super::elasticsearch_document_body_and_routing_from_json(r#"{"z":1,"_id":"abc","a":2}"#, None).unwrap();
 
         assert_eq!(serde_json::to_string(&doc).unwrap(), r#"{"z":1,"a":2}"#);
+    }
+
+    // Integration test against a real TLS-enabled Elasticsearch. Gated by env vars
+    // so it stays a no-op in CI:
+    //   CHIRON_HORIZON_ELASTICSEARCH_TLS_TEST_URL            e.g. https://localhost:9200
+    //   CHIRON_HORIZON_ELASTICSEARCH_TLS_TEST_CA_CERT_PATH   path to the server's CA cert (PEM)
+    // Mirrors the ZooKeeper TLS integration test: tls_enabled=true loads the custom
+    // CA (and any client cert) through apply_tls_certificates, then connects over HTTPS.
+    #[tokio::test]
+    async fn tls_integration_connects_with_custom_ca() {
+        let url = match std::env::var("CHIRON_HORIZON_ELASTICSEARCH_TLS_TEST_URL") {
+            Ok(u) => u,
+            Err(_) => {
+                eprintln!("skipping ES TLS integration test: CHIRON_HORIZON_ELASTICSEARCH_TLS_TEST_URL not set");
+                return;
+            }
+        };
+        let ca_cert_path = match std::env::var("CHIRON_HORIZON_ELASTICSEARCH_TLS_TEST_CA_CERT_PATH") {
+            Ok(c) => c,
+            Err(_) => {
+                eprintln!(
+                    "skipping ES TLS integration test: CHIRON_HORIZON_ELASTICSEARCH_TLS_TEST_CA_CERT_PATH not set"
+                );
+                return;
+            }
+        };
+        // Optional basic-auth credentials (required when the server has security enabled).
+        let username = std::env::var("CHIRON_HORIZON_ELASTICSEARCH_TLS_TEST_USERNAME").ok();
+        let password = std::env::var("CHIRON_HORIZON_ELASTICSEARCH_TLS_TEST_PASSWORD").ok();
+        let timeout = std::time::Duration::from_secs(15);
+        let mut client = EsClient::from_config(
+            &url,
+            username.as_deref(),
+            password.as_deref(),
+            true,
+            None,
+            None,
+            timeout,
+            Some(&ca_cert_path),
+            None,
+            None,
+        )
+        .expect("failed to build Elasticsearch TLS client");
+        super::test_connection(&mut client, timeout)
+            .await
+            .expect("Elasticsearch TLS connection with custom CA should succeed");
     }
 }

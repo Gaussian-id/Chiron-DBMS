@@ -39,14 +39,14 @@ test("uses the Dameng display name without changing its connection profile", () 
 
   assert.equal(parsed.dbType, "dameng");
   assert.equal(parsed.driverProfile, "dm");
-  assert.equal(parsed.driverLabel, "达梦 Dameng");
+  assert.equal(parsed.driverLabel, "Dameng");
 });
 
 test.each(["kingbase", "kingbase8", "jdbc:kingbase8"])("parses %s connection URLs as native KingBase connections", (scheme) => {
   assert.deepEqual(parseConnectionUrl(`${scheme}://framework:secret@172.21.203.70:443/hq_official?sslmode=disable`), {
     dbType: "kingbase",
     driverProfile: "kingbase",
-    driverLabel: "金仓KingbaseES",
+    driverLabel: "KingbaseES",
     host: "172.21.203.70",
     port: 443,
     username: "framework",
@@ -418,7 +418,7 @@ test("parses GBase 8s JDBC URLs", () => {
 
   assert.equal(parsed.dbType, "gbase");
   assert.equal(parsed.driverProfile, "gbase8s");
-  assert.equal(parsed.driverLabel, "南大通用 GBase 8s");
+  assert.equal(parsed.driverLabel, "GBase 8s");
   assert.equal(parsed.host, "gbase.example.com");
   assert.equal(parsed.port, 20013);
   assert.equal(parsed.username, "gbasedbt");

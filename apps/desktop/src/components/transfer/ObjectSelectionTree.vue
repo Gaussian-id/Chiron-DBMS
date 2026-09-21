@@ -306,7 +306,7 @@ function groupSelectionState(kind: TransferObjectKind, items: string[]): "none" 
               <input type="checkbox" class="h-3.5 w-3.5" :checked="selectedSet(group.kind).has(item)" :disabled="isGroupDisabled(group.kind)" @change="toggleItem(group.kind, item)" />
               <span class="truncate text-foreground/80">{{ item }}</span>
             </label>
-            <div v-if="group.items.length === 0" class="px-1 py-1 text-xs text-muted-foreground">无匹配</div>
+            <div v-if="group.items.length === 0" class="px-1 py-1 text-xs text-muted-foreground">No matches</div>
           </div>
           <div v-else class="pl-6 pr-1 mt-1" :style="{ height: `${OBJECT_LIST_HEIGHT}px` }">
             <RecycleScroller v-slot="{ item }" class="h-full" :items="group.items" :item-size="OBJECT_ITEM_HEIGHT" :buffer="OBJECT_LIST_BUFFER">

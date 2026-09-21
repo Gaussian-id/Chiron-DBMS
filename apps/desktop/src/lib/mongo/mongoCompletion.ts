@@ -4,10 +4,11 @@ import {
   COMMON_OPERATORS,
   EXPRESSION_OPERATORS,
   EXTENDED_JSON_VALUES,
+  FIELD_QUERY_OPERATORS,
   PIPELINE_STAGES,
   PUSH_MODIFIERS,
-  QUERY_OPERATORS,
   STAGE_OPTION_KEYS,
+  TOP_LEVEL_QUERY_OPERATORS,
   UPDATE_OPERATORS,
   UPDATE_OPERATOR_LABELS,
   VALUE_SNIPPETS,
@@ -34,6 +35,7 @@ export type MongoCompletionMode =
   | "method"
   | "cursorMethod"
   | "field"
+  | "filterField"
   | "fieldPath"
   | "fieldRef"
   | "value"
@@ -85,11 +87,14 @@ const COLLECTION_METHODS = [
   { label: "aggregate", detail: "Run an aggregation pipeline", apply: "aggregate([])" },
   { label: "countDocuments", detail: "Count matching documents", apply: "countDocuments({})" },
   { label: "count", detail: "Count matching documents (legacy helper)", apply: "count({})" },
+  { label: "estimatedDocumentCount", detail: "Estimate the document count from collection metadata", apply: "estimatedDocumentCount()" },
   { label: "distinct", detail: "List the distinct values of a field", apply: 'distinct("${field}")' },
   { label: "insertOne", detail: "Insert one document", apply: "insertOne({})" },
   { label: "insertMany", detail: "Insert multiple documents", apply: "insertMany([{}])" },
   { label: "updateOne", detail: "Update one matching document", apply: "updateOne({}, { $set: {} })" },
   { label: "updateMany", detail: "Update all matching documents", apply: "updateMany({}, { $set: {} })" },
+  { label: "replaceOne", detail: "Replace one matching document", apply: "replaceOne({}, {})" },
+  { label: "bulkWrite", detail: "Run several writes in one batch", apply: "bulkWrite([\n  { insertOne: { document: {} } }\n])" },
   { label: "deleteOne", detail: "Delete one matching document", apply: "deleteOne({})" },
   { label: "deleteMany", detail: "Delete all matching documents", apply: "deleteMany({})" },
   { label: "findOneAndUpdate", detail: "Atomically update and return a document", apply: "findOneAndUpdate({}, { $set: {} })" },
@@ -111,11 +116,14 @@ const COLLECTION_METHOD_BOOST: Record<(typeof COLLECTION_METHODS)[number]["label
   findOne: 230,
   aggregate: 220,
   countDocuments: 210,
+  estimatedDocumentCount: 205,
   distinct: 200,
   insertOne: 180,
   insertMany: 170,
   updateOne: 160,
   updateMany: 150,
+  replaceOne: 145,
+  bulkWrite: 135,
   deleteOne: 140,
   deleteMany: 130,
   findOneAndUpdate: 120,
@@ -137,12 +145,15 @@ const COLLECTION_METHOD_BOOST: Record<(typeof COLLECTION_METHODS)[number]["label
 const DATABASE_METHODS = [
   { label: "getCollection", detail: "Reference a collection by name", apply: 'getCollection("${}")' },
   { label: "version", detail: "Show the MongoDB server version", apply: "version()" },
+  { label: "stats", detail: "Show database statistics", apply: "stats()" },
+  { label: "serverStatus", detail: "Show server status", apply: "serverStatus()" },
 ] as const;
 
 const CURSOR_METHODS = [
   { label: "sort", detail: "Sort cursor results", apply: "sort({ ${field}: 1 })" },
   { label: "limit", detail: "Limit cursor results", apply: "limit(100)" },
   { label: "skip", detail: "Skip cursor results", apply: "skip(0)" },
+  { label: "explain", detail: "Show the query plan instead of the results", apply: 'explain("executionStats")' },
 ] as const;
 
 /**
@@ -157,6 +168,8 @@ const ROOT_SNIPPETS = [
   { label: "db.getCollection", detail: "Reference a collection by name", apply: 'db.getCollection("${}")' },
   { label: "use", detail: "Switch the active database", apply: "use ${database}" },
   { label: "db.version", detail: "Show the MongoDB server version", apply: "db.version()" },
+  { label: "db.stats", detail: "Show database statistics", apply: "db.stats()" },
+  { label: "db.serverStatus", detail: "Show server status", apply: "db.serverStatus()" },
 ] as const;
 
 const ROOT_SNIPPET_BOOST: Record<(typeof ROOT_SNIPPETS)[number]["label"], number> = {
@@ -165,10 +178,12 @@ const ROOT_SNIPPET_BOOST: Record<(typeof ROOT_SNIPPETS)[number]["label"], number
   "db.getCollection": 330,
   use: 320,
   "db.version": 310,
+  "db.stats": 305,
+  "db.serverStatus": 300,
 };
 
 /** Role of each positional argument, by collection helper. Drives cursor classification. */
-type MongoArgRole = "filter" | "update" | "replacement" | "document" | "documents" | "pipeline" | "projection" | "keys" | "sortKeys" | "fieldName" | "options";
+type MongoArgRole = "filter" | "update" | "replacement" | "document" | "documents" | "operations" | "pipeline" | "projection" | "keys" | "sortKeys" | "fieldName" | "options";
 
 const METHOD_ARG_ROLES: Record<string, readonly MongoArgRole[]> = {
   find: ["filter", "projection", "options"],
@@ -180,6 +195,8 @@ const METHOD_ARG_ROLES: Record<string, readonly MongoArgRole[]> = {
   findOneAndDelete: ["filter", "options"],
   updateOne: ["filter", "update", "options"],
   updateMany: ["filter", "update", "options"],
+  replaceOne: ["filter", "replacement", "options"],
+  bulkWrite: ["operations", "options"],
   findOneAndUpdate: ["filter", "update", "options"],
   findOneAndReplace: ["filter", "replacement", "options"],
   insertOne: ["document", "options"],
@@ -310,6 +327,10 @@ export function buildMongoCompletionItemsFromContext(context: MongoCompletionCon
     case "field":
       items = fieldItems(prefix, fields);
       break;
+    case "filterField":
+      // Fields lead; `$and` / `$or` and the other whole-filter operators follow once `$` is typed.
+      items = [...fieldItems(prefix, fields), ...specItems(TOP_LEVEL_QUERY_OPERATORS, prefix, "query operator", 80)];
+      break;
     case "fieldPath":
       items = fieldPathItems(prefix, fields);
       break;
@@ -325,7 +346,7 @@ export function buildMongoCompletionItemsFromContext(context: MongoCompletionCon
       break;
     case "queryOperator":
       // `{ _id: { $oid: ... } }` is as valid here as `{ _id: { $gt: ... } }`.
-      items = [...specItems(QUERY_OPERATORS, prefix, "query operator", 100), ...specItems(EXTENDED_JSON_VALUES, prefix, "extended JSON value", 90)];
+      items = [...specItems(FIELD_QUERY_OPERATORS, prefix, "query operator", 100), ...specItems(EXTENDED_JSON_VALUES, prefix, "extended JSON value", 90)];
       break;
     case "updateOperator":
       items = specItems(UPDATE_OPERATORS, prefix, "update operator", 100);
@@ -353,7 +374,7 @@ export function buildMongoCompletionItemsFromContext(context: MongoCompletionCon
 
 /** Modes whose items are built from the target collection's sampled fields. */
 export function mongoCompletionNeedsFields(mode: MongoCompletionMode): boolean {
-  return mode === "field" || mode === "fieldPath" || mode === "fieldRef" || mode === "expression";
+  return mode === "field" || mode === "filterField" || mode === "fieldPath" || mode === "fieldRef" || mode === "expression";
 }
 
 /** Modes whose items are built from the database's collection names. */
@@ -521,6 +542,8 @@ function classifyCursorInCall(method: string, scan: MongoCallScan): MongoCursorC
       return { mode: scan.stack.length === 0 ? "fieldPath" : "none" };
     case "pipeline":
       return classifyPipeline(scan);
+    // bulkWrite operations are `{ <op>: { filter, update, … } }` entries; completing inside them is a follow-up.
+    case "operations":
     case "options":
       return { mode: "none" };
     default:
@@ -544,7 +567,7 @@ function classifyFilter(scan: MongoCallScan, rootIndex: number): MongoCompletion
   if (inner.kind === "array") return VALUE_ARRAY_OPERATORS.has(inner.key ?? "") && !scan.inString ? "value" : "none";
   if (inner.kind !== "object") return "none";
   if (scan.inValue) return scan.inString ? "none" : "value";
-  if (innerDepth(scan, rootIndex) === 0) return "field";
+  if (innerDepth(scan, rootIndex) === 0) return "filterField";
 
   // Inside a nested object: whose value is it?
   switch (inner.key) {
@@ -552,10 +575,10 @@ function classifyFilter(scan: MongoCallScan, rootIndex: number): MongoCompletion
       // An object inside an array: a sub-filter under `$and` / `$or` / `$nor`,
       // or an extended JSON wrapper such as `{ $oid: ... }` under `$in`.
       const parent = scan.stack[scan.stack.length - 2];
-      return parent?.kind === "array" && VALUE_ARRAY_OPERATORS.has(parent.key ?? "") ? "valueWrapper" : "field";
+      return parent?.kind === "array" && VALUE_ARRAY_OPERATORS.has(parent.key ?? "") ? "valueWrapper" : "filterField";
     }
     case "$elemMatch":
-      return "field";
+      return "filterField";
     case "$expr":
       return "expression";
     case "$jsonSchema":

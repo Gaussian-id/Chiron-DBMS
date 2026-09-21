@@ -29,6 +29,10 @@ const MAX_PLUGIN_UPLOAD_BYTES: usize = 512 * 1024 * 1024;
 pub struct PluginInstallQuery {
     #[serde(default)]
     allow_unsigned: bool,
+    /// Marks bytes fetched from a direct package URL by the caller, which also
+    /// trusts the built-in official marketplace keys like desktop URL installs.
+    #[serde(default)]
+    from_url: bool,
 }
 
 #[derive(Debug, Deserialize)]
@@ -224,7 +228,8 @@ pub async fn install_marketplace_plugin(
 ) -> Result<Json<PluginInstallResponse>, AppError> {
     let marketplace =
         PluginMarketplace::new(state.app.plugins.root_dir().to_path_buf(), state.app.plugins.app_version().to_string())
-            .map_err(AppError::from)?;
+            .map_err(AppError::from)?
+            .with_lifecycle(state.app.plugins.lifecycle());
     let result = marketplace.install(request).await.map_err(AppError::bad_request)?;
     state.app.remove_plugin_connection_pools(&result.plugin.manifest.id).await;
     stop_external_driver_pools(&state, &result.plugin).await;
@@ -284,8 +289,15 @@ pub async fn install_plugin(
         if query.allow_unsigned { PluginInstallPolicy::LocalDevelopment } else { PluginInstallPolicy::LocalSigned };
     let root_dir = state.app.plugins.root_dir().to_path_buf();
     let app_version = state.app.plugins.app_version().to_string();
+    let lifecycle = state.app.plugins.lifecycle();
     let result = tokio::task::spawn_blocking(move || {
-        PluginPackageInstaller::new(root_dir, app_version)?.install_bytes(&package, policy)
+        let installer = if query.from_url {
+            let trust_store = chiron_horizon_core::plugins::url_install_trust_store(&root_dir)?;
+            PluginPackageInstaller::with_trust_store(root_dir.clone(), app_version, trust_store)
+        } else {
+            PluginPackageInstaller::new(root_dir.clone(), app_version)?
+        };
+        installer.with_lifecycle(lifecycle).install_bytes(&package, policy)
     })
     .await
     .map_err(|error| AppError::internal(error.to_string()))?
@@ -300,17 +312,18 @@ pub async fn rollback_plugin(
     State(state): State<Arc<WebState>>,
     Json(request): Json<PluginIdRequest>,
 ) -> Result<Json<PluginRollbackResponse>, AppError> {
-    state.app.remove_plugin_connection_pools(&request.plugin_id).await;
-    state.app.plugin_host.stop(&request.plugin_id).await;
     let root_dir = state.app.plugins.root_dir().to_path_buf();
     let app_version = state.app.plugins.app_version().to_string();
+    let lifecycle = state.app.plugins.lifecycle();
     let result = tokio::task::spawn_blocking(move || {
-        PluginPackageInstaller::new(root_dir, app_version)?.rollback(&request.plugin_id)
+        PluginPackageInstaller::new(root_dir, app_version)?.with_lifecycle(lifecycle).rollback(&request.plugin_id)
     })
     .await
     .map_err(|error| AppError::internal(error.to_string()))?
     .map_err(AppError::bad_request)?;
+    state.app.remove_plugin_connection_pools(&result.plugin.manifest.id).await;
     stop_external_driver_pools(&state, &result.plugin).await;
+    state.app.plugin_host.stop(&result.plugin.manifest.id).await;
     Ok(Json(result.response()))
 }
 

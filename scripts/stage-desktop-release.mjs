@@ -14,7 +14,7 @@ const visit = (directory) => readdirSync(directory, { withFileTypes: true }).fla
 const candidates = visit(resolve(input)).filter((path) => extname(path).toLowerCase() === extension && statSync(path).isFile());
 if (candidates.length !== 1) throw new Error(`Expected one ${extension} bundle in ${input}, found ${candidates.length}: ${candidates.join(", ")}`);
 const assetName = basename(output);
-if (/(?:dbx|chiron)/i.test(assetName)) throw new Error(`Legacy product name in release asset: ${assetName}`);
+if (/(?:chiron_horizon|chiron)/i.test(assetName)) throw new Error(`Legacy product name in release asset: ${assetName}`);
 mkdirSync(resolve(output, ".."), { recursive: true });
 cpSync(candidates[0], output);
 if (!existsSync(output)) throw new Error(`Failed to stage ${output}`);

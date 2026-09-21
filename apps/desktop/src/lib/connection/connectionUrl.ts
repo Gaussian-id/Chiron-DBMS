@@ -1,6 +1,7 @@
 import type { ConnectionConfig, DatabaseType } from "@/types/database";
 import { h2JdbcUrlHasPasswordParam, h2JdbcUrlHasUserParam, parseH2JdbcUrl } from "@/lib/database/h2Connection";
 import { damengSslFormConfig } from "@/lib/database/damengSslOptions";
+import { normalizeRedisDatabaseValue } from "@/lib/redis/redisDatabaseIndex";
 
 export interface ParsedConnectionUrl {
   name?: string;
@@ -62,21 +63,21 @@ const SCHEME_PROFILES: Record<string, ConnectionProfile> = {
   milvus: { type: "milvus", profile: "milvus", label: "Milvus", defaultPort: 19530 },
   weaviate: { type: "weaviate", profile: "weaviate", label: "Weaviate", defaultPort: 8080 },
   chromadb: { type: "chromadb", profile: "chromadb", label: "ChromaDB", defaultPort: 8000 },
-  dm: { type: "dameng", profile: "dm", label: "达梦 Dameng", defaultPort: 5236 },
-  dameng: { type: "dameng", profile: "dm", label: "达梦 Dameng", defaultPort: 5236 },
-  kingbase: { type: "kingbase", profile: "kingbase", label: "金仓KingbaseES", defaultPort: 54321 },
-  kingbase8: { type: "kingbase", profile: "kingbase", label: "金仓KingbaseES", defaultPort: 54321 },
+  dm: { type: "dameng", profile: "dm", label: "Dameng", defaultPort: 5236 },
+  dameng: { type: "dameng", profile: "dm", label: "Dameng", defaultPort: 5236 },
+  kingbase: { type: "kingbase", profile: "kingbase", label: "KingbaseES", defaultPort: 54321 },
+  kingbase8: { type: "kingbase", profile: "kingbase", label: "KingbaseES", defaultPort: 54321 },
   gaussdb: { type: "gaussdb", profile: "gaussdb", label: "GaussDB", defaultPort: 5432 },
   kwdb: { type: "kwdb", profile: "kwdb", label: "KWDB", defaultPort: 26257 },
-  gbase: { type: "gbase", profile: "gbase", label: "南大通用 GBase", defaultPort: 5258 },
-  "gbasedbt-sqli": { type: "gbase", profile: "gbase8s", label: "南大通用 GBase 8s", defaultPort: 9088 },
+  gbase: { type: "gbase", profile: "gbase", label: "GBase", defaultPort: 5258 },
+  "gbasedbt-sqli": { type: "gbase", profile: "gbase8s", label: "GBase 8s", defaultPort: 9088 },
   "informix-sqli": { type: "informix", profile: "informix", label: "Informix", defaultPort: 9088 },
   yashandb: { type: "yashandb", profile: "yashandb", label: "YashanDB", defaultPort: 1688 },
   opengauss: { type: "gaussdb", profile: "opengauss", label: "openGauss", defaultPort: 5432 },
   questdb: { type: "questdb", profile: "questdb", label: "QuestDB", defaultPort: 8812 },
   tdengine: { type: "tdengine", profile: "tdengine", label: "TDengine", defaultPort: 6041 },
   "taos-ws": { type: "tdengine", profile: "tdengine", label: "TDengine", defaultPort: 6041 },
-  oscar: { type: "oscar", profile: "oscar", label: "神通 OSCAR", defaultPort: 2003 },
+  oscar: { type: "oscar", profile: "oscar", label: "OSCAR", defaultPort: 2003 },
   xugu: { type: "xugu", profile: "xugu", label: "XuguDB", defaultPort: 5138 },
   iotdb: { type: "iotdb", profile: "iotdb", label: "Apache IoTDB", defaultPort: 6667 },
   iris: { type: "iris", profile: "iris", label: "IRIS", defaultPort: 1972 },
@@ -198,6 +199,29 @@ function databaseFromPath(pathname: string): string | undefined {
   const value = pathname.replace(/^\/+/, "");
   if (!value) return undefined;
   return decodeUrlPart(value.split("/")[0]);
+}
+
+interface RedisUrlPathParts {
+  database: string | undefined;
+  tls: boolean;
+  insecure: boolean;
+}
+
+// Users paste redis-cli invocations into the URL field (e.g.
+// "redis://host:6379/0 --tls --insecure"); WHATWG URL folds the flags into the
+// path. Salvage them: the first non-flag token is the numeric db index, --tls
+// enables TLS (like the rediss:// scheme) and --insecure skips certificate
+// verification (like the #insecure fragment).
+function parseRedisUrlPath(rawPath: string): RedisUrlPathParts {
+  const parts: RedisUrlPathParts = { database: undefined, tls: false, insecure: false };
+  for (const token of rawPath.split(/\s+/)) {
+    if (!token) continue;
+    const flag = token.toLowerCase();
+    if (flag === "--tls") parts.tls = true;
+    else if (flag === "--insecure") parts.insecure = true;
+    else if (parts.database === undefined) parts.database = normalizeRedisDatabaseValue(token);
+  }
+  return parts;
 }
 
 function dynamodbRegionFromHost(hostname: string): string | undefined {
@@ -569,7 +593,7 @@ function parseJdbcGbase8sUrl(source: string): ParsedConnectionUrl | null {
   return {
     dbType: "gbase",
     driverProfile: "gbase8s",
-    driverLabel: "南大通用 GBase 8s",
+    driverLabel: "GBase 8s",
     host,
     port: match.groups.port ? Number(match.groups.port) : 9088,
     username: decodeUrlPart(rawUser),
@@ -716,7 +740,11 @@ export function parseConnectionUrl(value: string, preferredProfile?: string): Pa
   const name = connectionNameParam(parsed);
   const urlParamsWithoutName = stripConnectionNameParam(urlParams);
   const normalizedFragment = decodeUrlPart(parsed.hash.replace(/^#/, "")).trim().toLowerCase();
-  const parsedUrlParams = profile.type === "redis" && normalizedFragment === "insecure" ? [urlParamsWithoutName, "insecure=true"].filter(Boolean).join("&") : urlParamsWithoutName;
+  // A Redis path can carry pasted redis-cli flags ("…/0 --tls --insecure");
+  // salvage the db index plus the TLS/insecure intent before they are dropped.
+  const redisPath = profile.type === "redis" ? parseRedisUrlPath(databaseFromPath(parsed.pathname) || "") : null;
+  const redisInsecure = redisPath?.insecure || normalizedFragment === "insecure";
+  const parsedUrlParams = profile.type === "redis" && redisInsecure && !/(^|&)insecure=/i.test(urlParamsWithoutName) ? [urlParamsWithoutName, "insecure=true"].filter(Boolean).join("&") : urlParamsWithoutName;
   const jdbcCredentials = isJdbcUrl && (profile.type === "mysql" || profile.profile === "oceanbase-oracle") ? extractMysqlCredentialParams(parsedUrlParams) : undefined;
   const effectiveUrlParams = jdbcCredentials?.urlParams ?? parsedUrlParams;
   if (profile.type === "mongodb") {
@@ -754,6 +782,8 @@ export function parseConnectionUrl(value: string, preferredProfile?: string): Pa
 
   const isMeilisearch = profile.type === "meilisearch";
   const defaultPort = isJdbcUrl && scheme === "oceanbase" ? 3306 : isMeilisearch && scheme === "http" ? 80 : isMeilisearch && scheme === "https" ? 443 : profile.defaultPort;
+  // A Redis URL path is a numeric db index; redis-cli flags salvaged above.
+  const pathDatabase = redisPath ? redisPath.database : databaseFromPath(parsed.pathname);
 
   return {
     ...(name ? { name } : {}),
@@ -765,9 +795,9 @@ export function parseConnectionUrl(value: string, preferredProfile?: string): Pa
     ...(profile.type === "sqlserver" && parsed.port ? { portExplicit: true } : {}),
     username: jdbcCredentials?.username ?? decodeUrlPart(parsed.username),
     password: jdbcCredentials?.password ?? decodeUrlPart(parsed.password),
-    database: profile.type === "victoriametrics" ? "metrics" : profile.type === "dynamodb" ? dynamodbRegionFromHost(parsed.hostname) : isMeilisearch ? undefined : databaseFromPath(parsed.pathname),
+    database: profile.type === "victoriametrics" ? "metrics" : profile.type === "dynamodb" ? dynamodbRegionFromHost(parsed.hostname) : isMeilisearch ? undefined : pathDatabase,
     urlParams: effectiveUrlParams,
-    ssl: scheme === "rediss" || scheme === "https" || urlParamsRequireTls(profile.type, effectiveUrlParams) || (profile.type === "mysql" && isTidbCloudHost(parsed.hostname)),
+    ssl: scheme === "rediss" || scheme === "https" || (redisPath?.tls ?? false) || urlParamsRequireTls(profile.type, effectiveUrlParams) || (profile.type === "mysql" && isTidbCloudHost(parsed.hostname)),
     ...(profile.type === "victoriametrics" ? { apiPath: parsed.pathname.replace(/\/+$/, "") } : {}),
     ...(isMeilisearch ? { basePath: parsed.pathname === "/" ? "" : parsed.pathname.replace(/\/+$/, "") } : {}),
   };

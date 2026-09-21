@@ -740,7 +740,7 @@ fn parse_account_auth_state(account: Option<&Value>) -> Option<bool> {
         // 2.136.0) always reports `account: null` in this control response, whether
         // or not the session is signed in — it's not a login signal here. Treat it
         // as unknown so callers fall back to the model-catalog-based heuristic
-        // instead of hard-blocking authenticated users (Gaussian-id/Gauss-Horizon#6253).
+        // instead of hard-blocking authenticated users (Gaussian-id/Chiron-Horizon#6253).
         Value::Null => None,
         Value::Bool(value) => Some(*value),
         Value::Object(fields) => fields
@@ -964,6 +964,7 @@ mod tests {
             connection_id: "conn-1".to_string(),
             connection_name: "local".to_string(),
             database: "demo".to_string(),
+            selected_databases: Vec::new(),
             schema: None,
             agent_mode: true,
             allow_writes: false,
@@ -1410,6 +1411,7 @@ exit 9
             connection_id: String::new(),
             connection_name: connection_name.clone(),
             database,
+            selected_databases: Vec::new(),
             schema: None,
             agent_mode: false,
             allow_writes: false,
@@ -1468,6 +1470,7 @@ exit 9
             connection_id: String::new(),
             connection_name,
             database,
+            selected_databases: Vec::new(),
             schema: None,
             agent_mode: true,
             allow_writes: false,

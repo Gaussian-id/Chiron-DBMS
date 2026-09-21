@@ -2,7 +2,7 @@ schemaVersion: 1
 order: 310
 dbType: goldendb
 rustVariant: Goldendb
-label: 金篆 GoldenDB
+label: GoldenDB
 dialect: GoldenDB
 runtimeMode: agent
 mcpMode: bridge
@@ -14,6 +14,18 @@ metadataConnectionScoped: false
 skipTcpProbe: true
 defaultPort: 3306
 supportLevel: operate
+access:
+  connectionPicker: direct
+  runtimeProvider: agent
+  connectSupported: true
+  testConnectionSupported: true
+  requiredFeatures: []
+schemaViewer:
+  kind: relational
+  provider: relational-metadata
+  scopeLevels:
+    - database
+    - schema
 capabilities:
   queryExecution: true
   metadataBrowse: true
@@ -21,6 +33,7 @@ capabilities:
   objectSource: true
   schemaSearch: true
   diagram: true
+  schemaViewer: true
   tableDataEdit: true
   tableStructureEdit: true
   tableImport: true

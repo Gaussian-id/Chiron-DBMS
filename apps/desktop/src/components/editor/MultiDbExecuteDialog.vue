@@ -580,8 +580,8 @@ function openGroupNameDialog(mode: "create" | "update" | "clone" | "rename", gro
 
 function groupNameError(error: unknown): string {
   const message = error instanceof Error ? error.message : String(error);
-  if (message.includes("不能为空")) return t("multiDbExecute.groupNameRequired");
-  if (message.includes("已存在")) return t("multiDbExecute.groupNameExists");
+  if (message.includes("name is required")) return t("multiDbExecute.groupNameRequired");
+  if (message.includes("name already exists")) return t("multiDbExecute.groupNameExists");
   return t("multiDbExecute.groupSaveFailed", { message });
 }
 

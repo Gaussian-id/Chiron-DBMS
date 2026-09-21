@@ -10,7 +10,7 @@ Chiron Horizon plugins are independently installed `.chiron-horizonp` packages t
 </Callout>
 
 <Callout type="warn">
-  **Marketplace listing pull requests go to [`Gaussian-id/Gauss-DBM-store`](https://github.com/Gaussian-id/Gauss-DBM-store), not `Gaussian-id/Gauss-Horizon`.** A plugin's feature code normally remains in its author's source repository. Open a PR against [`Gaussian-id/Gauss-Horizon`](https://github.com/Gaussian-id/Gauss-Horizon) only when changing the Chiron Horizon host, SDK, CLI, protocol, schemas, documentation, or official examples.
+  **Marketplace listing pull requests go to [`Gaussian-id/Gauss-DBM-store`](https://github.com/Gaussian-id/Gauss-DBM-store), not `Gaussian-id/Chiron-Horizon`.** A plugin's feature code normally remains in its author's source repository. Open a PR against [`Gaussian-id/Chiron-Horizon`](https://github.com/Gaussian-id/Chiron-Horizon) only when changing the Chiron Horizon host, SDK, CLI, protocol, schemas, documentation, or official examples.
 </Callout>
 
 ## Which Repository Receives the Change
@@ -19,13 +19,13 @@ Chiron Horizon plugins are independently installed `.chiron-horizonp` packages t
 | --- | --- | --- |
 | Your plugin frontend, Rust/Go backend, tests, and release scripts | The plugin's source repository | Do not submit it to `chiron-horizon`; develop and release it in its own repository |
 | A new Marketplace listing, version update, icon, or description | [`Gaussian-id/Gauss-DBM-store`](https://github.com/Gaussian-id/Gauss-DBM-store) | Yes, target `main` |
-| Chiron Horizon plugin host, Manifest/Marketplace schemas, SDK, CLI, or packager | [`Gaussian-id/Gauss-Horizon`](https://github.com/Gaussian-id/Gauss-Horizon) | Yes, target `main` |
-| Official examples or plugin-development documentation | [`Gaussian-id/Gauss-Horizon`](https://github.com/Gaussian-id/Gauss-Horizon) | Yes |
+| Chiron Horizon plugin host, Manifest/Marketplace schemas, SDK, CLI, or packager | [`Gaussian-id/Chiron-Horizon`](https://github.com/Gaussian-id/Chiron-Horizon) | Yes, target `main` |
+| Official examples or plugin-development documentation | [`Gaussian-id/Chiron-Horizon`](https://github.com/Gaussian-id/Chiron-Horizon) | Yes |
 | A bug in a specific third-party plugin | That plugin's source repository | Do not submit it to `chiron-horizon-store` |
 | A custom or enterprise private repository | Your private repository | No official Marketplace submission is required |
 | A vendor JDBC driver JAR | Do not commit it to either repository | Users import it locally or on the server |
 
-Chiron Horizon-maintained plugins that need an independent release cadence should normally use separate source repositories as well. Only tightly coupled host examples, SDK verification projects, or components explicitly accepted by maintainers belong in `Gaussian-id/Gauss-Horizon`.
+Chiron Horizon-maintained plugins that need an independent release cadence should normally use separate source repositories as well. Only tightly coupled host examples, SDK verification projects, or components explicitly accepted by maintainers belong in `Gaussian-id/Chiron-Horizon`.
 
 ## Plugin Project Layout
 
@@ -49,11 +49,11 @@ my-plugin/
 
 ## Complete Manifest Reference
 
-`manifest.json` is the runtime contract and must be at the root of the plugin package. Manifest v1 rejects undeclared fields. Reference the repository's [`plugins/manifest.schema.json`](https://github.com/Gaussian-id/Gauss-Horizon/blob/main/plugins/manifest.schema.json) from your editor. A minimal frontend-only Manifest looks like this:
+`manifest.json` is the runtime contract and must be at the root of the plugin package. Manifest v1 rejects undeclared fields. Reference the repository's [`plugins/manifest.schema.json`](https://github.com/Gaussian-id/Chiron-Horizon/blob/main/plugins/manifest.schema.json) from your editor. A minimal frontend-only Manifest looks like this:
 
 ```json
 {
-  "$schema": "https://raw.githubusercontent.com/Gaussian-id/Gauss-Horizon/main/plugins/manifest.schema.json",
+  "$schema": "https://raw.githubusercontent.com/Gaussian-id/Chiron-Horizon/main/plugins/manifest.schema.json",
   "manifest_version": 1,
   "id": "com.example.files",
   "name": "Example Files",
@@ -167,7 +167,7 @@ Action `when` accepts `always`, `create`, or `edit`; `variant` accepts `default`
 
 Reference contributions by ID: a connection provider's `workbench` must point to a declared workbench and `filesystem_provider` to a declared filesystem provider. A contribution icon takes precedence over the plugin-level icon.
 
-Choose `workbench` for a custom file browser: the plugin owns its list, virtualization, previews, context menus, and split panes. Choose `filesystem_provider` only to use Chiron Horizon's generic file manager; declaring both defaults to the workbench. `context-menu` invokes `contextMenu/<contribution-id>` on the backend; `result-view` receives a result snapshot in workbench context. See the [full contribution protocol](https://github.com/Gaussian-id/Gauss-Horizon/blob/main/plugins/README.md) for payloads.
+Choose `workbench` for a custom file browser: the plugin owns its list, virtualization, previews, context menus, and split panes. Choose `filesystem_provider` only to use Chiron Horizon's generic file manager; declaring both defaults to the workbench. `context-menu` invokes `contextMenu/<contribution-id>` on the backend; `result-view` receives a result snapshot in workbench context. See the [full contribution protocol](https://github.com/Gaussian-id/Chiron-Horizon/blob/main/plugins/README.md) for payloads.
 
 ### Filesystem Protocol
 
@@ -307,7 +307,7 @@ fn main() -> std::io::Result<()> {
 
 Sidecar rules: reserve stdout for protocol messages and write logs to stderr; correlate concurrent requests by ID; make connect/disconnect idempotent; design timeouts, cancellation, and chunk acknowledgements for long tasks; never expose secrets through events, context, or error messages.
 
-The example can replace the Rust template's `backend/src/main.rs`; keep its Cargo package version equal to the Manifest. Go templates use `chiron_horizonpluginsdk.NewServer(metadata, handler).Serve()`. The current Go SDK supports JSONL; the Rust SDK also supports framed transport. Changing a Go Manifest's transport alone does not implement binary framing. See the [Rust SDK](https://github.com/Gaussian-id/Gauss-Horizon/tree/main/plugins/sdk/rust/chiron-horizon-plugin-sdk) and [Go SDK](https://github.com/Gaussian-id/Gauss-Horizon/tree/main/plugins/sdk/go/chiron-horizon-plugin-sdk) for complete interfaces.
+The example can replace the Rust template's `backend/src/main.rs`; keep its Cargo package version equal to the Manifest. Go templates use `chiron_horizonpluginsdk.NewServer(metadata, handler).Serve()`. The current Go SDK supports JSONL; the Rust SDK also supports framed transport. Changing a Go Manifest's transport alone does not implement binary framing. See the [Rust SDK](https://github.com/Gaussian-id/Chiron-Horizon/tree/main/plugins/sdk/rust/chiron-horizon-plugin-sdk) and [Go SDK](https://github.com/Gaussian-id/Chiron-Horizon/tree/main/plugins/sdk/go/chiron-horizon-plugin-sdk) for complete interfaces.
 
 ## Create a Plugin
 
@@ -364,7 +364,7 @@ npm run build
 chiron-horizon-plugin dev --port 5190
 ```
 
-Develop, test, and version the generated project in the plugin's own source repository. Do not copy an ordinary plugin source tree into `Gaussian-id/Gauss-Horizon` merely to publish it.
+Develop, test, and version the generated project in the plugin's own source repository. Do not copy an ordinary plugin source tree into `Gaussian-id/Chiron-Horizon` merely to publish it.
 
 ## Build Review Candidates
 
@@ -478,7 +478,7 @@ Example:
 
 Allowed store fields are `name`, `description`, `icon`, `tags`, `permissions`, `source`, `homepage`, `license`, `releaseNotes`, and `localizations`. A package-relative `icon` is converted to an HTTPS URL under the source tag during synchronization. `autoUpdate` belongs to the repository registration in `chiron-horizon-store/automation/plugin-sources.json`, not this file.
 
-Automation only creates or updates a candidate PR; it **never approves, signs, or merges** it. The PR targets [`Gaussian-id/Gauss-DBM-store`](https://github.com/Gaussian-id/Gauss-DBM-store) on `main`, not `Gaussian-id/Gauss-Horizon`.
+Automation only creates or updates a candidate PR; it **never approves, signs, or merges** it. The PR targets [`Gaussian-id/Gauss-DBM-store`](https://github.com/Gaussian-id/Gauss-DBM-store) on `main`, not `Gaussian-id/Chiron-Horizon`.
 
 If the plugin is not registered for automatic synchronization, fork `chiron-horizon-store` and open **one** PR against `main` containing `publishers/<publisher-id>.json` for a first publisher submission and `candidates/<plugin-id>.json`. There is no separate submission Issue. Before signing, CI intentionally stays red with `open candidate(s) awaiting Chiron Horizon Store signing`; the signing workflow writes the finalized catalog back to the PR and makes it green. Authors can submit a PR to register their public repository for synchronization or ask a maintainer to register it; no App private key belongs in the plugin repository.
 
@@ -567,5 +567,5 @@ The command creates a protected 32-byte Ed25519 seed environment file (mode `060
 
 - [JDBC Plugin and Database Drivers](/en/docs/plugins)
 - [Contribute to the Chiron Horizon Core Repository](/en/docs/contributing)
-- [`Gaussian-id/Gauss-Horizon` plugin platform source](https://github.com/Gaussian-id/Gauss-Horizon/tree/main/plugins)
+- [`Gaussian-id/Chiron-Horizon` plugin platform source](https://github.com/Gaussian-id/Chiron-Horizon/tree/main/plugins)
 - [`Gaussian-id/Gauss-DBM-store` official Marketplace repository](https://github.com/Gaussian-id/Gauss-DBM-store)

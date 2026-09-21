@@ -3,7 +3,7 @@ import { describe, expect, it } from "vitest";
 
 const dialogSource = readFileSync(new URL("../EditorSettingsDialog.vue", import.meta.url), "utf8");
 
-// Regression for https://github.com/Gaussian-id/Gauss-Horizon/issues/6485: applying editor
+// Regression for https://github.com/Gaussian-id/Chiron-Horizon/issues/6485: applying editor
 // settings (e.g. the editor font) could appear to "do nothing" because
 // persistSettings() has several awaited persistence steps with no error
 // handling. On a rejected save, "Apply" was completely silent and "Apply &

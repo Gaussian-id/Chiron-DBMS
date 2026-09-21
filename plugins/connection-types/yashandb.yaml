@@ -2,7 +2,7 @@ schemaVersion: 1
 order: 350
 dbType: yashandb
 rustVariant: Yashandb
-label: 崖山 YashanDB
+label: YashanDB
 dialect: YashanDB
 runtimeMode: agent
 mcpMode: bridge
@@ -17,6 +17,18 @@ traits:
   schemaAware: true
   treeSchema: true
 supportLevel: operate
+access:
+  connectionPicker: direct
+  runtimeProvider: agent
+  connectSupported: true
+  testConnectionSupported: true
+  requiredFeatures: []
+schemaViewer:
+  kind: relational
+  provider: relational-metadata
+  scopeLevels:
+    - database
+    - schema
 capabilities:
   queryExecution: true
   metadataBrowse: true
@@ -24,6 +36,7 @@ capabilities:
   objectSource: true
   schemaSearch: true
   diagram: true
+  schemaViewer: true
   tableDataEdit: true
   tableStructureEdit: true
   tableImport: true

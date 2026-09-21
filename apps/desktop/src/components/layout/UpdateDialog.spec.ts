@@ -77,7 +77,7 @@ async function mountDialog(activeTaskCount: number, initialState: Partial<Dialog
               portable_mode: state.portableMode,
               manual_update_only: state.manualUpdateOnly,
               release_name: "Chiron Horizon v0.5.61",
-              release_url: "https://github.com/Gaussian-id/Gauss-Horizon/releases/tag/v0.5.61",
+              release_url: "https://github.com/Gaussian-id/Chiron-Horizon/releases/tag/v0.5.61",
               release_notes: state.releaseNotes,
             },
             updateCheckMessage: "",
@@ -112,7 +112,7 @@ function buttonWithText(text: string): HTMLButtonElement | undefined {
 }
 
 function downloadButton(): HTMLButtonElement | undefined {
-  return buttonWithText("Retry Download");
+  return buttonWithText("Download in Background") ?? buttonWithText("Retry Download");
 }
 
 function cancelDownloadButton(): HTMLButtonElement | undefined {

@@ -244,6 +244,7 @@ pub async fn list_databases(client: &Influxdb3Client) -> Result<Vec<DatabaseInfo
                     comment: None,
                     default_charset: None,
                     default_collation: None,
+                    compatibility_mode: None,
                 })
         })
         .collect())
@@ -267,6 +268,7 @@ pub async fn list_tables(client: &Influxdb3Client, database: &str) -> Result<Vec
             Some(TableInfo {
                 name,
                 table_type: "TABLE".to_string(),
+                valid: None,
                 comment: None,
                 parent_schema: None,
                 parent_name: None,

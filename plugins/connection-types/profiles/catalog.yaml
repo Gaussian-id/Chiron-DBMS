@@ -7,6 +7,15 @@ profiles:
     port: 7401
     user: ""
     category: graph_ai
+  - id: chirondb-relational
+    dbType: postgres
+    label: ChironDB Relational
+    pickerLabel: ChironDB Relational (PostgreSQL wire)
+    icon: chirondb
+    port: 7403
+    user: chiron
+    urlParams: sslmode=disable
+    category: graph_ai
   - id: mysql
     dbType: mysql
     label: MySQL
@@ -215,7 +224,7 @@ profiles:
     user: SYS
   - id: goldendb
     dbType: goldendb
-    label: 金篆 GoldenDB
+    label: GoldenDB
     icon: goldendb
     port: 3306
     user: root
@@ -292,21 +301,21 @@ profiles:
     category: analytics
   - id: gbase
     dbType: gbase
-    label: 南大通用 GBase 8a
+    label: GBase 8a
     icon: gbase
     port: 5258
     user: gbasedbt
     category: domestic
-    pickerLabel: 南大通用 GBase
+    pickerLabel: GBase
   - id: gbase8a
     dbType: gbase
-    label: 南大通用 GBase 8a
+    label: GBase 8a
     icon: gbase
     port: 5258
     user: gbasedbt
   - id: gbase8s
     dbType: gbase
-    label: 南大通用 GBase 8s
+    label: GBase 8s
     icon: gbase
     port: 9088
     user: gbasedbt
@@ -340,41 +349,41 @@ profiles:
     category: timeseries
   - id: kingbase
     dbType: kingbase
-    label: 金仓KingbaseES
+    label: KingbaseES
     icon: kingbase
     port: 54321
     user: system
     category: domestic
   - id: highgo
     dbType: highgo
-    label: 瀚高 HighGo
+    label: HighGo
     icon: highgo
     port: 5866
     user: highgo
     category: domestic
   - id: uxdb
     dbType: uxdb
-    label: 优炫 UXDB
+    label: UXDB
     icon: uxdb
     port: 52025
     user: uxdb
     category: domestic
   - id: yashandb
     dbType: yashandb
-    label: 崖山 YashanDB
+    label: YashanDB
     icon: yashandb
     port: 1688
     user: sys
     category: domestic
   - id: vastbase
     dbType: vastbase
-    label: 海量 Vastbase
+    label: Vastbase
     icon: vastbase
     port: 5432
     user: vastbase
     category: domestic
   - id: doris
-    dbType: mysql
+    dbType: doris
     label: Doris
     icon: doris
     port: 9030
@@ -390,7 +399,7 @@ profiles:
     urlParams: ""
     category: analytics
   - id: starrocks
-    dbType: mysql
+    dbType: starrocks
     label: StarRocks
     icon: starrocks
     port: 9030
@@ -421,7 +430,7 @@ profiles:
     category: sql
   - id: dm
     dbType: dameng
-    label: 达梦 Dameng
+    label: Dameng
     icon: dm
     port: 5236
     user: SYSDBA
@@ -583,14 +592,14 @@ profiles:
     category: analytics
   - id: sundb
     dbType: sundb
-    label: 科蓝 SUNDB
+    label: SUNDB
     icon: sundb
     port: 22000
     user: root
     category: domestic
   - id: oscar
     dbType: oscar
-    label: 神通 OSCAR
+    label: OSCAR
     icon: oscar
     port: 2003
     user: SYSDBA

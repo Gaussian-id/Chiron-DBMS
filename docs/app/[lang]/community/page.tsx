@@ -22,6 +22,27 @@ const channels = [
     ),
   },
   {
+    id: "feishu",
+    color: "#3370FF",
+    href: "https://applink.feishu.cn/client/chat/chatter/add_by_link?link_token=30cvb14f-a9b1-4b12-adb6-2ff6d476a227",
+    icon: (
+      <svg width={24} height={24} viewBox="164 204 762 617">
+        <path
+          fill="#00D6B9"
+          d="M559.915 530.453c-46.507-111.786-194.56-248.469-262.806-302.826h333.782c47.146 16.298 87.616 134.677 101.973 191.808-35.499 31.21-119.787 97.109-172.95 111.018z"
+        />
+        <path
+          fill="#133C9A"
+          d="M632.021 452.992c-45.184 60.48-133.546 121.963-172.053 145.13l-2.88 24.278 235.947 63.637c32.213-25.962 103.061-87.296 128.96-124.928 4.394-6.378 68.992-135.914 79.402-151.552-18.24-11.306-42.56-18.261-104.277-21.738-82.56-4.331-116.437 20.864-165.099 65.173z"
+        />
+        <path
+          fill="#3370FF"
+          d="M187.883 712.917V393.515C397.568 599.808 558.315 642.688 641.045 653.76c124.459 5.419 154.667-73.045 181.142-93.099-97.024 153.174-224.64 235.734-384.747 235.734-128.107 0-219.755-55.659-249.557-83.478z"
+        />
+      </svg>
+    ),
+  },
+  {
     id: "discord",
     color: "#5865F2",
     href: "https://discord.gg/W7NyVDRt6a",
@@ -34,7 +55,7 @@ const channels = [
   {
     id: "github",
     color: "#f0f0f0",
-    href: "https://github.com/Gaussian-id/Gauss-Horizon/discussions",
+    href: "https://github.com/Gaussian-id/Chiron-Horizon/discussions",
     icon: (
       <svg width={24} height={24} viewBox="0 0 24 24" fill="currentColor">
         <path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z" />
@@ -50,6 +71,7 @@ const i18n = {
     discord: { name: "Discord", desc: "Real-time chat, Q&A, and feature discussions." },
     qq: { name: "QQ Group", desc: "Group number: 1087880322" },
     wechat: { name: "WeChat Group", desc: "Join via Tencent Docs invite link." },
+    feishu: { name: "Feishu Group", desc: "Join via invite link." },
     github: { name: "GitHub Discussions", desc: "Bug reports, feature requests, and long-form discussions." },
   },
   cn: {
@@ -58,6 +80,7 @@ const i18n = {
     discord: { name: "Discord", desc: "实时聊天、问答和功能讨论。" },
     qq: { name: "QQ 群", desc: "群号：1087880322" },
     wechat: { name: "微信群", desc: "通过腾讯文档链接加入。" },
+    feishu: { name: "飞书群", desc: "点击邀请链接加入。" },
     github: { name: "GitHub Discussions", desc: "Bug 反馈、功能建议和深度讨论。" },
   },
 };
@@ -81,7 +104,7 @@ export default async function CommunityPage({ params }: { params: Promise<{ lang
   const t = i18n[l];
 
   return (
-    <main className="min-h-screen bg-[#08080a] text-landing-ink">
+    <main className="min-h-screen bg-landing-bg text-landing-ink">
       <LandingNav lang={l} active="community" />
 
       <div className="max-w-[860px] mx-auto px-6 pt-32 pb-4 max-[760px]:px-[18px] max-[760px]:pt-28">

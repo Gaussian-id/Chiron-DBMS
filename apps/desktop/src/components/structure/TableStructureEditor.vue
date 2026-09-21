@@ -1,4 +1,7 @@
 <script setup lang="ts">
+import { applyDdlStoragePreference } from "@/lib/sql/ddlStorage";
+import DdlStorageToggle from "@/components/objects/DdlStorageToggle.vue";
+
 import { computed, nextTick, onActivated, onBeforeUnmount, onDeactivated, onMounted, ref, shallowRef, watch } from "vue";
 import { uuid } from "@/lib/common/utils";
 import { useI18n } from "vue-i18n";
@@ -27,7 +30,7 @@ import { createChironHorizonCodeMirrorSqlDialect } from "@/lib/editor/codemirror
 import { useToast } from "@/composables/useToast";
 import { type SqlHighlighter, createShikiSqlHighlighter } from "@/lib/sql/sqlHighlighter";
 import { joinSqlStatementsForScript } from "@/lib/sql/sqlBatchScript";
-import { omitDdlIdentifierQuotes } from "@/lib/sql/ddlDisplay";
+import { formatGeneratedDdlIdentifierQuotes, omitDdlIdentifierQuotes } from "@/lib/sql/ddlDisplay";
 import { splitSqlStatementRanges } from "@/lib/sql/sqlStatementRanges";
 import { copyToClipboard } from "@/lib/common/clipboard";
 import { formatSqlForDisplay, sqlFormatDialectForDbType } from "@/lib/sql/sqlFormatter";
@@ -173,7 +176,9 @@ const indexesLoading = ref(false);
 const foreignKeysLoading = ref(false);
 const constraintsLoading = ref(false);
 const triggersLoading = ref(false);
-const ddlContent = ref("");
+const rawDdlContent = ref("");
+const ddlStorageExcluded = ref(settingsStore.editorSettings.excludeDdlStorage);
+const ddlContent = computed(() => applyDdlStoragePreference(rawDdlContent.value, databaseType.value, ddlStorageExcluded.value));
 const ddlLoading = ref(false);
 const ddlEditorContainer = ref<HTMLDivElement>();
 const ddlSearchPanelRef = ref<InstanceType<typeof EditorSearchPanel>>();
@@ -194,6 +199,12 @@ const ddlDraft = ref<string | null>(null);
  */
 const ddlEditingEnabled = computed(() => !isCreateMode.value && !!ddlContent.value.trim());
 const ddlDirty = computed(() => ddlDraft.value !== null && ddlDraft.value.trim() !== ddlContent.value.trim());
+watch([() => settingsStore.editorSettings.excludeDdlStorage, ddlDirty], ([exclude, dirty]) => {
+  if (!dirty && ddlStorageExcluded.value !== exclude) {
+    ddlDraft.value = null;
+    ddlStorageExcluded.value = exclude;
+  }
+});
 
 function ddlEditorDocument(): string {
   return ddlDraft.value ?? (ddlContent.value || t("structureEditor.emptyReadonly"));
@@ -346,10 +357,12 @@ async function fetchDdl(force = false) {
   ddlLoading.value = true;
   try {
     const { ddl } = await loadObjectDdl(ddlRequest(), { force });
-    ddlContent.value = await formatSqlForDisplay(ddl, sqlFormatDialectForDbType(databaseType.value), settingsStore.editorSettings.sqlFormatter);
+    const dialect = sqlFormatDialectForDbType(databaseType.value);
+    const formatted = await formatSqlForDisplay(ddl, dialect, settingsStore.editorSettings.sqlFormatter);
+    rawDdlContent.value = settingsStore.editorSettings.generateSqlQuoteIdentifiers ? formatted : omitDdlIdentifierQuotes(formatted, dialect);
     ddlFetched.value = true;
   } catch (e: any) {
-    ddlContent.value = `-- Error: ${e?.message || e}`;
+    rawDdlContent.value = `-- Error: ${e?.message || e}`;
     ddlFetched.value = true;
   } finally {
     ddlLoading.value = false;
@@ -1392,6 +1405,8 @@ function createCurrentDraft(initialized = true): TableStructureEditorDraft {
     // Only carried alongside an actual edit: without a draft the baseline is
     // refetched, and copying every table's DDL into every draft is pure weight.
     ddlContent: ddlDraft.value === null ? undefined : ddlContent.value,
+    rawDdlContent: ddlDraft.value === null ? undefined : rawDdlContent.value,
+    excludeDdlStorage: ddlStorageExcluded.value,
     newTableName: newTableName.value,
     tableComment: tableComment.value,
     originalTableComment: originalTableComment.value,
@@ -1431,7 +1446,8 @@ function restoreDraft(draft: TableStructureEditorDraft) {
   // Restore the DDL baseline alongside the edit, otherwise the restored script
   // would read as dirty (or clean) against the wrong reference text.
   if (draft.ddlContent) {
-    ddlContent.value = draft.ddlContent;
+    rawDdlContent.value = draft.rawDdlContent ?? draft.ddlContent;
+    ddlStorageExcluded.value = draft.excludeDdlStorage ?? false;
     ddlFetched.value = true;
   }
   ddlDraft.value = draft.ddlDraft ?? null;
@@ -1500,7 +1516,9 @@ async function hydrateRestoredDraftFromDatabase() {
     if (databaseType.value === "manticoresearch" && tableMetadataCapabilities.value.ddl) {
       try {
         const { ddl } = await loadObjectDdl({ connectionId, database, schema, tableName, catalog });
-        ddlContent.value = await formatSqlForDisplay(ddl, sqlFormatDialectForDbType(databaseType.value), settingsStore.editorSettings.sqlFormatter);
+        const dialect = sqlFormatDialectForDbType(databaseType.value);
+        const formatted = await formatSqlForDisplay(ddl, dialect, settingsStore.editorSettings.sqlFormatter);
+        rawDdlContent.value = settingsStore.editorSettings.generateSqlQuoteIdentifiers ? formatted : omitDdlIdentifierQuotes(formatted, dialect);
         ddlFetched.value = true;
         nextColumns = applyManticoreDdlColumnExtras(nextColumns, ddl);
       } catch {
@@ -1767,7 +1785,7 @@ async function refreshSqlPreview() {
     if (requestId !== sqlPreviewRequestId) return;
     const statements = [...result.statements, ...ownerResult.statements, ...(mysqlAutoIncrementStatement ? [mysqlAutoIncrementStatement] : [])];
     // SQLite type-change apply regenerates this revision-checked plan, so its preview must stay byte-for-byte aligned.
-    pendingStatements.value = settingsStore.editorSettings.generateSqlQuoteIdentifiers || hasSqliteTypeChange.value ? statements : statements.map((statement) => omitDdlIdentifierQuotes(statement, sqlFormatDialectForDbType(databaseType.value)));
+    pendingStatements.value = settingsStore.editorSettings.generateSqlQuoteIdentifiers !== false || hasSqliteTypeChange.value ? statements : statements.map((statement) => formatGeneratedDdlIdentifierQuotes(statement, sqlFormatDialectForDbType(databaseType.value), false));
     warnings.value = [...result.warnings, ...ownerResult.warnings];
     sqliteSchemaRevision.value = "schemaRevision" in result && typeof result.schemaRevision === "string" ? result.schemaRevision : undefined;
   } catch (e: any) {
@@ -1831,7 +1849,7 @@ function resetState() {
   triggers.value = [];
   triggersLoaded.value = false;
   clearColumnSelection();
-  ddlContent.value = "";
+  rawDdlContent.value = "";
   ddlDraft.value = null;
   ddlFetched.value = false;
   loadedMetadataFacets.clear();
@@ -2158,7 +2176,9 @@ async function loadStructure(
       if (databaseType.value === "manticoresearch" && tableMetadataCapabilities.value.ddl) {
         try {
           const { ddl } = await loadObjectDdl({ connectionId, database, schema, tableName, catalog }, { force: options.forceDdl });
-          ddlContent.value = await formatSqlForDisplay(ddl, sqlFormatDialectForDbType(databaseType.value), settingsStore.editorSettings.sqlFormatter);
+          const dialect = sqlFormatDialectForDbType(databaseType.value);
+          const formatted = await formatSqlForDisplay(ddl, dialect, settingsStore.editorSettings.sqlFormatter);
+          rawDdlContent.value = settingsStore.editorSettings.generateSqlQuoteIdentifiers ? formatted : omitDdlIdentifierQuotes(formatted, dialect);
           ddlFetched.value = true;
           nextColumns = applyManticoreDdlColumnExtras(nextColumns, ddl);
         } catch {
@@ -2295,6 +2315,7 @@ async function revalidateCachedStructureMetadata(loadRequestId: number, scope: {
   const revalidationId = ++structureMetadataRevalidationId;
   const metadataRequest = { connectionId, database, schema, tableName, catalog };
   try {
+    await store.ensureConnected(connectionId);
     // Force alone only clears this facet's own key; the web backend keeps its
     // own backend-columns/backend-comment entries under the same table prefix
     // and would serve them to the forced re-fetch. Drop the whole table scope
@@ -3766,7 +3787,7 @@ async function applyChanges() {
     warnings.value = [];
     sqliteSchemaRevision.value = undefined;
     ddlFetched.value = false;
-    ddlContent.value = "";
+    rawDdlContent.value = "";
     ddlDraft.value = null;
     if (isCreateMode.value) {
       clearDraft();
@@ -3917,10 +3938,18 @@ onMounted(() => {
   void loadTableOwnerRoles();
   void loadMysqlTableEngine(props.draft?.mysqlTableEngine !== undefined);
   if (props.draft?.initialized) {
-    void hydrateRestoredDraftFromDatabase().then(() => {
+    // A clean persisted editor snapshot is not a live schema cache. After an
+    // MCP DDL, restoring its loaded-facet flags would otherwise bypass the
+    // invalidated backend cache entirely. Legacy/dirty drafts remain intact.
+    const revalidateRestoredColumns = props.draft.dirty === false && !isCreateMode.value && loadedMetadataFacets.has("columns") && !(databaseType.value === "manticoresearch" && tableMetadataCapabilities.value.ddl);
+    void hydrateRestoredDraftFromDatabase().then(async () => {
       applyInitialStructureTarget();
       void loadMysqlAutoIncrementCounter(true);
-      void loadActiveTableStructureMetadataIfNeeded();
+      await loadActiveTableStructureMetadataIfNeeded();
+      if (revalidateRestoredColumns) {
+        // The existing revalidation checks again for edits made while loading.
+        void revalidateCachedStructureMetadata(structureLoadRequestId, { columns: true, tableComment: false }, undefined);
+      }
     });
   } else if (isCreateMode.value) {
     markDraftHydratedAndSync();
@@ -5164,6 +5193,7 @@ watch(
             </div>
             <template v-else>
               <div v-if="ddlContent && !ddlSearchOpen" class="absolute right-3 top-3 z-10 flex items-center gap-1.5">
+                <DdlStorageToggle :database-type="databaseType" :disabled="ddlDirty" />
                 <Button v-if="ddlDirty" variant="outline" size="sm" class="h-7 gap-1 px-2" :title="t('structureEditor.resetDdl')" @click="resetDdlDraft">
                   <RotateCcw class="h-3.5 w-3.5" />
                   {{ t("structureEditor.resetDdl") }}

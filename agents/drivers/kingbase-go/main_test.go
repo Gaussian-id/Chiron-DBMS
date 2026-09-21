@@ -1448,7 +1448,7 @@ func TestListIndexesFallsBackWhenWithOrdinalityIsUnsupported(t *testing.T) {
 	server := newServer()
 	server.db = openMetadataDB(t, state)
 
-	for range 2 {
+	for i := 0; i < 2; i++ {
 		indexes, err := server.listIndexes("PUBLIC", "orders")
 		if err != nil {
 			t.Fatal(err)
@@ -1939,7 +1939,7 @@ func TestListTriggerDefinitionsFallsBackToSingleArgument(t *testing.T) {
 	server := newServer()
 	server.db = openMetadataDB(t, state)
 
-	for range 2 {
+	for i := 0; i < 2; i++ {
 		definitions, err := server.listTriggerDefinitions("PUBLIC", "orders")
 		if err != nil {
 			t.Fatal(err)
@@ -1973,7 +1973,7 @@ func TestListTriggersFallsBackToV7InternalPredicate(t *testing.T) {
 	server := newServer()
 	server.db = openMetadataDB(t, state)
 
-	for range 2 {
+	for i := 0; i < 2; i++ {
 		triggers, err := server.listTriggers("PUBLIC", "orders")
 		if err != nil {
 			t.Fatal(err)
@@ -3442,7 +3442,7 @@ func TestObjectSourceFallsBackToV7RoutineDDLAndCachesChoice(t *testing.T) {
 	server := newServer()
 	server.db = openMetadataDB(t, state)
 
-	for range 2 {
+	for i := 0; i < 2; i++ {
 		source, err := server.getObjectSource("PUBLIC", "format_name", "FUNCTION")
 		if err != nil {
 			t.Fatal(err)
@@ -4274,7 +4274,7 @@ func TestSchemaConnSkipsInitialAndRepeatedEmptySchema(t *testing.T) {
 	server := newServer()
 	server.db = db
 
-	for range 2 {
+	for i := 0; i < 2; i++ {
 		conn, err := server.schemaConn(context.Background(), "")
 		if err != nil {
 			t.Fatal(err)
@@ -4400,7 +4400,7 @@ func TestExecuteQueryReappliesSchemaForRepeatedRequests(t *testing.T) {
 	server := newServer()
 	server.db = db
 
-	for range 2 {
+	for i := 0; i < 2; i++ {
 		if _, err := server.executeQuery(queryOptions{SQL: "SELECT 1", Schema: "sdy_smartsite", MaxRows: 10}); err != nil {
 			t.Fatal(err)
 		}
@@ -4620,7 +4620,7 @@ func containsString(values []string, target string) bool {
 	return false
 }
 
-// Regression test for https://github.com/Gaussian-id/Gauss-Horizon/issues/7681: a timezone-less
+// Regression test for https://github.com/Gaussian-id/Chiron-Horizon/issues/7681: a timezone-less
 // "timestamp"/"date"/"time" column must not be labeled as an absolute UTC
 // instant (RFC3339Nano with a "Z"/offset suffix), or clients that convert it
 // to a display timezone will double-apply the shift.

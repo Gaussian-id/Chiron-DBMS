@@ -1,8 +1,8 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 
-// Regression coverage for https://github.com/Gaussian-id/Gauss-Horizon/issues/5941 and the follow-up
-// race identified on https://github.com/Gaussian-id/Gauss-Horizon/pull/6332:
+// Regression coverage for https://github.com/Gaussian-id/Chiron-Horizon/issues/5941 and the follow-up
+// race identified on https://github.com/Gaussian-id/Chiron-Horizon/pull/6332:
 //
 // When an in-flight AI request is stuck (e.g. a hung MCP tool call / slow provider
 // response), clicking the clear-chat trash icon, "New Chat", deleting the active

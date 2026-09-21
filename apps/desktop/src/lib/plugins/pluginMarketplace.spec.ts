@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { buildMarketplacePluginListings, filterMarketplacePluginListings, selectMarketplaceArtifact } from "./pluginMarketplace";
+import { buildMarketplacePluginListings, filterMarketplacePluginListings, marketplaceHomepageUrl, selectMarketplaceArtifact } from "./pluginMarketplace";
 import type { InstalledPlugin, PluginRepositoryCatalogResult } from "@/types/database";
 
 const result: PluginRepositoryCatalogResult = {
@@ -65,6 +65,16 @@ describe("plugin marketplace listings", () => {
     expect(buildMarketplacePluginListings([unsupported], [], "en")[0].status).toBe("unsupported");
   });
 
+  it("keeps a newer installed version installed instead of offering a downgrade", () => {
+    const listings = buildMarketplacePluginListings([result], [installed("1.2.0")], "en");
+
+    // The catalog lags behind the installed build: the card must stay on the installed state.
+    expect(listings[0]).toMatchObject({ status: "installed", installed: { manifest: { version: "1.2.0" } } });
+    // Only "update" swaps the card's bottom-left line to the two-version text, so this state renders the
+    // plain installed line for 1.2.0 rather than the catalog's older 1.1.0.
+    expect(listings[0].plugin.latestVersion).toBe("1.1.0");
+  });
+
   it("uses a universal artifact when the current target has no exact artifact", () => {
     const universal = structuredClone(result);
     universal.target = "linux-x64";
@@ -80,5 +90,10 @@ describe("plugin marketplace listings", () => {
     ];
 
     expect(selectMarketplaceArtifact(artifacts, "darwin-arm64")?.target).toBe("darwin-arm64");
+  });
+
+  it("treats a repository URL and its homepage URL as one link", () => {
+    expect(marketplaceHomepageUrl("https://github.com/chiron-horizon/example/", "https://github.com/chiron-horizon/example#readme")).toBeUndefined();
+    expect(marketplaceHomepageUrl("https://github.com/chiron-horizon/example", "https://chiron-horizon.com/plugins/example")).toBe("https://chiron-horizon.com/plugins/example");
   });
 });

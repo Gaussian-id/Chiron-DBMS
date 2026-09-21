@@ -1,4 +1,4 @@
-module github.com/Gaussian-id/Gauss-Horizon/agents/drivers/zookeeper
+module github.com/Gaussian-id/Chiron-Horizon/agents/drivers/zookeeper
 
 go 1.23.0
 

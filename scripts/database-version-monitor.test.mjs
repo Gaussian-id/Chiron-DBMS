@@ -10,6 +10,7 @@ function target(id, kind, currentVersion) {
   if (kind === 'docker-hub-image') {
     return {
       id,
+      database: id,
       kind,
       currentVersion,
       versionPrefix: `${currentVersion.split('.').slice(0, -1).join('.')}.`,
@@ -48,8 +49,9 @@ test('compares numeric versions including different precision', () => {
 });
 
 test('chooses only stable numeric versions in the configured support channel', () => {
-  assert.equal(newestDockerHubVersion({ results: [{ name: '18.1' }, { name: '17.9' }, { name: '17.10-bookworm' }, { name: 'latest' }] }, '17.'), '17.9');
-  assert.equal(newestDockerHubVersion({ results: [{ name: 'latest' }, { name: '18.1-rc1' }] }, '17.'), null);
+  const postgresql = target('postgresql', 'docker-hub-image', '17.4');
+  assert.equal(newestDockerHubVersion({ results: [{ name: '18.1' }, { name: '17.9' }, { name: '17.10-bookworm' }, { name: 'latest' }] }, postgresql), '17.9');
+  assert.equal(newestDockerHubVersion({ results: [{ name: 'latest' }, { name: '18.1-rc1' }] }, postgresql), null);
   assert.equal(newestCratesVersion({ crate: { newest_version: '1.4.0' } }, '1.3.'), null);
 });
 

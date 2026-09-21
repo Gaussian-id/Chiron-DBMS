@@ -22,5 +22,5 @@ test("software structured data stays localized and versioned", () => {
   assert.match(english.description, /Chiron Horizon desktop database workbench/);
   assert.equal(chinese.inLanguage, "zh-CN");
   assert.match(chinese.description, /90\+ 种数据库/);
-  assert.equal(chinese.license, "https://github.com/Gaussian-id/Gauss-Horizon/blob/main/LICENSE");
+  assert.equal(chinese.license, "https://github.com/Gaussian-id/Chiron-Horizon/blob/main/LICENSE");
 });

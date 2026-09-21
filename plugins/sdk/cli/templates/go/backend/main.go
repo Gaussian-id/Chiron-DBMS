@@ -5,7 +5,7 @@ import (
 	"log"
 	"sync"
 
-	chiron_horizonpluginsdk "github.com/Gaussian-id/Gauss-Horizon/plugins/sdk/go/chiron-horizon-plugin-sdk"
+	chiron_horizonpluginsdk "github.com/Gaussian-id/Chiron-Horizon/plugins/sdk/go/chiron-horizon-plugin-sdk"
 )
 
 type plugin struct {

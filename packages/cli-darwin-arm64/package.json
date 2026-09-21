@@ -1,11 +1,11 @@
 {
   "name": "@chiron-horizon/cli-darwin-arm64",
-  "version": "0.1.0",
+  "version": "0.4.90",
   "description": "Precompiled Chiron Horizon CLI binary for darwin arm64",
   "license": "Apache-2.0",
   "repository": {
     "type": "git",
-    "url": "https://github.com/Gaussian-id/Gauss-Horizon",
+    "url": "https://github.com/t8y2/chiron_horizon",
     "directory": "packages/cli-darwin-arm64"
   },
   "os": [
@@ -15,7 +15,7 @@
     "arm64"
   ],
   "bin": {
-    "chiron-horizon-native": "bin/chiron-horizon"
+    "chiron-horizon-native": "bin/chiron_horizon"
   },
   "files": [
     "bin"

@@ -141,9 +141,10 @@ fn replace_old_jre_dir(path: &Path) -> Result<Option<PathBuf>, String> {
 /// Agent distribution is deliberately independent from the application
 /// updater. The updater stays disabled; this endpoint only resolves the
 /// immutable artifacts declared in the current public release registry.
-const REGISTRY_PATH: &str = "https://github.com/Gaussian-id/Gauss-Horizon/releases/latest/download/agent-registry.json";
+const REGISTRY_PATH: &str =
+    "https://github.com/Gaussian-id/Chiron-Horizon/releases/latest/download/agent-registry.json";
 
-const CHIRON_HORIZON_RELEASE_PREFIX: &str = "https://github.com/Gaussian-id/Gauss-Horizon/releases/";
+const CHIRON_HORIZON_RELEASE_PREFIX: &str = "https://github.com/Gaussian-id/Chiron-Horizon/releases/";
 
 fn agent_download_candidate_urls(source: DownloadSource, github_url: &str) -> Result<Vec<String>, String> {
     match source {
@@ -465,7 +466,7 @@ fn record_local_agent_install(state: &mut crate::agent_manager::AgentState, db_t
     state.installed_drivers.insert(
         db_type.to_string(),
         InstalledDriver {
-            version: "0.1.0-local".to_string(),
+            version: "0.1.3-local".to_string(),
             installed_at: chrono::Utc::now().to_rfc3339(),
             jre: jre_key.to_string(),
         },
@@ -1084,6 +1085,11 @@ pub async fn import_agents_from_zip(
 
 pub fn inspect_offline_package(package_path: &Path) -> Result<OfflineImportPlan, String> {
     if is_tar_zstd_package(package_path) {
+        if let Some(info) = tar_zstd_jre_package_info(package_path)? {
+            let staging = tempfile::tempdir().map_err(|error| error.to_string())?;
+            extract_and_validate_standalone_jre(package_path, staging.path(), &info)?;
+            return Ok(OfflineImportPlan { driver_keys: Vec::new(), includes_jre: true });
+        }
         inspect_tar_zstd_driver_package(package_path)
     } else {
         inspect_offline_zip(package_path)
@@ -1096,6 +1102,9 @@ pub async fn import_agents_from_package(
     progress: impl Fn(AgentProgressEvent),
 ) -> Result<OfflineImportResult, String> {
     if is_tar_zstd_package(package_path) {
+        if let Some(info) = tar_zstd_jre_package_info(package_path)? {
+            return import_tar_zstd_jre_package(am, package_path, &info, &progress).await;
+        }
         import_tar_zstd_driver_package(am, package_path, |event| {
             progress(AgentProgressEvent {
                 operation_id: None,
@@ -2466,6 +2475,125 @@ pub struct OfflineImportResult {
     pub drivers_skipped: Vec<String>,
 }
 
+#[derive(Debug)]
+struct TarZstdJrePackageInfo {
+    key: String,
+    version: String,
+}
+
+fn tar_zstd_jre_package_info(package_path: &Path) -> Result<Option<TarZstdJrePackageInfo>, String> {
+    let file = std::fs::File::open(package_path).map_err(|error| error.to_string())?;
+    let decoder = zstd::stream::read::Decoder::new(file).map_err(|error| error.to_string())?;
+    let mut archive = tar::Archive::new(decoder);
+    let mut release = None;
+    let mut has_registry = false;
+    let mut invalid_jre_entry = false;
+    for entry in archive.entries().map_err(|error| error.to_string())? {
+        let mut entry = entry.map_err(|error| error.to_string())?;
+        let name = safe_archive_entry_name(&entry.path().map_err(|error| error.to_string())?)?;
+        has_registry |= name == "agent-registry.json";
+        invalid_jre_entry |= !(name == "chiron-horizon-jre" || name.starts_with("chiron-horizon-jre/"))
+            || !(entry.header().entry_type().is_file()
+                || entry.header().entry_type().is_dir()
+                || (entry.header().entry_type().is_symlink() && standalone_jre_link_is_safe(&entry, &name)?));
+        if name == "chiron-horizon-jre/release" {
+            if release.is_some() || !entry.header().entry_type().is_file() || entry.size() > 64 * 1024 {
+                return Err("Invalid offline JRE release metadata".to_string());
+            }
+            let mut text = String::new();
+            entry.read_to_string(&mut text).map_err(|error| error.to_string())?;
+            release = Some(text);
+        }
+    }
+    if has_registry {
+        return Ok(None);
+    }
+    let Some(release) = release else { return Ok(None) };
+    if invalid_jre_entry {
+        return Err("Offline JRE package contains an unexpected or non-regular entry".to_string());
+    }
+    let version = release
+        .lines()
+        .find_map(|line| line.strip_prefix("JAVA_VERSION=").map(|value| value.trim().trim_matches('"')))
+        .ok_or("Offline JRE package is missing JAVA_VERSION")?;
+    let key = version.split('.').next().unwrap_or("");
+    if key.is_empty() || !key.bytes().all(|byte| byte.is_ascii_digit()) || key == "0" {
+        return Err("Invalid offline JRE JAVA_VERSION".to_string());
+    }
+    validate_offline_identifier(version, "JRE version")?;
+    Ok(Some(TarZstdJrePackageInfo { key: key.to_string(), version: version.to_string() }))
+}
+
+fn standalone_jre_link_is_safe<R: Read>(entry: &tar::Entry<'_, R>, name: &str) -> Result<bool, String> {
+    let Some(target) = entry.link_name().map_err(|error| error.to_string())? else { return Ok(false) };
+    let mut parts: Vec<_> = name.split('/').collect();
+    parts.pop();
+    for component in target.components() {
+        match component {
+            std::path::Component::Normal(value) => {
+                let Some(value) = value.to_str() else { return Ok(false) };
+                parts.push(value);
+            }
+            std::path::Component::CurDir => {}
+            std::path::Component::ParentDir if parts.len() > 1 => {
+                parts.pop();
+            }
+            _ => return Ok(false),
+        }
+    }
+    Ok(parts.first() == Some(&"chiron-horizon-jre"))
+}
+
+fn extract_and_validate_standalone_jre(
+    package_path: &Path,
+    staging: &Path,
+    info: &TarZstdJrePackageInfo,
+) -> Result<(), String> {
+    extract_jre_archive(package_path, staging, Some(ArtifactFormat::TarZstd))?;
+    let java = staging.join("bin").join(if cfg!(windows) { "java.exe" } else { "java" });
+    if !java.is_file() {
+        return Err(format!(
+            "Offline JRE {} package does not contain a Java executable for {}",
+            info.key,
+            AgentManager::current_platform()
+        ));
+    }
+    validate_native_agent_binary(&java).map_err(|_| {
+        format!("Offline JRE {} package does not support platform: {}", info.key, AgentManager::current_platform())
+    })?;
+    mark_executable(&java)
+}
+
+async fn import_tar_zstd_jre_package(
+    am: &AgentManager,
+    package_path: &Path,
+    info: &TarZstdJrePackageInfo,
+    progress: &impl Fn(AgentProgressEvent),
+) -> Result<OfflineImportResult, String> {
+    let _installation_guard = am.installation_operation_lock.write().await;
+    std::fs::create_dir_all(am.base_dir()).map_err(|error| error.to_string())?;
+    let staging = tempfile::Builder::new()
+        .prefix(".jre-offline-import-")
+        .tempdir_in(am.base_dir())
+        .map_err(|error| error.to_string())?;
+    progress(AgentProgressEvent::step("jre-extract"));
+    extract_and_validate_standalone_jre(package_path, staging.path(), info)?;
+    // Validate before stopping active daemons or replacing a working runtime.
+    am.stop_daemons().await;
+    let pending_cleanup = replace_imported_jre_dir(staging.path(), &am.jre_dir(&info.key))?;
+    am.mutate_state(|state| {
+        state.jre_versions.insert(info.key.clone(), info.version.clone());
+        if let Some(path) = pending_cleanup {
+            state.pending_jre_cleanup.push(path);
+        }
+    })?;
+    Ok(OfflineImportResult {
+        jre_installed: vec![info.key.clone()],
+        drivers_installed: Vec::new(),
+        drivers_skipped: Vec::new(),
+    })
+}
+
 #[derive(Debug, Clone)]
 pub struct OfflineImportPlan {
     pub driver_keys: Vec<String>,
@@ -2517,7 +2645,7 @@ async fn import_tar_zstd_driver_package(
     let mut result =
         OfflineImportResult { jre_installed: Vec::new(), drivers_installed: Vec::new(), drivers_skipped: Vec::new() };
     if let Some(installed) = am.load_state().installed_drivers.get(&info.db_type) {
-        if installed.version != "0.1.0-local"
+        if installed.version != "0.1.3-local"
             && installed.version != "local"
             && !crate::update::is_newer_version(&info.version, &installed.version)
         {
@@ -2769,7 +2897,7 @@ pub async fn import_offline_zip(
 
         if let Some(remote_driver) = registry.drivers.get(db_type) {
             if let Some(installed) = local_state.installed_drivers.get(db_type) {
-                if installed.version != "0.1.0-local"
+                if installed.version != "0.1.3-local"
                     && installed.version != "local"
                     && !crate::update::is_newer_version(&remote_driver.version, &installed.version)
                 {
@@ -3267,7 +3395,7 @@ pub async fn import_agent_driver(am: &AgentManager, db_type: &str, source_path: 
         state.installed_drivers.insert(
             db_type.to_string(),
             InstalledDriver {
-                version: "0.1.0-local".to_string(),
+                version: "0.1.3-local".to_string(),
                 installed_at: chrono::Utc::now().to_rfc3339(),
                 jre: DEFAULT_JRE_KEY.to_string(),
             },
@@ -3459,10 +3587,10 @@ mod agent_download_url_tests {
         let registry = agent_download_candidate_urls(DownloadSource::Official, REGISTRY_PATH).unwrap();
         assert_eq!(
             registry,
-            vec!["https://github.com/Gaussian-id/Gauss-Horizon/releases/latest/download/agent-registry.json"]
+            vec!["https://github.com/Gaussian-id/Chiron-Horizon/releases/latest/download/agent-registry.json"]
         );
 
-        let asset = "https://github.com/Gaussian-id/Gauss-Horizon/releases/download/v0.1.0/chiron-horizon-jre-21-linux-x64.tar.zst";
+        let asset = "https://github.com/Gaussian-id/Chiron-Horizon/releases/download/v0.1.3/chiron-horizon-jre-21-linux-x64.tar.zst";
         assert_eq!(agent_download_candidate_urls(DownloadSource::Official, asset).unwrap(), vec![asset.to_string()]);
     }
 
@@ -3573,7 +3701,7 @@ mod agent_registry_install_tests {
             DriverInfo {
                 version: version.to_string(),
                 label: db_type.to_string(),
-                min_app_version: "0.1.0".to_string(),
+                min_app_version: "0.1.3".to_string(),
                 jre: DEFAULT_JRE_KEY.to_string(),
                 jar: Some(ArtifactInfo {
                     url: format!("https://example.com/chiron-horizon-agent-{db_type}-legacy-placeholder.jar"),
@@ -3599,7 +3727,7 @@ mod agent_registry_install_tests {
             DriverInfo {
                 version: version.to_string(),
                 label: db_type.to_string(),
-                min_app_version: "0.1.0".to_string(),
+                min_app_version: "0.1.3".to_string(),
                 jre: DEFAULT_JRE_KEY.to_string(),
                 jar: Some(ArtifactInfo { url: url.to_string(), sha256: None, size, format: None }),
                 native: std::collections::HashMap::new(),
@@ -4187,7 +4315,7 @@ mod agent_registry_install_tests {
     async fn registry_install_sqlite_worker_downloads_both_linux_platforms() {
         let manager = test_manager("sqlite-worker-both-linux-platforms");
         let db_type = "sqlite-worker";
-        let version = "0.1.0";
+        let version = "0.1.3";
         let x64_url = "https://example.com/chiron-horizon-agent-sqlite-worker-linux-x64";
         let arm_url = "https://example.com/chiron-horizon-agent-sqlite-worker-linux-aarch64";
         let x64_bytes = b"sqlite-worker-linux-x64";
@@ -4207,7 +4335,7 @@ mod agent_registry_install_tests {
             DriverInfo {
                 version: version.to_string(),
                 label: "SQLite SSH Worker".to_string(),
-                min_app_version: "0.1.0".to_string(),
+                min_app_version: "0.1.3".to_string(),
                 jre: DEFAULT_JRE_KEY.to_string(),
                 jar: Some(ArtifactInfo {
                     url: "https://example.com/chiron-horizon-agent-sqlite-worker-legacy-placeholder.jar".to_string(),
@@ -4307,7 +4435,7 @@ mod agent_registry_install_tests {
     async fn registry_install_extracts_tar_zstd_native_driver_package() {
         let manager = test_manager("tar-zstd-native-package");
         let db_type = "duckdb";
-        let version = "0.1.0";
+        let version = "0.1.3";
         let package_url = "https://example.com/chiron-horizon-agent-duckdb.tar.zst";
         let native_bytes = current_platform_native_binary();
         let package_bytes = build_tar_zstd_driver_package(db_type, version, DriverArtifactKind::Native, &native_bytes);
@@ -4719,7 +4847,7 @@ mod agent_registry_install_tests {
 
         assert_eq!(std::fs::read(&jar_path).unwrap(), expected);
         let state = manager.load_state();
-        assert_eq!(state.installed_drivers[db_type].version, "0.1.0-local");
+        assert_eq!(state.installed_drivers[db_type].version, "0.1.3-local");
         assert_eq!(state.jre_versions[DEFAULT_JRE_KEY], "21.0.12");
     }
 
@@ -5397,7 +5525,7 @@ mod agent_registry_install_tests {
                 DriverInfo {
                     version: "1.0.0".to_string(),
                     label: "H2".to_string(),
-                    min_app_version: "0.1.0".to_string(),
+                    min_app_version: "0.1.3".to_string(),
                     jar: Some(ArtifactInfo {
                         url: format!("offline://{jar_name}"),
                         sha256: Some(sha256_bytes(&jar_bytes)),
@@ -5476,7 +5604,7 @@ mod agent_registry_install_tests {
                 DriverInfo {
                     version: "1.0.0".to_string(),
                     label: "H2".to_string(),
-                    min_app_version: "0.1.0".to_string(),
+                    min_app_version: "0.1.3".to_string(),
                     jar: Some(ArtifactInfo {
                         url: format!("offline://{jar_name}"),
                         sha256: Some(sha256_bytes(&jar_bytes)),
@@ -5515,7 +5643,7 @@ mod agent_registry_install_tests {
                 DriverInfo {
                     version: "1.0.0".to_string(),
                     label: "H2".to_string(),
-                    min_app_version: "0.1.0".to_string(),
+                    min_app_version: "0.1.3".to_string(),
                     jar: None,
                     native: [(
                         platform.to_string(),
@@ -5581,7 +5709,7 @@ mod agent_registry_install_tests {
                 DriverInfo {
                     version: "1.0.0".to_string(),
                     label: "H2".to_string(),
-                    min_app_version: "0.1.0".to_string(),
+                    min_app_version: "0.1.3".to_string(),
                     jar: Some(ArtifactInfo {
                         url: format!("offline://{jar_name}"),
                         sha256: Some(sha256_bytes(&jar_bytes)),

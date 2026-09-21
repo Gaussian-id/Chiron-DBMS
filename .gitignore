@@ -1,4 +1,5 @@
 # Dependencies
+openGauss-server/
 node_modules
 .claude/
 .codex/
@@ -10,7 +11,6 @@ node_modules
 openspec/
 .zcode/
 .mcp.json
-AGENTS.md
 CLAUDE.md
 
 # Build output
@@ -72,6 +72,9 @@ Thumbs.db
 # Temp
 tmp/
 
+# Local issue screenshots (never commit)
+issue-assets/
+
 # AI background-run dev artifacts (never commit)
 .dlp-quarantine/
 outputs/
@@ -103,3 +106,4 @@ chiron-horizon-devtest-connections.json
 
 # Real database integration credentials (see docs/TEST_ENVIRONMENTS.md)
 /docs/TEST_ENVIRONMENTS.md
+.wrangler/

@@ -10,7 +10,7 @@ Add Chiron Horizon as a flake input and include the package in `environment.syst
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
 
     chiron-horizon = {
-      url = "github:Gaussian-id/Gauss-Horizon";
+      url = "github:Gaussian-id/Chiron-Horizon";
       inputs.nixpkgs.follows = "nixpkgs"; # optional
     };
   };
@@ -62,7 +62,7 @@ This method installs Chiron Horizon for a specific user through [Home Manager](h
     };
 
     chiron-horizon = {
-      url = "github:Gaussian-id/Gauss-Horizon";
+      url = "github:Gaussian-id/Chiron-Horizon";
       inputs.nixpkgs.follows = "nixpkgs"; # optional
     };
   };
@@ -96,7 +96,7 @@ This method installs Chiron Horizon for a specific user through [Home Manager](h
     };
 
     chiron-horizon = {
-      url = "github:Gaussian-id/Gauss-Horizon";
+      url = "github:Gaussian-id/Chiron-Horizon";
       inputs.nixpkgs.follows = "nixpkgs"; # optional
     };
   };
@@ -141,7 +141,7 @@ sudo nixos-rebuild switch --flake .#my-machine
 If you are contributing to Chiron Horizon or building it from a local clone, the flake provides a fully configured development shell with Rust, Node.js, pnpm, and all GTK/WebKit system libraries:
 
 ```bash
-git clone https://github.com/Gaussian-id/Gauss-Horizon
+git clone https://github.com/Gaussian-id/Chiron-Horizon
 cd chiron-horizon
 nix develop
 ```
@@ -162,7 +162,7 @@ Inside the shell:
 Build the `chiron-horizon-desktop` package directly from the flake:
 
 ```bash
-nix build github:Gaussian-id/Gauss-Horizon#chiron-horizon-desktop
+nix build github:Gaussian-id/Chiron-Horizon#chiron-horizon-desktop
 # or, from a local clone:
 nix build .#chiron-horizon-desktop
 ```

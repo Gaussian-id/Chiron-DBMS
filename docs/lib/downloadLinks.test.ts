@@ -5,7 +5,7 @@ it("lists only supported targets and directs users to build evidence without fak
  expect(options.map(o=>o.id)).toEqual(["macos-arm","macos-intel","windows","linux"]);
  for (const option of options) {
   expect(option.action).toBe("instructions");
-  expect(option.href).toBe("https://github.com/Gaussian-id/Gauss-Horizon/actions");
+  expect(option.href).toBe("https://github.com/Gaussian-id/Chiron-Horizon/actions");
   expect(option.description).toContain("not available");
   expect(option.browserStaticDownloads).toBeUndefined();
  }

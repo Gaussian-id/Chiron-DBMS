@@ -9,7 +9,7 @@ import (
 	"net"
 	"strings"
 
-	"github.com/Gaussian-id/Gauss-Horizon/agents/go-common/gohive"
+	"github.com/Gaussian-id/Chiron-Horizon/agents/go-common/gohive"
 )
 
 type rpcError struct {

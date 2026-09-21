@@ -58,7 +58,7 @@ export function DocsSidebarFooter() {
     <div className="chiron-horizon-docs-sidebar-footer">
       <div className="chiron-horizon-docs-sidebar-tools">
         <div className="flex items-center gap-1">
-          <a className={iconButton} href="https://github.com/Gaussian-id/Gauss-Horizon" target="_blank" rel="noreferrer" aria-label="GitHub">
+          <a className={iconButton} href="https://github.com/Gaussian-id/Chiron-Horizon" target="_blank" rel="noreferrer" aria-label="GitHub">
             <GithubIcon />
           </a>
           <a className={iconButton} href="https://discord.gg/W7NyVDRt6a" target="_blank" rel="noreferrer" aria-label="Discord">

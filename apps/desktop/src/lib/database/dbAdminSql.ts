@@ -294,7 +294,7 @@ export async function buildDuplicateTableStructurePlan(options: DuplicateTableSt
   }
 
   // `SELECT TOP 0 * INTO` copies columns and the IDENTITY property but drops constraints, so the
-  // cloned table silently loses its primary key (Gaussian-id/Gauss-Horizon#8931). Load the source primary key and
+  // cloned table silently loses its primary key (Gaussian-id/Chiron-Horizon#8931). Load the source primary key and
   // let the backend append an `ALTER TABLE ... ADD CONSTRAINT ... PRIMARY KEY` for it.
   if (options.databaseType === "sqlserver") {
     const indexes = await api.listIndexes(options.connectionId, options.database, options.schema || "", options.sourceName, options.catalog);

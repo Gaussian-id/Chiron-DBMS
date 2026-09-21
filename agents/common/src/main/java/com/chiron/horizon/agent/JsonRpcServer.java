@@ -111,7 +111,9 @@ public final class JsonRpcServer {
                         jdbcExecutor,
                         succeeded,
                         requiresSessionAffinity(method, params),
-                        evictAfterRequest(method)
+                        evictAfterRequest(method),
+                        endsSessionAffinity(method),
+                        preservesSchemaContext()
                     );
                 }
             }
@@ -244,6 +246,14 @@ public final class JsonRpcServer {
             switchCatalog(params);
             return agent.listTriggers(params.get("schema").getAsString(), params.get("table").getAsString());
         }
+        if (AgentProtocol.METHOD_LIST_PARTITIONS.equals(method)) {
+            switchCatalog(params);
+            return agent.listPartitions(params.get("schema").getAsString(), params.get("table").getAsString());
+        }
+        if (AgentProtocol.METHOD_LIST_SUBPARTITIONS.equals(method)) {
+            switchCatalog(params);
+            return agent.listSubpartitions(params.get("schema").getAsString(), params.get("table").getAsString());
+        }
         if (AgentProtocol.METHOD_EXECUTE_QUERY.equals(method)) {
             return agent.executeQuery(
                 params.get("sql").getAsString(),
@@ -314,6 +324,15 @@ public final class JsonRpcServer {
             Type statementsType = new TypeToken<List<String>>() {}.getType();
             List<String> statements = gson.fromJson(params.get("statements"), statementsType);
             return agent.executeTransaction(statements, stringOrNull(params, "schema"));
+        }
+        if (AgentProtocol.METHOD_BEGIN_MANUAL_TRANSACTION.equals(method)) {
+            return agent.beginManualTransaction(stringOrNull(params, "schema"));
+        }
+        if (AgentProtocol.METHOD_COMMIT_MANUAL_TRANSACTION.equals(method)) {
+            return agent.commitManualTransaction();
+        }
+        if (AgentProtocol.METHOD_ROLLBACK_MANUAL_TRANSACTION.equals(method)) {
+            return agent.rollbackManualTransaction();
         }
         if (AgentProtocol.METHOD_EXECUTE_BATCH.equals(method)) {
             Type statementsType = new TypeToken<List<String>>() {}.getType();
@@ -422,6 +441,9 @@ public final class JsonRpcServer {
     }
 
     private boolean requiresSessionAffinity(String method, JsonObject params) {
+        if (AgentProtocol.METHOD_BEGIN_MANUAL_TRANSACTION.equals(method)) {
+            return true;
+        }
         try {
             if (AgentProtocol.METHOD_EXECUTE_QUERY.equals(method)
                 || AgentProtocol.METHOD_EXECUTE_QUERY_PAGE.equals(method)
@@ -445,6 +467,23 @@ public final class JsonRpcServer {
             return false;
         }
         return false;
+    }
+
+    private static boolean endsSessionAffinity(String method) {
+        return AgentProtocol.METHOD_COMMIT_MANUAL_TRANSACTION.equals(method)
+            || AgentProtocol.METHOD_ROLLBACK_MANUAL_TRANSACTION.equals(method);
+    }
+
+    private boolean preservesSchemaContext() {
+        Connection connection = agent.getConnection();
+        if (connection == null) {
+            return false;
+        }
+        try {
+            return !connection.getAutoCommit();
+        } catch (Exception ignored) {
+            return false;
+        }
     }
 
     private static boolean evictAfterRequest(String method) {

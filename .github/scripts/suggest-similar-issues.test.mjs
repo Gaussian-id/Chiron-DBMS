@@ -301,7 +301,7 @@ test("run searches and posts one idempotent comment", async (t) => {
 
   const client = new GitHubClient({
     token: "test-token",
-    repository: "Gaussian-id/Gauss-Horizon",
+    repository: "Gaussian-id/Chiron-Horizon",
     apiBase: `http://127.0.0.1:${address.port}`,
   });
   const candidates = await run({ issue: baseIssue, client });

@@ -2,7 +2,7 @@ schemaVersion: 1
 order: 260
 dbType: dameng
 rustVariant: Dameng
-label: 达梦 DM8
+label: Dameng DM8
 dialect: Dameng
 runtimeMode: agent
 mcpMode: bridge
@@ -20,6 +20,18 @@ traits:
   fetchFirst: true
   diagramSql: true
 supportLevel: operate
+access:
+  connectionPicker: direct
+  runtimeProvider: agent
+  connectSupported: true
+  testConnectionSupported: true
+  requiredFeatures: []
+schemaViewer:
+  kind: relational
+  provider: relational-metadata
+  scopeLevels:
+    - database
+    - schema
 capabilities:
   queryExecution: true
   metadataBrowse: true
@@ -27,6 +39,7 @@ capabilities:
   objectSource: true
   schemaSearch: true
   diagram: true
+  schemaViewer: true
   tableDataEdit: true
   tableStructureEdit: true
   tableImport: true

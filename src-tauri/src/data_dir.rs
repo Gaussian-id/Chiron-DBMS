@@ -88,7 +88,7 @@ fn current_exe_dir() -> Option<PathBuf> {
 
 #[cfg(target_os = "windows")]
 fn portable_marker_exists(exe_dir: &Path) -> bool {
-    exe_dir.join(PORTABLE_MARKER).is_file() || exe_dir.join("portable.dbx").is_file()
+    exe_dir.join(PORTABLE_MARKER).is_file() || exe_dir.join("portable.chiron_horizon").is_file()
 }
 
 #[cfg(not(target_os = "windows"))]

@@ -62,6 +62,7 @@ pub mod models;
 pub mod mongo_oidc;
 pub mod mongo_ops;
 pub mod mongo_shell;
+pub mod mongodb_dump;
 pub mod mongodb_import_export;
 #[cfg(feature = "mq-admin")]
 pub mod mq;
@@ -72,6 +73,7 @@ pub mod mysql_event_sql;
 pub mod nacos;
 #[cfg(all(target_os = "windows", target_env = "gnu"))]
 mod nanosleep_stub;
+pub mod object_cache;
 pub mod object_source_sql;
 pub mod path_utils;
 pub mod plugins;
@@ -90,6 +92,7 @@ pub mod runtime_config;
 pub mod saved_sql;
 pub mod schema;
 pub mod schema_diff;
+pub mod schema_viewer;
 pub mod script_generator;
 pub mod session_credentials;
 pub mod sql;
@@ -97,7 +100,9 @@ pub mod sql_analysis;
 pub mod sql_diagnostics;
 pub mod sql_dialect;
 pub mod sql_editability;
+pub mod sql_error_position;
 pub mod sql_file_import;
+pub mod sql_file_zip_package;
 pub mod sql_parser;
 pub mod sql_risk;
 pub mod sqlite_backup;
@@ -121,7 +126,7 @@ pub mod write_unlock;
 pub mod xlsx_export;
 
 pub const R2_CDN_BASE: &str = "https://distribution-disabled.invalid/";
-pub const GITHUB_RELEASE_DOWNLOAD_PREFIX: &str = "https://github.com/Gaussian-id/Gauss-Horizon/releases/download/";
+pub const GITHUB_RELEASE_DOWNLOAD_PREFIX: &str = "https://github.com/Gaussian-id/Chiron-Horizon/releases/download/";
 pub const CNB_RELEASE_DOWNLOAD_PREFIX: &str = "https://distribution-disabled.invalid/-/releases/download/";
 
 #[derive(Clone, Copy, Debug, Default, serde::Deserialize, PartialEq, Eq, Hash)]

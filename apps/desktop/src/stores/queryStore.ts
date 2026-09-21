@@ -4,10 +4,13 @@ import { isRedisMonitorCommand, startRedisMonitor } from "@/lib/redis/redisMonit
 import { uuid } from "@/lib/common/utils";
 import { computed, markRaw, nextTick, onScopeDispose, reactive, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
+import { useToast } from "@/composables/useToast";
+import { savedSqlErrorMessage } from "@/lib/savedSql/savedSqlErrors";
 import { sanitizeTabPageUiState } from "@/lib/tabs/tabUiState";
-import type { BatchSqlExecution, ConnectionConfig, DatabaseType, IndexInfo, NacosConfigEditorViewport, ObjectBrowserFilter, ObjectBrowserViewport, QueryResult, QueryResultSourceColumnRef, QueryTab, TableInfoTab, TableStructureEditorTarget } from "@/types/database";
+import type { BatchSqlExecution, ConnectionConfig, DatabaseType, IndexInfo, NacosConfigEditorViewport, ObjectBrowserFilter, ObjectBrowserViewport, ObjectSource, ObjectSourceKind, QueryResult, QueryResultSourceColumnRef, QueryTab, TableInfoTab, TableStructureEditorTarget } from "@/types/database";
 import { orderPinnedFirst } from "@/lib/app/pinnedItems";
 import { canCancelQueryExecution } from "@/lib/sql/queryExecutionState";
+import { isSqlErrorPositionDebugEnabled, logSqlErrorPosition } from "@/lib/sql/errorPosition";
 import { buildExplainSql, parseExplainResult, parseDamengExplainText, parseOracleExplainText, sqlServerExplainResult, type BuildExplainSqlResult, type ExplainPlanDatabaseType } from "@/lib/diagram/explainPlan";
 import { mysqlExplainCompatibilityHint } from "@/lib/diagram/mysqlExplainCompatibility";
 import { allEditableColumnsWriteable, allPrimaryKeysPresent, analyzeEditableQueryEditability, analyzeSelectStructureForDisplay, resolveMetadataColumnName, resolveSourceColumnsByOrdinal, sourceColumnsForResult, type EditableQueryInfo, type EditableQuerySource } from "@/lib/sql/sqlAnalysis";
@@ -29,6 +32,7 @@ import {
   planMongoFindPagination,
   mongoUseToQueryResult,
   mongoVersionToQueryResult,
+  mongoBulkWriteToQueryResult,
   mongoWriteToQueryResult,
   splitMongoCommandRanges,
   type MongoAggregateSafetyOptions,
@@ -38,7 +42,7 @@ import { redisCommandResultToQueryResult } from "@/lib/redis/redisQueryResult";
 import { nextRedisCommandDb } from "@/lib/redis/redisCommandSession";
 import { isRedisMutatingCommand } from "@/lib/redis/redisCommandTable";
 import { usesAgentCursorForQuery } from "@/lib/database/databaseDriverManifest";
-import { defaultAutoCommitForDbType, supportsClearableQuerySchema, supportsTransaction } from "@/lib/database/databaseFeatureSupport";
+import { defaultAutoCommitForDbType, supportsClearableQuerySchema, supportsTransaction, usesOracleStickyTransactionState, usesProvenReadOnlyStickyTransactionState } from "@/lib/database/databaseFeatureSupport";
 import { canInsertTableRows, canUseKeylessRowPredicate, CHIRON_HORIZON_ROWID_COLUMN, editablePrimaryKeys, shouldIncludeSyntheticRowId, usesSyntheticRowIdKey } from "@/lib/table/tableEditing";
 import { TABLE_DATA_EXPORT_PAGE_SIZE } from "@/lib/table/tableDataExport";
 import { tableMetaForDataTab } from "@/lib/table/tableDataTabMeta";
@@ -58,7 +62,8 @@ import { appendLargeValueCells, canUseTableDataLargeValuePreview, remapLargeValu
 import { simpleDataGridOrderByReferencesMissingColumn, sortDataGridRowIndexes, type DataGridSortDirection } from "@/lib/dataGrid/dataGridSort";
 import { normalizeResultPageSize } from "@/lib/dataGrid/paginationPageSize";
 import { agentProtocolQueryResultMaxRows, capQueryResultTotal, effectiveQueryResultMaxRows, limitQueryPagination, queryResultLimitReached } from "@/lib/dataGrid/queryResultRowLimit";
-import { elasticsearchRestRequestRanges, executableStatementRanges, splitSqlStatementRanges } from "@/lib/sql/sqlStatementRanges";
+import { elasticsearchRestRequestRanges, executableStatementRanges, splitSqlStatementRanges, sqlStatementParameterOptionsForCompatibility, stripMysqlClientDisplayCommand } from "@/lib/sql/sqlStatementRanges";
+import type { SqlParameterOptions } from "@/lib/sql/sqlParameters";
 import { replaceSqlServerLeadingUseQuery, sqlServerLeadingUseScript, sqlServerUseDatabaseFromStatement } from "@/lib/sql/sqlCompletionLookupTarget";
 import { classifySqlRisk } from "@/lib/sql/sqlRisk";
 import { externalSqlFileDisplayTitles, normalizeExternalSqlPath } from "@/lib/sql/sqlFileOpen";
@@ -85,12 +90,14 @@ import { appendDebugLog } from "@/lib/backend/debugLog";
 import { BackendErrorException, formatError, isManualTransactionSessionExpired, isUnsupportedManualTransactionMethod, normalizeBackendError, type BackendError } from "@/lib/backend/errorUtils";
 import { createSavedSqlEditorPosition, initSavedSqlEditorPositions, restoreSavedSqlEditorPosition, saveSavedSqlEditorPosition } from "@/lib/app/savedSqlEditorPosition";
 import { isDetachedWindow, resolveWindowContext } from "@/lib/app/windowContext";
-import type { DetachedTabHandoff, DetachedTabRuntimeState } from "@/lib/app/detachedTabHandoff";
+import { normalizeDetachedTabRuntime, type DetachedTabHandoff, type DetachedTabRuntimeState } from "@/lib/app/detachedTabHandoff";
 import { isTauriRuntime } from "@/lib/backend/tauriRuntime";
 import { ensureSqlExtension } from "@/lib/savedSql/savedSqlFileName";
 import { resolveSavedSqlExecutionTarget, savedSqlExecutionTargetFromTab, type SavedSqlExecutionTarget, type SavedSqlOpenTargetMode } from "@/lib/savedSql/savedSqlExecutionTarget";
 import { safeLocalStorageGet, safeLocalStorageRemove } from "@/lib/backend/safeStorage";
 import { sqlTextFingerprint } from "@/lib/sql/sqlTextFingerprint";
+import { loadEditableObjectSourceForEditor } from "@/lib/table/objectSourceLoad";
+import { buildEditableObjectSource } from "@/lib/table/objectSourceEditor";
 import { disposeAllSqlServerActivityTraces, disposeSqlServerActivityTrace } from "@/lib/sqlserver/sqlServerActivityTraceRuntime";
 import type { SavedSqlFile } from "@/types/database";
 import i18n, { currentLocale } from "@/i18n";
@@ -99,7 +106,7 @@ import type { SqlExecutionTargetContext } from "@/lib/database/sqlExecutionTarge
 import type { DriverProfileWorkspaceScope } from "@/lib/database/driverProfileExtensions";
 import type { MultiDbExecutionTarget, MultiDbResultRunExecution } from "@/types/sqlExecution";
 
-const QUERY_SURFACE_ACTIVATION_EVENT = "chiron-horizon:activate-query-surface";
+const QUERY_SURFACE_ACTIVATION_EVENT = "chiron_horizon:activate-query-surface";
 
 const ORACLE_LIKE_METADATA_TYPES = new Set<string>(["oracle", "dameng", "oceanbase-oracle"]);
 const ORACLE_DEFERRED_LOB_TYPES = new Set<string>(["CLOB", "NCLOB", "BLOB", "BFILE", "XMLTYPE", "SYS.XMLTYPE"]);
@@ -154,7 +161,7 @@ function cloneTabDraft<T>(value: T): T {
 interface BuildQueryResultExportRequestOptions {
   exportId: string;
   filePath: string;
-  format: "csv" | "xlsx" | "txt" | "sql";
+  format: "csv" | "xlsx" | "json" | "txt" | "sql";
   includeSqlSheet?: boolean;
   exportTableName?: string;
   exportColumnTypes?: Array<string | null | undefined>;
@@ -174,6 +181,32 @@ interface OpenObjectSourceTabOptions {
   sql: string;
   objectSource: NonNullable<QueryTab["objectSource"]>;
 }
+
+/**
+ * 请求身份：`objectSource.objectType` 要等 routine fallback 跑完才知道，所以
+ * pending 去重只能按请求时的身份判定。请求身份必须含 objectType —— PACKAGE 与
+ * PACKAGE_BODY 同名同 schema，仅靠 name+schema 会错误合并。
+ */
+interface ObjectSourceRequestIdentity {
+  name: string;
+  objectType: ObjectSourceKind;
+  signature?: string;
+}
+
+interface OpenPendingObjectSourceTabOptions {
+  connectionId: string;
+  database: string;
+  title: string;
+  schema?: string;
+  catalog?: string;
+  request: ObjectSourceRequestIdentity;
+}
+
+/**
+ * 拿到源码也没有可编辑形态的对象类型：只填内容，不挂 objectSource。
+ * （`App.vue` 的 Ctrl+click 路径有一份少了 `JOB` 的旧副本，是既有不一致。）
+ */
+const OBJECT_SOURCE_READ_ONLY_TYPES: readonly ObjectSourceKind[] = ["SEQUENCE", "TRIGGER", "TYPE", "TYPE_BODY", "JOB"];
 
 interface UpdateExecutionTargetOptions {
   persistSavedSqlTarget?: boolean;
@@ -316,8 +349,24 @@ function preservedResultIndex(results: QueryResult[], currentIndex: number | und
   return currentIndex;
 }
 
-function annotateQueryResultSources(results: QueryResult[], sql: string, database: string | undefined, databaseType?: DatabaseType, sourceOffset?: number): { results: QueryResult[]; sqlServerUseDatabase?: string } {
-  const statements = splitSqlStatementRanges(sql, databaseType);
+function annotateQueryResultSources(
+  results: QueryResult[],
+  sql: string,
+  database: string | undefined,
+  databaseType?: DatabaseType,
+  sourceOffset?: number,
+  parameterOptions?: SqlParameterOptions,
+  executedSql?: string,
+  sourceDocumentSql?: string,
+): { results: QueryResult[]; sqlServerUseDatabase?: string } {
+  const statements = splitSqlStatementRanges(sql, databaseType, parameterOptions);
+  // The backend positions errors against the SQL it actually received. When the
+  // sent SQL was rewritten (pagination wrapper, injected hidden keys…), record
+  // each statement's executed text so the error mapper can project the position
+  // back onto `sourceStatement`.
+  const executedStatements = executedSql && executedSql !== sql ? splitSqlStatementRanges(executedSql, databaseType, parameterOptions) : undefined;
+  const alignedExecutedStatements = executedStatements && executedStatements.length === statements.length ? executedStatements : undefined;
+  const documentStatements = sourceDocumentSql && sourceOffset !== undefined ? splitSqlStatementRanges(sourceDocumentSql, databaseType, parameterOptions) : [];
   let statementIndex = 0;
   let sourceDatabase = database;
   let sqlServerUseDatabase: string | undefined;
@@ -328,7 +377,28 @@ function annotateQueryResultSources(results: QueryResult[], sql: string, databas
     const statement = statements[sourceIndex];
     if (!statement) continue;
     annotateQueryResultSource(result, statement.sql, sourceDatabase, databaseType, sourceOffset === undefined ? undefined : { from: sourceOffset + statement.from, to: sourceOffset + statement.to });
-    const customName = queryResultNameFromPreamble(sql.slice(statement.hitFrom, statement.from));
+    const executedStatement = alignedExecutedStatements?.[sourceIndex]?.sql;
+    if (executedStatement && executedStatement !== statement.sql) {
+      result.executedStatement = executedStatement;
+      if (isSqlErrorPositionDebugEnabled()) {
+        logSqlErrorPosition("executed-statement-drift", {
+          statementIndex: sourceIndex,
+          sourceStatement: statement.sql,
+          executedStatement,
+          resultIsError: result.execution_error === true,
+          errorPosition: result.error?.errorPosition ?? null,
+        });
+      }
+    }
+    const documentStatement =
+      sourceOffset === undefined
+        ? undefined
+        : documentStatements.find((candidate) => {
+            const sourceFrom = sourceOffset + statement.from;
+            return candidate.from === sourceFrom || (sourceFrom >= candidate.from && sourceFrom <= candidate.to);
+          });
+    const preamble = documentStatement ? sourceDocumentSql!.slice(documentStatement.hitFrom, documentStatement.from) : sql.slice(statement.hitFrom, statement.from);
+    const customName = queryResultNameFromPreamble(preamble, { databaseType });
     if (customName) result.sourceLabel = customName;
     const successfulUseDatabase = databaseType === "sqlserver" && result.execution_error !== true ? sqlServerUseDatabaseFromStatement(statement.sql) : undefined;
     if (successfulUseDatabase) {
@@ -337,6 +407,22 @@ function annotateQueryResultSources(results: QueryResult[], sql: string, databas
     }
   }
   return { results, sqlServerUseDatabase };
+}
+
+/**
+ * Annotate the synthesized error result of a thrown single-statement execution
+ * so the row/column locate flow can map the backend position back to the editor.
+ *
+ * The core returns per-statement error results for batches, but a
+ * single-statement failure aborts the whole execute-multi command, leaving the
+ * frontend to synthesize the error result here. Only annotated when the error
+ * actually carries a position and the submission is a single statement (a
+ * multi-statement thrown error's position cannot be attributed to one statement).
+ */
+function annotateSingleStatementErrorResult(errorResult: QueryResult, sourceSql: string, databaseType: DatabaseType | undefined, sourceOffset: number | undefined, parameterOptions: SqlParameterOptions | undefined, executedSql: string | undefined): void {
+  if (!errorResult.error?.errorPosition) return;
+  if (splitSqlStatementRanges(sourceSql, databaseType, parameterOptions).length !== 1) return;
+  annotateQueryResultSources([errorResult], sourceSql, undefined, databaseType, sourceOffset, parameterOptions, executedSql);
 }
 
 const NON_STREAMING_BATCH_DATABASE_TYPES = new Set<DatabaseType>(["sqlserver", "turso", "cloudflare-d1"]);
@@ -356,8 +442,8 @@ function clearLiveBatchSqlExecution(tab: QueryTab, executionId: string) {
   if (liveBatchSqlExecutions.get(tab)?.executionId === executionId) liveBatchSqlExecutions.delete(tab);
 }
 
-function createBatchSqlExecution(executionId: string, editorSql: string, submittedSql: string, databaseType: DatabaseType | undefined, sourceOffset: number | undefined, executionTarget: MultiDbExecutionTarget): BatchSqlExecution | undefined {
-  const statements = databaseType === "mongodb" ? splitMongoCommandRanges(submittedSql).map(({ from, to, text }) => ({ from, to, sql: text })) : splitSqlStatementRanges(submittedSql, databaseType);
+function createBatchSqlExecution(executionId: string, editorSql: string, submittedSql: string, databaseType: DatabaseType | undefined, sourceOffset: number | undefined, executionTarget: MultiDbExecutionTarget, parameterOptions?: SqlParameterOptions): BatchSqlExecution | undefined {
+  const statements = databaseType === "mongodb" ? splitMongoCommandRanges(submittedSql).map(({ from, to, text }) => ({ from, to, sql: text })) : splitSqlStatementRanges(submittedSql, databaseType, parameterOptions);
   if (statements.length === 0) return undefined;
   if (statements.length > 1 && databaseType && NON_STREAMING_BATCH_DATABASE_TYPES.has(databaseType)) return undefined;
   const offset = sourceOffset ?? 0;
@@ -528,7 +614,7 @@ function displayedQueryMetadataSql(tab: QueryTab, fallbackSql: string): string {
   return tab.results?.length ? (tab.result?.sourceStatement ?? fallbackSql) : fallbackSql;
 }
 
-async function withFrontendQueryTimeout<T>(promise: Promise<T>, timeoutSecs: number, message: string): Promise<T> {
+async function withFrontendQueryTimeout<T>(promise: Promise<T>, timeoutSecs: number, message: string, onTimeout?: () => void): Promise<T> {
   const timeoutMs = frontendQueryTimeoutDelayMs(timeoutSecs);
   if (timeoutMs === undefined) return promise;
 
@@ -537,7 +623,10 @@ async function withFrontendQueryTimeout<T>(promise: Promise<T>, timeoutSecs: num
     return await Promise.race([
       promise,
       new Promise<never>((_, reject) => {
-        timer = setTimeout(() => reject(new Error(message)), timeoutMs);
+        timer = setTimeout(() => {
+          onTimeout?.();
+          reject(new Error(message));
+        }, timeoutMs);
       }),
     ]);
   } finally {
@@ -1699,6 +1788,17 @@ export const useQueryStore = defineStore("query", () => {
     return run.pinned === true;
   }
 
+  function renameResultRun(id: string, runId: string, title: string): boolean {
+    const trimmed = title.trim();
+    if (!trimmed) return false;
+    const tab = tabs.value.find((item) => item.id === id);
+    const run = tab?.resultRuns?.find((item) => item.id === runId);
+    if (!tab || !run) return false;
+    run.title = trimmed;
+    void persistResultRun(tab, run);
+    return true;
+  }
+
   function unpinAllResultRuns(id: string): number {
     const tab = tabs.value.find((item) => item.id === id);
     if (!tab?.resultRuns?.length) return 0;
@@ -2314,8 +2414,6 @@ export const useQueryStore = defineStore("query", () => {
       resultSortDirection: t.resultSortDirection,
       resultSortMode: t.resultSortMode,
       orderByInput: t.orderByInput,
-      resultPageLimit: t.resultPageLimit,
-      resultPageOffset: t.resultPageOffset,
       whereInput: t.whereInput,
       pinned: t.pinned,
       mode: t.mode,
@@ -2421,7 +2519,7 @@ export const useQueryStore = defineStore("query", () => {
         editorSelection: tab.editorSelection,
         txnSessionId: tab.txnSessionId,
         txnAutoRolledBack: tab.txnAutoRolledBack,
-        oracleTxnPossiblyDirty: tab.oracleTxnPossiblyDirty,
+        txnPossiblyDirty: tab.txnPossiblyDirty,
         ...runtime,
       },
       ...(snapshot ? { resultCacheKey } : {}),
@@ -2476,7 +2574,7 @@ export const useQueryStore = defineStore("query", () => {
         restoredTab.originalSql = file.sql;
       }
     }
-    Object.assign(restoredTab, handoff.runtime);
+    Object.assign(restoredTab, normalizeDetachedTabRuntime(handoff.runtime));
     if (handoff.resultCacheKey) {
       restoredTab.resultCacheKey = handoff.resultCacheKey;
       const restoredResult = restoreCachedResultPayload(restoredTab, await readTabResultSnapshot(handoff.resultCacheKey));
@@ -2559,9 +2657,17 @@ export const useQueryStore = defineStore("query", () => {
     });
   }
 
-  function openObjectSourceTab(options: OpenObjectSourceTabOptions) {
-    const existing = tabs.value.find(
+  /**
+   * 对象源码 tab 的判重键。裁决点是**解析后**的 objectSource.objectType：
+   * routine fallback 会把 PROCEDURE↔FUNCTION、PACKAGE↔PACKAGE_BODY 归一，
+   * 因此「PROCEDURE foo」与「FUNCTION foo」应当共用一个 tab。pending 阶段
+   * 拿不到解析结果，只能做请求身份去重（见 openObjectSourceTabPending），
+   * 解析完成后再回到这里落定，避免改变既有语义。
+   */
+  function findMatchingObjectSourceTab(options: OpenObjectSourceTabOptions, excludeTabId?: string): QueryTab | undefined {
+    return tabs.value.find(
       (tab) =>
+        tab.id !== excludeTabId &&
         tab.mode === "query" &&
         tab.connectionId === options.connectionId &&
         tab.database === options.database &&
@@ -2572,6 +2678,10 @@ export const useQueryStore = defineStore("query", () => {
         (tab.objectSource.schema || "") === (options.objectSource.schema || "") &&
         (tab.objectSource.signature || "") === (options.objectSource.signature || ""),
     );
+  }
+
+  function openObjectSourceTab(options: OpenObjectSourceTabOptions) {
+    const existing = findMatchingObjectSourceTab(options);
     if (existing) {
       existing.sourceView = true;
       switchTab(existing.id);
@@ -2585,6 +2695,212 @@ export const useQueryStore = defineStore("query", () => {
     const id = createTab(options.connectionId, options.database, options.title, "query", options.schema, options.sql, options.catalog, { forceNew: true, sourceView: true });
     setObjectSource(id, options.objectSource);
     return id;
+  }
+
+  /**
+   * 正在后台重新校验源码的 tab。非响应式：仅用于避免同一个 tab 上叠起多次
+   * 取源请求（Oracle 的 GET_DDL 正是慢的那一步）。
+   */
+  const sourceRevalidateInFlight = new Set<string>();
+
+  function findPendingObjectSourceTab(options: OpenPendingObjectSourceTabOptions): QueryTab | undefined {
+    return tabs.value.find(
+      (tab) =>
+        !!tab.sourceLoad &&
+        tab.connectionId === options.connectionId &&
+        tab.database === options.database &&
+        (tab.schema || "") === (options.schema || "") &&
+        (tab.catalog || "") === (options.catalog || "") &&
+        tab.sourceLoad.request.name === options.request.name &&
+        tab.sourceLoad.request.objectType === options.request.objectType &&
+        (tab.sourceLoad.request.signature || "") === (options.request.signature || ""),
+    );
+  }
+
+  /**
+   * 立即建出源码 tab 并挂上加载态，再异步取源码（issue #9035）。
+   * 此前是「等连接 + 等源码都完成才建 tab」，等待期间没有任何可见 UI，
+   * 用户看到的是点击后毫无反应。
+   */
+  function openObjectSourceTabPending(options: OpenPendingObjectSourceTabOptions): string {
+    // 这个对象已经打开过：立刻切过去，再在后台重新校验源码。
+    // 两条弯路都要避开 —— 再建一个 pending tab 会让界面上多出一个转圈 tab，
+    // 随后又被交接逻辑关掉；而只切过去不校验，会让重开看到的是旧 DDL
+    // （改动前每次打开都会重新取源，源码 tab 没有其它刷新入口）。
+    const loaded = findMatchingObjectSourceTab({
+      connectionId: options.connectionId,
+      database: options.database,
+      title: options.title,
+      schema: options.schema,
+      catalog: options.catalog,
+      sql: "",
+      objectSource: { schema: options.schema, name: options.request.name, objectType: options.request.objectType, signature: options.request.signature },
+    });
+    if (loaded) {
+      loaded.sourceView = true;
+      switchTab(loaded.id);
+      // 这条路径不经过 ensureConnected，但树上的动作会把该连接设为当前连接
+      useConnectionStore().activeConnectionId = options.connectionId;
+      void revalidateObjectSourceTab(loaded.id);
+      return loaded.id;
+    }
+
+    const existing = findPendingObjectSourceTab(options);
+    if (existing) {
+      switchTab(existing.id);
+      // 再次点击同一对象 = 再试一次，不新开 tab、不重复占用一个 tab 位
+      if (existing.sourceLoad?.error) retryObjectSourceTab(existing.id);
+      return existing.id;
+    }
+
+    const id = createTab(options.connectionId, options.database, options.title, "query", options.schema, "", options.catalog, { forceNew: true, sourceView: true });
+    const tab = tabs.value.find((candidate) => candidate.id === id);
+    if (tab) tab.sourceLoad = { startedAt: Date.now(), request: { ...options.request } };
+    void loadObjectSourceIntoTab(id);
+    return id;
+  }
+
+  /**
+   * 后台重新校验一个已加载源码 tab 的 DDL：不占用加载态、不打断编辑，
+   * 失败就保持原内容（用户并没有在等这次请求）。
+   */
+  async function revalidateObjectSourceTab(id: string) {
+    if (sourceRevalidateInFlight.has(id)) return;
+    const tab = tabs.value.find((candidate) => candidate.id === id);
+    const objectSource = tab?.objectSource;
+    if (!tab || !objectSource) return;
+    const { connectionId } = tab;
+    const { database } = tab;
+    const schema = objectSource.schema || tab.schema || database;
+    sourceRevalidateInFlight.add(id);
+    try {
+      const connectionStore = useConnectionStore();
+      await connectionStore.ensureConnected(connectionId);
+      const databaseType = effectiveDatabaseTypeForConnection(connectionStore.getConfig(connectionId));
+      if (!databaseType) return;
+      const {
+        raw,
+        editableSource,
+        objectType: resolvedType,
+      } = await loadEditableObjectSourceForEditor(api.getObjectSource, buildEditableObjectSource, {
+        connectionId,
+        database,
+        schema,
+        name: objectSource.name,
+        objectType: objectSource.objectType,
+        databaseType,
+        signature: objectSource.signature,
+      });
+      // 期间 tab 可能被关闭、被复用或已被编辑：身份没变且用户没改过内容时才回填
+      const current = tabs.value.find((candidate) => candidate.id === id);
+      if (current?.objectSource !== objectSource || resolvedType !== objectSource.objectType) return;
+      if (raw.editable === false || OBJECT_SOURCE_READ_ONLY_TYPES.includes(resolvedType)) return;
+      if (isTabDirty(current)) return;
+      updateSql(id, editableSource);
+      markTabClean(current);
+    } catch {
+      // 已有的源码依然可用，静默保留
+    } finally {
+      sourceRevalidateInFlight.delete(id);
+    }
+  }
+
+  function retryObjectSourceTab(id: string) {
+    const tab = tabs.value.find((candidate) => candidate.id === id);
+    if (!tab?.sourceLoad) return;
+    tab.sourceLoad.error = undefined;
+    tab.sourceLoad.startedAt = Date.now();
+    void loadObjectSourceIntoTab(id);
+  }
+
+  function clearObjectSourceLoad(tab: QueryTab) {
+    tab.sourceLoad = undefined;
+  }
+
+  async function loadObjectSourceIntoTab(id: string) {
+    const tab = tabs.value.find((candidate) => candidate.id === id);
+    if (!tab?.sourceLoad || !tab.connectionId) return;
+    const { connectionId } = tab;
+    const { database } = tab;
+    const schema = tab.schema || database;
+    const { request } = tab.sourceLoad;
+    try {
+      const connectionStore = useConnectionStore();
+      await connectionStore.ensureConnected(connectionId);
+      connectionStore.activeConnectionId = connectionId;
+      const databaseType = effectiveDatabaseTypeForConnection(connectionStore.getConfig(connectionId));
+      if (!databaseType) throw new Error("Connection type is unavailable.");
+      const {
+        raw,
+        editableSource,
+        objectType: resolvedType,
+      } = await loadEditableObjectSourceForEditor(api.getObjectSource, buildEditableObjectSource, {
+        connectionId,
+        database,
+        schema,
+        name: request.name,
+        objectType: request.objectType,
+        databaseType,
+        signature: request.signature,
+      });
+      applyLoadedObjectSource(id, { connectionId, database, schema, catalog: tab.catalog, title: tab.title, request, editableSource, raw, resolvedType });
+    } catch (e: any) {
+      // 就地显示错误 + Retry：用户此刻正看着这个 tab，比 toast 更可发现
+      const failed = tabs.value.find((candidate) => candidate.id === id);
+      if (failed?.sourceLoad) failed.sourceLoad.error = e?.message || String(e);
+    }
+  }
+
+  function applyLoadedObjectSource(
+    id: string,
+    loaded: {
+      connectionId: string;
+      database: string;
+      schema?: string;
+      catalog?: string;
+      title: string;
+      request: ObjectSourceRequestIdentity;
+      editableSource: string;
+      raw: ObjectSource;
+      resolvedType: ObjectSourceKind;
+    },
+  ) {
+    // 加载期间 tab 被关掉（用户放弃）或连接被断开：静默丢弃，不重建、不写库
+    const tab = tabs.value.find((candidate) => candidate.id === id);
+    if (!tab?.sourceLoad) return;
+    const sourceIsEditable = loaded.raw.editable !== false && !OBJECT_SOURCE_READ_ONLY_TYPES.includes(loaded.resolvedType);
+    if (sourceIsEditable) {
+      const options: OpenObjectSourceTabOptions = {
+        connectionId: loaded.connectionId,
+        database: loaded.database,
+        title: loaded.title,
+        schema: loaded.schema,
+        catalog: loaded.catalog,
+        sql: loaded.editableSource,
+        objectSource: { schema: loaded.schema, name: loaded.request.name, objectType: loaded.resolvedType, signature: loaded.request.signature },
+      };
+      // 解析后的身份可能命中已存在的 tab（例：先按 FUNCTION 打开过，这次请求的是 PROCEDURE）。
+      // 有则交接给它并关掉 pending 占位，避免同一个对象出现两个 tab。
+      const existing = findMatchingObjectSourceTab(options, id);
+      if (existing) {
+        clearObjectSourceLoad(tab);
+        closeTab(id);
+        existing.sourceView = true;
+        switchTab(existing.id);
+        if (!isTabDirty(existing)) {
+          updateSql(existing.id, loaded.editableSource);
+          markTabClean(existing);
+        }
+        return;
+      }
+      updateSql(id, loaded.editableSource);
+      setObjectSource(id, options.objectSource);
+    } else {
+      updateSql(id, loaded.editableSource);
+    }
+    tab.sourceView = true;
+    markTabClean(tab);
+    clearObjectSourceLoad(tab);
   }
 
   function showExecutedQueryResults(connectionId: string, database: string, sql: string, queryResults: QueryResult[]) {
@@ -3151,7 +3467,16 @@ export const useQueryStore = defineStore("query", () => {
     if (!options.forceNew) {
       const existing = tabs.value.find((tab) => tab.mode === "plugin-workbench" && tab.pluginWorkbench?.pluginId === pluginId && tab.pluginWorkbench?.contributionId === contributionId && tab.connectionId === (options.connectionId || ""));
       if (existing) {
-        if (options.context) existing.pluginWorkbench = { ...existing.pluginWorkbench!, context: snapshotPluginWorkbenchContext(options.context) };
+        // Reopening surfaces the existing tab as-is. Replacing the context
+        // here (openPluginConnection mints a fresh workbenchId per click)
+        // would deep-reload the plugin webview — a full flash plus losing
+        // the sidecar session binding on the old workbench id.
+        // A tab created by an older build (or otherwise unregistered) may
+        // still be ownerless; land it in the workspace or the group-rendered
+        // tab strips can never show it.
+        if (!groupForTab(existing.id)) {
+          ensureTabInWorkspace(existing.id);
+        }
         switchTab(existing.id);
         return existing.id;
       }
@@ -3174,6 +3499,9 @@ export const useQueryStore = defineStore("query", () => {
         context: options.context ? snapshotPluginWorkbenchContext(options.context) : undefined,
       },
     };
+    // The split workspace renders strips from group membership — always go
+    // through registerOpenTab so the tab joins the focused group (raw push
+    // left it ownerless and invisible in every tab strip).
     return registerOpenTab(tab);
   }
 
@@ -3182,6 +3510,9 @@ export const useQueryStore = defineStore("query", () => {
       const existing = tabs.value.find((tab) => tab.mode === "plugin-filesystem" && tab.pluginFilesystem?.pluginId === pluginId && tab.pluginFilesystem?.providerId === providerId && tab.connectionId === (options.connectionId || ""));
       if (existing) {
         if (options.currentUri) existing.pluginFilesystem = { ...existing.pluginFilesystem!, currentUri: options.currentUri };
+        if (!groupForTab(existing.id)) {
+          ensureTabInWorkspace(existing.id);
+        }
         switchTab(existing.id);
         return existing.id;
       }
@@ -3228,6 +3559,15 @@ export const useQueryStore = defineStore("query", () => {
           connectionId,
           providerId,
           connectionType: connection.plugin_connection_type,
+          workbenchId: uuid(),
+          connection: {
+            id: connection.id,
+            name: connection.name,
+            host: connection.host,
+            port: connection.port,
+            username: connection.username,
+            readOnly: false,
+          },
         },
       });
     }
@@ -3235,10 +3575,42 @@ export const useQueryStore = defineStore("query", () => {
     const filesystem = filesystemProviderId ? registry.listFilesystemProviders().find((entry) => entry.plugin.manifest.id === pluginId && entry.contribution.id === filesystemProviderId) : undefined;
     if (!filesystem) throw new Error(`Plugin connection provider '${pluginId}/${providerId}' does not declare a workbench or filesystem provider`);
     return openPluginFilesystem(pluginId, filesystem.contribution.id, {
-      title: connection.name,
+      title: `${connection.name} · SFTP`,
       connectionId,
       rootUri: filesystem.contribution.root_uri,
     });
+  }
+
+  /**
+   * Boot-time tab restore only replays tab metadata: after a host restart the
+   * sidecar's in-memory connection registry starts empty (credentials are
+   * injected per connect via `connection/connect`), so a restored plugin
+   * workbench/filesystem tab fails its first session/open with "Connection is
+   * not active" until the user reopens the connection from the sidebar. Replay
+   * the connect lifecycle for every distinct restored plugin connection —
+   * fire-and-forget so an interactive password prompt or a slow sidecar spawn
+   * never blocks startup; per-connection failures surface in the tab's own UI.
+   */
+  async function reconnectRestoredPluginTabs() {
+    const connectionStore = useConnectionStore();
+    const activeConnectionId = tabs.value.find((tab) => tab.id === activeTabId.value)?.connectionId;
+    const orderedIds: string[] = [];
+    for (const tab of tabs.value) {
+      if (tab.mode !== "plugin-workbench" && tab.mode !== "plugin-filesystem") continue;
+      if (!tab.connectionId || orderedIds.includes(tab.connectionId)) continue;
+      if (tab.connectionId === activeConnectionId) orderedIds.unshift(tab.connectionId);
+      else orderedIds.push(tab.connectionId);
+    }
+    for (const connectionId of orderedIds) {
+      if (connectionStore.getConfig(connectionId)?.db_type !== "plugin") continue;
+      try {
+        // activate:false keeps the boot restore from overriding the last
+        // active connection already chosen by restoreActiveConnectionContext().
+        await connectionStore.ensureConnected(connectionId, { activate: false });
+      } catch (error) {
+        console.warn("[Chiron Horizon][plugin-tab-restore:reconnect]", connectionId, error);
+      }
+    }
   }
 
   function applyTableStructureInitialTab(tab: QueryTab, initialTab?: TableInfoTab, initialTarget?: TableStructureEditorTarget) {
@@ -3543,6 +3915,39 @@ export const useQueryStore = defineStore("query", () => {
     continuePendingBatchClose();
   }
 
+  const pluginReleaseInFlight = new Set<string>();
+  /**
+   * Closing the last plugin tab (workbench or filesystem) bound to a plugin
+   * connection ends that connection: the sidecar session has no remaining
+   * owner, so disconnecting tears the pool down and drops the sidebar's
+   * "connected" dot. Fire-and-forget; concurrent releases for the same
+   * connection coalesce, and a reopen racing the release wins.
+   */
+  function releasePluginConnectionsAfterClose(closedTabs: ReadonlyArray<QueryTab>) {
+    const connectionIds = new Set(closedTabs.filter((tab) => (tab.mode === "plugin-workbench" || tab.mode === "plugin-filesystem") && tab.connectionId).map((tab) => tab.connectionId));
+    for (const connectionId of connectionIds) {
+      if (pluginReleaseInFlight.has(connectionId)) continue;
+      pluginReleaseInFlight.add(connectionId);
+      void (async () => {
+        try {
+          // Yield one microtask so a same-tick reopen registers its
+          // replacement plugin tab before we tear the connection down.
+          await Promise.resolve();
+          if (tabs.value.some((tab) => (tab.mode === "plugin-workbench" || tab.mode === "plugin-filesystem") && tab.connectionId === connectionId)) return;
+          const connectionStore = useConnectionStore();
+          // A user-initiated disconnect that closed these tabs already owns
+          // the teardown — don't stack a second one on top of it.
+          if (connectionStore.hasDisconnectInFlight(connectionId)) return;
+          await connectionStore.disconnect(connectionId);
+        } catch (error) {
+          console.warn("[Chiron Horizon][plugin-tab-close:disconnect]", connectionId, error);
+        } finally {
+          pluginReleaseInFlight.delete(connectionId);
+        }
+      })();
+    }
+  }
+
   function closeTab(id: string, { force = false }: { force?: boolean } = {}) {
     const tab = tabs.value.find((t) => t.id === id);
     if (!tab) return;
@@ -3575,6 +3980,7 @@ export const useQueryStore = defineStore("query", () => {
     const wasGlobalActive = activeTabId.value === id;
 
     tabs.value.splice(idx, 1);
+    releasePluginConnectionsAfterClose([tab]);
     if (tab.externalSqlPath) refreshExternalSqlFileTitles();
 
     if (owner) {
@@ -3914,29 +4320,29 @@ export const useQueryStore = defineStore("query", () => {
     const closingIds = new Set(tabs.value.filter((tab) => predicate(tab)).map((tab) => tab.id));
     if (closingIds.size === 0) return;
 
-    tabs.value
-      .filter((tab) => closingIds.has(tab.id))
-      .forEach((tab) => {
-        if (tab.mode === "sqlserver-trace") void disposeSqlServerActivityTrace(tab.id);
-        clearDataGridPendingSnapshotsForTab(tab.id);
-        beginClosingDataGridViewSnapshotsForTab(tab.id);
-        beginClosingBrowserState(tab.id);
-        clearDataGridStructuredFilterStatesForTab(tab.id);
-        clearDataGridSearchStatesForTab(tab.id);
-        if (tab.txnSessionId) void rollbackTransaction(tab.id);
-        if (tab.isExecuting) void cancelTabExecution(tab.id);
-        if (tab.isExplaining) void cancelTabExplain(tab.id);
-        void closeResultSession(tab);
-        void closeClientConnectionSession(tab);
-        clearResultRunSnapshots(tab);
-        void deleteTabResultSnapshot(tabResultCacheKey(tab.id));
-        releaseTabResultObjectPayloads(tab);
-        clearResultRuns(tab);
-        clearResultPayload(tab);
-      });
+    const closingTabs = tabs.value.filter((tab) => closingIds.has(tab.id));
+    closingTabs.forEach((tab) => {
+      if (tab.mode === "sqlserver-trace") void disposeSqlServerActivityTrace(tab.id);
+      clearDataGridPendingSnapshotsForTab(tab.id);
+      beginClosingDataGridViewSnapshotsForTab(tab.id);
+      beginClosingBrowserState(tab.id);
+      clearDataGridStructuredFilterStatesForTab(tab.id);
+      clearDataGridSearchStatesForTab(tab.id);
+      if (tab.txnSessionId) void rollbackTransaction(tab.id);
+      if (tab.isExecuting) void cancelTabExecution(tab.id);
+      if (tab.isExplaining) void cancelTabExplain(tab.id);
+      void closeResultSession(tab);
+      void closeClientConnectionSession(tab);
+      clearResultRunSnapshots(tab);
+      void deleteTabResultSnapshot(tabResultCacheKey(tab.id));
+      releaseTabResultObjectPayloads(tab);
+      clearResultRuns(tab);
+      clearResultPayload(tab);
+    });
 
     const activeClosingIndex = tabs.value.findIndex((tab) => tab.id === activeTabId.value && closingIds.has(tab.id));
     tabs.value = tabs.value.filter((tab) => !closingIds.has(tab.id));
+    releasePluginConnectionsAfterClose(closingTabs);
     // Resolve the fallback against the POST-filter array: the survivor at the
     // closing tab's index, not the closing tab itself.
     const fallbackTabId = activeClosingIndex >= 0 ? tabs.value[Math.min(activeClosingIndex, tabs.value.length - 1)]?.id : undefined;
@@ -4241,15 +4647,15 @@ export const useQueryStore = defineStore("query", () => {
     const tab = tabs.value.find((item) => item.id === id);
     if (!tab?.txnSessionId) return;
     const dbType = effectiveDatabaseTypeForConnection(useConnectionStore().getConfig(tab.connectionId));
-    if (dbType === "oracle") tab.oracleTxnPossiblyDirty = true;
+    if (usesProvenReadOnlyStickyTransactionState(dbType)) tab.txnPossiblyDirty = true;
   }
 
-  /** Reset only the Oracle sticky-dirty bit. Used when a session continues but
-   *  the old dirty state must be discarded (e.g. idle-expiry recovery where the
-   *  replacement session starts fresh). Full session cleanup goes through
-   *  `clearManualTransactionSession`. */
-  function clearOracleTxnPossiblyDirty(tab: { oracleTxnPossiblyDirty?: boolean }) {
-    if (tab.oracleTxnPossiblyDirty !== undefined) tab.oracleTxnPossiblyDirty = false;
+  /** Reset only the sticky proven-read-only dirty bit. Used when a session
+   *  continues but the old dirty state must be discarded (e.g. idle-expiry
+   *  recovery where the replacement session starts fresh). Full session cleanup
+   *  goes through `clearManualTransactionSession`. */
+  function clearTxnPossiblyDirty(tab: { txnPossiblyDirty?: boolean }) {
+    if (tab.txnPossiblyDirty !== undefined) tab.txnPossiblyDirty = false;
   }
 
   /** Centralized manual-session cleanup. Clears every field tied to a manual
@@ -4258,7 +4664,7 @@ export const useQueryStore = defineStore("query", () => {
   function clearManualTransactionSession(tab: QueryTab) {
     tab.txnSessionId = undefined;
     tab.txnAutoRolledBack = false;
-    if (tab.oracleTxnPossiblyDirty !== undefined) tab.oracleTxnPossiblyDirty = false;
+    if (tab.txnPossiblyDirty !== undefined) tab.txnPossiblyDirty = false;
   }
 
   function rollbackTabTransaction(tab: QueryTab, options?: { resetAutoCommit?: boolean; resetAutoCommitDbType?: string }) {
@@ -4271,7 +4677,7 @@ export const useQueryStore = defineStore("query", () => {
       const dbType = options.resetAutoCommitDbType ?? useConnectionStore().getConfig(tab.connectionId)?.db_type;
       tab.autoCommit = defaultAutoCommitForDbTypeWithSetting(dbType);
     }
-    clearOracleTxnPossiblyDirty(tab);
+    clearTxnPossiblyDirty(tab);
     tab.txnAutoRolledBack = false;
   }
 
@@ -4541,17 +4947,43 @@ export const useQueryStore = defineStore("query", () => {
     return true;
   }
 
+  const savedSqlTargetRequests = new WeakMap<QueryTab, number>();
+  let savedSqlTargetPersistenceActive = true;
+  onScopeDispose(() => {
+    savedSqlTargetPersistenceActive = false;
+  });
+
+  function createExecutionTargetGuard(id: string): () => boolean {
+    const tab = tabs.value.find((candidate) => candidate.id === id);
+    const target = savedSqlExecutionTargetFromTab(tab);
+    if (!tab || !target) return () => false;
+    const revision = savedSqlTargetRequests.get(tab);
+    const savedSqlId = tab.savedSqlId;
+    return () =>
+      savedSqlTargetPersistenceActive && tabs.value.includes(tab) && savedSqlTargetRequests.get(tab) === revision && tab.savedSqlId === savedSqlId && tab.connectionId === target.connectionId && tab.database === target.database && tab.catalog === target.catalog && tab.schema === target.schema;
+  }
+
   function persistSavedSqlExecutionTarget(tab: QueryTab, options: UpdateExecutionTargetOptions) {
+    const revision = (savedSqlTargetRequests.get(tab) ?? 0) + 1;
+    savedSqlTargetRequests.set(tab, revision);
     if (options.persistSavedSqlTarget === false || tab.mode !== "query" || !tab.savedSqlId) return;
     const savedSqlStore = useSavedSqlStore();
+    const savedSqlId = tab.savedSqlId;
     void savedSqlStore
-      .updateFileExecutionTarget(tab.savedSqlId, {
+      .updateFileExecutionTarget(savedSqlId, {
         connectionId: tab.connectionId,
         database: tab.database,
         catalog: tab.catalog,
         schema: tab.schema,
       })
-      .catch((error) => console.warn("[Chiron Horizon][saved-sql:target:error]", error));
+      .catch((error) => {
+        console.warn("[Chiron Horizon][saved-sql:target:error]", error);
+        // A failed older request must not undo a newer target selection.
+        if (!savedSqlTargetPersistenceActive || savedSqlTargetRequests.get(tab) !== revision || tab.savedSqlId !== savedSqlId || !tabs.value.includes(tab)) return;
+        const saved = savedSqlStore.getFile(savedSqlId);
+        if (saved) applySavedSqlExecutionTarget(tab, saved);
+        useToast().toast(i18n.global.t("savedSql.saveFailed", { message: savedSqlErrorMessage(error, i18n.global.t) }), 5000);
+      });
   }
 
   function updateDatabase(id: string, database: string, options: UpdateExecutionTargetOptions = {}) {
@@ -4660,9 +5092,10 @@ export const useQueryStore = defineStore("query", () => {
     return clearInvalidDataTabSortState(tab, tab.tableMeta.columns);
   }
 
-  function setTableMeta(id: string, meta: NonNullable<QueryTab["tableMeta"]>) {
+  function setTableMeta(id: string, meta: NonNullable<QueryTab["tableMeta"]>, options: { rowIdentityPending?: boolean } = {}) {
     const tab = tabs.value.find((t) => t.id === id);
     if (tab) {
+      if (options.rowIdentityPending) tab.tableMetaPending = true;
       tab.tableMeta = meta;
       // 记录写入时的连接元数据代次：disconnect/关库/死池重连会使该代次递增，
       // 代次失配视同冷缓存，即使位于 30s TTL 窗口内也会重建结构（issue #6623 /
@@ -4674,7 +5107,7 @@ export const useQueryStore = defineStore("query", () => {
       // columns/primaryKeys 为空的占位身份（如 useNavigationTargets），不得
       // 借此提前解除编辑门控。失败/中止路径不清除——标签页保持只读是安全
       // 兜底，刷新或重开表会重新加载元数据恢复
-      if (meta.columns.length > 0) tab.tableMetaPending = false;
+      if (meta.columns.length > 0 && !options.rowIdentityPending) tab.tableMetaPending = false;
     }
   }
 
@@ -5222,14 +5655,21 @@ export const useQueryStore = defineStore("query", () => {
   }
 
   /**
-   * Resolve grouped result columns by projection ordinal. All databases use the
-   * mapping for comments. MySQL may additionally edit direct columns from one
-   * uniquely identifiable base table; aggregate expressions and columns from
-   * every other source remain read-only.
+   * Resolve read-only query result columns by projection ordinal. All databases
+   * use the mapping for comments. MySQL aggregation may additionally edit
+   * direct columns from one uniquely identifiable base table.
    */
-  async function resolveAggregationQueryMetadata(tab: QueryTab, sql: string, executionDatabase: string, traceId: string | undefined): Promise<QueryMetadataPatch | undefined> {
+  async function resolveQueryDisplayMetadata(
+    tab: QueryTab,
+    sql: string,
+    executionDatabase: string,
+    traceId: string | undefined,
+    connection: ConnectionConfig | undefined,
+    allowMysqlEditing = true,
+    readOnlyReason: "aggregation" | "complex-source" = "aggregation",
+  ): Promise<QueryMetadataPatch | undefined> {
     if (tab.mode !== "query" || !tab.connectionId || !tab.result || !tab.result.columns.length) return undefined;
-    const conn = useConnectionStore().getConfig(tab.connectionId);
+    const conn = connection ?? useConnectionStore().getConfig(tab.connectionId);
     const dbType = conn?.db_type || "";
     const analysis = analyzeSelectStructureForDisplay(sql);
     if (!analysis) return undefined;
@@ -5260,12 +5700,12 @@ export const useQueryStore = defineStore("query", () => {
       const readOnlyPatch: QueryMetadataPatch = {
         queryAnalysis: undefined,
         querySourceColumns: undefined,
-        queryEditabilityReason: "aggregation",
+        queryEditabilityReason: readOnlyReason,
         tableMeta: undefined,
         resultColumnComments: displayInfo.comments,
         queryDisplaySourceColumns: displayInfo.mapping,
       };
-      if (dbType !== "mysql" || (conn?.driver_profile || conn?.db_type) !== "mysql") return readOnlyPatch;
+      if (!allowMysqlEditing || dbType !== "mysql" || (conn?.driver_profile || conn?.db_type) !== "mysql") return readOnlyPatch;
       // Mutation safety boundary: the FROM root must remain on the preserved
       // side of the join tree, and GROUP BY must resolve to exactly that table's
       // declared primary key. This makes every editable result row identify one
@@ -5319,7 +5759,7 @@ export const useQueryStore = defineStore("query", () => {
     }
   }
 
-  async function buildQueryMetadataPatch(tab: QueryTab, sql: string, executionDatabase: string, traceId?: string, elapsed?: () => string, hiddenPrimaryKeys: HiddenPrimaryKeyProjection[] = []): Promise<QueryMetadataPatch | undefined> {
+  async function buildQueryMetadataPatch(tab: QueryTab, sql: string, executionDatabase: string, traceId?: string, elapsed?: () => string, hiddenPrimaryKeys: HiddenPrimaryKeyProjection[] = [], connection?: ConnectionConfig): Promise<QueryMetadataPatch | undefined> {
     if (tab.mode !== "query") return;
     if (!tab.result || !tab.result.columns.length) {
       return {
@@ -5339,8 +5779,13 @@ export const useQueryStore = defineStore("query", () => {
       elapsed: elapsed?.(),
     });
     if (!editability.editable) {
-      const aggregationPatch = editability.reason === "aggregation" ? await resolveAggregationQueryMetadata(tab, sql, executionDatabase, traceId) : undefined;
-      if (aggregationPatch) return aggregationPatch;
+      let displayPatch: QueryMetadataPatch | undefined;
+      if (editability.reason === "aggregation") {
+        displayPatch = await resolveQueryDisplayMetadata(tab, sql, executionDatabase, traceId, connection);
+      } else if (editability.reason === "complex-source") {
+        displayPatch = await resolveQueryDisplayMetadata(tab, sql, executionDatabase, traceId, connection, false, "complex-source");
+      }
+      if (displayPatch) return displayPatch;
       return {
         queryAnalysis: undefined,
         querySourceColumns: undefined,
@@ -5359,8 +5804,7 @@ export const useQueryStore = defineStore("query", () => {
       };
     }
 
-    const connStore = useConnectionStore();
-    const conn = connStore.getConfig(tab.connectionId);
+    const conn = connection ?? useConnectionStore().getConfig(tab.connectionId);
     const dbType = conn?.db_type || "";
     const sources = editableQuerySources(analysis);
     const loadedSources: LoadedEditableSource[] = [];
@@ -5427,7 +5871,7 @@ export const useQueryStore = defineStore("query", () => {
           };
         }
 
-        if (!allEditableColumnsWriteable(metadataAnalysis, tab.result.columns)) {
+        if (!allEditableColumnsWriteable(metadataAnalysis, tab.result.columns, undefined, dbType)) {
           return {
             queryAnalysis: undefined,
             querySourceColumns: undefined,
@@ -5511,14 +5955,14 @@ export const useQueryStore = defineStore("query", () => {
     }
   }
 
-  function analyzeQueryMetadataInBackground(tabId: string, sql: string, result: QueryResult, executionDatabase: string, traceId: string, elapsed: () => string, databaseType: DatabaseType | undefined, hiddenPrimaryKeys: HiddenPrimaryKeyProjection[] = []) {
+  function analyzeQueryMetadataInBackground(tabId: string, sql: string, result: QueryResult, executionDatabase: string, traceId: string, elapsed: () => string, databaseType: DatabaseType | undefined, hiddenPrimaryKeys: HiddenPrimaryKeyProjection[] = [], connection?: ConnectionConfig) {
     void (async () => {
       const tab = tabs.value.find((t) => t.id === tabId);
       if (!tab || tab.result !== result) return;
       queryExecutionLog("info", "metadata:start", { traceId, elapsed: elapsed() });
       // Metadata requests outlive the displayed result when another query starts
       // or a retained run is selected. Analyze this result, not the live tab.
-      const patch = await buildQueryMetadataPatch({ ...tab, result }, sql, executionDatabase, traceId, elapsed, hiddenPrimaryKeys);
+      const patch = await buildQueryMetadataPatch({ ...tab, result }, sql, executionDatabase, traceId, elapsed, hiddenPrimaryKeys, connection);
       if (patch?.queryAnalysis && hasHiddenPhysicalRowKey(databaseType, hiddenPrimaryKeys)) {
         patch.queryAnalysis = { ...patch.queryAnalysis, allowInsert: false };
       }
@@ -5838,6 +6282,11 @@ export const useQueryStore = defineStore("query", () => {
     let producedResult = false;
     const resumedExecutionTarget = batchResume?.batch.executionTarget;
     const executionConnectionId = resumedExecutionTarget?.connectionId ?? options?.executionTarget?.connectionId ?? tab.connectionId;
+    // Captured for the catch below: a single-statement failure aborts the whole
+    // execute-multi command (the core only returns per-statement error results
+    // for batches), so the synthesized error result must be annotated here for
+    // the row/column locate flow. These locals live inside the try block.
+    let errorLocateContext: { databaseType: DatabaseType | undefined; parameterOptions: SqlParameterOptions | undefined; sourceOffset: number | undefined; executedSql: string | undefined } | undefined;
     try {
       await waitForTabSessionReset(id);
       const connStore = useConnectionStore();
@@ -5862,6 +6311,9 @@ export const useQueryStore = defineStore("query", () => {
         mongoCommands = splitMongoCommandRanges(sql);
       }
       const effectiveDbType = effectiveDatabaseTypeForConnection(conn);
+      if (effectiveDbType === "mysql") {
+        sqlToExecute = stripMysqlClientDisplayCommand(sqlToExecute);
+      }
       if (tab.autoCommit === false && !supportsTransaction(conn?.db_type)) {
         tab.autoCommit = true;
       }
@@ -5873,19 +6325,31 @@ export const useQueryStore = defineStore("query", () => {
       const executionCatalog = resumedExecutionTarget ? resumedExecutionTarget.catalog : targetContext ? (targetContext.scope === "catalog" ? targetContext.catalog : undefined) : (executionTarget?.catalog ?? (tab.mode === "data" ? tab.tableMeta?.catalog : tab.catalog));
       const contextDatabase = databaseTargetContext?.database;
       const targetDatabase = resumedExecutionTarget ? resumedExecutionTarget.database : targetContext?.scope === "connection" ? "" : (contextDatabase ?? executionTarget?.database ?? tab.database);
+      if (effectiveDbType === "opengauss") {
+        await connStore.ensureDatabaseCompatibilityMode(executionConnectionId, targetDatabase || conn?.database);
+      }
       const targetSchema = resumedExecutionTarget ? resumedExecutionTarget.schema : targetContext?.scope === "connection" ? undefined : (databaseTargetContext?.schema ?? executionTarget?.schema ?? tab.schema);
       const executionDatabase = dataTabExecutionDatabase(conn, targetDatabase, executionCatalog);
+      const sqlStatementParameterOptions = sqlStatementParameterOptionsForCompatibility(effectiveDbType, effectiveDbType === "opengauss" ? connStore.databaseCompatibilityMode(executionConnectionId, targetDatabase || conn?.database) : undefined);
       const useAgentCursor = usesAgentCursorForQuery(conn?.db_type, conn?.driver_profile);
       const queryTimeoutSecs = queryTimeoutSecsForConnection(conn, settingsStore.editorSettings.globalQueryTimeoutSecs);
       if (!batchResume) {
         const statementExecution =
           tab.mode === "query"
-            ? createBatchSqlExecution(executionId, tab.sql, sql, effectiveDbType, options?.sourceOffset, {
-                connectionId: executionConnectionId,
-                catalog: executionCatalog,
-                database: targetDatabase,
-                schema: targetSchema,
-              })
+            ? createBatchSqlExecution(
+                executionId,
+                tab.sql,
+                sql,
+                effectiveDbType,
+                options?.sourceOffset,
+                {
+                  connectionId: executionConnectionId,
+                  catalog: executionCatalog,
+                  database: targetDatabase,
+                  schema: targetSchema,
+                },
+                sqlStatementParameterOptions,
+              )
             : undefined;
         tab.batchSqlExecution = statementExecution && (tab.autoCommit !== false || statementExecution.total === 1) ? statementExecution : undefined;
         if (tab.batchSqlExecution) liveBatchSqlExecutions.set(tab, tab.batchSqlExecution);
@@ -6131,6 +6595,28 @@ export const useQueryStore = defineStore("query", () => {
                 });
                 break;
               }
+              case "findExplain": {
+                queryExecutionLog("info", "mongo-explain:start", { traceId, collection: mongoCommand.collection, database: currentDatabase });
+                const plan = await api.mongoExplainFind(
+                  executionConnectionId,
+                  currentDatabase,
+                  mongoCommand.collection,
+                  {
+                    skip: mongoCommand.skip,
+                    limit: mongoCommand.limit,
+                    filter: mongoCommand.filter,
+                    projection: mongoCommand.projection,
+                    sort: mongoCommand.sort,
+                    collation: mongoCommand.collation,
+                    verbosity: mongoCommand.verbosity,
+                  },
+                  executionId,
+                );
+                allResults.push(markQueryResultRowsRaw(annotateMongoResult(mongoDocumentsToQueryResult([plan], performance.now() - commandStartedAt, 1))));
+                mongoEditTarget = undefined;
+                queryExecutionLog("info", "mongo-explain:done", { traceId, collection: mongoCommand.collection, database: currentDatabase, elapsed: elapsed() });
+                break;
+              }
               case "aggregate": {
                 if (options?.mongoSafety) {
                   const safety = evaluateMongoAggregateSafety(mongoCommand, options.mongoSafety);
@@ -6252,6 +6738,8 @@ export const useQueryStore = defineStore("query", () => {
               }
               case "insert":
               case "update":
+              case "replace":
+              case "bulkWrite":
               case "delete":
               case "createIndex":
               case "createUser":
@@ -6274,6 +6762,12 @@ export const useQueryStore = defineStore("query", () => {
                   allResults.push(markQueryResultRowsRaw(annotateMongoResult(mongoWriteToQueryResult(result.affected_rows, performance.now() - commandStartedAt))));
                 } else if (mongoCommand.kind === "update") {
                   const result = await api.mongoUpdateDocuments(executionConnectionId, currentDatabase, mongoCommand.collection, mongoCommand.filter, mongoCommand.update, mongoCommand.many, mongoCommand.options);
+                  allResults.push(markQueryResultRowsRaw(annotateMongoResult(mongoWriteToQueryResult(result.affected_rows, performance.now() - commandStartedAt))));
+                } else if (mongoCommand.kind === "bulkWrite") {
+                  const result = await api.mongoBulkWrite(executionConnectionId, currentDatabase, mongoCommand.collection, mongoCommand.operations, mongoCommand.options);
+                  allResults.push(markQueryResultRowsRaw(annotateMongoResult(mongoBulkWriteToQueryResult(result, performance.now() - commandStartedAt))));
+                } else if (mongoCommand.kind === "replace") {
+                  const result = await api.mongoReplaceDocument(executionConnectionId, currentDatabase, mongoCommand.collection, mongoCommand.filter, mongoCommand.replacement, mongoCommand.options);
                   allResults.push(markQueryResultRowsRaw(annotateMongoResult(mongoWriteToQueryResult(result.affected_rows, performance.now() - commandStartedAt))));
                 } else if (mongoCommand.kind === "createIndex") {
                   const result = await api.mongoCreateIndex(executionConnectionId, currentDatabase, mongoCommand.collection, mongoCommand.keys, mongoCommand.options);
@@ -6531,8 +7025,19 @@ export const useQueryStore = defineStore("query", () => {
         useAgentResultSession = conn?.db_type === "sqlserver" && conn?.driver_profile?.trim().toLowerCase() === "sqlserver-legacy";
       }
 
+      errorLocateContext = {
+        databaseType: effectiveDbType,
+        parameterOptions: sqlStatementParameterOptions,
+        sourceOffset: options?.sourceOffset,
+        executedSql: sqlToExecute,
+      };
+
       const executionSchema = connectionQueryExecutionSchema(conn, targetDatabase, targetSchema, tab.mode === "data");
-      const frontendTimeoutSecs = frontendQueryTimeoutSecsForSql(sqlToExecute, effectiveDbType, queryTimeoutSecs);
+      // Jumping to a non-zero offset without a live cursor session: the plan
+      // could not rewrite the SQL for these engines, so a plain execution
+      // would return the first page again (#8993).
+      const isOffsetJumpPage = typeof pageOffset === "number" && pageOffset > 0 && !options?.pagination?.sessionId;
+      const frontendTimeoutSecs = frontendQueryTimeoutSecsForSql(sqlToExecute, effectiveDbType, queryTimeoutSecs, sqlStatementParameterOptions);
       const sourceLabelDatabase = targetDatabase || conn?.database;
       const executionClientSessionId = options?.pagination?.clientSessionId ?? (tab.mode === "query" || tab.mode === "data" ? tabClientSessionId(tab) : undefined);
       const currentBeforeDispatch = findExecutionTab(id);
@@ -6582,6 +7087,35 @@ export const useQueryStore = defineStore("query", () => {
           clientSession: Boolean(executionClientSessionId),
         });
         executionDispatched = true;
+        if (useAgentResultSession && tab.mode === "query" && typeof pageOffset === "number" && pageOffset > 0 && !options?.pagination?.sessionId && !(tab.batchSqlExecution && tab.batchSqlExecution.total > 1)) {
+          return (async () => {
+            let sessionId: string | undefined;
+            let skipped = 0;
+            while (true) {
+              const pageResults = await api.executeMulti(executionConnectionId, executionDatabase, sqlToExecute, executionSchema, executionId, {
+                ...executionOptions,
+                resultSessionId: sessionId,
+              });
+              const page = pageResults[0];
+              if (!page) return pageResults;
+              if (skipped + page.rows.length > pageOffset) {
+                const start = pageOffset - skipped;
+                const limit = typeof pageLimit === "number" ? pageLimit : page.rows.length - start;
+                return [{ ...page, rows: page.rows.slice(start, start + limit) }];
+              }
+              skipped += page.rows.length;
+              if (!page.has_more || !page.session_id) {
+                if (page.has_more) {
+                  // The cursor session ended before the requested offset;
+                  // returning the short page would show the wrong rows.
+                  throw new Error("Result session ended before the requested page offset");
+                }
+                return [{ ...page, rows: [] }];
+              }
+              sessionId = page.session_id;
+            }
+          })();
+        }
         return tab.batchSqlExecution && tab.batchSqlExecution.total > 1
           ? api.executeMultiWithProgress(
               executionConnectionId,
@@ -6625,16 +7159,21 @@ export const useQueryStore = defineStore("query", () => {
         } else {
           queryExecutionLog("info", "execute-in-txn:invoke", { traceId, txnSessionId: tab.txnSessionId, elapsed: elapsed() });
           executionDispatched = true;
-          // Only an initial manual execution classifies the user SQL (Oracle-only).
-          // A later cursor-page fetch must neither set nor clear the sticky bit.
-          const isInitialOracleManualExecution = effectiveDbType === "oracle" && !options?.pagination?.sessionId;
-          const classificationSql = isInitialOracleManualExecution ? queryBaseSql : undefined;
+          // Only an initial manual execution classifies the user SQL (sticky
+          // proven-read-only dialects). A later cursor-page fetch must neither
+          // set nor clear the sticky bit.
+          const isInitialStickyClassification = usesProvenReadOnlyStickyTransactionState(effectiveDbType) && !options?.pagination?.sessionId;
+          const classificationSql = isInitialStickyClassification ? queryBaseSql : undefined;
           let manualTransactionRecoveryAttempted = false;
           executionPromise = (async () => {
             const txnSessionId = tab.txnSessionId;
             if (!txnSessionId) throw new Error("Manual transaction session was not initialized");
+            // Offset jumps inside a manual transaction keep the legacy
+            // single-shot call: the session-consume loop only runs in the
+            // auto-commit path, and opening a cursor session here would
+            // strand it after returning the first page.
             const executeInTransaction = (sessionId: string) =>
-              useAgentResultSession
+              useAgentResultSession && !isOffsetJumpPage
                 ? api.executeInManualTransaction(sessionId, sqlToExecute, executionDatabase, executionSchema, agentProtocolQueryResultMaxRows(queryResultMaxRows), useOracleLobPreview, pageLimit, options?.pagination?.sessionId, classificationSql)
                 : api.executeInManualTransaction(sessionId, sqlToExecute, executionDatabase, executionSchema, pageLimit ?? agentProtocolQueryResultMaxRows(queryResultMaxRows), useOracleLobPreview, undefined, undefined, classificationSql);
             try {
@@ -6644,7 +7183,7 @@ export const useQueryStore = defineStore("query", () => {
               manualTransactionRecoveryAttempted = true;
               // The expired session was discarded by the backend; the replacement
               // session starts fresh, so the old sticky state resets with it.
-              clearOracleTxnPossiblyDirty(tab);
+              clearTxnPossiblyDirty(tab);
               tab.txnSessionId = undefined;
               tab.txnAutoRolledBack = true;
               queryExecutionLog("info", "manual-txn:expired-recover", { traceId, elapsed: elapsed() });
@@ -6658,22 +7197,36 @@ export const useQueryStore = defineStore("query", () => {
       } else {
         executionPromise = executeWithoutManualTransaction();
       }
-      const annotatedResults = annotateQueryResultSources(markQueryResultsRowsRaw(await withFrontendQueryTimeout(executionPromise, frontendTimeoutSecs, t("editor.queryTimeoutError", { seconds: frontendTimeoutSecs }))), queryBaseSql, sourceLabelDatabase, effectiveDbType, options?.sourceOffset);
+      const annotatedResults = annotateQueryResultSources(
+        markQueryResultsRowsRaw(
+          await withFrontendQueryTimeout(executionPromise, frontendTimeoutSecs, t("editor.queryTimeoutError", { seconds: frontendTimeoutSecs }), () => {
+            void api.cancelQuery(executionId).catch((error) => queryExecutionLog("warn", "frontend-timeout:cancel-failed", { traceId, error }));
+          }),
+        ),
+        queryBaseSql,
+        sourceLabelDatabase,
+        effectiveDbType,
+        options?.sourceOffset,
+        sqlStatementParameterOptions,
+        sqlToExecute,
+        options?.sourceOffset === undefined ? undefined : tab.sql,
+      );
       const results = offsetBatchQueryResultIndexes(annotatedResults.results, batchResume?.startStatementIndex ?? 0);
       reconcileBatchSqlResults(tab, executionId, results);
-      // Oracle-only sticky state aggregation. Only the initial manual execution
-      // participates: a later cursor-page fetch (pagination.sessionId present)
-      // must neither set nor clear the bit, and the Core no-op (empty script)
-      // must neither set nor clear it. Otherwise any result that is not proven
-      // read-only dirties the session monotonically.
-      if (tab.autoCommit === false && effectiveDbType === "oracle" && !options?.pagination?.sessionId && tab.txnSessionId) {
+      // Sticky proven-read-only aggregation (Oracle/OceanBase-Oracle/MySQL/PG).
+      // Only the initial manual execution participates: a later cursor-page
+      // fetch (pagination.sessionId present) must neither set nor clear the
+      // bit, and the Core no-op (empty script) must neither set nor clear it.
+      // Otherwise any result that is not proven read-only dirties the session
+      // monotonically.
+      if (tab.autoCommit === false && usesProvenReadOnlyStickyTransactionState(effectiveDbType) && !options?.pagination?.sessionId && tab.txnSessionId) {
         const rawResults = annotatedResults.results;
         const isCoreNoOp = rawResults.length > 0 && rawResults.every((result) => result.manual_transaction_no_statement === true);
         if (!isCoreNoOp && rawResults.some((result) => result.manual_transaction_proven_read_only !== true)) {
-          tab.oracleTxnPossiblyDirty = true;
+          tab.txnPossiblyDirty = true;
         }
       }
-      const successfulOracleSchemaChanges = effectiveDbType === "oracle" ? results.filter((result) => result.execution_error !== true && isOracleCurrentSchemaStatement(result.sourceStatement)).length : 0;
+      const successfulOracleSchemaChanges = usesOracleStickyTransactionState(effectiveDbType) ? results.filter((result) => result.execution_error !== true && isOracleCurrentSchemaStatement(result.sourceStatement)).length : 0;
       const successfulSapHanaSchemaChanges = effectiveDbType === "saphana" ? results.filter((result) => result.execution_error !== true && isSapHanaSetSchemaStatement(result.sourceStatement)).length : 0;
       const sqlServerUseDatabase = effectiveDbType === "sqlserver" ? annotatedResults.sqlServerUseDatabase : undefined;
       if (hiddenPrimaryKeys.length > 0 && results.length === 1) {
@@ -6874,7 +7427,7 @@ export const useQueryStore = defineStore("query", () => {
           elapsed: elapsed(),
         });
         if (current.mode === "query" && current.result) {
-          analyzeQueryMetadataInBackground(id, displayedQueryMetadataSql(current, queryMetadataSql), current.result, executionDatabase, traceId, elapsed, effectiveDbType, hiddenPrimaryKeys);
+          analyzeQueryMetadataInBackground(id, displayedQueryMetadataSql(current, queryMetadataSql), current.result, executionDatabase, traceId, elapsed, effectiveDbType, hiddenPrimaryKeys, conn);
         }
       } else {
         queryExecutionLog("warn", "stale-result", {
@@ -6895,21 +7448,21 @@ export const useQueryStore = defineStore("query", () => {
         if (idleTimeout) {
           // Backend session was removed and rolled back after idle expiry: clear
           // the sticky dirty state together with the session.
-          clearOracleTxnPossiblyDirty(tab);
+          clearTxnPossiblyDirty(tab);
           tab.txnSessionId = undefined;
           tab.txnAutoRolledBack = true;
         } else if (/rolled.?back/i.test(errMsg) || /transaction session not found/i.test(errMsg) || /agent runtime terminated/i.test(errMsg)) {
           // Statement failure that disposed the manual session: the `rolled back`
           // message fragment is a frontend cleanup compatibility contract.
-          clearOracleTxnPossiblyDirty(tab);
+          clearTxnPossiblyDirty(tab);
           tab.txnSessionId = undefined;
           tab.txnAutoRolledBack = false;
-        } else if (tab.txnSessionId && executionDispatched && !options?.pagination?.sessionId && effectiveDatabaseTypeForConnection(useConnectionStore().getConfig(tab.connectionId)) === "oracle") {
+        } else if (tab.txnSessionId && executionDispatched && !options?.pagination?.sessionId && usesProvenReadOnlyStickyTransactionState(effectiveDatabaseTypeForConnection(useConnectionStore().getConfig(tab.connectionId)))) {
           // Frontend timeout/cancel or mid-script failure: the statement may still
           // have executed server-side while the manual session survives, so keep
           // the sticky dirty state fail-closed instead of a clean toolbar on a
           // dirty session. Cursor-page fetches stay excluded like the aggregation.
-          tab.oracleTxnPossiblyDirty = true;
+          tab.txnPossiblyDirty = true;
         }
       }
       const current = findExecutionTab(id);
@@ -6926,6 +7479,7 @@ export const useQueryStore = defineStore("query", () => {
           return false;
         }
         const errorResult = toErrorResult(e);
+        annotateSingleStatementErrorResult(errorResult, queryBaseSql, errorLocateContext?.databaseType, errorLocateContext?.sourceOffset, errorLocateContext?.parameterOptions, errorLocateContext?.executedSql);
         const activeGroupIndex = current.activeResultIndex;
         const activeGroupResults = current.results;
         const shouldReplaceActiveResultInGroup = options?.replaceActiveResultInGroup === true && Array.isArray(activeGroupResults) && typeof activeGroupIndex === "number" && activeGroupIndex >= 0 && activeGroupIndex < activeGroupResults.length;
@@ -7489,7 +8043,7 @@ export const useQueryStore = defineStore("query", () => {
       const metadataStartedAt = performance.now();
       const connection = useConnectionStore().getConfig(tab.connectionId);
       const executionDatabase = dataTabExecutionDatabase(connection, tab.database, tab.catalog);
-      analyzeQueryMetadataInBackground(id, sourceStatement, tab.result, executionDatabase, uuid().slice(0, 8), () => `${Math.round(performance.now() - metadataStartedAt)}ms`, effectiveDatabaseTypeForConnection(connection));
+      analyzeQueryMetadataInBackground(id, sourceStatement, tab.result, executionDatabase, uuid().slice(0, 8), () => `${Math.round(performance.now() - metadataStartedAt)}ms`, effectiveDatabaseTypeForConnection(connection), [], connection);
     }
   }
 
@@ -7623,6 +8177,8 @@ export const useQueryStore = defineStore("query", () => {
       tab.tableMetaPending = true;
     }
     tab.resultPageSql = snapshot.resultPageSql;
+    // Cached rows and their pagination metadata describe the same result page.
+    // Restoring this state must not change the global page-size defaults.
     tab.resultPageLimit = snapshot.resultPageLimit;
     tab.resultPageOffset = snapshot.resultPageOffset;
     tab.resultCountSql = snapshot.resultCountSql;
@@ -7835,12 +8391,13 @@ export const useQueryStore = defineStore("query", () => {
     await connStore.ensureConnected(location.connectionId);
     const conn = connStore.getConfig(location.connectionId);
     const effectiveDbType = effectiveDatabaseTypeForConnection(conn);
+    const executableSql = effectiveDbType === "mysql" ? stripMysqlClientDisplayCommand(sql) : sql;
     const executionDatabase = dataTabExecutionDatabase(conn, location.database, location.catalog);
     // main 引入全局查询超时：queryTimeoutSecsForConnection 现需传入全局默认值；
     // settingsStore 取 defineStore 顶层声明的实例（本函数无局部覆盖）。
     const queryTimeoutSecs = queryTimeoutSecsForConnection(conn, settingsStore.editorSettings.globalQueryTimeoutSecs);
     const useAgentCursor = usesAgentCursorForQuery(conn?.db_type, conn?.driver_profile);
-    const queryBaseSql = queryResultBaseSql(tab);
+    const queryBaseSql = effectiveDbType === "mysql" ? stripMysqlClientDisplayCommand(queryResultBaseSql(tab)) : queryResultBaseSql(tab);
     const exportSettings = useSettingsStore().editorSettings;
     const exportRowLimit = exportSettings.exportRowLimitEnabled ? exportSettings.exportRowLimit : Number.POSITIVE_INFINITY;
 
@@ -7919,7 +8476,7 @@ export const useQueryStore = defineStore("query", () => {
         const remaining = exportRowLimit - rows.length;
         const effectivePageLimit = Math.min(pageLimit, remaining);
         const plan = await api.prepareQueryPaginationExecutionPlan({
-          sql,
+          sql: executableSql,
           queryBaseSql,
           databaseType: effectiveDbType,
           pagination: { limit: effectivePageLimit, offset, sessionId },
@@ -7981,7 +8538,8 @@ export const useQueryStore = defineStore("query", () => {
     if (!effectiveDbType) return undefined;
     if (effectiveDbType === "mongodb") return undefined;
     const useAgentCursor = usesAgentCursorForQuery(conn?.db_type, conn?.driver_profile);
-    const queryBaseSql = queryResultBaseSql(tab);
+    const executableSql = effectiveDbType === "mysql" ? stripMysqlClientDisplayCommand(sql) : sql;
+    const queryBaseSql = effectiveDbType === "mysql" ? stripMysqlClientDisplayCommand(queryResultBaseSql(tab)) : queryResultBaseSql(tab);
     const resultStatementIndex = tab.result.statement_index;
     const batchSql = tab.resultBaseSql ?? tab.lastExecutedSql ?? tab.sql;
     const batchStatements = effectiveDbType === "postgres" && tab.result.truncated === true && Number.isInteger(resultStatementIndex) && resultStatementIndex! > 0 ? splitSqlStatementRanges(batchSql, effectiveDbType) : [];
@@ -7996,7 +8554,7 @@ export const useQueryStore = defineStore("query", () => {
       database: dataTabExecutionDatabase(conn, location.database, location.catalog),
       schema: location.schema,
       catalog: location.catalog,
-      sql,
+      sql: executableSql,
       queryBaseSql,
       setupSql,
       databaseType: effectiveDbType,
@@ -8032,13 +8590,14 @@ export const useQueryStore = defineStore("query", () => {
     if (!effectiveDbType) return;
 
     const exportId = uuid();
+    const executableSql = effectiveDbType === "mysql" ? stripMysqlClientDisplayCommand(sql) : sql;
     const request: api.QueryResultExportRequest = {
       exportId,
       connectionId: tab.connectionId,
       database: tab.database,
       schema: tab.schema,
-      sql,
-      queryBaseSql: sql,
+      sql: executableSql,
+      queryBaseSql: executableSql,
       databaseType: effectiveDbType,
       useAgentCursor: usesAgentCursorForQuery(conn?.db_type, conn?.driver_profile),
       filePath,
@@ -8098,6 +8657,8 @@ export const useQueryStore = defineStore("query", () => {
     isConfirmingAppClose,
     createTab,
     openObjectSourceTab,
+    openObjectSourceTabPending,
+    retryObjectSourceTab,
     showExecutedQueryResults,
     focusGroup,
     activateTab,
@@ -8187,10 +8748,11 @@ export const useQueryStore = defineStore("query", () => {
     openMqAdmin,
     openMqttAdmin,
     openNacosAdmin,
-    clearNacosNavigationTarget,
     openPluginWorkbench,
     openPluginFilesystem,
+    reconnectRestoredPluginTabs,
     openPluginConnection,
+    clearNacosNavigationTarget,
     openTableStructure,
     linkSavedSql,
     linkExternalSqlPath,
@@ -8199,6 +8761,7 @@ export const useQueryStore = defineStore("query", () => {
     hydrateSavedSqlTabs,
     togglePinnedTab,
     reorderTab,
+    createExecutionTargetGuard,
     updateDatabase,
     updateCatalog,
     updateSchema,
@@ -8215,6 +8778,7 @@ export const useQueryStore = defineStore("query", () => {
     toggleResultAutoSave,
     setActiveResultRun,
     toggleResultRunPinned,
+    renameResultRun,
     unpinAllResultRuns,
     closeOtherResultRuns,
     closeResultRunsToLeft,

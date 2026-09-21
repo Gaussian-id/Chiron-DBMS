@@ -37,6 +37,67 @@ pub struct DatabaseStorageRequest {
     pub databases: Vec<String>,
 }
 
+#[derive(Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct SchemaViewerDescribeRequest {
+    pub connection_id: String,
+}
+
+#[derive(Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct SchemaViewerScopesRequest {
+    pub connection_id: String,
+    #[serde(default)]
+    pub parent: chiron_horizon_core::schema_viewer::SchemaViewScope,
+    pub search: Option<String>,
+    pub limit: Option<usize>,
+    pub offset: Option<usize>,
+}
+
+#[derive(Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct SchemaViewRequest {
+    pub connection_id: String,
+    pub scope: chiron_horizon_core::schema_viewer::SchemaViewScope,
+}
+
+pub async fn describe_schema_viewer(
+    State(state): State<Arc<WebState>>,
+    Json(req): Json<SchemaViewerDescribeRequest>,
+) -> Result<Json<chiron_horizon_core::schema_viewer::SchemaViewerDescriptor>, AppError> {
+    chiron_horizon_core::schema_viewer::describe_schema_viewer_core(&state.app, &req.connection_id)
+        .await
+        .map(Json)
+        .map_err(AppError::from)
+}
+
+pub async fn list_schema_viewer_scopes(
+    State(state): State<Arc<WebState>>,
+    Json(req): Json<SchemaViewerScopesRequest>,
+) -> Result<Json<chiron_horizon_core::schema_viewer::SchemaScopePage>, AppError> {
+    chiron_horizon_core::schema_viewer::list_schema_viewer_scopes_core(
+        &state.app,
+        &req.connection_id,
+        &req.parent,
+        req.search.as_deref(),
+        req.limit.unwrap_or(200),
+        req.offset.unwrap_or(0),
+    )
+    .await
+    .map(Json)
+    .map_err(AppError::from)
+}
+
+pub async fn get_schema_view(
+    State(state): State<Arc<WebState>>,
+    Json(req): Json<SchemaViewRequest>,
+) -> Result<Json<chiron_horizon_core::schema_viewer::SchemaViewResponse>, AppError> {
+    chiron_horizon_core::schema_viewer::get_schema_view_core(&state.app, &req.connection_id, req.scope)
+        .await
+        .map(Json)
+        .map_err(AppError::from)
+}
+
 pub async fn list_databases(
     State(state): State<Arc<WebState>>,
     Query(q): Query<SchemaQuery>,
@@ -423,25 +484,8 @@ pub async fn get_custom_type_details(
     Ok(Json(result))
 }
 
-const OBJECT_METADATA_CACHE_PREFIX: &str = "object-meta:v1";
-
-fn metadata_cache_segment(value: &str) -> String {
-    const HEX: &[u8; 16] = b"0123456789ABCDEF";
-    let mut encoded = String::with_capacity(value.len());
-    for byte in value.bytes() {
-        match byte {
-            b'A'..=b'Z' | b'a'..=b'z' | b'0'..=b'9' | b'-' | b'_' | b'.' | b'!' | b'~' | b'*' | b'\'' | b'(' | b')' => {
-                encoded.push(byte as char)
-            }
-            _ => {
-                encoded.push('%');
-                encoded.push(HEX[(byte >> 4) as usize] as char);
-                encoded.push(HEX[(byte & 0x0f) as usize] as char);
-            }
-        }
-    }
-    encoded
-}
+pub(crate) use chiron_horizon_core::object_cache::object_metadata_cache_prefix;
+use chiron_horizon_core::object_cache::{metadata_cache_segment, OBJECT_METADATA_CACHE_PREFIX};
 
 fn metadata_cache_key(
     connection_id: &str,
@@ -462,15 +506,6 @@ fn metadata_cache_key(
         String::new(),
     ]
     .join(":")
-}
-
-pub(crate) fn object_metadata_cache_prefix(connection_id: &str, database: &str) -> String {
-    format!(
-        "{}:{}:{}:",
-        OBJECT_METADATA_CACHE_PREFIX,
-        metadata_cache_segment(connection_id),
-        metadata_cache_segment(database)
-    )
 }
 
 fn decode_metadata_cache<T: DeserializeOwned>(value: serde_json::Value) -> Option<T> {

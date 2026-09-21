@@ -494,6 +494,9 @@ async fn main() {
         .route("/agents/progress/{operationId}", get(routes::agents::agent_progress))
         // Schema
         .route("/schema/databases", get(routes::schema::list_databases))
+        .route("/schema/viewer/describe", post(routes::schema::describe_schema_viewer))
+        .route("/schema/viewer/scopes", post(routes::schema::list_schema_viewer_scopes))
+        .route("/schema/viewer/view", post(routes::schema::get_schema_view))
         .route("/schema/database-metadata", get(routes::schema::list_database_metadata))
         .route("/schema/database-storage", post(routes::schema::list_database_storage))
         .route("/schema/xugu/tablespaces", get(routes::schema::list_xugu_tablespaces))
@@ -668,6 +671,7 @@ async fn main() {
         .route("/query/close-client-session", post(routes::query::close_client_connection_session))
         .route("/export/query-result-json", post(routes::text_export::export_query_result_json))
         .route("/export/query-result-markdown", post(routes::text_export::export_query_result_markdown))
+        .route("/export/query-result-html", post(routes::text_export::export_query_result_html))
         // Redis
         .route("/redis/list-databases", post(routes::redis::list_databases))
         .route("/redis/scan-keys", post(routes::redis::scan_keys))
@@ -975,6 +979,8 @@ async fn main() {
         .route("/mongo/insert-documents", post(routes::mongo::insert_documents))
         .route("/mongo/update-document", post(routes::mongo::update_document))
         .route("/mongo/update-documents", post(routes::mongo::update_documents))
+        .route("/mongo/replace-document", post(routes::mongo::replace_document))
+        .route("/mongo/bulk-write", post(routes::mongo::bulk_write))
         .route("/mongo/delete-document", post(routes::mongo::delete_document))
         .route("/mongo/delete-documents", post(routes::mongo::delete_documents))
         .route("/mongo/find-one-and-update", post(routes::mongo::find_one_and_update))
@@ -995,6 +1001,25 @@ async fn main() {
         .route("/mongo/export/progress/{exportId}", get(routes::mongodb_import_export::export_progress))
         .route("/mongo/export/download/{exportId}", get(routes::mongodb_import_export::export_download))
         .route("/mongo/export/cancel", post(routes::mongodb_import_export::cancel_export))
+        .route("/mongo/dump/catalog", post(routes::mongodb_dump::catalog))
+        .route(
+            "/mongo/dump/source",
+            post(routes::mongodb_dump::prepare_source).layer(DefaultBodyLimit::max(
+                routes::table_import::import_request_body_limit_for_upload(web_body_limit_bytes()),
+            )),
+        )
+        .route("/mongo/dump/source/release", post(routes::mongodb_dump::release_source))
+        .route("/mongo/dump/upload-limit", get(routes::mongodb_dump::upload_limit))
+        .route(
+            "/mongo/dump/source/upload",
+            post(routes::mongodb_dump::upload_restore_source).layer(DefaultBodyLimit::max(
+                routes::table_import::import_request_body_limit_for_upload(web_body_limit_bytes()),
+            )),
+        )
+        .route("/mongo/dump/export", post(routes::mongodb_dump::start_dump))
+        .route("/mongo/dump/restore", post(routes::mongodb_dump::start_restore))
+        .route("/mongo/dump/progress/{taskId}", get(routes::mongodb_dump::progress))
+        .route("/mongo/dump/cancel", post(routes::mongodb_dump::cancel))
         // History
         .route("/history", get(routes::history::load_history).delete(routes::history::clear_history))
         .route("/history/save", post(routes::history::save_history))

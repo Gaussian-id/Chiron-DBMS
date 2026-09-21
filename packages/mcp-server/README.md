@@ -1,8 +1,8 @@
 # Chiron Horizon MCP Server
 
-Rust-powered Model Context Protocol server for [Chiron Horizon](https://github.com/Gaussian-id/Gauss-Horizon). It lets MCP-compatible AI agents inspect schemas and run safe database operations using connections configured in Chiron Horizon.
+Rust-powered Model Context Protocol server for [Chiron Horizon](https://github.com/Gaussian-id/Chiron-Horizon). It lets MCP-compatible AI agents inspect schemas and run safe database operations using connections configured in Chiron Horizon.
 
-[Source repository](https://github.com/Gaussian-id/Gauss-Horizon) | [Desktop MCP guide](../../docs/content/docs/mcp.mdx)
+[Source repository](https://github.com/Gaussian-id/Chiron-Horizon) | [Desktop MCP guide](../../docs/content/docs/mcp.mdx)
 
 ## Architecture
 

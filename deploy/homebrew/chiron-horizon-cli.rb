@@ -1,6 +1,6 @@
 class ChironHorizonCli < Formula
   desc "Command-line interface for Chiron Horizon database connections, schema, and safe queries"
-  homepage "https://github.com/Gaussian-id/Gauss-Horizon"
+  homepage "https://github.com/Gaussian-id/Chiron-Horizon"
   url "https://registry.npmjs.org/@chiron-horizon/cli/-/cli-0.4.7.tgz"
   sha256 "d507138dc5bd9611ad1e668a14e5a099754e8a1a3994742f2d03dbc22da911d8"
   license "Apache-2.0"

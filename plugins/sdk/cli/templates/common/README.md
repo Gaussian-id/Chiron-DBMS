@@ -32,4 +32,4 @@ The command builds the native backend for the current host, stages `manifest.jso
 
 Source code and unsigned candidates stay in this repository. Chiron Horizon users install the Chiron Horizon Store-signed assets exposed by the official catalog.
 
-Do not submit ordinary plugin source to `Gaussian-id/Gauss-Horizon`; that repository accepts plugin host, SDK, CLI, schema, documentation, and official-example changes.
+Do not submit ordinary plugin source to `Gaussian-id/Chiron-Horizon`; that repository accepts plugin host, SDK, CLI, schema, documentation, and official-example changes.

@@ -74,12 +74,11 @@ export function useSidebarTreeToolRuntime(options: SidebarTreeToolRuntimeOptions
     if (!node.connectionId || !node.database) return;
     const tables = selectedSameSchemaStructureTargets().filter((target) => target.type === "table");
     const tableNames = tables.length > 1 ? tables.map((target) => target.label) : undefined;
-    connectionStore.diagramSource = {
+    connectionStore.schemaViewerSource = {
       connectionId: node.connectionId,
       database: node.database,
       schema: node.schema,
-      tableName: tableNames?.length ? tableNames[0] : node.type === "table" ? node.label : undefined,
-      tableNames,
+      object: tableNames?.length ? tableNames[0] : node.type === "table" ? node.label : undefined,
     };
   }
 
@@ -149,6 +148,12 @@ export function useSidebarTreeToolRuntime(options: SidebarTreeToolRuntimeOptions
     };
   }
 
+  function openMongoDatabaseDump(mode: "dump" | "restore") {
+    const node = activeNode.value;
+    if (node.type !== "mongo-db" || !node.connectionId || !node.database) return;
+    connectionStore.mongoDatabaseDumpSource = { connectionId: node.connectionId, database: node.database, mode };
+  }
+
   function openStructureEditor() {
     const node = activeNode.value;
     if (!node.connectionId || !node.database) return;
@@ -191,6 +196,7 @@ export function useSidebarTreeToolRuntime(options: SidebarTreeToolRuntimeOptions
     openDocs,
     openFieldLineage,
     openMongoImport,
+    openMongoDatabaseDump,
     openScheduledBackups,
     openSchemaDiff,
     openSchemaDiffForRoutine,
