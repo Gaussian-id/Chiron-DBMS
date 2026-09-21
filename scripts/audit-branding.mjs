@@ -55,6 +55,12 @@ if (config.productName !== "Chiron Horizon" || !/^0\.1\.\d+$/.test(config.versio
   failures.push("Unexpected application identity");
 }
 if (config.plugins.updater || config.bundle.createUpdaterArtifacts) failures.push("Updater configuration must be absent/disabled");
+for (const [target, options] of Object.entries(config.bundle?.linux ?? {})) {
+  const template = options?.desktopTemplate;
+  if (typeof template !== "string" || !existsSync(`src-tauri/${template}`)) {
+    failures.push(`Linux ${target} desktop template is missing: ${String(template)}`);
+  }
+}
 
 const workflows = readdirSync(".github/workflows").sort();
 const expectedWorkflows = new Set(["verify.yml", "release.yml"]);
