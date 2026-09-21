@@ -1436,7 +1436,7 @@ dependencies = [
 
 [[package]]
 name = "chiron-horizon-cli"
-version = "0.1.2"
+version = "0.1.3"
 dependencies = [
  "async-trait",
  "chiron-horizon-core",
@@ -1450,7 +1450,7 @@ dependencies = [
 
 [[package]]
 name = "chiron-horizon-core"
-version = "0.1.2"
+version = "0.1.3"
 dependencies = [
  "aes 0.8.4",
  "aes-gcm 0.10.3",
@@ -1537,7 +1537,7 @@ dependencies = [
 
 [[package]]
 name = "chiron-horizon-mcp"
-version = "0.1.2"
+version = "0.1.3"
 dependencies = [
  "async-trait",
  "axum",
@@ -1562,7 +1562,7 @@ dependencies = [
 
 [[package]]
 name = "chiron-horizon-sqlite-worker"
-version = "0.1.2"
+version = "0.1.3"
 dependencies = [
  "rusqlite",
  "serde",
@@ -1572,7 +1572,7 @@ dependencies = [
 
 [[package]]
 name = "chiron-horizon-web"
-version = "0.1.2"
+version = "0.1.3"
 dependencies = [
  "aes-gcm 0.10.3",
  "argon2",
@@ -1603,7 +1603,7 @@ dependencies = [
 
 [[package]]
 name = "chiron_horizon"
-version = "0.1.2"
+version = "0.1.3"
 dependencies = [
  "anyhow",
  "axum",
