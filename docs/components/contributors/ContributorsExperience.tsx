@@ -175,7 +175,7 @@ async function drawCertificate(contributor: ContributorActivity, lang: Language)
 
   context.fillStyle = "#8b8998";
   context.font = "500 19px ui-monospace, monospace";
-  context.fillText(`Gaussian-id/Gauss-Horizon · ${new Date().toISOString().slice(0, 10)}`, 196, 948);
+  context.fillText(`Gaussian-id/Chiron-Horizon · ${new Date().toISOString().slice(0, 10)}`, 196, 948);
 
   const link = document.createElement("a");
   link.download = `chiron-horizon-contributor-${contributor.login}.png`;
@@ -311,7 +311,7 @@ export function ContributorsExperience({ data, lang }: { data: ContributorActivi
                 <div><b>{verifiedContributor.commits}</b><span>COMMITS</span></div>
               </div>
               <div className={styles.fullSeal}><img src={verifiedContributor.avatarUrl} alt={verifiedContributor.login} width={128} height={128} /></div>
-              <footer><span>Gaussian-id/Gauss-Horizon</span><span>github.com/Gaussian-id/Gauss-Horizon</span></footer>
+              <footer><span>Gaussian-id/Chiron-Horizon</span><span>github.com/Gaussian-id/Chiron-Horizon</span></footer>
             </div>
             <div className={styles.modalActions}>
               <button type="button" onClick={() => drawCertificate(verifiedContributor, lang)}><Download size={17} /> {text.download}</button>

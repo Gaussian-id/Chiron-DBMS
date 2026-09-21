@@ -92,6 +92,7 @@ pub mod runtime_config;
 pub mod saved_sql;
 pub mod schema;
 pub mod schema_diff;
+pub mod schema_viewer;
 pub mod script_generator;
 pub mod session_credentials;
 pub mod sql;
@@ -125,7 +126,7 @@ pub mod write_unlock;
 pub mod xlsx_export;
 
 pub const R2_CDN_BASE: &str = "https://distribution-disabled.invalid/";
-pub const GITHUB_RELEASE_DOWNLOAD_PREFIX: &str = "https://github.com/Gaussian-id/Gauss-Horizon/releases/download/";
+pub const GITHUB_RELEASE_DOWNLOAD_PREFIX: &str = "https://github.com/Gaussian-id/Chiron-Horizon/releases/download/";
 pub const CNB_RELEASE_DOWNLOAD_PREFIX: &str = "https://distribution-disabled.invalid/-/releases/download/";
 
 #[derive(Clone, Copy, Debug, Default, serde::Deserialize, PartialEq, Eq, Hash)]

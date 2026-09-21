@@ -1,6 +1,6 @@
 [package]
 name = "chiron-horizon-web"
-version = "0.1.0"
+version = "0.1.2"
 edition = "2021"
 license = "Apache-2.0"
 
@@ -42,3 +42,6 @@ base64 = "0.22"
 pbkdf2 = "0.12"
 sha2 = "0.10"
 tempfile = "3"
+
+[dev-dependencies]
+reqwest = { version = "0.12", default-features = false, features = ["multipart"] }

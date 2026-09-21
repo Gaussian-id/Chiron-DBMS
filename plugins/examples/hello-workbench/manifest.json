@@ -7,8 +7,8 @@
   "version": "1.0.0",
   "publisher": "chiron-horizon",
   "description": "A complete Chiron Horizon plugin example with a native sidecar, events, workbench UI, connection provider, and virtual filesystem provider.",
-  "source": "https://github.com/Gaussian-id/Gauss-Horizon",
-  "homepage": "https://github.com/Gaussian-id/Gauss-Horizon/tree/main/plugins/examples/hello-workbench",
+  "source": "https://github.com/Gaussian-id/Chiron-Horizon",
+  "homepage": "https://github.com/Gaussian-id/Chiron-Horizon/tree/main/plugins/examples/hello-workbench",
   "engines": {
     "chiron-horizon": ">=0.5.68",
     "host_api": "^1.0"

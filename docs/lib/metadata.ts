@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 
-export const SITE_URL = "https://github.com/Gaussian-id/Gauss-Horizon";
+export const SITE_URL = "https://github.com/Gaussian-id/Chiron-Horizon";
 export const SITE_NAME = "Chiron Horizon";
 export const DEFAULT_DESCRIPTION = "Chiron Horizon desktop database workbench with AI and MCP support.";
 export const DEFAULT_OG_IMAGE = "/logo.png";

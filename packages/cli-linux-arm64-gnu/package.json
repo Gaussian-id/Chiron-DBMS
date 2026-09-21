@@ -1,11 +1,11 @@
 {
   "name": "@chiron-horizon/cli-linux-arm64-gnu",
-  "version": "0.1.0",
+  "version": "0.4.90",
   "description": "Precompiled Chiron Horizon CLI binary for Linux arm64 glibc",
   "license": "Apache-2.0",
   "repository": {
     "type": "git",
-    "url": "https://github.com/Gaussian-id/Gauss-Horizon",
+    "url": "https://github.com/t8y2/chiron_horizon",
     "directory": "packages/cli-linux-arm64-gnu"
   },
   "os": [
@@ -18,7 +18,7 @@
     "glibc"
   ],
   "bin": {
-    "chiron-horizon-native": "bin/chiron-horizon"
+    "chiron-horizon-native": "bin/chiron_horizon"
   },
   "files": [
     "bin"

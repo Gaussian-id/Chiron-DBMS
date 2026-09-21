@@ -15,7 +15,7 @@ The plugin author keeps the following in the plugin's own Git repository:
 - package scripts and GitHub Actions workflows;
 - public release notes and issue tracker links.
 
-The source may live inside `Gaussian-id/Gauss-Horizon` for a tightly coupled official plugin or in an independent author repository. Official and verified submissions must give Chiron Horizon reviewers access to the corresponding source. Open-source plugins normally provide a public source URL; a future closed-source commercial flow may use private reviewer access.
+The source may live inside `Gaussian-id/Chiron-Horizon` for a tightly coupled official plugin or in an independent author repository. Official and verified submissions must give Chiron Horizon reviewers access to the corresponding source. Open-source plugins normally provide a public source URL; a future closed-source commercial flow may use private reviewer access.
 
 Official plugin authors do not receive or maintain the Chiron Horizon Store signing key.
 

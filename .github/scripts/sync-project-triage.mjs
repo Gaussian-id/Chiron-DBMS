@@ -2,7 +2,7 @@
 
 const DEFAULT_PROJECT_OWNER = "t8y2";
 const DEFAULT_PROJECT_NUMBER = 1;
-const DEFAULT_REPO = "Gaussian-id/Gauss-Horizon";
+const DEFAULT_REPO = "Gaussian-id/Chiron-Horizon";
 
 function parseArgs(argv) {
   const args = {};

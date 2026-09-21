@@ -26,9 +26,9 @@ pub const MAX_PLUGIN_CATALOG_BYTES: usize = 4 * 1024 * 1024;
 
 const REPOSITORIES_FILE: &str = ".repositories.json";
 const REPOSITORIES_LOCK_FILE: &str = ".repositories.lock";
-const OFFICIAL_CATALOG_URL: &str = "https://dl.chiron-horizon.com/catalog/index.json";
+const OFFICIAL_CATALOG_URL: &str = "https://dl.chiron_horizonio.com/catalog/index.json";
 const OFFICIAL_CATALOG_FALLBACK_URL: &str =
-    "https://raw.githubusercontent.com/Gaussian-id/Gauss-Horizon-store/main/catalog/index.json";
+    "https://raw.githubusercontent.com/t8y2/chiron-horizon-store/main/catalog/index.json";
 const ADDITIONAL_OFFICIAL_TRUSTED_KEYS_JSON: Option<&str> =
     option_env!("CHIRON_HORIZON_PLUGIN_MARKETPLACE_TRUSTED_KEYS_JSON");
 const BUILTIN_OFFICIAL_TRUSTED_KEYS: &[(&str, &str)] = &[
@@ -286,6 +286,7 @@ pub struct PluginMarketplace {
     app_version: String,
     repositories: PluginRepositoryStore,
     client: Client,
+    lifecycle: Option<super::PluginLifecycle>,
 }
 
 impl PluginMarketplace {
@@ -302,11 +303,24 @@ impl PluginMarketplace {
             root_dir,
             app_version: app_version.into(),
             client,
+            lifecycle: None,
         })
     }
 
     pub fn repositories(&self) -> &PluginRepositoryStore {
         &self.repositories
+    }
+
+    pub fn with_lifecycle(mut self, lifecycle: super::PluginLifecycle) -> Self {
+        self.lifecycle = Some(lifecycle);
+        self
+    }
+
+    fn guard_installer(&self, installer: PluginPackageInstaller) -> PluginPackageInstaller {
+        match &self.lifecycle {
+            Some(lifecycle) => installer.with_lifecycle(lifecycle.clone()),
+            None => installer,
+        }
     }
 
     pub async fn fetch_catalogs(&self) -> Vec<PluginRepositoryCatalogResult> {
@@ -374,6 +388,9 @@ impl PluginMarketplace {
     }
 
     pub async fn install(&self, request: PluginMarketplaceInstallRequest) -> Result<PluginInstallResult, String> {
+        if let Some(lifecycle) = &self.lifecycle {
+            lifecycle.check_update(&request.plugin_id)?;
+        }
         let repository = self.repositories.find(&request.repository_id)?;
         if !repository.enabled {
             return Err(format!("Plugin repository '{}' is disabled", repository.id));
@@ -405,11 +422,15 @@ impl PluginMarketplace {
             permissions: plugin.permissions.iter().cloned().collect(),
             signing_key_id: artifact.signing_key_id.clone(),
         };
-        PluginPackageInstaller::with_trust_store(self.root_dir.clone(), self.app_version.clone(), trust_store)
-            .install_marketplace_bytes(&package, &expectation)
+        self.guard_installer(PluginPackageInstaller::with_trust_store(
+            self.root_dir.clone(),
+            self.app_version.clone(),
+            trust_store,
+        ))
+        .install_marketplace_bytes(&package, &expectation)
     }
 
-    /// Downloads a .chiron-horizonp package from a direct http(s) URL and installs it with
+    /// Downloads a .chiron_horizonp package from a direct http(s) URL and installs it with
     /// the same policy semantics as a local package install, except that
     /// signatures may also verify against the built-in official Chiron Horizon Marketplace
     /// keys, so store-signed packages install from their direct artifact URLs
@@ -447,8 +468,7 @@ impl PluginMarketplace {
             bytes.extend_from_slice(&chunk);
             on_progress(bytes.len() as u64, total);
         }
-        let trust_store = url_install_trust_store(&self.root_dir)?;
-        PluginPackageInstaller::with_trust_store(self.root_dir.clone(), self.app_version.clone(), trust_store)
+        self.guard_installer(PluginPackageInstaller::new(self.root_dir.clone(), self.app_version.clone())?)
             .install_bytes(&bytes, policy)
     }
 
@@ -722,11 +742,11 @@ fn marketplace_trust_store(root_dir: &Path, kind: PluginRepositoryKind) -> Resul
     Ok(store)
 }
 
-/// Trust store for direct URL installs: the user's trusted keys plus the
+/// Trust store for local file and direct URL installs: the user's trusted keys plus the
 /// built-in official Chiron Horizon Marketplace keys. A user-saved key that collides with
 /// a builtin key id but carries a different public key is a rotation conflict
 /// and fails the install instead of silently overriding the builtin key.
-pub fn url_install_trust_store(root_dir: &Path) -> Result<PluginTrustStore, String> {
+pub(super) fn package_install_trust_store(root_dir: &Path) -> Result<PluginTrustStore, String> {
     let mut keys = PluginTrustStore::list_base64_keys(root_dir)?
         .into_iter()
         .map(|key| (key.key_id, key.public_key))
@@ -735,7 +755,7 @@ pub fn url_install_trust_store(root_dir: &Path) -> Result<PluginTrustStore, Stri
         if let Some(existing) = keys.get(&key_id) {
             if existing.trim() != public_key {
                 return Err(format!(
-                    "Trusted plugin key '{key_id}' already exists with a different public key; remove it before installing official store packages from a URL"
+                    "Trusted plugin key '{key_id}' already exists with a different public key; remove it before installing official store packages"
                 ));
             }
             continue;
@@ -743,6 +763,10 @@ pub fn url_install_trust_store(root_dir: &Path) -> Result<PluginTrustStore, Stri
         keys.insert(key_id, public_key);
     }
     PluginTrustStore::from_base64_keys(keys)
+}
+
+pub fn url_install_trust_store(root_dir: &Path) -> Result<PluginTrustStore, String> {
+    package_install_trust_store(root_dir)
 }
 
 fn parse_http_url(raw: &str, label: &str) -> Result<Url, String> {
@@ -835,7 +859,7 @@ mod tests {
                     release_notes: Some("Initial release".to_string()),
                     artifacts: vec![PluginMarketplaceArtifact {
                         target: current_plugin_target(),
-                        url: "../dist/plugin.chiron-horizonp".to_string(),
+                        url: "../dist/plugin.chiron_horizonp".to_string(),
                         sha256: "a".repeat(64),
                         signing_key_id: "example.release".to_string(),
                         size: Some(100),
@@ -876,7 +900,7 @@ mod tests {
         assert_eq!(plugin.icon.as_deref(), Some("https://plugins.example.com/team-marketplace/assets/icon.svg"));
         assert_eq!(
             plugin.versions[0].artifacts[0].url,
-            "https://plugins.example.com/team-marketplace/dist/plugin.chiron-horizonp"
+            "https://plugins.example.com/team-marketplace/dist/plugin.chiron_horizonp"
         );
     }
 
@@ -912,14 +936,14 @@ mod tests {
             artifacts: vec![
                 PluginMarketplaceArtifact {
                     target: UNIVERSAL_PLUGIN_TARGET.to_string(),
-                    url: "https://plugins.example.com/universal.chiron-horizonp".to_string(),
+                    url: "https://plugins.example.com/universal.chiron_horizonp".to_string(),
                     sha256: "a".repeat(64),
                     signing_key_id: "example.release".to_string(),
                     size: None,
                 },
                 PluginMarketplaceArtifact {
                     target: "darwin-arm64".to_string(),
-                    url: "https://plugins.example.com/darwin-arm64.chiron-horizonp".to_string(),
+                    url: "https://plugins.example.com/darwin-arm64.chiron_horizonp".to_string(),
                     sha256: "b".repeat(64),
                     signing_key_id: "example.release".to_string(),
                     size: None,
@@ -941,7 +965,7 @@ mod tests {
             release_notes: None,
             artifacts: vec![PluginMarketplaceArtifact {
                 target: UNIVERSAL_PLUGIN_TARGET.to_string(),
-                url: "https://plugins.example.com/universal.chiron-horizonp".to_string(),
+                url: "https://plugins.example.com/universal.chiron_horizonp".to_string(),
                 sha256: "a".repeat(64),
                 signing_key_id: "example.release".to_string(),
                 size: None,
@@ -983,7 +1007,7 @@ mod tests {
         let bytes = b"plugin-package";
         let artifact = PluginMarketplaceArtifact {
             target: current_plugin_target(),
-            url: "https://plugins.example.com/plugin.chiron-horizonp".to_string(),
+            url: "https://plugins.example.com/plugin.chiron_horizonp".to_string(),
             sha256: format!("{:x}", Sha256::digest(bytes)),
             signing_key_id: "example.release".to_string(),
             size: Some(bytes.len() as u64),
@@ -1014,6 +1038,14 @@ mod tests {
     fn loads_builtin_official_trusted_keys() {
         let root = tempfile::tempdir().unwrap();
         assert!(!marketplace_trust_store(root.path(), PluginRepositoryKind::Official).unwrap().is_empty());
+    }
+
+    #[test]
+    fn custom_repositories_do_not_implicitly_trust_official_keys() {
+        let root = tempfile::tempdir().unwrap();
+        for kind in [PluginRepositoryKind::Custom, PluginRepositoryKind::Enterprise] {
+            assert!(marketplace_trust_store(root.path(), kind).unwrap().is_empty());
+        }
     }
 
     #[tokio::test]
@@ -1103,7 +1135,7 @@ mod tests {
                     release_notes: None,
                     artifacts: vec![PluginMarketplaceArtifact {
                         target: UNIVERSAL_PLUGIN_TARGET.to_string(),
-                        url: "package.chiron-horizonp".to_string(),
+                        url: "package.chiron_horizonp".to_string(),
                         sha256: package_sha256,
                         signing_key_id: key_id.to_string(),
                         size: Some(package.len() as u64),
@@ -1248,7 +1280,7 @@ mod tests {
         let mut last_progress = (0u64, None);
         let result = marketplace
             .install_url_package(
-                &format!("http://{address}/plugin.chiron-horizonp"),
+                &format!("http://{address}/plugin.chiron_horizonp"),
                 PluginInstallPolicy::LocalSigned,
                 |downloaded, total| last_progress = (downloaded, total),
             )
@@ -1263,6 +1295,61 @@ mod tests {
     }
 
     #[tokio::test]
+    async fn direct_url_rechecks_runtime_usage_after_download() {
+        let root = tempfile::tempdir().unwrap();
+        let signing_key = SigningKey::from_bytes(&[7u8; 32]);
+        let key_id = "direct-url-release";
+        PluginTrustStore::save_base64_key(
+            root.path(),
+            key_id,
+            &base64::engine::general_purpose::STANDARD.encode(signing_key.verifying_key().as_bytes()),
+        )
+        .unwrap();
+        let registry = crate::plugins::PluginRegistry::new_with_app_version(root.path().to_path_buf(), "0.5.68");
+        let lifecycle = registry.lifecycle();
+        let marketplace =
+            PluginMarketplace::new(root.path().to_path_buf(), "0.5.68").unwrap().with_lifecycle(lifecycle.clone());
+        let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
+        let address = listener.local_addr().unwrap();
+        let server = serve_package_once(listener, signed_package(&signing_key, key_id));
+        let mut connection = None;
+        let result = marketplace
+            .install_url_package(
+                &format!("http://{address}/plugin.chiron_horizonp"),
+                PluginInstallPolicy::LocalSigned,
+                |_, _| {
+                    connection.get_or_insert_with(|| {
+                        lifecycle.begin_connection("marketplace.install", "Started during download").unwrap()
+                    });
+                },
+            )
+            .await;
+        server.await.unwrap();
+        assert!(result.unwrap_err().contains("Started during download"));
+        assert!(registry.find_plugin("marketplace.install").unwrap().is_none());
+        drop(connection);
+        assert!(lifecycle.begin_update("marketplace.install").is_ok());
+    }
+
+    #[tokio::test]
+    async fn marketplace_reports_active_connections_before_fetching_catalogs() {
+        let root = tempfile::tempdir().unwrap();
+        let lifecycle = crate::plugins::PluginLifecycle::default();
+        let marketplace =
+            PluginMarketplace::new(root.path().to_path_buf(), "0.5.68").unwrap().with_lifecycle(lifecycle.clone());
+        let _connection = lifecycle.begin_connection("marketplace.install", "Production").unwrap();
+        let error = marketplace
+            .install(super::PluginMarketplaceInstallRequest {
+                repository_id: "not-configured".to_string(),
+                plugin_id: "marketplace.install".to_string(),
+                version: None,
+            })
+            .await
+            .unwrap_err();
+        assert!(error.contains("Production"));
+    }
+
+    #[tokio::test]
     async fn rejects_url_package_signed_by_an_untrusted_key() {
         let root = tempfile::tempdir().unwrap();
         let signing_key = SigningKey::from_bytes(&[9u8; 32]);
@@ -1273,7 +1360,7 @@ mod tests {
         let marketplace = PluginMarketplace::new(root.path().to_path_buf(), "0.5.68").unwrap();
         let error = marketplace
             .install_url_package(
-                &format!("http://{address}/plugin.chiron-horizonp"),
+                &format!("http://{address}/plugin.chiron_horizonp"),
                 PluginInstallPolicy::LocalSigned,
                 |_, _| {},
             )
@@ -1302,7 +1389,7 @@ mod tests {
         let marketplace = PluginMarketplace::new(root.path().to_path_buf(), "0.5.68").unwrap();
         let error = marketplace
             .install_url_package(
-                &format!("http://{address}/plugin.chiron-horizonp"),
+                &format!("http://{address}/plugin.chiron_horizonp"),
                 PluginInstallPolicy::LocalSigned,
                 |_, _| {},
             )
@@ -1327,7 +1414,7 @@ mod tests {
         let marketplace = PluginMarketplace::new(root.path().to_path_buf(), "0.5.68").unwrap();
         let result = marketplace
             .install_url_package(
-                &format!("http://{address}/plugin.chiron-horizonp"),
+                &format!("http://{address}/plugin.chiron_horizonp"),
                 PluginInstallPolicy::LocalDevelopment,
                 |_, _| {},
             )
@@ -1345,7 +1432,7 @@ mod tests {
         let marketplace = PluginMarketplace::new(root.path().to_path_buf(), "0.5.68").unwrap();
         let error = marketplace
             .install_url_package(
-                "ftp://example.com/plugin.chiron-horizonp",
+                "ftp://example.com/plugin.chiron_horizonp",
                 PluginInstallPolicy::LocalSigned,
                 |_, _| {},
             )

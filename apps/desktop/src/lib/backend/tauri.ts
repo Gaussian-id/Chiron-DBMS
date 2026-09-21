@@ -12,12 +12,14 @@ import type { DetachedTabHandoff } from "@/lib/app/detachedTabHandoff";
 import { BackendErrorException, type BackendError } from "@/lib/backend/errorUtils";
 import { listen, type UnlistenFn } from "@tauri-apps/api/event";
 import { normalizeRustMongoCommand, type MongoCommand } from "@/lib/mongo/mongoShellCommand";
+import type { MongoBulkWriteResult } from "@/lib/mongo/mongoShellCommand";
 import { ExternalSqlFileTooLargeError } from "@/lib/sql/sqlFileOpen";
 import { appendDebugLog, isDebugLoggingEnabled } from "@/lib/backend/debugLog";
 import { decodeMeilisearchDocumentPage, decodeMeilisearchSearchResult, type MeilisearchDocumentPage, type MeilisearchDocumentPageWire, type MeilisearchSearchResult, type MeilisearchSearchWireResult } from "@/lib/backend/meilisearchTransport";
 import type { XuguTablespaceInfo } from "@/types/database";
 import type { CreatedKey, EnqueuedTaskSummary, KeyCreateInput, KeyListItem, KeyPage, KeyUpdateInput, MeilisearchSystemOverview, MeilisearchTask, TaskListInput, TaskPage, TaskSelector } from "@/types/meilisearchManagement";
 import type { CsvQuoteMode } from "@/lib/export/csvQuoteMode";
+import type { SchemaScopePage, SchemaViewResponse, SchemaViewScope, SchemaViewerDescriptor } from "@/lib/database/schemaViewer";
 import type { SqlInsertMode } from "@/lib/export/sqlInsertMode";
 
 /** Normalize Tauri rejections once at the public backend boundary. */
@@ -1357,6 +1359,18 @@ export async function listTables(connectionId: string, database: string, schema:
     catalog,
     tableNameFilter,
   });
+}
+
+export async function describeSchemaViewer(connectionId: string): Promise<SchemaViewerDescriptor> {
+  return invoke("describe_schema_viewer", { connectionId });
+}
+
+export async function listSchemaViewerScopes(connectionId: string, parent: SchemaViewScope = {}, search?: string, limit = 200, offset = 0): Promise<SchemaScopePage> {
+  return invoke("list_schema_viewer_scopes", { connectionId, parent, search, limit, offset });
+}
+
+export async function getSchemaView(connectionId: string, scope: SchemaViewScope): Promise<SchemaViewResponse> {
+  return invoke("get_schema_view", { connectionId, scope });
 }
 
 export async function getTableComment(connectionId: string, database: string, schema: string, table: string, catalog?: string): Promise<string | null> {
@@ -4453,6 +4467,32 @@ export async function documentUpdateDocument(connectionId: string, database: str
   });
 }
 
+export async function mongoExplainFind(connectionId: string, database: string, collection: string, options: { skip: number; limit: number; filter?: string; projection?: string; sort?: string; collation?: string; verbosity?: string }, executionId?: string): Promise<unknown> {
+  return invoke<unknown>("mongo_explain_find", {
+    connectionId,
+    database,
+    collection,
+    skip: options.skip,
+    limit: options.limit,
+    filter: options.filter,
+    projection: options.projection,
+    sort: options.sort,
+    collation: options.collation,
+    verbosity: options.verbosity,
+    executionId,
+  });
+}
+
+export async function mongoBulkWrite(connectionId: string, database: string, collection: string, operationsJson: string, optionsJson?: string): Promise<MongoBulkWriteResult> {
+  return invoke<MongoBulkWriteResult>("mongo_bulk_write", {
+    connectionId,
+    database,
+    collection,
+    operationsJson,
+    optionsJson,
+  });
+}
+
 export async function mongoReplaceDocument(connectionId: string, database: string, collection: string, filterJson: string, replacementJson: string, optionsJson?: string): Promise<{ affected_rows: number }> {
   const affectedRows = await invoke<number>("mongo_replace_document", {
     connectionId,
@@ -4816,6 +4856,9 @@ export interface SqlFileProgress {
   elapsedMs: number;
   statementSummary: string;
   error?: string | null;
+  bytesRead?: number;
+  totalBytes?: number;
+  phase?: "preparing" | "reading" | "executing";
   fileIndex?: number;
   fileName?: string;
 }
@@ -5362,6 +5405,8 @@ export interface TableExportRequest {
   columnTypes?: Array<string | null | undefined>;
   columnComments?: Array<string | null> | null;
   primaryKeys?: string[];
+  /** 导出 SQL 时是否排除主键列（对应数据提取设置里的“排除主键”）。 */
+  excludePrimaryKeys?: boolean;
   whereInput?: string;
   orderBy?: string;
   skipCount?: boolean;
@@ -5424,6 +5469,10 @@ export interface QueryResultExportRequest {
   columnComments?: Array<string | null> | null;
   autoFilter?: boolean;
   identifierQuote?: string;
+  /** 导出 SQL 时是否排除主键列（对应数据提取设置里的“排除主键”）。 */
+  excludePrimaryKeys?: boolean;
+  /** 结果集对应的原表主键列名，由前端从表元数据带入。 */
+  primaryKeys?: string[];
 }
 
 export async function startTableExport(request: TableExportRequest, onProgress: (progress: TableExportProgress) => void): Promise<TableExportProgress> {
@@ -5635,6 +5684,17 @@ export async function exportQueryResultMarkdown(filePath: string, columns: strin
   return invoke("export_query_result_markdown", {
     request: {
       filePath,
+      columns,
+      rows,
+    },
+  });
+}
+
+export async function exportQueryResultHtml(filePath: string, title: string | undefined, columns: string[], rows: readonly (readonly XlsxCellValue[])[]): Promise<void> {
+  return invoke("export_query_result_html", {
+    request: {
+      filePath,
+      title,
       columns,
       rows,
     },

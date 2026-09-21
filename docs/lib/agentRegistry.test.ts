@@ -13,8 +13,8 @@ test("offline download catalog includes the JDBC plugin ZIP", () => {
 
   assert.deepEqual(catalog.jdbcPlugin, {
     label: "Chiron Horizon JDBC Plugin",
-    filename: "chiron-horizon-jdbc-plugin-0.1.0.zip",
-    url: "https://github.com/Gaussian-id/Gauss-Horizon/releases/download/v0.1.0/chiron-horizon-jdbc-plugin-0.1.0.zip",
+    filename: "chiron-horizon-jdbc-plugin-0.1.1.zip",
+    url: "https://github.com/Gaussian-id/Chiron-Horizon/releases/download/v0.1.1/chiron-horizon-jdbc-plugin-0.1.1.zip",
   });
 });
 

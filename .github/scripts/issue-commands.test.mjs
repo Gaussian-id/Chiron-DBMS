@@ -8,7 +8,7 @@ import {
   handleIssueCommand,
 } from "./issue-commands.mjs";
 
-const repository = "Gaussian-id/Gauss-Horizon";
+const repository = "Gaussian-id/Chiron-Horizon";
 
 function issueContext(overrides = {}) {
   return {

@@ -100,7 +100,7 @@ export default async function DatabasesPage({ params }: { params: Promise<{ lang
         <div className="landing-glass-card rounded-[10px] p-8 text-center max-w-[640px] mx-auto">
           <h2 className="text-[21px] font-[720]">{t.ctaTitle}</h2>
           <p className="mt-2 text-landing-muted text-sm leading-[1.65]">{t.ctaDesc}</p>
-          <Link href="https://github.com/Gaussian-id/Gauss-Horizon/discussions" target="_blank" className="landing-final-link inline-flex items-center justify-center min-h-[42px] rounded-[7px] px-5 mt-5 text-sm font-[650]">
+          <Link href="https://github.com/Gaussian-id/Chiron-Horizon/discussions" target="_blank" className="landing-final-link inline-flex items-center justify-center min-h-[42px] rounded-[7px] px-5 mt-5 text-sm font-[650]">
             {t.ctaLink}
           </Link>
         </div>

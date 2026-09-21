@@ -1,6 +1,6 @@
 services:
   chiron-horizon:
-    image: Gaussian-id/Gauss-Horizon:latest
+    image: Gaussian-id/Chiron-Horizon:latest
     container_name: ${CONTAINER_NAME}
     ports:
       - "${PANEL_APP_PORT_HTTP}:4224"

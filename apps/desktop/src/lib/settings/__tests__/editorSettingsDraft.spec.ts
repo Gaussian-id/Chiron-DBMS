@@ -126,6 +126,10 @@ describe("EDITOR_SETTINGS_DRAFT_KEYS", () => {
     expect(EDITOR_SETTINGS_DRAFT_KEYS).toContain("completionTriggerMode");
   });
 
+  it("includes tableHoverLookupMode", () => {
+    expect(EDITOR_SETTINGS_DRAFT_KEYS).toContain("tableHoverLookupMode");
+  });
+
   it("includes the SQL variable substitution master switch", () => {
     expect(EDITOR_SETTINGS_DRAFT_KEYS).toContain("sqlVariableSubstitutionEnabled");
   });
@@ -435,7 +439,7 @@ describe("editorSettingsDraftChanged - tabLayout", () => {
 });
 
 describe("shouldConfirmEditorSettingsDialogClose", () => {
-  // Regression for https://github.com/Gaussian-id/Gauss-Horizon/issues/5905: customizing a
+  // Regression for https://github.com/Gaussian-id/Chiron-Horizon/issues/5905: customizing a
   // shortcut or the sidebar activation mode and then dismissing the dialog
   // via Escape/outside-click/the "Close" button (anything other than Apply)
   // must not silently drop the draft.

@@ -47,7 +47,7 @@ export type ChangelogBootstrap = {
   fallbackReleases: ChangelogRelease[] | null;
 };
 
-const CHANGELOG_URL = "https://raw.githubusercontent.com/Gaussian-id/Gauss-Horizon/main/crates/chiron-horizon-core/assets/changelog.json";
+const CHANGELOG_URL = "https://raw.githubusercontent.com/Gaussian-id/Chiron-Horizon/main/crates/chiron-horizon-core/assets/changelog.json";
 export type ChangelogLang = "en" | "cn";
 export function changelogDataLang(lang: DocsLang): ChangelogLang { return lang === "cn" ? "cn" : "en"; }
 export function changelogUrl(_lang: ChangelogLang) { return CHANGELOG_URL; }

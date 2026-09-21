@@ -16,12 +16,12 @@ This tutorial is for first-time Chiron Horizon contributors. By the end, you wil
 </Callout>
 
 <Callout type="warn">
-  Pull requests described on this page target `Gaussian-id/Gauss-Horizon` and cover the Chiron Horizon application, plugin platform, SDK, CLI, documentation, and Agents. Ordinary plugin source remains in the plugin's own repository, while Marketplace listing PRs target `Gaussian-id/Gauss-DBM-store`. See [Develop and Submit Chiron Horizon Plugins](/en/docs/plugin-development) for the complete flow.
+  Pull requests described on this page target `Gaussian-id/Chiron-Horizon` and cover the Chiron Horizon application, plugin platform, SDK, CLI, documentation, and Agents. Ordinary plugin source remains in the plugin's own repository, while Marketplace listing PRs target `Gaussian-id/Gauss-DBM-store`. See [Develop and Submit Chiron Horizon Plugins](/en/docs/plugin-development) for the complete flow.
 </Callout>
 
 ## 1. Choose and Claim an Issue
 
-Open [Chiron Horizon Issues](https://github.com/Gaussian-id/Gauss-Horizon/issues) and choose an issue that has no assignee and no active contributor in its comments. Good first contributions have one of these properties:
+Open [Chiron Horizon Issues](https://github.com/Gaussian-id/Chiron-Horizon/issues) and choose an issue that has no assignee and no active contributor in its comments. Good first contributions have one of these properties:
 
 - The reproduction steps and expected behavior are already clear
 - The scope is a small documentation, translation, or UI change
@@ -127,14 +127,14 @@ See the [official Tauri prerequisites](https://v2.tauri.app/start/prerequisites/
 
 ## 3. Fork and Clone the Repository
 
-Open [Gaussian-id/Gauss-Horizon](https://github.com/Gaussian-id/Gauss-Horizon) on GitHub and click **Fork**.
+Open [Gaussian-id/Chiron-Horizon](https://github.com/Gaussian-id/Chiron-Horizon) on GitHub and click **Fork**.
 
 Replace `<your-github-name>` with your account name:
 
 ```bash
 git clone https://github.com/<your-github-name>/chiron.horizon.git
 cd chiron-horizon
-git remote add upstream https://github.com/Gaussian-id/Gauss-Horizon.git
+git remote add upstream https://github.com/Gaussian-id/Chiron-Horizon.git
 git remote -v
 ```
 
@@ -309,8 +309,8 @@ Database behavior changes should be verified against a real database, not only m
 
 Agents are separate processes that communicate with Chiron Horizon through stdin/stdout JSON-RPC. Java/JDBC agents normally use JDK 21; native agents use Go or Rust. Read these first:
 
-- [`agents/README.md`](https://github.com/Gaussian-id/Gauss-Horizon/blob/main/agents/README.md)
-- [`agents/docs/agent-authoring.md`](https://github.com/Gaussian-id/Gauss-Horizon/blob/main/agents/docs/agent-authoring.md)
+- [`agents/README.md`](https://github.com/Gaussian-id/Chiron-Horizon/blob/main/agents/README.md)
+- [`agents/docs/agent-authoring.md`](https://github.com/Gaussian-id/Chiron-Horizon/blob/main/agents/docs/agent-authoring.md)
 
 #### Change an Existing Java/JDBC Agent
 
@@ -433,7 +433,7 @@ Do not combine unrelated problems in the same commit or pull request.
 
 ## 9. Open a Pull Request
 
-Open your fork on GitHub and click **Compare & pull request**. Set the target repository to `Gaussian-id/Gauss-Horizon` and the target branch to `main`.
+Open your fork on GitHub and click **Compare & pull request**. Set the target repository to `Gaussian-id/Chiron-Horizon` and the target branch to `main`.
 
 The pull request description should include:
 
@@ -496,6 +496,6 @@ Start with the minimum check for the changed directory, then perform the issue's
 
 - Describe the blocker in the original issue and include the complete error and operating system version
 - Join [Discord](https://discord.gg/W7NyVDRt6a)
-- Read the repository [CONTRIBUTING.md](https://github.com/Gaussian-id/Gauss-Horizon/blob/main/CONTRIBUTING.md)
+- Read the repository [CONTRIBUTING.md](https://github.com/Gaussian-id/Chiron-Horizon/blob/main/CONTRIBUTING.md)
 
 Do not report only "the build failed." Include the command, the first meaningful error in the log, your operating system, and your Node.js, pnpm, and Rust versions.

@@ -1,11 +1,9 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# Build the Go agents from this checkout for the three 0.1.0 desktop targets.
-# The files are intentionally versioned here so they cannot be confused with
-# output produced by an older product identity.
 OUT_DIR="${1:?Usage: build_go_release_agents.sh <output-dir>}"
 ROOT_DIR="$(pwd)"
+VERSION="${CHIRON_HORIZON_VERSION:-$(python3 -c 'import json; print(json.load(open("src-tauri/tauri.conf.json", encoding="utf-8"))["version"])')}"
 mkdir -p "$OUT_DIR"
 
 MODULES=(
@@ -39,7 +37,7 @@ for module in "${MODULES[@]}"; do
     IFS=: read -r platform goos goarch <<<"$target"
     extension=""
     if [[ "$goos" == "windows" ]]; then extension=".exe"; fi
-    output="${OUT_DIR}/chiron-horizon-agent-${key}-0.1.0-${platform}${extension}"
+    output="${OUT_DIR}/chiron-horizon-agent-${key}-${VERSION}-${platform}${extension}"
     echo "Building ${key} for ${platform}"
     (cd "$directory" && CGO_ENABLED=0 GOOS="$goos" GOARCH="$goarch" go build -trimpath -ldflags='-s -w' -o "$ROOT_DIR/$output" .)
   done

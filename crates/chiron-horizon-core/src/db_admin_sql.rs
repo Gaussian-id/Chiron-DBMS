@@ -821,7 +821,7 @@ pub fn build_duplicate_table_structure_sql(options: DuplicateTableStructureSqlOp
     }
 
     // `SELECT ... INTO` copies the IDENTITY property but not constraints, so the cloned table
-    // would silently lose its primary key (Gaussian-id/Gauss-Horizon#8931). Recreate it from the source metadata.
+    // would silently lose its primary key (Gaussian-id/Chiron-Horizon#8931). Recreate it from the source metadata.
     let mut constraint_sql = Vec::new();
     if options.database_type == Some(DatabaseType::SqlServer) && !options.primary_key_columns.is_empty() {
         let raw_constraint_name: String = match options.primary_key_constraint_name.as_deref() {

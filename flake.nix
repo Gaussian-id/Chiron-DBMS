@@ -176,7 +176,7 @@
         #   1. pnpm.fetchDeps  → vendor all npm/pnpm deps offline             #
         #   2. Crane vendoring → vendor all Cargo deps offline                #
         #   3. pnpm build      → compile Vue/TypeScript frontend               #
-        #   4. cargo build -p chiron-horizon → compile Tauri Rust backend                 #
+        #   4. cargo build -p chiron_horizon → compile Tauri Rust backend                 #
         #                                                                      #
         # The pnpmDeps hash is verified by the nix-packaging CI job.           #
         # When dependency inputs change, use the hash reported by the failed  #
@@ -184,7 +184,7 @@
         # ------------------------------------------------------------------ #
         packages.chiron-horizon-desktop = pkgs.stdenv.mkDerivation (finalAttrs: {
           pname = "chiron-horizon-desktop";
-          version = "0.1.0";
+          version = "0.6.16";
 
           src = pkgs.lib.cleanSource ./.;
 
@@ -243,13 +243,13 @@
 
           # ── Desktop entry (freedesktop .desktop file) ────────────────────── #
           # Built with `makeDesktopItem` so it is validated against the spec
-          # at build time. Icon name "chiron-horizon" resolves via the hicolor theme
+          # at build time. Icon name "chiron_horizon" resolves via the hicolor theme
           # (the installPhase copies PNGs into share/icons/hicolor/<size>/apps).
           desktopItem = pkgs.makeDesktopItem {
-            name = "chiron-horizon";
+            name = "chiron_horizon";
             type = "Application";
-            exec = "chiron-horizon %u";
-            icon = "chiron-horizon";
+            exec = "chiron_horizon %u";
+            icon = "chiron_horizon";
             desktopName = "Chiron Horizon";
             genericName = "Database Management Tool";
             comment = "Open-source database management tool for 90+ databases";
@@ -265,7 +265,7 @@
             ];
             startupWMClass = "Chiron Horizon";
             terminal = false;
-            mimeTypes = [ "application/sql" "x-scheme-handler/chiron-horizon" ];
+            mimeTypes = [ "application/sql" "x-scheme-handler/chiron_horizon" ];
           };
 
           # ── Linked libraries (present at both build and runtime) ─────────── #
@@ -338,7 +338,7 @@
             #   - Properly initialises the Tauri IPC layer inside the binary
             #   - Skips platform-specific installer/bundle creation (AppImage, deb, …)
             #
-            # DO NOT replace this with a bare `cargo build -p chiron-horizon`.
+            # DO NOT replace this with a bare `cargo build -p chiron_horizon`.
             # A raw cargo build skips Tauri's asset-embedding pipeline, so the
             # WebView has no bundled frontend to load → __TAURI_INTERNALS__ is
             # never injected → isTauriRuntime() returns false → the UI falls back
@@ -352,8 +352,8 @@
             runHook preInstall
 
             mkdir -p $out/bin
-            # tauri build --no-bundle puts the binary at target/release/chiron-horizon
-            cp target/release/chiron-horizon $out/bin/chiron-horizon
+            # tauri build --no-bundle puts the binary at target/release/chiron_horizon
+            cp target/release/chiron_horizon $out/bin/chiron_horizon
 
             # Install icon files into the hicolor theme tree so that all
             # desktop environments (GNOME Shell, KDE Plasma, XFCE, etc.) can
@@ -364,7 +364,7 @@
                 if [ -f "src-tauri/icons/''${size}x''${size}.png" ]; then
                   mkdir -p "$out/share/icons/hicolor/''${size}x''${size}/apps"
                   cp "src-tauri/icons/''${size}x''${size}.png" \
-                    "$out/share/icons/hicolor/''${size}x''${size}/apps/chiron-horizon.png"
+                    "$out/share/icons/hicolor/''${size}x''${size}/apps/chiron_horizon.png"
                 fi
               done
 
@@ -372,7 +372,7 @@
               if [ -f "src-tauri/icons/128x128@2x.png" ]; then
                 mkdir -p "$out/share/icons/hicolor/256x256/apps"
                 cp "src-tauri/icons/128x128@2x.png" \
-                  "$out/share/icons/hicolor/256x256/apps/chiron-horizon.png"
+                  "$out/share/icons/hicolor/256x256/apps/chiron_horizon.png"
               fi
 
               # Generate missing common sizes so hicolor directory metadata
@@ -387,7 +387,7 @@
                   continue
                 fi
                 magick "$src" -resize "''${size}x''${size}" \
-                  "$out/share/icons/hicolor/''${size}x''${size}/apps/chiron-horizon.png"
+                  "$out/share/icons/hicolor/''${size}x''${size}/apps/chiron_horizon.png"
               done
 
               # Install the full-size icon.png as the scalable fallback so that
@@ -395,17 +395,17 @@
               if [ -f "src-tauri/icons/icon.png" ]; then
                 mkdir -p "$out/share/icons/hicolor/512x512/apps"
                 cp "src-tauri/icons/icon.png" \
-                  "$out/share/icons/hicolor/512x512/apps/chiron-horizon.png"
+                  "$out/share/icons/hicolor/512x512/apps/chiron_horizon.png"
               fi
             fi
 
             # Register the freedesktop .desktop file so app launchers (GNOME
             # Shell, KDE Plasma, etc.) can discover the application.
             mkdir -p $out/share/applications
-            cp ${finalAttrs.desktopItem}/share/applications/chiron-horizon.desktop \
-              $out/share/applications/chiron-horizon.desktop
+            cp ${finalAttrs.desktopItem}/share/applications/chiron_horizon.desktop \
+              $out/share/applications/chiron_horizon.desktop
             ${pkgs.desktop-file-utils}/bin/desktop-file-validate \
-              $out/share/applications/chiron-horizon.desktop
+              $out/share/applications/chiron_horizon.desktop
 
             runHook postInstall
           '';
@@ -418,15 +418,15 @@
               databases. Built with Tauri 2, Vue 3, and Rust. No Java, no Chromium.
             '';
             license = licenses.asl20;
-            homepage = "https://github.com/Gaussian-id/Gauss-Horizon";
+            homepage = "https://github.com/t8y2/chiron_horizon";
             maintainers = [ ];
             platforms = platforms.linux; # macOS/Windows need platform-specific adjustments
-            mainProgram = "chiron-horizon";
+            mainProgram = "chiron_horizon";
           } // {
             # Non-lib meta: absolute path to the installed .desktop file so
             # `nix profile install`/home-manager can register it with the
             # user's desktop environment.
-            desktopFile = "${placeholder "out"}/share/applications/chiron-horizon.desktop";
+            desktopFile = "${placeholder "out"}/share/applications/chiron_horizon.desktop";
           };
         });
       }

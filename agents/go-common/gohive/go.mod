@@ -1,4 +1,4 @@
-module github.com/Gaussian-id/Gauss-Horizon/agents/go-common/gohive
+module github.com/Gaussian-id/Chiron-Horizon/agents/go-common/gohive
 
 go 1.23.0
 

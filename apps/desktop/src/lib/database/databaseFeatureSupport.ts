@@ -194,6 +194,16 @@ export function supportsSchemaDiagram(dbType?: DatabaseType): boolean {
   return supportsDatabaseFeature(dbType, "diagram");
 }
 
+/**
+ * The context-aware schema viewer is intentionally distinct from the legacy
+ * ERD capability. It can render native metadata for document, graph, vector,
+ * and time-series stores without pretending that those stores expose SQL
+ * foreign keys.
+ */
+export function supportsSchemaViewer(dbType?: DatabaseType): boolean {
+  return supportsDatabaseFeature(dbType, "schemaViewer");
+}
+
 export function supportsDatabaseSearch(dbType?: DatabaseType): boolean {
   return supportsDatabaseFeature(dbType, "schemaSearch");
 }
@@ -257,7 +267,7 @@ export function usesPostgresLikeStructureCopy(dbType?: DatabaseType): boolean {
   return !!dbType && PG_LIKE_STRUCTURE_TYPES.has(dbType);
 }
 
-const TRANSACTION_SUPPORTED_TYPES: readonly string[] = ["postgres", "mysql", "oracle", "jdbc", "oceanbase-oracle"];
+const TRANSACTION_SUPPORTED_TYPES: readonly string[] = ["postgres", "mysql", "oracle", "jdbc", "oceanbase-oracle", "dameng"];
 
 /** Oracle-family databases, kept ONLY for the Oracle-specific ALTER SESSION SET
  *  CURRENT_SCHEMA compensation in queryStore. Do not use for toolbar/dirty-bit

@@ -4,7 +4,7 @@ Chiron Horizon plugins are optional, versioned `.chiron-horizonp` packages. They
 
 Plugin development documentation is maintained in [`../docs/content/docs/plugin-development.mdx`](../docs/content/docs/plugin-development.mdx). The npm plugin CLI is deferred for 0.1.0; build it from this repository for source development.
 
-Marketplace listing pull requests go to `Gaussian-id/Gauss-DBM-store`. Plugin host, SDK, CLI, schema, documentation, and official-example changes go to `Gaussian-id/Gauss-Horizon`. Ordinary plugin source stays in the plugin author's own repository.
+Marketplace listing pull requests go to `Gaussian-id/Gauss-DBM-store`. Plugin host, SDK, CLI, schema, documentation, and official-example changes go to `Gaussian-id/Chiron-Horizon`. Ordinary plugin source stays in the plugin author's own repository.
 
 The platform contract is manifest v1 + Host API 1.x + sidecar protocol v1. The source code for a plugin may live in this repository or in a separate repository; Chiron Horizon installs only the built package.
 
@@ -83,7 +83,7 @@ Review alone cannot protect an already approved download URL from later replacem
 
 ### Recommended repository ownership
 
-Keep the host, SDK, schemas, packager, and minimal examples in `Gaussian-id/Gauss-Horizon`. The official catalog and review metadata live in the separate [`Gaussian-id/Gauss-DBM-store`](https://github.com/Gaussian-id/Gauss-DBM-store) repository:
+Keep the host, SDK, schemas, packager, and minimal examples in `Gaussian-id/Chiron-Horizon`. The official catalog and review metadata live in the separate [`Gaussian-id/Gauss-DBM-store`](https://github.com/Gaussian-id/Gauss-DBM-store) repository:
 
 ```text
 Gaussian-id/Gauss-DBM-store
@@ -215,6 +215,58 @@ Field bindings:
 | `secret`                                                   | `connection_secrets[field.key]`, persisted outside `config_json` |
 
 Password fields default to `secret` when `binding` is omitted. Chiron Horizon validates required values and value types before calling the plugin. The plugin receives the hydrated connection only in its backend lifecycle request; the workbench UI receives a connection ID and non-secret navigation context.
+
+Absent optional fields stay absent: when Chiron Horizon hands the manifest to its own UI it omits `description`, `placeholder`, `default`, and `binding` for fields that do not declare them, and `"default": null` means "no default" exactly like omitting the key. Treat a missing value as unset — never as an empty string, and never as the literal text `null`, which is not a storable plugin value.
+
+#### Local file fields
+
+A `text`, `password`, or `textarea` field may declare `picker` when the user should choose a local file (private keys, keystores, credential files):
+
+```json
+{
+  "key": "private_key_path",
+  "label": "Private key path",
+  "type": "text",
+  "binding": "config",
+  "picker": { "kind": "file", "accept": [".pem", ".key", ".ppk"], "content_field": "private_key" }
+}
+```
+
+- **Desktop hosts** open a native picker and store the chosen **absolute path** in the declaring field. The plugin backend runs on the same machine, so it can read the file itself.
+- **Browser hosts** cannot resolve a path on the user's machine, so the same action becomes an **upload**: Chiron Horizon reads the selected file and stores its **content** in `content_field` (which must be a declared `text` / `password` / `textarea` sibling), and clears the declaring field. A picker without `content_field` is therefore desktop-only and stays hidden in the browser.
+- Switching source clears the other one: choosing a path removes the uploaded content and vice versa. This matters for fields that are alternatives — a plugin that prefers `private_key` content over `private_key_path` must not keep serving a stale upload after the user re-picked a path.
+- `kind` is `file` (default use case) or `directory` (desktop-only: a browser cannot hand a folder to the plugin). `accept` lists up to 16 filters as extensions (`.pem`) or MIME types (`text/plain`) and is passed to the native dialog and the browser file input unchanged. Uploads are capped at 1 MiB.
+
+`picker` is additive; hosts older than the release that ships it reject the manifest, so keep `engines.chiron_horizon` at or above that release when the form relies on it.
+
+#### Conditional fields
+
+A field may declare `visible_when` and `required_when`. A leaf clause matches when the referenced sibling field holds a non-empty value listed in `one_of`; listed values may be strings, numbers, or booleans and are compared by canonical string form, so `false` and `"false"` both match a boolean `false`. Clauses compose with `all_of`, `any_of`, and `not`:
+
+```json
+{
+  "key": "sudo_command",
+  "label": "Sudo command",
+  "type": "text",
+  "visible_when": {
+    "all_of": [
+      { "field": "sudo_source", "one_of": ["custom"] },
+      { "field": "read_only", "one_of": [false] }
+    ]
+  },
+  "required_when": {
+    "all_of": [
+      { "field": "sudo_source", "one_of": ["custom"] },
+      { "not": { "field": "read_only", "one_of": [true] } }
+    ]
+  }
+}
+```
+
+- `all_of` / `any_of` must contain at least one nested condition, nesting is limited to 8 levels and 64 nodes, and every referenced field must be a sibling declared by the same provider.
+- Conditions cascade: while the field a clause reads is itself hidden, the clause does not count. A hidden container's stored default therefore cannot surface a grandchild field, and a hidden operand of `not` keeps the field dormant instead of lighting it up.
+- Chiron Horizon evaluates the same conditions for the dialog and for save/test/connect validation, so a manifest can never produce a form Chiron Horizon itself rejects.
+- Composite conditions were added after the single-clause contract; keep `engines.chiron_horizon` at or above the Chiron Horizon release that ships them if the form relies on them.
 
 Lifecycle methods receive:
 
@@ -378,6 +430,36 @@ Host API 1.x defines these backend methods:
 Every entry has `name`, canonical `uri`, `kind` (`file`, `directory`, `symlink`, or `other`), and optional `size`, `modifiedAt`, and `contentType`. Chiron Horizon validates schemes, response sizes, base64, cursors, and entry metadata before the frontend sees a result.
 
 Mutation methods return `{ success, message?, entry? }` and are rejected unless the provider declares the matching capability. Inline read/write payloads are capped at 4 MiB. The built-in file manager currently owns directory navigation, pagination, and bounded file preview. Large upload/download and PTY/SFTP streams use `stdio-framed` binary channels with plugin-defined transfer methods, chunk acknowledgements, cancellation, and progress events; they must not be encoded as one large JSON value.
+
+### Host API methods a plugin may call
+
+Plugins normally answer requests, but Host API 1.1 adds one method a plugin backend may call back into Chiron Horizon. Plugin-initiated requests use **string** ids (`"prompt-1"`), while CHIRON_HORIZON-owned requests and their responses keep numeric ids, so one stream carries both directions and older hosts that only understand numeric ids ignore the new frames instead of failing.
+
+- `host/requestUserInput` asks the user a question through the Chiron Horizon UI and returns the answer. It is the channel for anything the host cannot answer on the user's behalf: a bastion's keyboard-interactive MFA code, a one-time approval, a host-key confirmation, or a choice between accounts.
+
+```json
+{
+  "jsonrpc": "2.0",
+  "id": "prompt-1",
+  "method": "host/requestUserInput",
+  "params": {
+    "prompt": "Verification code (6 digits)",
+    "title": "JumpServer login",
+    "echo": false,
+    "default": "000000",
+    "options": [{ "value": "jinpy", "label": "jinpy (admin)" }],
+    "timeoutSecs": 300
+  }
+}
+```
+
+- `prompt` is required (≤2000 characters). `title` (≤200), `default` (≤1000), and `options` (≤8 entries, unique values, ≤200 characters each) are optional; `echo` defaults to `false`, so the dialog masks input unless the plugin says otherwise. `timeoutSecs` is clamped to 5-600 and defaults to 300.
+- The result is `{ "action": "submit", "value": "123456" }`, `{ "action": "cancel" }`, or `{ "action": "timeout" }`. Only `submit` carries a value; treat `cancel` and `timeout` as "no answer" and fail closed — never fall back to a guess.
+- The prompt is delivered through the same blocking dialog the host uses for its own host-key and keyboard-interactive prompts, so it also appears for `connection/test` and `connection/connect`. While a prompt is open Chiron Horizon pauses the request deadline of the call that is waiting on it, so a user typing a code is never mistaken for a connect timeout.
+- Errors come back as JSON-RPC errors: `-32001` means no user interface is attached (headless/MCP runs, or the desktop dialog is not mounted), `-32602` means the params are invalid, `-32601` means the host does not implement the method. A plugin must degrade gracefully on all three instead of blocking forever.
+- Chiron Horizon answers only with what the user typed. It never auto-fills, caches, or logs the value, and it allows at most four open prompts per plugin session.
+- Capability gating: `plugin/initialize` advertises `host.hostApiVersion` (`1.1.0` or later) and `host.features` (containing `host.requestUserInput` when available). Only call the method when it is advertised; an older host reports `1.0.0` and drops the frame.
+- The Rust SDK (`chiron-horizon-plugin-sdk`) wraps this: `chiron_horizon_plugin_sdk::host_client()`, `HostClient::supports("host/requestUserInput")`, and `HostClient::request_user_input(&UserInputPrompt::secret("Verification code"))`.
 
 ## Backend protocol
 
