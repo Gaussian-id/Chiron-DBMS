@@ -6,7 +6,7 @@ import test from "node:test";
 import { fileURLToPath } from "node:url";
 
 const root = fileURLToPath(new URL("../", import.meta.url));
-const read = (name) => readFileSync(path.join(root, name), "utf8");
+const read = (name) => readFileSync(path.join(root, name), "utf8").replace(/\r\n/g, "\n");
 const metadata = JSON.parse(execFileSync("cargo", ["metadata", "--locked", "--offline", "--no-deps", "--format-version", "1"], {
   cwd: root,
   encoding: "utf8",
