@@ -1,4 +1,4 @@
-export const OBJECT_BROWSER_SEARCH_FOCUS_EVENT = "chiron_horizon:focus-object-browser-search";
+export const OBJECT_BROWSER_SEARCH_FOCUS_EVENT = "chiron-horizon:focus-object-browser-search";
 
 type ObjectBrowserSearchFocusDetail = {
   tabId: string;

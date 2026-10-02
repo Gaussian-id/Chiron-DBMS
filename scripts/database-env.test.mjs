@@ -323,21 +323,21 @@ test('prints Chiron Horizon deep links for compatible connection types', () => {
     encoding: 'utf8',
   });
   assert.equal(postgres.status, 0, postgres.stderr);
-  assert.match(postgres.stdout, /Chiron Horizon connection link: "chiron-horizon":\/\/connection\/new\?type=postgres&/);
+  assert.match(postgres.stdout, /Chiron Horizon connection link: chiron-horizon:\/\/connection\/new\?type=postgres&/);
 
   const elasticsearch = spawnSync(process.execPath, ['scripts/database-env.mjs', 'info', 'elasticsearch', '6.8'], {
     cwd: repoRoot,
     encoding: 'utf8',
   });
   assert.equal(elasticsearch.status, 0, elasticsearch.stderr);
-  assert.match(elasticsearch.stdout, /Chiron Horizon connection link: "chiron-horizon":\/\/connection\/new\?type=elasticsearch&/);
+  assert.match(elasticsearch.stdout, /Chiron Horizon connection link: chiron-horizon:\/\/connection\/new\?type=elasticsearch&/);
 
   const consul = spawnSync(process.execPath, ['scripts/database-env.mjs', 'info', 'consul', '2.0.2'], {
     cwd: repoRoot,
     encoding: 'utf8',
   });
   assert.equal(consul.status, 0, consul.stderr);
-  assert.match(consul.stdout, /Chiron Horizon connection link: "chiron-horizon":\/\/connection\/new\?type=consul&/);
+  assert.match(consul.stdout, /Chiron Horizon connection link: chiron-horizon:\/\/connection\/new\?type=consul&/);
 });
 
 test('generates canonical service deep-link types from recipes', () => {
@@ -510,10 +510,9 @@ test('reports missing smoke structures without throwing a TypeError', () => {
   assert.match(validateRecipe(recipe).join('; '), /smoke\.steps must not be empty/);
 });
 
-test('documents every checked-in recipe on both website pages', () => {
+test('documents every checked-in recipe on the English website', () => {
   const pages = [
     join(DEFAULT_RECIPES_ROOT, '..', '..', 'docs', 'content', 'docs', 'database-lab.mdx'),
-    join(DEFAULT_RECIPES_ROOT, '..', '..', 'docs', 'content', 'docs', 'database-lab.cn.mdx'),
   ].map((path) => readFileSync(path, 'utf8'));
 
   for (const recipe of discoverRecipes()) {

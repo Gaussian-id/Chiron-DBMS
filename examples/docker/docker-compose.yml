@@ -1,6 +1,6 @@
 services:
   chiron-horizon:
-    image: Gaussian-id/Chiron-Horizon
+    image: Gaussian-id/Chiron-DBMS
     ports:
       - "4224:4224"
     environment:

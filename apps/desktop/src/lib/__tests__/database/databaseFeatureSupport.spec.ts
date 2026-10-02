@@ -11,6 +11,7 @@ import {
   supportsDatabaseNameCompletion,
   supportsDatabaseSchemaQualifier,
   supportsDatabaseSearch,
+  supportsFieldLineage,
   supportsObjectBrowser,
   supportsObjectBrowserTreeNode,
   supportsQueryExecution,
@@ -19,6 +20,7 @@ import {
   supportsSqlInListPaste,
   supportsTableImport,
   supportsTableVacuum,
+  supportsTransfer,
   supportsTransaction,
   usesOracleStickyTransactionState,
   usesProvenReadOnlyStickyTransactionState,
@@ -118,6 +120,10 @@ describe("connection query actions", () => {
     // (issue #8415). MQTT has the same console-only surface.
     expect(supportsConnectionQueryActions("mq")).toBe(false);
     expect(supportsConnectionQueryActions("mqtt")).toBe(false);
+  });
+
+  it("hides the sidebar new-query entry for Meilisearch", () => {
+    expect(supportsConnectionQueryActions("meilisearch")).toBe(false);
   });
 });
 
@@ -319,8 +325,30 @@ describe("supportsTableVacuum", () => {
 });
 
 describe("supportsTableImport", () => {
+  it("enables DB2 table import", () => {
+    expect(supportsTableImport("db2")).toBe(true);
+  });
+
   it("enables OceanBase Oracle table import", () => {
     expect(supportsTableImport("oceanbase-oracle")).toBe(true);
+  });
+
+  it("keeps Xugu table import available", () => {
+    expect(supportsTableImport("xugu")).toBe(true);
+  });
+});
+
+describe("supportsFieldLineage", () => {
+  it("enables DB2 field lineage", () => {
+    expect(supportsFieldLineage("db2")).toBe(true);
+  });
+});
+
+describe("DB2 transfer and namespace capabilities", () => {
+  it("enables table transfers without enabling database lifecycle operations", () => {
+    expect(supportsTransfer("db2")).toBe(true);
+    expect(connectionNamespaceCreationTarget({ db_type: "db2" })).toBeNull();
+    expect(databaseNodeNamespaceCreationTarget({ db_type: "db2" }, { type: "database", database: "SAMPLE" })).toBe("schema");
   });
 });
 
@@ -368,8 +396,9 @@ describe("database namespace creation", () => {
     expect(connectionNamespaceCreationTarget({ db_type: "duckdb" })).toBe("attach");
     expect(connectionNamespaceCreationTarget({ db_type: "sqlite" })).toBe("attach");
     expect(connectionNamespaceCreationTarget({ db_type: "mongodb" })).toBe("special");
-    expect(connectionNamespaceCreationTarget({ db_type: "mongodb", driver_profile: "mongodb-legacy" })).toBeNull();
-    expect(connectionNamespaceCreationTarget({ db_type: "mongodb", driver_profile: "legacy" })).toBeNull();
+    // The Legacy Agent creates databases through runCommand, so it gets the same flow.
+    expect(connectionNamespaceCreationTarget({ db_type: "mongodb", driver_profile: "mongodb-legacy" })).toBe("special");
+    expect(connectionNamespaceCreationTarget({ db_type: "mongodb", driver_profile: "legacy" })).toBe("special");
   });
 
   it("hides persistent SQLite attachment for memory and SQLCipher connections", () => {

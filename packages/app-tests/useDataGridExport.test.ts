@@ -4,10 +4,7 @@ import { beforeEach, test, vi } from "vitest";
 import { createPinia, setActivePinia } from "pinia";
 import { useSettingsStore } from "../../apps/desktop/src/stores/settingsStore.ts";
 import type { DataGridTableMeta } from "../../apps/desktop/src/lib/dataGrid/dataGridSql.ts";
-import {
-  DEFAULT_DATA_GRID_EXTRACTOR_OPTIONS,
-  type DataGridExtractorOptions,
-} from "../../apps/desktop/src/lib/dataGrid/dataGridCopyExtractor.ts";
+import { DEFAULT_DATA_GRID_EXTRACTOR_OPTIONS, type DataGridExtractorOptions } from "../../apps/desktop/src/lib/dataGrid/dataGridCopyExtractor.ts";
 import type { DatabaseType, QueryResult } from "../../apps/desktop/src/types/database.ts";
 
 const apiMock = vi.hoisted(() => ({
@@ -409,7 +406,7 @@ test("full query result CSV export streams through the backend without loading a
 });
 
 test("MongoDB full query result CSV export uses the full-result fallback", async () => {
-  const { composable, fullExportResult, queryResultExportRequest } = buildExportHarness({ databaseType: "mongodb" });
+  const { composable, fullExportResult, queryResultExportRequest } = buildExportHarness({ databaseType: "mongodb", columns: ["_id", "name"] });
   fullExportResult.mockResolvedValueOnce({
     columns: ["_id", "name"],
     rows: [["1", "Ada"]],
@@ -719,7 +716,7 @@ test("local SQL export asks the backend to drop primary key columns", async () =
     truncated: false,
     has_more: false,
   };
-  apiMock.buildExportSqlInsert.mockResolvedValueOnce("INSERT INTO \"users\" (\"name\") VALUES ('Ada');");
+  apiMock.buildExportSqlInsert.mockResolvedValueOnce('INSERT INTO "users" ("name") VALUES (\'Ada\');');
 
   try {
     const { composable } = buildExportHarness({
@@ -916,7 +913,7 @@ test("selected query result CSV export keeps the existing in-memory path", async
   assert.equal(apiMock.exportQueryResultCsv.mock.calls[0][3], "necessary");
 });
 
-test("selected query result CSV export formats only typed temporal columns", async () => {
+test("selected query result CSV export formats typed temporal columns without a formula wrapper", async () => {
   useSettingsStore().updateEditorSettings({ globalDateTimeExportFormat: "YYYY/M/D HH:mm:ss" });
   const rawDateTime = "2024-02-25 13:02:15";
   const { composable } = buildExportHarness({
@@ -927,8 +924,8 @@ test("selected query result CSV export formats only typed temporal columns", asy
 
   await composable.exportCsv([1]);
 
-  // Temporal columns are wrapped as `="..."` so spreadsheet apps keep them as text; plain columns are untouched.
-  assert.deepEqual(apiMock.exportQueryResultCsv.mock.calls[0][2], [['="2024/2/25 13:02:15"', rawDateTime]]);
+  // Temporal columns use the configured export format; plain columns are untouched.
+  assert.deepEqual(apiMock.exportQueryResultCsv.mock.calls[0][2], [["2024/2/25 13:02:15", rawDateTime]]);
 });
 
 test("selected query result XLSX export uses the current source label as the sheet name", async () => {

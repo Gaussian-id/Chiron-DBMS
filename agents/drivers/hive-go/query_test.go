@@ -15,7 +15,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/Gaussian-id/Chiron-Horizon/agents/go-common/gohive"
+	"github.com/Gaussian-id/Chiron-DBMS/agents/go-common/gohive"
 )
 
 var scriptedDriverSequence atomic.Uint64
@@ -263,6 +263,47 @@ func rawParams(values map[string]any) map[string]json.RawMessage {
 		result[key] = encoded
 	}
 	return result
+}
+
+func TestApplySchemaContextUsesEngineIdentifierQuote(t *testing.T) {
+	tests := []struct {
+		name          string
+		databaseType  string
+		configuration map[string]string
+		expected      string
+	}{
+		{
+			name:          "Kyuubi Trino",
+			databaseType:  "kyuubi",
+			configuration: map[string]string{"set:hivevar:kyuubi.engine.type": "TRINO"},
+			expected:      `USE "sales""daily"`,
+		},
+		{
+			name:          "Hive",
+			databaseType:  "hive",
+			configuration: map[string]string{"set:hivevar:kyuubi.engine.type": "TRINO"},
+			expected:      "USE `sales\"daily`",
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			behavior := &scriptedBehavior{exec: func(context.Context, string) (driver.Result, error) {
+				return driver.RowsAffected(0), nil
+			}}
+			server := newScriptedServer(t, behavior)
+			server.config.DatabaseType = test.databaseType
+			server.config.HiveConfiguration = test.configuration
+
+			if err := server.applySchemaContext(context.Background(), server.connection, `sales"daily`); err != nil {
+				t.Fatal(err)
+			}
+			_, executions, _, _ := behavior.snapshot()
+			if !reflect.DeepEqual(executions, []string{test.expected}) {
+				t.Fatalf("unexpected schema switch SQL: %#v", executions)
+			}
+		})
+	}
 }
 
 func TestExecuteQueryUsesHiveServerResultSetSignal(t *testing.T) {

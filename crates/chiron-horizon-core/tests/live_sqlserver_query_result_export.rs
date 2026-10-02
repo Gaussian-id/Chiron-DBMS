@@ -1,13 +1,14 @@
 use chiron_horizon_core::connection::{AppState, PoolKind};
 use chiron_horizon_core::models::connection::DatabaseType;
 use chiron_horizon_core::query_result_export::{export_query_result_core, ExportStatus, QueryResultExportRequest};
-use chiron_horizon_core::storage::Storage;
 use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
 use std::sync::Arc;
 use std::time::{Duration, Instant};
 
 fn live_sqlserver_config(id: &str, database: &str) -> chiron_horizon_core::models::connection::ConnectionConfig {
     chiron_horizon_core::models::connection::ConnectionConfig {
+        oracle_oci_nls_lang: None,
+        oracle_oci_tns_admin: None,
         docs_notes_path: None,
         id: id.to_string(),
         name: id.to_string(),
@@ -75,6 +76,7 @@ fn live_sqlserver_config(id: &str, database: &str) -> chiron_horizon_core::model
         is_production: false,
         production_databases: vec![],
         show_system_schemas: false,
+        sidebar_auto_load_all_tables: false,
         database_info: None,
     }
 }
@@ -109,7 +111,7 @@ async fn live_sqlserver_xlsx_export_can_outlive_query_timeout_while_rows_keep_ar
     let suffix = uuid::Uuid::new_v4().simple().to_string();
     let dir = std::env::temp_dir().join(format!("chiron-horizon-live-sqlserver-xlsx-{suffix}"));
     std::fs::create_dir_all(&dir).unwrap();
-    let storage = Storage::open(&dir.join("storage.db")).await.unwrap();
+    let storage = chiron_horizon_core::persistence::test_storage::open(&dir.join("storage.db")).await.unwrap();
     let state = AppState::new(storage);
     let connection_id = "live-sqlserver-xlsx-export";
     let pool_key = format!("{connection_id}:{database}");
@@ -149,8 +151,11 @@ async fn live_sqlserver_xlsx_export_can_outlive_query_timeout_while_rows_keep_ar
         execution_id: Some(format!("live-sqlserver-xlsx-{suffix}")),
         date_time_format: None,
         csv_quote_mode: Default::default(),
+        null_literal: String::new(),
         export_table_name: None,
         export_column_types: None,
+        selected_columns: None,
+        export_column_extras: None,
         column_comments: None,
         auto_filter: None,
         identifier_quote: None,

@@ -438,7 +438,7 @@ export function chironHorizonConnectionDeepLink(recipe, environment = process.en
   if (connection.username) params.set('user', connection.username);
   if (connection.password) params.set('password', environment.DB_PASSWORD || connection.password);
   if (connection.urlParams) params.set('url_params', connection.urlParams);
-  return `"chiron-horizon"://connection/new?${params}`;
+  return `chiron-horizon://connection/new?${params}`;
 }
 
 function ensureBootstrap(recipe) {

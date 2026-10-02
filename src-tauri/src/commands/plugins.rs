@@ -116,6 +116,7 @@ pub async fn fetch_plugin_marketplace_catalogs(
 #[tauri::command]
 pub async fn install_marketplace_plugin(
     state: State<'_, Arc<AppState>>,
+    app: AppHandle,
     request: PluginMarketplaceInstallRequest,
 ) -> Result<PluginInstallResponse, String> {
     let marketplace =
@@ -123,6 +124,7 @@ pub async fn install_marketplace_plugin(
             .with_lifecycle(state.plugins.lifecycle());
     let result = marketplace.install(request).await?;
     stop_replaced_plugin_runtime(&state, &result.plugin).await;
+    emit_plugin_runtime_replaced(&app, &result.plugin);
     Ok(result.response())
 }
 
@@ -183,6 +185,7 @@ pub fn install_plugin_event_bridge(app: &tauri::AppHandle, state: Arc<AppState>)
 
 #[tauri::command]
 pub async fn install_plugin_package(
+    app: AppHandle,
     state: State<'_, Arc<AppState>>,
     path: String,
     allow_unsigned: bool,
@@ -198,6 +201,7 @@ pub async fn install_plugin_package(
     .await
     .map_err(|error| error.to_string())??;
     stop_replaced_plugin_runtime(&state, &result.plugin).await;
+    emit_plugin_runtime_replaced(&app, &result.plugin);
     Ok(result.response())
 }
 
@@ -212,9 +216,10 @@ pub async fn install_plugin_package_from_url(
         PluginMarketplace::new(state.plugins.root_dir().to_path_buf(), state.plugins.app_version().to_string())?
             .with_lifecycle(state.plugins.lifecycle());
     let policy = if allow_unsigned { PluginInstallPolicy::LocalDevelopment } else { PluginInstallPolicy::LocalSigned };
+    let progress_app = app.clone();
     let result = marketplace
         .install_url_package(&url, policy, move |downloaded, total| {
-            let _ = app.emit(
+            let _ = progress_app.emit(
                 "plugin-url-download-progress",
                 serde_json::json!({
                     "downloaded": downloaded,
@@ -224,11 +229,13 @@ pub async fn install_plugin_package_from_url(
         })
         .await?;
     stop_replaced_plugin_runtime(&state, &result.plugin).await;
+    emit_plugin_runtime_replaced(&app, &result.plugin);
     Ok(result.response())
 }
 
 #[tauri::command]
 pub async fn rollback_plugin(
+    app: AppHandle,
     state: State<'_, Arc<AppState>>,
     plugin_id: String,
 ) -> Result<PluginRollbackResponse, String> {
@@ -241,12 +248,14 @@ pub async fn rollback_plugin(
     .await
     .map_err(|error| error.to_string())??;
     stop_replaced_plugin_runtime(&state, &result.plugin).await;
+    emit_plugin_runtime_replaced(&app, &result.plugin);
     Ok(result.response())
 }
 
 #[tauri::command]
 pub async fn uninstall_plugin(
     state: State<'_, Arc<AppState>>,
+    file_state: State<'_, crate::commands::plugin_file::PluginFileState>,
     plugin_id: String,
 ) -> Result<Vec<InstalledPluginInfo>, String> {
     let dependent_connections = state
@@ -268,17 +277,21 @@ pub async fn uninstall_plugin(
     }
     let plugin = state.plugins.find_plugin(&plugin_id)?;
     state.remove_plugin_connection_pools(&plugin_id).await;
-    state.plugin_host.stop(&plugin_id).await;
     if let Some(plugin) = &plugin {
         stop_external_driver_pools(&state, plugin).await;
     }
-    let root_dir = state.plugins.root_dir().to_path_buf();
-    let app_version = state.plugins.app_version().to_string();
-    tauri::async_runtime::spawn_blocking(move || {
-        PluginPackageInstaller::new(root_dir, app_version)?.uninstall(&plugin_id)
-    })
-    .await
-    .map_err(|error| error.to_string())??;
+    // Stops the runtime and uninstalls the store under one lifecycle update lease, so a plugin
+    // call cannot re-activate the sidecar (and re-lock its container) in between.
+    state.plugin_host.uninstall_plugin(&plugin_id).await?;
+    // Past every validation and the runtime teardown: retire the plugin's
+    // remaining file handles and drop entries — nothing else will close them.
+    // (Before this point an Err return must leave a still-installed plugin's
+    // workbenches fully functional.)
+    crate::commands::plugin_file::close_all_plugin_files(&file_state, &plugin_id);
+    // A reinstall must ask for AI tool access and data grants again.
+    if let Err(error) = state.storage.forget_plugin_permissions(&plugin_id).await {
+        log::warn!("Failed to clear permissions of uninstalled plugin {plugin_id}: {error}");
+    }
     list_plugins(state).await
 }
 
@@ -297,7 +310,14 @@ pub async fn list_active_plugins(state: State<'_, Arc<AppState>>) -> Result<Vec<
 }
 
 #[tauri::command]
-pub async fn stop_plugin(state: State<'_, Arc<AppState>>, plugin_id: String) -> Result<(), String> {
+pub async fn stop_plugin(
+    state: State<'_, Arc<AppState>>,
+    file_state: State<'_, crate::commands::plugin_file::PluginFileState>,
+    plugin_id: String,
+) -> Result<(), String> {
+    // The plugin's workbenches are going away with its runtime; without this
+    // sweep, handles it never closed would pin the shared registry quota.
+    crate::commands::plugin_file::close_all_plugin_files(&file_state, &plugin_id);
     state.plugin_host.stop(&plugin_id).await;
     Ok(())
 }
@@ -498,6 +518,19 @@ fn asset_payload(asset: PluginUiAsset) -> PluginUiAssetPayload {
         data_base64: base64::engine::general_purpose::STANDARD.encode(asset.bytes),
         etag: asset.etag,
     }
+}
+
+/// Notifies the webview that a plugin's runtime was replaced by an
+/// install/rollback, so already-open workbench tabs can reload the new UI
+/// instead of showing the stale version until manually reopened.
+fn emit_plugin_runtime_replaced(app: &AppHandle, plugin: &InstalledPlugin) {
+    let _ = app.emit(
+        "plugin-runtime-replaced",
+        serde_json::json!({
+            "pluginId": plugin.manifest.id,
+            "version": plugin.manifest.version,
+        }),
+    );
 }
 
 async fn stop_replaced_plugin_runtime(state: &Arc<AppState>, plugin: &InstalledPlugin) {

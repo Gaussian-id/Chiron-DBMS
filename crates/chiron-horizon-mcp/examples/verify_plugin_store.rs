@@ -7,8 +7,9 @@ async fn main() {
     let args: Vec<String> = std::env::args().skip(1).collect();
     let data_dir = std::path::PathBuf::from(&args[0]);
     let app_version = args.get(1).map(String::as_str).unwrap_or("0.5.96");
-    let backend =
-        LocalBackend::open_with_app_version(&data_dir.join("chiron-horizon.db"), app_version).await.expect("open local backend");
+    let backend = LocalBackend::open_with_app_version(&data_dir.join("chiron-horizon.db"), app_version)
+        .await
+        .expect("open local backend");
 
     let installed = backend.state().plugins.list_installed().unwrap();
     for plugin in &installed {

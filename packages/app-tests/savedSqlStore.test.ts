@@ -28,6 +28,38 @@ beforeEach(() => {
   vi.clearAllMocks();
 });
 
+test("tracks saved SQL library loading and supports retry after failure", async () => {
+  let resolveLoad: ((library: SavedSqlLibrary) => void) | undefined;
+  apiMock.loadSavedSqlLibrary.mockImplementationOnce(
+    () =>
+      new Promise<SavedSqlLibrary>((resolve) => {
+        resolveLoad = resolve;
+      }),
+  );
+
+  const store = useSavedSqlStore();
+  assert.equal(store.loadState, "idle");
+
+  const loading = store.initFromStorage();
+  assert.equal(store.loadState, "loading");
+  await Promise.resolve();
+  resolveLoad?.({ folders: [], files: [] });
+  await loading;
+
+  assert.equal(store.loadState, "loaded");
+  assert.equal(store.isLoaded, true);
+
+  setActivePinia(createPinia());
+  const retryingStore = useSavedSqlStore();
+  apiMock.loadSavedSqlLibrary.mockRejectedValueOnce(new Error("storage unavailable"));
+  await assert.rejects(retryingStore.initFromStorage(), /storage unavailable/);
+  assert.equal(retryingStore.loadState, "failed");
+
+  apiMock.loadSavedSqlLibrary.mockResolvedValueOnce({ folders: [], files: [] });
+  await retryingStore.initFromStorage();
+  assert.equal(retryingStore.loadState, "loaded");
+});
+
 test("concurrent saved SQL folder creates reuse the same pending folder", async () => {
   let resolveSave: ((folder: SavedSqlFolder) => void) | undefined;
   apiMock.saveSavedSqlFolder.mockImplementation(
@@ -883,7 +915,7 @@ test("usage updates do not invalidate the saved SQL database tree", async () => 
   assert.ok(store.version > contentVersion);
 });
 
-test("renaming a saved SQL tab syncs the library file name", async () => {
+test("renaming a saved SQL tab keeps the library file name independent", async () => {
   const file: SavedSqlFile = {
     id: "sql-1",
     connectionId: "conn-1",
@@ -905,9 +937,9 @@ test("renaming a saved SQL tab syncs the library file name", async () => {
   assert.equal(queryStore.renameTab(tabId, " Revenue checks "), true);
   await Promise.resolve();
 
-  assert.equal(queryStore.tabs.find((item) => item.id === tabId)?.title, "Revenue checks.sql");
-  assert.equal(savedSqlStore.getFile("sql-1")?.name, "Revenue checks.sql");
-  assert.equal(apiMock.saveSavedSqlFile.mock.calls.at(-1)?.[0].name, "Revenue checks.sql");
+  assert.equal(queryStore.tabs.find((item) => item.id === tabId)?.title, "Revenue checks");
+  assert.equal(savedSqlStore.getFile("sql-1")?.name, "draft.sql");
+  assert.equal(apiMock.saveSavedSqlFile.mock.calls.length, 0);
 });
 
 test("renaming a saved SQL tab keeps uppercase .SQL extension without double-appending", async () => {
@@ -937,30 +969,17 @@ test("renaming a saved SQL tab keeps uppercase .SQL extension without double-app
   assert.equal(apiMock.saveSavedSqlFile.mock.calls.length, 0);
 });
 
-test("renaming a saved SQL tab reverts title when persistence fails", async () => {
-  const file: SavedSqlFile = {
-    id: "sql-1",
-    connectionId: "conn-1",
-    name: "draft.sql",
-    database: "db",
-    sql: "SELECT 1;",
-    sqlLoaded: true,
-    createdAt: "2026-06-27T00:00:00.000Z",
-    updatedAt: "2026-06-27T00:00:00.000Z",
-  };
+test("renaming a saved SQL tab does not persist or revert the library file", async () => {
+  const file: SavedSqlFile = { id: "sql-1", connectionId: "conn-1", name: "draft.sql", database: "db", sql: "SELECT 1;", sqlLoaded: true, createdAt: "2026-06-27T00:00:00.000Z", updatedAt: "2026-06-27T00:00:00.000Z" };
   apiMock.loadSavedSqlLibrary.mockResolvedValue({ folders: [], files: [file] });
-
   const savedSqlStore = useSavedSqlStore();
   await savedSqlStore.initFromStorage();
-
   const queryStore = useQueryStore();
   const tabId = queryStore.openSavedSql(file);
-
-  apiMock.saveSavedSqlFile.mockRejectedValueOnce(new Error("disk full"));
   assert.equal(queryStore.renameTab(tabId, "broken"), true);
-  await vi.waitFor(() => queryStore.tabs.find((item) => item.id === tabId)?.title === "draft.sql");
-
+  assert.equal(queryStore.tabs.find((item) => item.id === tabId)?.title, "broken");
   assert.equal(savedSqlStore.getFile("sql-1")?.name, "draft.sql");
+  assert.equal(apiMock.saveSavedSqlFile.mock.calls.length, 0);
 });
 
 test.each([

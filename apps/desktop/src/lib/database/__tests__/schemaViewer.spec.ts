@@ -37,8 +37,8 @@ describe("context-aware schema viewer", () => {
     expect(schemaViewerScopeLabel("relational")).toBe("Database / schema");
   });
 
-  it("has explicit access and schema contracts for all 82 registered types", () => {
-    expect(DATABASE_TYPES).toHaveLength(82);
+  it("has explicit access and schema contracts for all 86 registered types", () => {
+    expect(DATABASE_TYPES).toHaveLength(86);
     expect(new Set(manifestDatabaseTypes())).toEqual(new Set(DATABASE_TYPES));
     for (const dbType of DATABASE_TYPES) {
       expect(databaseAccessContract(dbType)).toMatchObject({ connectSupported: true, testConnectionSupported: true });

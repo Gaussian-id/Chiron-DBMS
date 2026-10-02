@@ -12,6 +12,8 @@ import { extractDataGridSelection, exportQueryResultCsv, exportQueryResultJson }
 import { DEFAULT_DATA_GRID_EXTRACTOR_OPTIONS } from "@/lib/dataGrid/dataGridCopyExtractor";
 import { clearDataGridClipboardCopy, parseDataGridClipboard } from "@/lib/dataGrid/dataGridClipboard";
 import { MONGO_DOCUMENT_GRID_NULL, mongoDocumentGridExternalValue } from "@/lib/mongo/mongoDocumentValues";
+import { saveTextFile } from "@/lib/export/saveTextFile";
+import { useSettingsStore } from "@/stores/settingsStore";
 
 const toast = vi.fn();
 
@@ -53,6 +55,14 @@ vi.mock("@/lib/backend/api", async (importOriginal) => {
   };
 });
 
+vi.mock("@/lib/export/saveTextFile", async (importOriginal) => {
+  const original = await importOriginal<typeof import("@/lib/export/saveTextFile")>();
+  return {
+    ...original,
+    saveTextFile: vi.fn(),
+  };
+});
+
 function row(data: unknown[]) {
   return {
     id: 1,
@@ -75,6 +85,8 @@ function createMongoExportState(options: {
   contextColumn?: number;
   syntheticContext?: boolean;
   fullExportResult?: UseDataGridExportOptions["fullExportResult"];
+  hasCompleteLocalResult?: UseDataGridExportOptions["hasCompleteLocalResult"];
+  completeLocalResult?: UseDataGridExportOptions["completeLocalResult"];
   externalCellValue?: UseDataGridExportOptions["externalCellValue"];
 }) {
   const items = options.items ?? [options.item];
@@ -106,6 +118,8 @@ function createMongoExportState(options: {
     selectedRowIds: ref(selectedRowIds),
     hasRowSelection: computed(() => selectedRowIds.size > 0),
     fullExportResult: options.fullExportResult,
+    hasCompleteLocalResult: options.hasCompleteLocalResult,
+    completeLocalResult: options.completeLocalResult,
     externalCellValue: options.externalCellValue,
   };
   return useDataGridExport(state);
@@ -175,6 +189,7 @@ describe("useDataGridExport prepared row statements", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     clearDataGridClipboardCopy();
+    vi.mocked(saveTextFile).mockResolvedValue(true);
   });
 
   it("disables row copy when the result has no rows", () => {
@@ -340,7 +355,7 @@ describe("useDataGridExport prepared row statements", () => {
     );
   });
 
-  // Regression test for https://github.com/Gaussian-id/Chiron-Horizon/issues/6519
+  // Regression test for https://github.com/Gaussian-id/Chiron-DBMS/issues/6519
   it("uses every selected cell for a WHERE clause when right-clicking inside an existing multi-cell selection", async () => {
     const matrix: CellSelectionMatrix = {
       rowIndexes: [0],
@@ -387,7 +402,7 @@ describe("useDataGridExport prepared row statements", () => {
     expect(state.canCopyWithExtractor("where-clause")).toBe(false);
   });
 
-  // Regression test for https://github.com/Gaussian-id/Chiron-Horizon/issues/6519
+  // Regression test for https://github.com/Gaussian-id/Chiron-DBMS/issues/6519
   it("uses every selected cell for a SELECT when right-clicking inside an existing multi-cell selection", async () => {
     const matrix: CellSelectionMatrix = {
       rowIndexes: [0],
@@ -412,7 +427,7 @@ describe("useDataGridExport prepared row statements", () => {
     );
   });
 
-  // Regression test for https://github.com/Gaussian-id/Chiron-Horizon/issues/6519
+  // Regression test for https://github.com/Gaussian-id/Chiron-DBMS/issues/6519
   it("joins a same-column multi-row SELECT selection with OR", async () => {
     const selectedRows = [
       [7, "Ada"],
@@ -521,7 +536,7 @@ describe("useDataGridExport prepared row statements", () => {
     expect(createExportState({ ...editableTable, tableName: "" }, ["id", "name"], matrix, [7, "Ada"]).canCopyWithExtractor("sql-select")).toBe(false);
   });
 
-  // Regression tests for https://github.com/Gaussian-id/Chiron-Horizon/issues/6272
+  // Regression tests for https://github.com/Gaussian-id/Chiron-DBMS/issues/6272
   it("enables SELECT copy when sourceColumns is undefined by falling back to display names", () => {
     const matrix: CellSelectionMatrix = {
       rowIndexes: [0],
@@ -722,7 +737,28 @@ describe("useDataGridExport prepared row statements", () => {
     ]);
   });
 
-  it("uses escaped TSV for a multi-cell smart copy without relying on clipboard metadata", async () => {
+  it("copies a selected row as whole-row TSV across all visible columns on smart copy", async () => {
+    // Row selection only (no cell matrix): the Cmd+C smart path must copy the
+    // full row (#10573), not just a single cell.
+    vi.mocked(extractDataGridSelection).mockResolvedValueOnce({ text: "1\tAda", mimeType: "text/tab-separated-values", fileExtension: "tsv", rowCount: 1, columnCount: 2 });
+    const state = createExportState(editableTable, ["id", "name"], undefined, undefined, undefined, [[1, "Ada"]], [1]);
+
+    await expect(state.copyWithPreference("smart")).resolves.toBe(true);
+
+    expect(extractDataGridSelection).toHaveBeenCalledWith(
+      expect.objectContaining({
+        extractor: "tsv",
+        selectionKind: "rows",
+        rows: [[1, "Ada"]],
+        selectedColumnIndexes: [0, 1],
+      }),
+    );
+    expect(copyToClipboard).toHaveBeenCalledWith("1\tAda");
+    // The internal clipboard matrix keeps the row paste-able back into a new row.
+    expect(parseDataGridClipboard("1\tAda")).toEqual([["1", "Ada"]]);
+  });
+
+  it("uses TSV (quotes only for separator/newline) for a multi-cell smart copy without relying on clipboard metadata", async () => {
     const rows = [
       [1, '{"msg":"success"}'],
       [2, "inside\ttab\nnext line"],
@@ -733,7 +769,9 @@ describe("useDataGridExport prepared row statements", () => {
       columns: ["id", "name"],
       rows,
     };
-    const text = '1\t"{""msg"":""success""}"\n2\t"inside\ttab\nnext line"';
+    // A value containing only double quotes is copied verbatim (#10087); a value
+    // containing a tab/newline is still quoted so the TSV shape survives.
+    const text = '1\t{"msg":"success"}\n2\t"inside\ttab\nnext line"';
     vi.mocked(extractDataGridSelection).mockResolvedValueOnce({ text, mimeType: "text/tab-separated-values", fileExtension: "tsv", rowCount: 2, columnCount: 2 });
     const state = createExportState(editableTable, ["id", "name"], matrix, undefined, undefined, rows);
 
@@ -764,8 +802,8 @@ describe("useDataGridExport prepared row statements", () => {
     expect(copyToClipboard).toHaveBeenCalledWith("2020-12-02 15:18:29");
   });
 
-  it("copies all rows with empty fields for NULL cells", async () => {
-    const text = "id\tname\n1\t\n2\tAda";
+  it("copies all rows with the null literal for NULL cells", async () => {
+    const text = "id\tname\n1\t\\N\n2\tAda";
     const state = createExportState(editableTable, ["id", "name"], undefined, undefined, undefined, [
       [1, null],
       [2, "Ada"],
@@ -774,6 +812,7 @@ describe("useDataGridExport prepared row statements", () => {
     await state.copyAll();
 
     expect(copyToClipboard).toHaveBeenCalledWith(text);
+    // 内部剪贴板按文本全等匹配保留逻辑矩阵：粘贴回网格时 NULL 语义无损还原
     expect(parseDataGridClipboard(text)).toEqual([
       ["id", "name"],
       ["1", null],
@@ -1149,6 +1188,81 @@ describe("useDataGridExport prepared row statements", () => {
     expect(toast).toHaveBeenCalledWith("grid.copyExtractorUnsupportedSelection", 5000);
   });
 
+  it("saves exactly the same configured extractor output used by copy and preview", async () => {
+    const matrix: CellSelectionMatrix = {
+      rowIndexes: [0, 1],
+      columnIndexes: [0, 1],
+      columns: ["id", "name"],
+      rows: [
+        [1, "Ada"],
+        [2, "Grace"],
+      ],
+    };
+    const extractorOptions = {
+      ...DEFAULT_DATA_GRID_EXTRACTOR_OPTIONS,
+      dsv: {
+        ...DEFAULT_DATA_GRID_EXTRACTOR_OPTIONS.dsv,
+        columnSeparator: "::",
+        rowSeparator: "\r\n",
+        includeColumnHeader: true,
+      },
+    };
+    const text = "id::name\r\n1::Ada\r\n2::Grace";
+    vi.mocked(extractDataGridSelection).mockImplementation(async (request) => ({
+      text,
+      mimeType: "text/plain",
+      fileExtension: "txt",
+      rowCount: request.rows.length,
+      columnCount: request.selectedColumnIndexes.length,
+    }));
+    const state = createExportState(editableTable, ["id", "name"], matrix, undefined, undefined, matrix.rows, [], extractorOptions);
+
+    await expect(state.copyWithExtractor("dsv", extractorOptions)).resolves.toBe(true);
+    const preview = await state.previewWithExtractor("dsv", extractorOptions);
+    await expect(state.exportWithExtractor("dsv", extractorOptions)).resolves.toBe(true);
+
+    expect(copyToClipboard).toHaveBeenCalledWith(text);
+    expect(preview.text).toBe(text);
+    expect(saveTextFile).toHaveBeenCalledWith(text, expect.stringMatching(/^users_selected_\d{12}\.txt$/), "TXT", "txt", { operation: "selection-extractor-dsv" });
+    expect(vi.mocked(extractDataGridSelection).mock.calls.map(([request]) => request.options)).toEqual([extractorOptions, extractorOptions, extractorOptions]);
+  });
+
+  it("does not report success when an extractor export save is cancelled", async () => {
+    const matrix: CellSelectionMatrix = { rowIndexes: [0], columnIndexes: [1], columns: ["name"], rows: [["Ada"]] };
+    vi.mocked(extractDataGridSelection).mockResolvedValueOnce({ text: '[{"name":"Ada"}]', mimeType: "application/json", fileExtension: "json", rowCount: 1, columnCount: 1 });
+    vi.mocked(saveTextFile).mockResolvedValueOnce(false);
+    const state = createExportState(editableTable, ["id", "name"], matrix, [1, "Ada"]);
+
+    await expect(state.exportWithExtractor("json")).resolves.toBe(false);
+
+    expect(saveTextFile).toHaveBeenCalledOnce();
+    expect(toast).not.toHaveBeenCalledWith("grid.exported");
+  });
+
+  it("does not save extractor output for an unsupported discrete selection", async () => {
+    const state = createExportState(editableTable, ["id", "name"], undefined, undefined, {
+      columns: ["id", "name"],
+      rows: [[1], ["Grace"]],
+    });
+
+    expect(state.canCopyWithExtractor("json")).toBe(false);
+    await expect(state.exportWithExtractor("json")).resolves.toBe(false);
+
+    expect(extractDataGridSelection).not.toHaveBeenCalled();
+    expect(saveTextFile).not.toHaveBeenCalled();
+  });
+
+  it("reports extractor save failures through the existing export error path", async () => {
+    const matrix: CellSelectionMatrix = { rowIndexes: [0], columnIndexes: [1], columns: ["name"], rows: [["Ada"]] };
+    vi.mocked(extractDataGridSelection).mockResolvedValueOnce({ text: "Ada", mimeType: "text/plain", fileExtension: "txt", rowCount: 1, columnCount: 1 });
+    vi.mocked(saveTextFile).mockRejectedValueOnce(new Error("disk full"));
+    const state = createExportState(editableTable, ["id", "name"], matrix, [1, "Ada"]);
+
+    await expect(state.exportWithExtractor("pretty")).resolves.toBe(false);
+
+    expect(toast).toHaveBeenCalledWith("grid.exportFailed: disk full", 5000);
+  });
+
   it("uses the right-clicked cell for SQL predicates despite an irregular discrete selection", async () => {
     const state = createExportState(
       editableTable,
@@ -1272,6 +1386,27 @@ describe("useDataGridExport prepared row statements", () => {
 
     expect(extractDataGridSelection).toHaveBeenNthCalledWith(1, expect.objectContaining({ rows: [[7, { name: "Ada", tags: ["admin"] }]] }));
     expect(extractDataGridSelection).toHaveBeenNthCalledWith(2, expect.objectContaining({ rows: [[7, { name: "Ada", tags: ["admin"] }]] }));
+  });
+
+  it("keeps JSON cell text in SQL requests when parsing would round large numbers", async () => {
+    const tableMeta: DataGridTableMeta = {
+      tableName: "events",
+      primaryKeys: ["id"],
+      columns: [
+        { name: "id", data_type: "int", is_nullable: false, is_primary_key: true },
+        { name: "payload", data_type: "json", is_nullable: true },
+      ],
+    };
+    const payload = '{"gameCategoryId":1968549762545291267,"name":"Ada"}';
+    const matrix: CellSelectionMatrix = { rowIndexes: [0], columnIndexes: [0, 1], columns: ["id", "payload"], rows: [[7, payload]] };
+    vi.mocked(extractDataGridSelection).mockResolvedValue({ text: "copied", mimeType: "application/sql", fileExtension: "sql", rowCount: 1, columnCount: 2 });
+    const state = createExportState(tableMeta, ["id", "payload"], matrix, [7, payload]);
+
+    await expect(state.copyWithExtractor("sql-inserts")).resolves.toBe(true);
+    await expect(state.copyWithExtractor("sql-updates")).resolves.toBe(true);
+
+    expect(extractDataGridSelection).toHaveBeenNthCalledWith(1, expect.objectContaining({ rows: [[7, payload]] }));
+    expect(extractDataGridSelection).toHaveBeenNthCalledWith(2, expect.objectContaining({ rows: [[7, payload]] }));
   });
 
   it("resolves large-value previews before building an extractor request", async () => {
@@ -1560,7 +1695,7 @@ describe("useDataGridExport prepared row statements", () => {
     });
 
     await state.copyAll();
-    expect(copyToClipboard).toHaveBeenCalledWith("_id\tnullable\n1\t");
+    expect(copyToClipboard).toHaveBeenCalledWith("_id\tnullable\n1\t\\N");
 
     vi.mocked(extractDataGridSelection).mockResolvedValueOnce({ text: "", mimeType: "text/tab-separated-values", fileExtension: "tsv", rowCount: 1, columnCount: 1 });
     await expect(state.copyWithExtractor("tsv")).resolves.toBe(true);
@@ -1568,7 +1703,7 @@ describe("useDataGridExport prepared row statements", () => {
 
     setActivePinia(createPinia());
     await state.exportCurrentPageCsv();
-    expect(exportQueryResultCsv).toHaveBeenCalledWith(expect.any(String), ["_id", "nullable"], [["1", null]], expect.anything());
+    expect(exportQueryResultCsv).toHaveBeenCalledWith(expect.any(String), ["_id", "nullable"], [["1", null]], expect.anything(), expect.anything());
 
     const reservedString = MONGO_DOCUMENT_GRID_NULL;
     const fullExportState = createMongoExportState({
@@ -1587,7 +1722,90 @@ describe("useDataGridExport prepared row statements", () => {
     });
 
     await fullExportState.exportCsv();
-    expect(exportQueryResultCsv).toHaveBeenLastCalledWith(expect.any(String), ["_id", "value"], [["1", reservedString]], expect.anything());
+    expect(exportQueryResultCsv).toHaveBeenLastCalledWith(expect.any(String), ["_id", "value"], [["1", reservedString]], expect.anything(), expect.anything());
+  });
+
+  it("exports temporal CSV values without an Excel formula wrapper (#10694)", async () => {
+    setActivePinia(createPinia());
+    const timestamp = "2026-09-30 12:34:56.789";
+    const table: DataGridTableMeta = {
+      tableName: "events",
+      primaryKeys: [],
+      columns: [{ name: "created_at", data_type: "timestamp" }],
+    };
+    const state = createExportState(table, ["created_at"], undefined, [timestamp]);
+
+    await state.exportCurrentPageCsv();
+
+    expect(exportQueryResultCsv).toHaveBeenLastCalledWith(expect.any(String), ["created_at"], [[timestamp]], expect.anything(), expect.anything());
+  });
+
+  it("exports only visible Mongo columns from the full result set", async () => {
+    setActivePinia(createPinia());
+    const state = createMongoExportState({
+      columns: ["name"],
+      item: { ...row(["Visible"]), sourceIndex: 0 },
+      mongoDocuments: [{ _id: "1", name: "Visible", secret: "hidden" }],
+      fullExportResult: async () => ({
+        columns: ["_id", "name", "secret"],
+        column_types: ["", "varchar", "varchar"],
+        rows: [
+          ["1", "Visible", "hidden"],
+          ["2", "Other", "hidden-too"],
+        ],
+        affected_rows: 2,
+        execution_time_ms: 1,
+      }),
+    });
+
+    await state.exportCsv();
+
+    expect(exportQueryResultCsv).toHaveBeenLastCalledWith(expect.any(String), ["name"], [["Visible"], ["Other"]], expect.anything(), expect.anything());
+  });
+
+  it("applies visible Mongo columns when the complete result is already local", async () => {
+    setActivePinia(createPinia());
+    const completeLocalResult = {
+      columns: ["_id", "name", "secret"],
+      column_types: ["", "varchar", "varchar"],
+      rows: [
+        ["1", "Visible", "hidden"],
+        ["2", "Other", "hidden-too"],
+      ],
+      mongo_copy_documents: [
+        { _id: "1", name: "Visible", secret: "hidden" },
+        { _id: "2", name: "Other", secret: "hidden-too" },
+      ],
+      affected_rows: 2,
+      execution_time_ms: 1,
+    };
+    const state = createMongoExportState({
+      columns: ["name"],
+      item: { ...row(["Visible"]), sourceIndex: 0 },
+      mongoDocuments: [completeLocalResult.mongo_copy_documents[0]],
+      hasCompleteLocalResult: computed(() => true),
+      completeLocalResult: computed(() => completeLocalResult),
+    });
+
+    await state.exportCsv();
+
+    expect(exportQueryResultCsv).toHaveBeenLastCalledWith(expect.any(String), ["name"], [["Visible"], ["Other"]], expect.anything(), expect.anything());
+  });
+
+  it("passes the CSV NULL setting to the export call", async () => {
+    setActivePinia(createPinia());
+    const state = createMongoExportState({
+      columns: ["name"],
+      item: { ...row(["Visible"]), sourceIndex: 0 },
+      mongoDocuments: [{ name: "Visible" }],
+    });
+
+    await state.exportCsv();
+    expect(exportQueryResultCsv).toHaveBeenLastCalledWith(expect.any(String), ["name"], [["Visible"]], expect.anything(), "\\N");
+
+    useSettingsStore().editorSettings.csvNullMode = "empty";
+    await state.exportCsv();
+    expect(exportQueryResultCsv).toHaveBeenLastCalledWith(expect.any(String), ["name"], [["Visible"]], expect.anything(), "");
   });
 
   it("exports missing Mongo fields as null while retaining explicit empty strings", async () => {

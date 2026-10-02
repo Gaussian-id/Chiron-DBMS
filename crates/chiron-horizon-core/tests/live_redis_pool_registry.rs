@@ -4,7 +4,6 @@ use std::time::Duration;
 use chiron_horizon_core::connection::AppState;
 use chiron_horizon_core::models::connection::{ConnectionConfig, DatabaseType};
 use chiron_horizon_core::redis_ops::redis_execute_command_core;
-use chiron_horizon_core::storage::Storage;
 
 #[tokio::test]
 #[ignore = "requires CHIRON_HORIZON_LIVE_REDIS_HOST and CHIRON_HORIZON_LIVE_REDIS_PORT"]
@@ -16,7 +15,8 @@ async fn blocking_redis_command_does_not_block_another_connection() {
         .parse::<u16>()
         .expect("Redis port");
     let directory = tempfile::tempdir().unwrap();
-    let storage = Storage::open(&directory.path().join("storage.db")).await.unwrap();
+    let storage =
+        chiron_horizon_core::persistence::test_storage::open(&directory.path().join("storage.db")).await.unwrap();
     let state = Arc::new(AppState::new(storage));
     let redis_config: ConnectionConfig = serde_json::from_value(serde_json::json!({
         "id": "live-redis-blocking",

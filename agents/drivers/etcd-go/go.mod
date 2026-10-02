@@ -1,4 +1,4 @@
-module github.com/Gaussian-id/Chiron-Horizon/agents/drivers/etcd-go
+module github.com/Gaussian-id/Chiron-DBMS/agents/drivers/etcd-go
 
 go 1.26
 

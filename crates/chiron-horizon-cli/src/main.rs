@@ -1,9 +1,12 @@
+mod agent_skill;
+
 use std::{env, path::PathBuf, process::ExitCode, sync::Arc};
 
 use chiron_horizon_core::{
     models::connection::{ConnectionConfig, DatabaseType},
     production_safety::{is_production_database, targets_production_database},
     sql_risk::{classify_sql_risk_for_database, SqlRisk},
+    storage::Storage,
     types::{ColumnInfo, QueryMessage, QueryResult, TableInfo},
 };
 use chiron_horizon_mcp::{
@@ -63,6 +66,7 @@ const BRIDGE_REQUIRED_TYPES: &[&str] = &[
     "informix",
     "iris",
     "neo4j",
+    "nebula",
     "cassandra",
     "bigquery",
     "spanner",
@@ -99,8 +103,10 @@ struct Flags {
     out: Option<PathBuf>,
     notes: Option<PathBuf>,
     lang: Option<String>,
+    skills_dir: Option<PathBuf>,
     allow_writes: bool,
     allow_dangerous: bool,
+    force: bool,
     help: bool,
     version: bool,
 }
@@ -191,6 +197,7 @@ async fn run(argv: Vec<String>) -> Result<String, (CliError, bool)> {
     if flags.args.is_empty() || flags.help || flags.args.first().is_some_and(|arg| arg == "help") {
         return Ok(format!("{}\n", usage()));
     }
+    validate_agent_only_flags(&flags).map_err(|error| (error, json_output))?;
     if flags.args[0] == "doctor" {
         ensure_arg_count(&flags.args, 1, "chiron-horizon doctor").map_err(|error| (error, json_output))?;
         let diagnostics = diagnostics().await;
@@ -199,6 +206,10 @@ async fn run(argv: Vec<String>) -> Result<String, (CliError, bool)> {
     if flags.args[0] == "capabilities" {
         ensure_arg_count(&flags.args, 1, "chiron-horizon capabilities").map_err(|error| (error, json_output))?;
         return format_capabilities(flags.format).map_err(|error| (error, json_output));
+    }
+    if flags.args[0] == "agent" {
+        return agent_skill::run(&flags.args, flags.format, flags.skills_dir.as_deref(), flags.force)
+            .map_err(|error| (error, json_output));
     }
 
     let backend: Arc<dyn ChironHorizonBackend> =
@@ -599,8 +610,10 @@ fn parse_flags(argv: &[String]) -> Result<Flags, CliError> {
         out: None,
         notes: None,
         lang: None,
+        skills_dir: None,
         allow_writes: false,
         allow_dangerous: false,
+        force: false,
         help: false,
         version: false,
     };
@@ -646,8 +659,10 @@ fn parse_flags(argv: &[String]) -> Result<Flags, CliError> {
             "--out" => flags.out = Some(PathBuf::from(option_value(argv, &mut index, "--out")?)),
             "--notes" => flags.notes = Some(PathBuf::from(option_value(argv, &mut index, "--notes")?)),
             "--lang" => flags.lang = Some(option_value(argv, &mut index, "--lang")?),
+            "--skills-dir" => flags.skills_dir = Some(PathBuf::from(option_value(argv, &mut index, "--skills-dir")?)),
             "--allow-writes" => flags.allow_writes = true,
             "--allow-dangerous-sql" => flags.allow_dangerous = true,
+            "--force" => flags.force = true,
             value if value.starts_with('-') => {
                 return Err(CliError::new("UNKNOWN_OPTION", format!("Unknown option: {value}")))
             }
@@ -692,6 +707,22 @@ fn duration_ms(value: &str, option: &'static str) -> Result<u64, CliError> {
         .ok_or_else(|| {
             CliError::new("INVALID_OPTION", format!("{option} must be a positive duration such as 500ms, 10s, or 1m."))
         })
+}
+
+fn validate_agent_only_flags(flags: &Flags) -> Result<(), CliError> {
+    if flags.args.first().is_some_and(|arg| arg == "agent") {
+        return Ok(());
+    }
+    if flags.skills_dir.is_some() {
+        return Err(CliError::new(
+            "INVALID_OPTION",
+            "--skills-dir is only supported by chiron-horizon agent commands.",
+        ));
+    }
+    if flags.force {
+        return Err(CliError::new("INVALID_OPTION", "--force is only supported by chiron-horizon agent setup."));
+    }
+    Ok(())
 }
 
 fn ensure_arg_count(args: &[String], count: usize, command: &'static str) -> Result<(), CliError> {
@@ -898,12 +929,30 @@ async fn diagnostics() -> Diagnostics {
         Ok(connections) => (true, connections, None),
         Err(error) => (false, Vec::new(), Some(error)),
     };
+    // Opening the store can fail for reasons that say nothing about the
+    // schema: a headless CLI cannot read a keychain-only encryption key, an
+    // unfinished data-security upgrade blocks writes, and so on. Probing the
+    // table directly keeps "table missing" apart from "connection loading
+    // failed"; when the probe itself cannot read the file, keep the previous
+    // load-based answer instead of inventing one.
+    let (connections_table_exists, connection_row_count) = if db_path_exists {
+        match Storage::open_unmigrated(&db_path).await {
+            Ok(storage) => match storage.stored_connection_count().await {
+                Ok(Some(count)) => (true, count as usize),
+                Ok(None) => (false, 0),
+                Err(_) => (load_connections_ok, connections.len()),
+            },
+            Err(_) => (load_connections_ok, connections.len()),
+        }
+    } else {
+        (false, 0)
+    };
     Diagnostics {
         app_data_dir: app_data_dir.display().to_string(),
         db_path: db_path.display().to_string(),
         db_path_exists,
-        connections_table_exists: load_connections_ok,
-        connection_row_count: connections.len(),
+        connections_table_exists,
+        connection_row_count,
         load_connections_ok,
         loaded_connection_count: connections.len(),
         load_connections_error: error,
@@ -991,7 +1040,7 @@ fn csv_cell(value: &str) -> String {
 }
 
 fn usage() -> &'static str {
-    "Usage:\n  chiron-horizon doctor [--json]\n  chiron-horizon capabilities [--json]\n  chiron-horizon connections list [--json]\n  chiron-horizon schema list <connection> [--schema name] [--json]\n  chiron-horizon schema describe <connection> <table> [--schema name] [--json]\n  chiron-horizon query <connection> <sql> [--file path] [--limit n] [--timeout 10s] [--allow-writes] [--allow-dangerous-sql] [--json]\n  chiron-horizon context <connection> [--schema name] [--tables a,b] [--max-tables n] [--json]\n  chiron-horizon dbml <connection> [--out path] [--notes path] [--schema name] [--database name] [--tables a,b]\n  chiron-horizon docs <connection> [--out path] [--notes path] [--lang code] [--schema name] [--database name] [--tables a,b]\n  chiron-horizon open <connection> <table> [--schema name] [--database name] [--json]"
+    "Usage:\n  chiron-horizon doctor [--json]\n  chiron-horizon capabilities [--json]\n  chiron-horizon agent setup [--skills-dir path] [--force] [--json]\n  chiron-horizon agent status [--skills-dir path] [--json]\n  chiron-horizon connections list [--json]\n  chiron-horizon schema list <connection> [--schema name] [--json]\n  chiron-horizon schema describe <connection> <table> [--schema name] [--json]\n  chiron-horizon query <connection> <sql> [--file path] [--limit n] [--timeout 10s] [--allow-writes] [--allow-dangerous-sql] [--json]\n  chiron-horizon context <connection> [--schema name] [--tables a,b] [--max-tables n] [--json]\n  chiron-horizon dbml <connection> [--out path] [--notes path] [--schema name] [--database name] [--tables a,b]\n  chiron-horizon docs <connection> [--out path] [--notes path] [--lang code] [--schema name] [--database name] [--tables a,b]\n  chiron-horizon open <connection> <table> [--schema name] [--database name] [--json]"
 }
 
 #[cfg(test)]
@@ -1085,6 +1134,8 @@ mod tests {
                 rows: Vec::new(),
                 affected_rows: 2,
                 execution_time_ms: 0,
+                server_execute_time_us: None,
+                query_timings_ms: None,
                 truncated: false,
                 session_id: None,
                 has_more: false,
@@ -1126,6 +1177,31 @@ mod tests {
     }
 
     #[test]
+    fn parses_agent_skill_setup_flags() {
+        let flags =
+            parse_flags(&args(&["agent", "setup", "--skills-dir", "/tmp/skills", "--force", "--json"])).unwrap();
+        assert_eq!(flags.args, args(&["agent", "setup"]));
+        assert_eq!(flags.skills_dir.as_deref(), Some(std::path::Path::new("/tmp/skills")));
+        assert!(flags.force);
+        assert_eq!(flags.format, OutputFormat::Json);
+    }
+
+    #[test]
+    fn agent_commands_appear_in_usage_text() {
+        assert!(usage().contains("chiron-horizon agent setup"));
+        assert!(usage().contains("chiron-horizon agent status"));
+    }
+
+    #[test]
+    fn rejects_agent_only_flags_for_other_commands() {
+        let force = parse_flags(&args(&["query", "local", "select 1", "--force"])).unwrap();
+        assert_eq!(validate_agent_only_flags(&force).unwrap_err().code, "INVALID_OPTION");
+
+        let skills_dir = parse_flags(&args(&["doctor", "--skills-dir", "/tmp/skills"])).unwrap();
+        assert_eq!(validate_agent_only_flags(&skills_dir).unwrap_err().code, "INVALID_OPTION");
+    }
+
+    #[test]
     fn preserves_double_dash_sql() {
         let flags = parse_flags(&args(&["query", "local", "--json", "--", "-- comment\nselect 1"])).unwrap();
         assert_eq!(flags.args, args(&["query", "local", "-- comment\nselect 1"]));
@@ -1160,6 +1236,8 @@ mod tests {
             rows: Vec::new(),
             affected_rows: 1,
             execution_time_ms: 0,
+            server_execute_time_us: None,
+            query_timings_ms: None,
             truncated: false,
             session_id: None,
             has_more: false,

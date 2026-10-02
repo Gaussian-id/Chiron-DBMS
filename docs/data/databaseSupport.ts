@@ -8,6 +8,7 @@ export interface DatabaseSupportItem {
 
 export const databaseSupport: DatabaseSupportItem[] = [
   { id: "chirondb", name: "ChironDB", icon: "/logo-64.png", tone: "#102846" },
+  { id: "chirondb-relational", name: "ChironDB Relational (PostgreSQL wire)", icon: "/logo-64.png", tone: "#102846" },
   { id: "mysql", name: "MySQL", icon: "/icons/database/mysql.svg", tone: "#4479a1" },
   { id: "postgres", name: "PostgreSQL", icon: "/icons/database/postgres.svg", tone: "#4169e1" },
   { id: "cloudberry", name: "Cloudberry", icon: "/icons/database/cloudberry.svg", tone: "#ff5900" },
@@ -19,9 +20,12 @@ export const databaseSupport: DatabaseSupportItem[] = [
   { id: "sqlserver", name: "SQL Server", icon: "/icons/database/sqlserver.svg", tone: "#9ca3af" },
   { id: "mongodb", name: "MongoDB", icon: "/icons/database/mongodb.svg", tone: "#47a248" },
   { id: "dynamodb", name: "DynamoDB", icon: "/icons/database/dynamodb.svg", tone: "#527fff" },
+  { id: "salesforce", name: "Salesforce", icon: "/icons/database/salesforce.svg", tone: "#00a1e0" },
   { id: "oracle", name: "Oracle", icon: "/icons/database/oracle.svg", tone: "#f80000" },
   { id: "elasticsearch", name: "Elasticsearch", icon: "/icons/database/elasticsearch.svg", tone: "#00bfb3" },
   { id: "easysearch", name: "Easysearch", icon: "/icons/database/easysearch.svg", tone: "#836eff" },
+  { id: "solr", name: "Apache Solr", icon: "/icons/database/solr.svg", tone: "#d9411e" },
+  { id: "nebula", name: "NebulaGraph", icon: "/icons/database/nebula.png", tone: "#00ca95" },
   { id: "meilisearch", name: "Meilisearch", icon: "/icons/database/meilisearch.svg", tone: "#ff5caa" },
   { id: "qdrant", name: "Qdrant", icon: "/icons/database/qdrant.svg", tone: "#dc244c" },
   { id: "milvus", name: "Milvus", icon: "/icons/database/milvus.webp", tone: "#00a1ea" },
@@ -60,6 +64,7 @@ export const databaseSupport: DatabaseSupportItem[] = [
   { id: "hive", name: "Hive", icon: "/icons/database/hive.svg", tone: "#fdcb00" },
   { id: "kyuubi", name: "Kyuubi", icon: "/icons/database/kyuubi.svg", tone: "#f51b21" },
   { id: "argo", name: "ArgoDB", icon: "/icons/database/hive.svg", tone: "#0055b8" },
+  { id: "transwarp-inceptor", name: "Transwarp Inceptor", icon: "/icons/database/transwarp-inceptor.png", tone: "#0055b8" },
   { id: "impala", name: "Impala", icon: "/icons/database/impala.svg", tone: "#2c6791" },
   { id: "hbase", name: "HBase", icon: "/icons/database/hbase.svg", tone: "#ba160c" },
   { id: "phoenix", name: "Phoenix", icon: "/icons/database/phoenix.svg", tone: "#f97316" },
@@ -104,5 +109,5 @@ export const databaseSupport: DatabaseSupportItem[] = [
   { id: "iris", name: "IRIS", icon: "/icons/database/iris.svg", tone: "#0085ca" },
   { id: "cache", name: "Caché", icon: "/icons/database/iris.svg", tone: "#358a4e" },
   { id: "jdbcx", name: "JDBC", icon: "/icons/database/jdbcx.svg", tone: "#6ea8ff" },
-  { id: "request", name: "Your DB?", icon: "/icons/database/jdbcx.svg", tone: "#6ea8ff", href: "https://github.com/Gaussian-id/Chiron-Horizon/discussions" },
+  { id: "request", name: "Your DB?", icon: "/icons/database/jdbcx.svg", tone: "#6ea8ff", href: "https://github.com/Gaussian-id/Chiron-DBMS/discussions" },
 ];

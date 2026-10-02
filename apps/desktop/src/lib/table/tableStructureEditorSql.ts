@@ -90,6 +90,7 @@ export interface BuildTableStructureChangeSqlOptions {
   tableComment?: string;
   originalTableComment?: string;
   mysqlEngine?: string;
+  transwarpCreate?: TranswarpCreateTableOptions;
   /** MySQL only: the table's current default collation. Columns whose collation merely
    * matches it inherit the table default, so the backend leaves their redundant
    * `CHARACTER SET`/`COLLATE` clauses out of the generated DDL. */
@@ -103,9 +104,59 @@ export interface BuildTableStructureChangeSqlOptions {
   isGaussdbMMode?: boolean;
 }
 
+export interface TranswarpCreateTableOptions {
+  partitionColumns: string[];
+  bucketColumns: string[];
+  bucketCount?: number;
+  storageFormat?: string;
+  transactional: boolean;
+}
+
 export interface TableStructureChangeSql {
   statements: string[];
   warnings: string[];
+}
+
+/** Explicit partition maintenance operations (PostgreSQL only). */
+export type TablePartitionOperationKind = "create" | "attach" | "detach" | "drop";
+
+/** Partition bound as entered in the UI; values are SQL literal text. */
+export type TablePartitionBoundDraft = { kind: "range"; from: string[]; to: string[] } | { kind: "list"; values: string[] } | { kind: "hash"; modulus: number; remainder: number } | { kind: "default" };
+
+export interface TablePartitionOperation {
+  id: string;
+  kind: TablePartitionOperationKind;
+  /** Partitioned parent's schema; empty falls back to the edited table's schema. */
+  parentSchema: string;
+  /** Partitioned parent; empty falls back to the edited table. */
+  parentTable: string;
+  /** Schema of the partition relation; empty falls back to the parent's schema. */
+  schema: string;
+  name: string;
+  /** Required for `create`/`attach`; must be absent for `detach`/`drop`. */
+  bound?: TablePartitionBoundDraft;
+  /** Emit `DETACH PARTITION ... CONCURRENTLY` (PostgreSQL 14+). */
+  concurrently: boolean;
+}
+
+export interface TablePartitionSqlOptions {
+  databaseType?: DatabaseType;
+  driverProfile?: string | null;
+  schema?: string;
+  tableName: string;
+  operations: TablePartitionOperation[];
+}
+
+/** Declarative partitioning for a table being created. */
+export interface TablePartitionDefinition {
+  kind: "range" | "list" | "hash";
+  columns: string[];
+  expression: string;
+}
+
+export interface BuildCreatePartitionedTableSqlOptions {
+  options: BuildTableStructureChangeSqlOptions;
+  partitioning: TablePartitionDefinition;
 }
 
 export interface BuildTableOwnerChangeSqlOptions {

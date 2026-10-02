@@ -32,8 +32,14 @@ export const MCP_TOOL_OPTIONS = [
   { name: "chiron_horizon_execute_query", labelKey: "settings.mcpToolExecuteQuery" },
   { name: "chiron_horizon_execute_batch", labelKey: "settings.mcpToolExecuteBatch" },
   { name: "chiron_horizon_open_session", labelKey: "settings.mcpToolOpenSession" },
+  { name: "chiron_horizon_begin_transaction", labelKey: "settings.mcpToolBeginTransaction" },
+  { name: "chiron_horizon_commit_transaction", labelKey: "settings.mcpToolCommitTransaction" },
+  { name: "chiron_horizon_rollback_transaction", labelKey: "settings.mcpToolRollbackTransaction" },
   { name: "chiron_horizon_close_session", labelKey: "settings.mcpToolCloseSession" },
   { name: "chiron_horizon_execute_redis_command", labelKey: "settings.mcpToolExecuteRedisCommand" },
+  { name: "chiron_horizon_salesforce_current_user", labelKey: "settings.mcpToolSalesforceCurrentUser" },
+  { name: "chiron_horizon_salesforce_prepare_write", labelKey: "settings.mcpToolSalesforcePrepareWrite" },
+  { name: "chiron_horizon_salesforce_apply_write", labelKey: "settings.mcpToolSalesforceApplyWrite" },
   { name: "chiron_horizon_peek_messages", labelKey: "settings.mcpToolPeekMessages" },
   { name: "chiron_horizon_send_message", labelKey: "settings.mcpToolSendMessage" },
   { name: "chiron_horizon_add_connection", labelKey: "settings.mcpToolAddConnection" },
@@ -41,6 +47,9 @@ export const MCP_TOOL_OPTIONS = [
   { name: "chiron_horizon_remove_connection", labelKey: "settings.mcpToolRemoveConnection" },
   { name: "chiron_horizon_open_table", labelKey: "settings.mcpToolOpenTable" },
   { name: "chiron_horizon_execute_and_show", labelKey: "settings.mcpToolExecuteAndShow" },
+  { name: "chiron_horizon_plugin_list", labelKey: "settings.mcpToolPluginList" },
+  { name: "chiron_horizon_plugin_tools", labelKey: "settings.mcpToolPluginTools" },
+  { name: "chiron_horizon_plugin_call", labelKey: "settings.mcpToolPluginCall" },
 ] as const;
 
 export interface McpExecutionPolicyFields {
@@ -112,11 +121,39 @@ export function toggleMcpAllowedConnectionId(current: readonly string[] | null, 
   return updateMcpAllowedConnectionIds(current, availableConnectionIds, [connectionId], allowed);
 }
 
+/**
+ * Allowlist entry that exposes every discovered plugin tool (`chiron_horizon_<prefix>__*`
+ * scopes to one plugin). Plugin tool names come from sidecars at runtime, so
+ * the static options above cannot name them; the backend matcher expands the
+ * wildcard, and static tool names never contain the `__` separator.
+ */
+export const MCP_PLUGIN_TOOLS_WILDCARD = "chiron_horizon_*__*";
+
 export function toggleMcpAllowedToolName(current: readonly string[] | null, toolName: string, allowed: boolean): string[] {
-  const selected = new Set(current === null ? MCP_TOOL_OPTIONS.map((tool) => tool.name) : current);
+  // A null allowlist means "everything", including every discovered plugin
+  // tool. The first toggle materializes the list: seed the plugin wildcard so
+  // checking one static tool does not silently strip every dynamic plugin
+  // tool — removing the wildcard is an explicit settings action.
+  const selected = new Set<string>(current === null ? [...MCP_TOOL_OPTIONS.map((tool) => tool.name), MCP_PLUGIN_TOOLS_WILDCARD] : current);
   if (allowed) selected.add(toolName);
   else selected.delete(toolName);
   return [...selected];
+}
+
+/** Adds a free-form allowlist entry (a plugin tool name or a `chiron_horizon_<prefix>__*` wildcard). */
+export function addMcpAllowedToolName(current: readonly string[] | null, rawName: string): { names: string[]; added: boolean } {
+  const name = rawName.trim();
+  if (!name) return { names: [...(current ?? MCP_TOOL_OPTIONS.map((tool) => tool.name))], added: false };
+  const selected = new Set<string>(current === null ? MCP_TOOL_OPTIONS.map((tool) => tool.name) : current);
+  const added = !selected.has(name);
+  if (added) selected.add(name);
+  return { names: [...selected], added };
+}
+
+/** Saved allowlist entries beyond the static options: plugin tool names and wildcards. */
+export function customMcpAllowedToolNames(current: readonly string[] | null): string[] {
+  const staticNames = new Set<string>(MCP_TOOL_OPTIONS.map((tool) => tool.name));
+  return (current ?? []).filter((name) => !staticNames.has(name));
 }
 
 export function updateMcpAllowedConnectionIds(current: readonly string[] | null, availableConnectionIds: readonly string[], connectionIds: readonly string[], allowed: boolean): string[] {

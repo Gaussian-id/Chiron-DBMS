@@ -1,9 +1,15 @@
 [workspace]
 resolver = "2"
-members = ["src-tauri", "crates/chiron-horizon-core", "crates/chiron-horizon-web", "crates/chiron-horizon-mcp", "crates/chiron-horizon-cli", "crates/chiron-horizon-sqlite-worker"]
-exclude = ["vendor/tauri-plugin-updater", "vendor/ctor", "vendor/dirs-sys", "vendor/pageant", "vendor/rumqttc", "vendor/tiberius", "vendor/wry"]
+members = ["src-tauri", "crates/chiron-horizon-core", "crates/chiron-horizon-driver-agent", "crates/chiron-horizon-driver-support", "crates/chiron-horizon-driver-elasticsearch", "crates/chiron-horizon-driver-mongodb", "crates/chiron-horizon-driver-mysql", "crates/chiron-horizon-driver-postgres", "crates/chiron-horizon-driver-redis", "crates/chiron-horizon-driver-sqlserver", "crates/chiron-horizon-drivers", "crates/chiron-horizon-sql", "crates/chiron-horizon-sql-core", "crates/chiron-horizon-sql-data", "crates/chiron-horizon-sql-dialect", "crates/chiron-horizon-sql-schema", "crates/chiron-horizon-plugin-runtime", "crates/chiron-horizon-formats", "crates/chiron-horizon-types", "crates/chiron-horizon-platform", "crates/chiron-horizon-ai-provider", "crates/chiron-horizon-web", "crates/chiron-horizon-mcp", "crates/chiron-horizon-cli", "crates/chiron-horizon-sqlite-worker", "crates/chiron-horizon-tauri-consul", "crates/chiron-horizon-tauri-schema"]
+exclude = ["vendor/tauri-plugin-updater", "vendor/ctor", "vendor/dirs-sys", "vendor/pageant", "vendor/rumqttc", "vendor/tiberius", "vendor/webview2-com-sys", "vendor/wry"]
 
 [patch.crates-io]
+# The offline Win7 / Server 2012 R2 bundle links the WebView2 SDK 1.0.902.49
+# loader. Loaders >= 1.0.1054.31 import EventSetInformation, which Win7 and
+# Server 2012 R2 do not provide. Keep that loader in the source tree instead of
+# swapping a file inside the cargo registry, because a registry swap bypasses
+# compile caches and once shipped a binary linked against the wrong loader.
+webview2-com-sys = { path = "vendor/webview2-com-sys" }
 # Offline signed update restoration and checked Windows installer launch.
 tauri-plugin-updater = { path = "vendor/tauri-plugin-updater" }
 # Tauri 2.11 uses ctor 0.8, which excludes Rust's win7 vendor. This vendors

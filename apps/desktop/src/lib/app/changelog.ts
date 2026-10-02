@@ -39,11 +39,11 @@ export function changelogLangFromLocale(locale: string): ChangelogLang {
 }
 
 export function changelogRepositoryUrl(_lang: ChangelogLang): string {
-  return "https://github.com/Gaussian-id/Chiron-Horizon";
+  return "https://github.com/Gaussian-id/Chiron-DBMS";
 }
 
 export function changelogReleaseUrl(tag: string): string {
-  return `https://github.com/Gaussian-id/Chiron-Horizon/releases/tag/${encodeURIComponent(tag)}`;
+  return `https://github.com/Gaussian-id/Chiron-DBMS/releases/tag/${encodeURIComponent(tag)}`;
 }
 
 export async function fetchChangelog(lang: ChangelogLang, options: { force?: boolean } = {}): Promise<ChangelogData> {

@@ -122,9 +122,13 @@ export function supportsClearableQuerySchema(dbType?: DatabaseType): boolean {
  * `mqtt`) belong to the same group: brokers have no SQL engine, and their
  * workbench is the MQ/MQTT admin tab. The sidebar entry used to open a plain
  * SQL editor against a broker (issue #8415).
+ *
+ * Meilisearch exposes its own index search and management workspaces rather
+ * than a general-purpose SQL query surface, so the generic sidebar action is
+ * hidden there as well (issue #9609).
  */
 export function supportsConnectionQueryActions(dbType?: DatabaseType): boolean {
-  return dbType !== "nacos" && dbType !== "consul" && dbType !== "hbase" && dbType !== "zookeeper" && dbType !== "plugin" && dbType !== "mq" && dbType !== "mqtt";
+  return dbType !== "nacos" && dbType !== "consul" && dbType !== "hbase" && dbType !== "zookeeper" && dbType !== "plugin" && dbType !== "mq" && dbType !== "mqtt" && dbType !== "meilisearch" && dbType !== "salesforce";
 }
 
 /**
@@ -143,7 +147,7 @@ export function supportsQueryExecution(dbType?: DatabaseType): boolean {
  * that hierarchy, so they must not be offered by sidebar "Add to AI" actions.
  */
 export function supportsAiAssistantContext(dbType?: DatabaseType): boolean {
-  return supportsQueryExecution(dbType) && !usesConnectionOnlyQueryTarget(dbType);
+  return supportsQueryExecution(dbType) && !usesConnectionOnlyQueryTarget(dbType) && dbType !== "nebula";
 }
 
 export function supportsConnectionScopedQueryExecution(dbType?: DatabaseType): boolean {
@@ -178,7 +182,7 @@ export function supportsSqlFileExecution(dbType?: DatabaseType): boolean {
   return supportsDatabaseFeature(dbType, "sqlFileExecution");
 }
 
-const NON_SQL_IN_LIST_PASTE_TYPES = new Set<DatabaseType>(["neo4j"]);
+const NON_SQL_IN_LIST_PASTE_TYPES = new Set<DatabaseType>(["neo4j", "nebula"]);
 
 export function supportsSqlInListPaste(dbType?: DatabaseType): boolean {
   if (!dbType) return true;
@@ -202,6 +206,11 @@ export function supportsSchemaDiagram(dbType?: DatabaseType): boolean {
  */
 export function supportsSchemaViewer(dbType?: DatabaseType): boolean {
   return supportsDatabaseFeature(dbType, "schemaViewer");
+}
+
+/** Relational engines that can list tables and columns. Independent of diagram support. */
+export function supportsDataDictionary(dbType?: DatabaseType): boolean {
+  return dbType !== "nebula" && supportsDatabaseFeature(dbType, "metadataBrowse");
 }
 
 export function supportsDatabaseSearch(dbType?: DatabaseType): boolean {
@@ -256,7 +265,22 @@ export function supportsObjectBrowserTreeNode(dbType: DatabaseType | undefined, 
 }
 
 export function supportsTableTruncate(dbType?: DatabaseType): boolean {
-  return !!dbType && dbType !== "impala" && dbType !== "sqlite" && dbType !== "rqlite" && dbType !== "turso" && dbType !== "cloudflare-d1" && dbType !== "duckdb" && dbType !== "influxdb" && dbType !== "influxdb3" && dbType !== "victoriametrics" && dbType !== "manticoresearch";
+  return (
+    !!dbType &&
+    dbType !== "impala" &&
+    dbType !== "sqlite" &&
+    dbType !== "rqlite" &&
+    dbType !== "turso" &&
+    dbType !== "cloudflare-d1" &&
+    dbType !== "duckdb" &&
+    dbType !== "influxdb" &&
+    dbType !== "influxdb3" &&
+    dbType !== "victoriametrics" &&
+    dbType !== "manticoresearch" &&
+    dbType !== "salesforce" &&
+    dbType !== "neo4j" &&
+    dbType !== "nebula"
+  );
 }
 
 export function supportsTableVacuum(dbType?: DatabaseType): boolean {
@@ -277,7 +301,7 @@ const ORACLE_STICKY_TRANSACTION_TYPES: ReadonlySet<string> = new Set(["oracle", 
 
 /** Databases whose manual-transaction toolbar hides Commit/Rollback until an
  *  unproven statement dirties the session. Mirrors the Rust proof gate
- *  (crates/chiron-horizon-core/src/query.rs + sql_risk.rs `prove_read_only_for_database`).
+ *  (crates/chiron-horizon-core/src/query/mod.rs + sql_risk.rs `prove_read_only_for_database`).
  *  Every member must also be in TRANSACTION_SUPPORTED_TYPES above: a database
  *  cannot reach manual mode (and this UX) without explicit transaction control
  *  (#9018). Family members like doris/kingbase join only when their transaction

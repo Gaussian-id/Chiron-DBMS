@@ -135,15 +135,6 @@ describe("SshHostKeyPromptDialog web bridge", () => {
     expect(dialogSource).not.toContain(':dismissible="false"');
   });
 
-  it("stacks above dialogs that mount later than it does", () => {
-    // Dialog portals teleport into <body> when their component mounts, so paint
-    // order at the shared z-50 follows mount order. This prompt mounts once at
-    // app start, so an on-demand dialog (e.g. the connection editor) would bury
-    // it and block the whole window. It must opt out of the default layer.
-    expect(dialogSource).toContain('overlay-class="z-[200]"');
-    expect(dialogSource).toContain('portal-class="z-[200]"');
-  });
-
   it("keeps the prompt above a later body-mounted connection dialog and answerable", async () => {
     await mountDialog();
 
@@ -168,13 +159,13 @@ describe("SshHostKeyPromptDialog web bridge", () => {
     connectionPositioner.textContent = "New connection";
     document.body.append(connectionPositioner);
 
-    const promptPositioner = document.body.querySelector<HTMLElement>(".dialog-positioner.z-\\[200\\]");
-    const promptOverlay = document.body.querySelector<HTMLElement>(".dialog-overlay.z-\\[200\\]");
+    const promptPositioner = document.body.querySelector<HTMLElement>(".dialog-positioner.\\!z-\\[200\\]");
+    const promptOverlay = document.body.querySelector<HTMLElement>(".dialog-overlay.\\!z-\\[200\\]");
     expect(promptPositioner).not.toBeNull();
     expect(promptOverlay).not.toBeNull();
     expect(connectionPositioner.classList.contains("z-50")).toBe(true);
-    expect(promptPositioner?.classList.contains("z-[200]")).toBe(true);
-    expect(promptOverlay?.classList.contains("z-[200]")).toBe(true);
+    expect(promptPositioner?.classList.contains("!z-[200]")).toBe(true);
+    expect(promptOverlay?.classList.contains("!z-[200]")).toBe(true);
     expect(document.body.textContent).toContain("layered.example.test:22");
 
     const buttons = document.body.querySelectorAll<HTMLButtonElement>("button");

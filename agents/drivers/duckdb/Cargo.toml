@@ -24,6 +24,7 @@ test = false
 
 [dependencies]
 chrono = "0.4"
+chrono-tz = "0.10"
 duckdb = { version = "1.3.2", features = ["bundled", "parquet"] }
 log = "0.4"
 serde = { version = "1", features = ["derive"] }
@@ -40,7 +41,7 @@ uuid = { version = "1", features = ["v4"] }
 tokio-postgres = { git = "https://github.com/t8y2/tokio-postgres-gaussdb.git", rev = "ac8ad476de59093d33ab9f294531c956e0c6a724" }
 postgres-types = { git = "https://github.com/t8y2/tokio-postgres-gaussdb.git", rev = "ac8ad476de59093d33ab9f294531c956e0c6a724" }
 postgres-protocol = { git = "https://github.com/t8y2/tokio-postgres-gaussdb.git", rev = "ac8ad476de59093d33ab9f294531c956e0c6a724" }
-mysql_async = { git = "https://github.com/t8y2/mysql_async.git", rev = "b615bb0b10b5975182a4aa069cabc3d09021f6ab" }
+mysql_async = { git = "https://github.com/zipg/mysql_async.git", rev = "4a9e60a62f5a48e35ef9ccc9fc8277d5012b19dd" }
 
 [profile.release]
 panic = "abort"

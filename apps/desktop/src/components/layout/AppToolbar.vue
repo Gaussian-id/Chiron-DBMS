@@ -2,13 +2,14 @@
 import { computed, ref, onMounted, onBeforeUnmount, h, nextTick, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { invoke } from "@tauri-apps/api/core";
-import { ChevronsRight, DatabaseZap, FilePlus2, Moon, Sun, SunMoon, History, Bot, ArrowLeftRight, FileCode, BookMarked, GitCompareArrows, TableProperties, Settings, CloudDownload, Package, PlugZap, FileDown, FolderTree, Network } from "@lucide/vue";
+import { ChevronsRight, DatabaseZap, FilePlus2, Moon, Sun, SunMoon, History, Bot, ArrowLeftRight, FileCode, BookMarked, GitCompareArrows, TableProperties, Settings, CloudDownload, Package, PlugZap, FileDown, FolderTree, Pin, PinOff, CalendarClock, Waypoints, Network } from "@lucide/vue";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import LightDropdown from "@/components/ui/LightDropdown.vue";
+import LightDropdown, { type LightDropdownItem } from "@/components/ui/LightDropdown.vue";
 import WindowControls from "@/components/layout/WindowControls.vue";
 import ExportProgressPopover from "@/components/export/ExportProgressPopover.vue";
 import ToolbarUpdateIcon from "@/components/layout/ToolbarUpdateIcon.vue";
+import PluginShortcutToolbar from "@/components/plugins/PluginShortcutToolbar.vue";
 import { MAC_TRAFFIC_LIGHT_X, macTrafficLightInsetPaddingForScale, shouldReserveMacTrafficLightInset, useWindowControls } from "@/composables/useWindowControls";
 import { useToast } from "@/composables/useToast";
 import { useSettingsStore } from "@/stores/settingsStore";
@@ -50,6 +51,7 @@ const props = defineProps<{
   agentDriverUpdateCount: number;
   hasMcpUpdateAvailable: boolean;
   hasConnections: boolean;
+  canNewQuery: boolean;
   hasSqlFileConnections: boolean;
 }>();
 
@@ -72,13 +74,22 @@ const emit = defineEmits<{
   "open-sql-file": [];
   "open-schema-diff": [];
   "open-data-compare": [];
+  "open-backups": [];
+  "open-mcp-settings": [];
 }>();
 
 const { t } = useI18n();
 const { toast } = useToast();
+
 const settingsStore = useSettingsStore();
 const toolbarItems = computed(() => ({ ...settingsStore.editorSettings.toolbarItems, checkUpdates: false }));
-const { isMac, isDesktop, showControls, isMaximized, isFullscreen, minimize, toggleMaximize, close } = useWindowControls();
+const showToolbarUpdateEntry = computed(() => toolbarItems.value.checkUpdates || props.hasUpdateAvailable);
+const { isMac, isDesktop, showControls, isMaximized, isFullscreen, isAlwaysOnTop, minimize, toggleMaximize, toggleAlwaysOnTop, close } = useWindowControls();
+// The always-on-top control is opt-in (外观 → 工具栏): the right side of the
+// toolbar is the most crowded strip in the app. It stays visible while the
+// window is actually pinned even with the setting off, so turning the setting
+// off can never leave the user with a pinned window and no way to unpin it.
+const showAlwaysOnTopButton = computed(() => isDesktop && (toolbarItems.value.alwaysOnTop || isAlwaysOnTop.value));
 const updateTooltip = computed(() => {
   if (props.hasUpdateAvailable && props.updateReady) return t("updates.restartRequiredTooltip");
   if (props.hasUpdateAvailable && props.updateReadyToInstall) return t("updates.downloadedReady", { version: props.updateVersion ?? "" });
@@ -155,6 +166,8 @@ function onToolbarDblClick(e: MouseEvent) {
 const toolbarEl = ref<HTMLElement>();
 const newConnectionLabelEl = ref<HTMLElement>();
 const toolbarCollapsed = ref(false);
+const pluginCenterGroup = ref<HTMLElement | null>(null);
+const showPluginCenterShortcuts = computed(() => settingsStore.editorSettings.pluginShortcuts.enabled && settingsStore.editorSettings.pluginShortcuts.position === "plugin-center");
 const shouldReserveTrafficLightInset = computed(() => shouldReserveMacTrafficLightInset(isMac, isFullscreen.value, isDesktop));
 
 function checkToolbarWidth() {
@@ -194,7 +207,7 @@ const collapsibleRightItemDefs = computed(() => {
     disabled: boolean;
   }
   const items: ItemDef[] = [];
-  if (toolbarItems.value.checkUpdates) {
+  if (showToolbarUpdateEntry.value) {
     items.push({
       key: "checkUpdates",
       label: t("updates.check"),
@@ -419,11 +432,12 @@ onBeforeUnmount(() => {
 
 // ──────────── Left-side "More" items ────────────
 
-const moreItems = computed(() => {
-  const items: Array<{ value: string; label: string; icon: any; action: () => void; disabled: boolean }> = [];
+type ToolbarMenuItem = LightDropdownItem & { action: () => void };
 
-  // Hidden left-side items go into "More"
-  if (!toolbarItems.value.dataTransfer) {
+function buildToolbarMenuItems(includeVisiblePrimaryItems: boolean): ToolbarMenuItem[] {
+  const items: ToolbarMenuItem[] = [];
+
+  if (includeVisiblePrimaryItems || !toolbarItems.value.dataTransfer) {
     items.push({
       value: "transfer",
       label: t("transfer.dataTransfer"),
@@ -432,20 +446,18 @@ const moreItems = computed(() => {
       disabled: !props.hasConnections,
     });
   }
-  if (!toolbarItems.value.driverManager) {
+  if (includeVisiblePrimaryItems || !toolbarItems.value.driverManager) {
     items.push({
       value: "driver-store",
-      label: t("toolbar.driverManager"),
+      label: props.agentDriverUpdateCount > 0 ? `${t("toolbar.driverManager")} (${props.agentDriverUpdateCount})` : t("toolbar.driverManager"),
       icon: Package,
       action: () => emit("open-driver-store"),
       disabled: false,
     });
   }
-  if (!toolbarItems.value.pluginCenter) {
+  if (includeVisiblePrimaryItems || !toolbarItems.value.pluginCenter) {
     items.push({ value: "plugin-center", label: t("toolbar.pluginCenter"), icon: PlugZap, action: () => emit("open-plugin-center"), disabled: false });
   }
-
-  // "More" menu items (individually toggleable)
   if (toolbarItems.value.sqlFile) {
     items.push({
       value: "sql-file",
@@ -473,52 +485,39 @@ const moreItems = computed(() => {
       disabled: !props.hasConnections,
     });
   }
+  items.push({
+    value: "database-backups",
+    label: t("databaseBackup.title"),
+    icon: CalendarClock,
+    action: () => emit("open-backups"),
+    disabled: false,
+  });
+  items.push({
+    value: "mcp-settings",
+    label: t("settings.openMcpSettings"),
+    icon: Waypoints,
+    action: () => emit("open-mcp-settings"),
+    disabled: false,
+  });
 
-  // Append overflowed right-side items at the end
-  for (const ri of overflowRightMenuItems.value) {
+  for (const item of overflowRightMenuItems.value) {
     items.push({
-      value: `right-${ri.value}`,
-      label: ri.label,
-      icon: ri.icon,
-      action: ri.action,
-      disabled: ri.disabled,
+      value: `right-${item.value}`,
+      label: item.label,
+      icon: item.icon,
+      action: item.action,
+      disabled: item.disabled,
     });
   }
 
   return items;
-});
+}
+
+const moreItems = computed(() => buildToolbarMenuItems(false));
 
 const showMoreDropdown = computed(() => moreItems.value.length > 0);
 
-const collapsedItems = computed(() => {
-  const items: Array<{ value: string; label: string; icon: any; action: () => void; disabled: boolean }> = [];
-  if (toolbarItems.value.dataTransfer) {
-    items.push({
-      value: "transfer",
-      label: t("transfer.dataTransfer"),
-      icon: ArrowLeftRight,
-      action: () => emit("open-transfer"),
-      disabled: !props.hasConnections,
-    });
-  }
-  if (toolbarItems.value.driverManager) {
-    items.push({
-      value: "driver-store",
-      label: props.agentDriverUpdateCount > 0 ? `${t("toolbar.driverManager")} (${props.agentDriverUpdateCount})` : t("toolbar.driverManager"),
-      icon: Package,
-      action: () => emit("open-driver-store"),
-      disabled: false,
-    });
-  }
-  if (toolbarItems.value.pluginCenter) {
-    items.push({ value: "plugin-center", label: t("toolbar.pluginCenter"), icon: PlugZap, action: () => emit("open-plugin-center"), disabled: false });
-  }
-  // Always include moreItems (may contain hidden left-side items + overflowed right items)
-  if (moreItems.value.length > 0) {
-    items.push(...moreItems.value);
-  }
-  return items;
-});
+const collapsedItems = computed(() => buildToolbarMenuItems(true));
 
 function runMoreItem(value: string) {
   const item = moreItems.value.find((i) => i.value === value);
@@ -563,7 +562,7 @@ const toolbarStyle = computed(() => {
       </span>
     </Button>
 
-    <Button variant="ghost" size="sm" :class="toolbarTextButtonClass" @click="emit('new-query')" :disabled="!hasConnections">
+    <Button v-if="canNewQuery" variant="ghost" size="sm" :class="toolbarTextButtonClass" @click="emit('new-query')">
       <FilePlus2 class="h-3.5 w-3.5" />
       <span :class="toolbarTextLabelClass">{{ t("toolbar.newQuery") }}</span>
     </Button>
@@ -583,10 +582,13 @@ const toolbarStyle = computed(() => {
         <Package class="h-3.5 w-3.5" />
         <span :class="toolbarTextLabelClass">{{ t("toolbar.driverManager") }}</span>
       </Button>
-      <Button v-if="toolbarItems.pluginCenter" variant="ghost" size="sm" :class="[toolbarTextButtonClass, { 'bg-accent': showPluginCenter }]" @click="emit('open-plugin-center')">
-        <PlugZap class="h-3.5 w-3.5" />
-        <span :class="toolbarTextLabelClass">{{ t("toolbar.pluginCenter") }}</span>
-      </Button>
+      <div v-if="toolbarItems.pluginCenter || showPluginCenterShortcuts" ref="pluginCenterGroup" class="flex shrink-0 items-center rounded-md" :class="{ 'bg-accent': showPluginCenter }">
+        <Button v-if="toolbarItems.pluginCenter" variant="ghost" size="sm" :class="[toolbarTextButtonClass, { 'rounded-r-none': showPluginCenterShortcuts }]" @click="emit('open-plugin-center')">
+          <PlugZap class="h-3.5 w-3.5" />
+          <span :class="toolbarTextLabelClass">{{ t("toolbar.pluginCenter") }}</span>
+        </Button>
+        <PluginShortcutToolbar v-if="showPluginCenterShortcuts" dropdown-only :menu-anchor="pluginCenterGroup" @layout-change="scheduleToolbarLayout" />
+      </div>
 
       <LightDropdown
         v-if="showMoreDropdown"
@@ -604,6 +606,7 @@ const toolbarStyle = computed(() => {
     </template>
 
     <template v-if="toolbarCollapsed">
+      <PluginShortcutToolbar v-if="showPluginCenterShortcuts" dropdown-only @layout-change="scheduleToolbarLayout" />
       <LightDropdown
         v-if="collapsedItems.length > 0"
         model-value=""
@@ -623,17 +626,48 @@ const toolbarStyle = computed(() => {
 
     <!-- Right-side items wrapped in overflow-aware container -->
     <div ref="rightWrapper" class="flex min-w-0 items-center gap-1 overflow-hidden">
-      <template v-if="toolbarItems.checkUpdates">
+      <PluginShortcutToolbar v-if="settingsStore.editorSettings.pluginShortcuts.enabled && settingsStore.editorSettings.pluginShortcuts.position === 'toolbar'" @layout-change="scheduleToolbarLayout" />
+      <template v-if="showToolbarUpdateEntry">
         <Tooltip>
           <TooltipTrigger as-child>
-            <Button v-show="isRightItemVisible('checkUpdates')" data-toolbar-update-trigger variant="ghost" size="icon" class="toolbar-action-button relative h-8 w-8 shrink-0" @click="emit('check-updates')">
-              <ToolbarUpdateIcon />
-              <span v-if="hasUpdateAvailable" class="absolute right-1.5 top-1.5 h-2 w-2 rounded-full bg-red-500 ring-2 ring-background" />
+            <Button
+              v-show="isRightItemVisible('checkUpdates')"
+              data-toolbar-update-trigger
+              :data-toolbar-update-action="hasUpdateAvailable ? '' : undefined"
+              :variant="hasUpdateAvailable ? 'default' : 'ghost'"
+              :size="hasUpdateAvailable ? 'sm' : 'icon'"
+              class="toolbar-action-button shrink-0"
+              :class="hasUpdateAvailable ? 'h-7 gap-1.5 px-2 text-xs' : 'relative h-8 w-8'"
+              @click="emit('check-updates')"
+            >
+              <template v-if="hasUpdateAvailable">
+                <CloudDownload class="h-3.5 w-3.5" />
+                <span>{{ t("updates.updateAction") }}</span>
+              </template>
+              <ToolbarUpdateIcon v-else :available="false" />
             </Button>
           </TooltipTrigger>
           <TooltipContent>{{ updateTooltip }}</TooltipContent>
         </Tooltip>
       </template>
+
+      <Tooltip v-if="showAlwaysOnTopButton">
+        <TooltipTrigger as-child>
+          <Button
+            variant="ghost"
+            size="icon"
+            class="toolbar-action-button relative h-8 w-8 shrink-0"
+            :class="{ 'toolbar-action-button--active bg-accent': isAlwaysOnTop }"
+            :aria-pressed="isAlwaysOnTop"
+            :aria-label="isAlwaysOnTop ? t('toolbar.alwaysOnTopOff') : t('toolbar.alwaysOnTop')"
+            @click="toggleAlwaysOnTop"
+          >
+            <Pin v-if="isAlwaysOnTop" class="toolbar-action-icon h-4 w-4 fill-current" />
+            <PinOff v-else class="toolbar-action-icon h-4 w-4" />
+          </Button>
+        </TooltipTrigger>
+        <TooltipContent>{{ isAlwaysOnTop ? t("toolbar.alwaysOnTopOff") : t("toolbar.alwaysOnTop") }}</TooltipContent>
+      </Tooltip>
 
       <div v-show="isRightItemVisible('exportProgress')" class="contents">
         <ExportProgressPopover />

@@ -337,7 +337,7 @@ async function testSelected() {
       <template v-else-if="selectedHttp">
         <div class="grid grid-cols-4 items-center gap-4">
           <Label class="text-xs">{{ t("connection.httpTunnelUrl") }}</Label>
-          <Input v-model="selectedHttp.url" class="col-span-3" placeholder="https://chiron-horizon.example.com/chiron_horizon_tunnel.php" />
+          <Input v-model="selectedHttp.url" class="col-span-3" placeholder="https://chiron.horizon.example.com/chiron_horizon_tunnel.php" />
         </div>
         <div class="grid grid-cols-4 items-center gap-4">
           <Label class="text-xs">{{ t("connection.httpTunnelToken") }}</Label>

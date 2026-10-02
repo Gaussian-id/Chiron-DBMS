@@ -7,7 +7,6 @@
 use chiron_horizon_core::connection::AppState;
 use chiron_horizon_core::docs::{NoteSource, SnapshotWarning};
 use chiron_horizon_core::models::connection::{ConnectionConfig, DatabaseType};
-use chiron_horizon_core::storage::Storage;
 
 fn live_postgres_config(
     id: &str,
@@ -18,6 +17,8 @@ fn live_postgres_config(
     database: &str,
 ) -> ConnectionConfig {
     ConnectionConfig {
+        oracle_oci_nls_lang: None,
+        oracle_oci_tns_admin: None,
         docs_notes_path: None,
         id: id.to_string(),
         name: id.to_string(),
@@ -79,6 +80,7 @@ fn live_postgres_config(
         is_production: false,
         production_databases: vec![],
         show_system_schemas: false,
+        sidebar_auto_load_all_tables: false,
         database_info: None,
     }
 }
@@ -136,7 +138,7 @@ async fn annotations_reach_the_generated_dbml() {
 
     let dir = std::env::temp_dir().join(format!("chiron-horizon-live-postgres-docs-annotations-{suffix}"));
     std::fs::create_dir_all(&dir).unwrap();
-    let storage = Storage::open(&dir.join("storage.db")).await.unwrap();
+    let storage = chiron_horizon_core::persistence::test_storage::open(&dir.join("storage.db")).await.unwrap();
     let state = AppState::new(storage);
     state.configs.write().await.insert(config.id.clone(), config.clone());
 

@@ -1,5 +1,5 @@
 // Unit tests for the local table search index loading helper introduced for
-// Gaussian-id/Chiron-Horizon #6190.
+// Gaussian-id/Chiron-DBMS #6190.
 //
 // Pre-fix behavior: local-mode first search only read the persisted index
 // (loadSidebarTableSearchIndex). When it had never been built (null), the UI

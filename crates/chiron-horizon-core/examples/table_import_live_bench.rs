@@ -151,6 +151,8 @@ fn env_required(name: &str) -> Result<String, String> {
 fn connection_config(id: &str, database: BenchDatabase) -> Result<ConnectionConfig, String> {
     let database_name = env_required("CHIRON_HORIZON_BENCH_DATABASE")?;
     Ok(ConnectionConfig {
+        oracle_oci_nls_lang: None,
+        oracle_oci_tns_admin: None,
         docs_notes_path: None,
         id: id.to_string(),
         name: id.to_string(),
@@ -173,6 +175,7 @@ fn connection_config(id: &str, database: BenchDatabase) -> Result<ConnectionConf
         visible_database_patterns: None,
         visible_schemas: None,
         show_system_schemas: false,
+        sidebar_auto_load_all_tables: false,
         attached_databases: Vec::new(),
         init_script: None,
         color: None,
@@ -409,6 +412,8 @@ fn import_request(
         date_time_format: None,
         prepared_source: None,
         retain_source: false,
+        conflict_policy: None,
+        skip_duplicate_rows: false,
     }
 }
 

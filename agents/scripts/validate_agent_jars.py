@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 import sys
 import zipfile
-from email.parser import Parser
 from pathlib import Path
 
 
@@ -48,7 +47,17 @@ def read_manifest(archive: zipfile.ZipFile) -> dict[str, str]:
         raw = archive.read("META-INF/MANIFEST.MF").decode("utf-8")
     except KeyError:
         return {}
-    return dict(Parser().parsestr(raw))
+    # JAR continuation lines concatenate bytes without inserting a space.
+    # Email header unfolding uses different rules and corrupts long class names.
+    lines = []
+    for line in raw.splitlines():
+        if not line:
+            break  # Only the main manifest section describes the entry point.
+        if line.startswith(" ") and lines:
+            lines[-1] += line[1:]
+        else:
+            lines.append(line)
+    return dict(line.split(": ", 1) for line in lines if ": " in line)
 
 
 def main() -> int:

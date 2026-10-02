@@ -53,6 +53,16 @@ test("labels documentation-only changes without a conventional title", () => {
   assert.deepEqual(result.labels, ["area/docs", "documentation"]);
 });
 
+test("labels the bundled Chiron Horizon skill as CLI work", () => {
+  const result = evaluatePullRequestLabels({
+    title: "feat(cli): improve the bundled agent skill",
+    changedFiles: ["skills/chiron-horizon/SKILL.md", "skills/chiron-horizon/references/commands.md"],
+    knownDatabaseTypes,
+  });
+
+  assert.deepEqual(result.labels, ["area/cli", "enhancement"]);
+});
+
 test("maps agent and dialect paths to existing database types", () => {
   assert.deepEqual(
     inferDatabaseTypes([
@@ -104,13 +114,32 @@ test("recognizes conventional titles with a full-width colon", () => {
   assert.deepEqual(result.labels, ["area/core", "bug"]);
 });
 
+test("recognizes extracted core crates and their database sources", () => {
+  const result = evaluatePullRequestLabels({
+    title: "fix(sql): preserve PostgreSQL query contracts",
+    changedFiles: [
+      "crates/chiron-horizon-driver-postgres/src/postgres.rs",
+      "crates/chiron-horizon-sql-core/src/sql.rs",
+      "crates/chiron-horizon-types/src/types.rs",
+      "crates/chiron-horizon-platform/src/process.rs",
+      "crates/chiron-horizon-ai-provider/src/ai.rs",
+      "crates/chiron-horizon-formats/src/csv_export.rs",
+      "crates/chiron-horizon-plugin-runtime/src/plugins.rs",
+    ],
+    knownDatabaseTypes,
+  });
+
+  assert.deepEqual(result.labels, ["area/core", "bug", "db/postgres"]);
+  assert.deepEqual(result.databaseTypes, ["postgres"]);
+});
+
 test("collapses broad area and database changes", () => {
   const result = evaluatePullRequestLabels({
     title: "feat: add cross-runtime geometry support",
     changedFiles: [
       "agents/drivers/mysql/build.gradle",
       "apps/desktop/src/components/grid/GeometryViewer.vue",
-      "crates/chiron-horizon-core/src/db/postgres.rs",
+      "crates/chiron-horizon-driver-postgres/src/postgres.rs",
       "crates/chiron-horizon-mcp/src/main.rs",
       "crates/chiron-horizon-web/src/main.rs",
       "docs/content/docs/geometry.mdx",

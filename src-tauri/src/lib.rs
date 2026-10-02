@@ -1,11 +1,15 @@
+mod background_backup;
 mod commands;
 mod data_dir;
+pub use background_backup::run_if_requested as run_backup_worker_if_requested;
 mod db;
 #[cfg(target_os = "macos")]
 mod macos_app_delegate;
 #[cfg(target_os = "macos")]
 mod macos_escape_guard;
+mod migration_gate;
 mod models;
+mod plugin_ui_protocol;
 #[cfg(any(target_os = "windows", test))]
 mod startup_recovery;
 #[cfg(all(not(target_os = "windows"), not(test)))]
@@ -687,10 +691,12 @@ fn open_connection_deep_links(app: &tauri::AppHandle, links: Vec<String>) {
     if links.is_empty() {
         return;
     }
-    if let Some(state) = app.try_state::<commands::deep_link::DeepLinkOpenState>() {
-        state.push_connection_links(links.clone());
+    let should_emit = app
+        .try_state::<commands::deep_link::DeepLinkOpenState>()
+        .is_none_or(|state| state.route_connection_links(links.clone()));
+    if should_emit {
+        let _ = app.emit("chiron-horizon-open-connection-links", links);
     }
-    let _ = app.emit("chiron-horizon-open-connection-links", links);
     show_main_window(app);
 }
 
@@ -698,10 +704,12 @@ fn open_ai_config_deep_links(app: &tauri::AppHandle, links: Vec<String>) {
     if links.is_empty() {
         return;
     }
-    if let Some(state) = app.try_state::<commands::deep_link::DeepLinkOpenState>() {
-        state.push_ai_config_links(links.clone());
+    let should_emit = app
+        .try_state::<commands::deep_link::DeepLinkOpenState>()
+        .is_none_or(|state| state.route_ai_config_links(links.clone()));
+    if should_emit {
+        let _ = app.emit("chiron-horizon-open-ai-config-links", links);
     }
-    let _ = app.emit("chiron-horizon-open-ai-config-links", links);
     show_main_window(app);
 }
 
@@ -709,10 +717,12 @@ fn open_plugin_install_deep_links(app: &tauri::AppHandle, links: Vec<String>) {
     if links.is_empty() {
         return;
     }
-    if let Some(state) = app.try_state::<commands::deep_link::DeepLinkOpenState>() {
-        state.push_plugin_install_links(links.clone());
+    let should_emit = app
+        .try_state::<commands::deep_link::DeepLinkOpenState>()
+        .is_none_or(|state| state.route_plugin_install_links(links.clone()));
+    if should_emit {
+        let _ = app.emit("chiron-horizon-open-plugin-install-links", links);
     }
-    let _ = app.emit("chiron-horizon-open-plugin-install-links", links);
     show_main_window(app);
 }
 
@@ -725,8 +735,10 @@ enum LocaleFamily {
     Japanese,
     Korean,
     Spanish,
+    Indonesian,
     Italian,
     Portuguese,
+    Russian,
     Turkish,
 }
 
@@ -753,12 +765,16 @@ fn locale_family(locale: &str) -> LocaleFamily {
         LocaleFamily::Azerbaijani
     } else if is_language("es") {
         LocaleFamily::Spanish
+    } else if is_language("id") {
+        LocaleFamily::Indonesian
     } else if is_language("tr") {
         LocaleFamily::Turkish
     } else if is_language("it") {
         LocaleFamily::Italian
     } else if is_language("pt") {
         LocaleFamily::Portuguese
+    } else if is_language("ru") {
+        LocaleFamily::Russian
     } else {
         LocaleFamily::English
     }
@@ -772,9 +788,11 @@ fn tray_menu_labels_for_locale(locale: &str) -> (&'static str, &'static str) {
         LocaleFamily::Korean => ("Chiron Horizon 표시", "Chiron Horizon 종료"),
         LocaleFamily::Azerbaijani => ("Chiron Horizon-i göstər", "Chiron Horizon-dən çıx"),
         LocaleFamily::Spanish => ("Mostrar Chiron Horizon", "Salir de Chiron Horizon"),
+        LocaleFamily::Indonesian => ("Tampilkan Chiron Horizon", "Keluar dari Chiron Horizon"),
         LocaleFamily::Italian => ("Mostra Chiron Horizon", "Esci da Chiron Horizon"),
         LocaleFamily::Turkish => ("Chiron Horizon'i Göster", "Chiron Horizon'ten Çık"),
         LocaleFamily::Portuguese => ("Mostrar Chiron Horizon", "Sair do Chiron Horizon"),
+        LocaleFamily::Russian => ("Показать Chiron Horizon", "Выйти из Chiron Horizon"),
         LocaleFamily::English => ("Show Chiron Horizon", "Quit Chiron Horizon"),
     }
 }
@@ -789,9 +807,11 @@ fn app_menu_copy_support_info_label(locale: &str) -> &'static str {
         LocaleFamily::Korean => "지원 정보 복사",
         LocaleFamily::Azerbaijani => "Dəstək məlumatlarını kopyala",
         LocaleFamily::Spanish => "Copiar información",
+        LocaleFamily::Indonesian => "Salin Info Dukungan",
         LocaleFamily::Italian => "Copia informazioni",
         LocaleFamily::Turkish => "Destek bilgilerini kopyala",
         LocaleFamily::Portuguese => "Copiar informações",
+        LocaleFamily::Russian => "Копировать сведения о поддержке",
         LocaleFamily::English => "Copy Support Info",
     }
 }
@@ -805,9 +825,11 @@ fn app_menu_close_tab_label(locale: &str) -> &'static str {
         LocaleFamily::Korean => "탭 닫기",
         LocaleFamily::Azerbaijani => "Vərəqi bağla",
         LocaleFamily::Spanish => "Cerrar pestaña",
+        LocaleFamily::Indonesian => "Tutup Tab",
         LocaleFamily::Italian => "Chiudi scheda",
         LocaleFamily::Turkish => "Sekmeyi kapat",
         LocaleFamily::Portuguese => "Fechar aba",
+        LocaleFamily::Russian => "Закрыть вкладку",
         LocaleFamily::English => "Close Tab",
     }
 }
@@ -820,9 +842,11 @@ fn app_menu_quit_label(locale: &str, app_name: &str) -> String {
         LocaleFamily::Korean => format!("{app_name} 종료"),
         LocaleFamily::Azerbaijani => format!("{app_name}-dən çıx"),
         LocaleFamily::Spanish => format!("Salir de {app_name}"),
+        LocaleFamily::Indonesian => format!("Keluar dari {app_name}"),
         LocaleFamily::Italian => format!("Esci da {app_name}"),
         LocaleFamily::Turkish => format!("{app_name} Uygulamasından Çık"),
         LocaleFamily::Portuguese => format!("Sair do {app_name}"),
+        LocaleFamily::Russian => format!("Выйти из {app_name}"),
         LocaleFamily::English => format!("Quit {app_name}"),
     }
 }
@@ -1034,9 +1058,11 @@ mod tests {
         assert_eq!(tray_menu_labels_for_locale("ko-KR"), ("Chiron Horizon 표시", "Chiron Horizon 종료"));
         assert_eq!(tray_menu_labels_for_locale("az-AZ"), ("Chiron Horizon-i göstər", "Chiron Horizon-dən çıx"));
         assert_eq!(tray_menu_labels_for_locale("es-ES"), ("Mostrar Chiron Horizon", "Salir de Chiron Horizon"));
+        assert_eq!(tray_menu_labels_for_locale("id-ID"), ("Tampilkan Chiron Horizon", "Keluar dari Chiron Horizon"));
         assert_eq!(tray_menu_labels_for_locale("it-IT"), ("Mostra Chiron Horizon", "Esci da Chiron Horizon"));
         assert_eq!(tray_menu_labels_for_locale("pt-BR"), ("Mostrar Chiron Horizon", "Sair do Chiron Horizon"));
         assert_eq!(tray_menu_labels_for_locale("tr-TR"), ("Chiron Horizon'i Göster", "Chiron Horizon'ten Çık"));
+        assert_eq!(tray_menu_labels_for_locale("ru-RU"), ("Показать Chiron Horizon", "Выйти из Chiron Horizon"));
         assert_eq!(tray_menu_labels_for_locale("en-US"), ("Show Chiron Horizon", "Quit Chiron Horizon"));
         // Unknown and empty locales fall back to English; "ita" must not match "it".
         assert_eq!(tray_menu_labels_for_locale("ita"), ("Show Chiron Horizon", "Quit Chiron Horizon"));
@@ -1050,14 +1076,18 @@ mod tests {
         assert_eq!(app_menu_quit_label("ja-JP", "Chiron Horizon"), "Chiron Horizonを終了");
         assert_eq!(app_menu_quit_label("ko-KR", "Chiron Horizon"), "Chiron Horizon 종료");
         assert_eq!(app_menu_quit_label("tr-TR", "Chiron Horizon"), "Chiron Horizon Uygulamasından Çık");
+        assert_eq!(app_menu_quit_label("ru-RU", "Chiron Horizon"), "Выйти из Chiron Horizon");
         assert_eq!(app_menu_quit_label("az-AZ", "Chiron Horizon"), "Chiron Horizon-dən çıx");
+        assert_eq!(app_menu_quit_label("id-ID", "Chiron Horizon"), "Keluar dari Chiron Horizon");
         assert_eq!(app_menu_quit_label("en-US", "Chiron Horizon"), "Quit Chiron Horizon");
         assert_eq!(app_menu_quit_label("", "Chiron Horizon"), "Quit Chiron Horizon");
         assert_eq!(app_menu_copy_support_info_label("zh-CN"), "复制支持信息");
         assert_eq!(app_menu_copy_support_info_label("zh-TW"), "複製支援資訊");
         assert_eq!(app_menu_copy_support_info_label("ko-KR"), "지원 정보 복사");
         assert_eq!(app_menu_copy_support_info_label("tr-TR"), "Destek bilgilerini kopyala");
+        assert_eq!(app_menu_copy_support_info_label("ru-RU"), "Копировать сведения о поддержке");
         assert_eq!(app_menu_copy_support_info_label("az-AZ"), "Dəstək məlumatlarını kopyala");
+        assert_eq!(app_menu_copy_support_info_label("id-ID"), "Salin Info Dukungan");
         assert_eq!(app_menu_copy_support_info_label("en-US"), "Copy Support Info");
         assert_eq!(app_menu_close_tab_label("zh-CN"), "关闭标签页");
         assert_eq!(app_menu_close_tab_label("zh-TW"), "關閉分頁");
@@ -1441,6 +1471,12 @@ mod tests {
     }
 }
 
+fn route_external_commands(
+    main_handler: impl Fn(tauri::ipc::Invoke<tauri::Wry>) -> bool + Send + Sync + 'static,
+) -> impl Fn(tauri::ipc::Invoke<tauri::Wry>) -> bool + Send + Sync + 'static {
+    chiron_horizon_tauri_consul::route(chiron_horizon_tauri_schema::route(main_handler))
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     chiron_horizon_core::legacy::install_environment_compatibility();
@@ -1453,6 +1489,15 @@ pub fn run() {
             .show();
         return;
     }
+    // Metadata/completion command chains nest very large async futures and can
+    // exhaust tokio's default 2 MiB worker stack, which aborts the process with
+    // STATUS_STACK_OVERFLOW. Share the roomier stack the backup worker and Web
+    // server runtimes use as well.
+    let runtime = chiron_horizon_core::scheduled_backup::worker_runtime().expect("Failed to build tokio runtime");
+    let runtime_handle = runtime.handle().clone();
+    let _runtime = Box::leak(Box::new(runtime));
+    tauri::async_runtime::set(runtime_handle);
+
     startup_recovery::initialize();
     rustls::crypto::aws_lc_rs::default_provider().install_default().expect("Failed to install rustls crypto provider");
     append_startup_probe("runtime prerequisites configured");
@@ -1465,7 +1510,10 @@ pub fn run() {
         .plugin(tauri_plugin_deep_link::init())
         .plugin(tauri_plugin_clipboard_manager::init())
         .plugin(tauri_plugin_dialog::init())
-        .plugin(tauri_plugin_fs::init());
+        .plugin(tauri_plugin_fs::init())
+        // Plugin workbench sandbox documents lazy-load their code-split chunks
+        // through this scheme; see plugin_ui_protocol.rs.
+        .register_asynchronous_uri_scheme_protocol(plugin_ui_protocol::PLUGIN_UI_SCHEME, plugin_ui_protocol::handle);
 
     let builder = if should_enable_single_instance(cfg!(debug_assertions)) {
         builder.plugin(tauri_plugin_single_instance::init(|app, args, cwd| {
@@ -1534,6 +1582,9 @@ pub fn run() {
 
     builder
         .manage(CloseBehaviorState::new())
+        .manage(commands::plugin_file::PluginFileState::new())
+        .manage(commands::plugin_media::PluginMediaState::new())
+        .manage(commands::plugin_storage::PluginUiStorageState::new())
         .manage(AppLocaleState::new())
         .on_page_load(|webview, payload| {
             if payload.event() == PageLoadEvent::Started {
@@ -1581,15 +1632,19 @@ pub fn run() {
             let t = Instant::now();
             append_startup_probe(format!("opening storage file=chiron-horizon.db data_dir_mode={data_dir_mode}"));
             let storage = tauri::async_runtime::block_on(async {
-                let s = Storage::open(&db_path).await.expect("Failed to open storage");
+                let s = Storage::open_unmigrated(&db_path).await.expect("Failed to open storage");
                 eprintln!("[STARTUP]   Storage::open in {:?}", t.elapsed());
                 append_startup_probe(format!("storage opened in {:?}", t.elapsed()));
                 let t2 = Instant::now();
-                s.migrate_from_json(&data_dir).await.expect("Failed to migrate JSON data");
-                eprintln!("[STARTUP]   migrate_from_json in {:?}", t2.elapsed());
-                append_startup_probe(format!("json migration completed in {:?}", t2.elapsed()));
+                eprintln!("[STARTUP]   migration wizard deferred in {:?}", t2.elapsed());
+                append_startup_probe(format!("migration deferred to security wizard in {:?}", t2.elapsed()));
                 s
             });
+            let migration_ready = tauri::async_runtime::block_on(storage.inspect_data_migration())
+                .map(|status| status.is_ready())
+                .unwrap_or(false);
+            let migration_gate = Arc::new(migration_gate::MigrationGate::new(migration_ready));
+            app.manage(migration_gate.clone());
             let desktop_settings = tauri::async_runtime::block_on(storage.load_desktop_settings()).unwrap_or_default();
             app.handle().plugin(
                 tauri_plugin_log::Builder::default()
@@ -1667,13 +1722,35 @@ pub fn run() {
                     .open_url(url, None::<&str>)
                     .map_err(|err| format!("Failed to open the system browser: {err}"))
             }));
+            let sf_app_handle = app.handle().clone();
+            state.set_salesforce_browser_opener(Arc::new(move |url| {
+                sf_app_handle
+                    .opener()
+                    .open_url(url, None::<&str>)
+                    .map_err(|err| format!("Failed to open the system browser: {err}"))
+            }));
             let state = Arc::new(state);
             app.manage(state.clone());
             commands::plugins::install_plugin_event_bridge(app.handle(), state.clone());
+            commands::connection::install_connection_liveness_bridge(app.handle(), state.clone());
+            let backups = tauri::async_runtime::block_on(async {
+                background_backup::BackgroundBackup::new(state.clone(), data_dir.clone())
+            });
+            match backups {
+                Ok(backups) => {
+                    if let Err(error) = backups.resume() {
+                        log::error!("[database-backup] background registration failed: {error}");
+                    }
+                    app.manage(backups);
+                }
+                Err(error) => log::error!("[database-backup] worker startup failed: {error}"),
+            }
             let mcp_http_server = Arc::new(commands::mcp_http_server::McpHttpServerState::new(data_dir.clone()));
             app.manage(mcp_http_server.clone());
             let mcp_http_state = state.clone();
+            let mcp_gate = migration_gate.clone();
             tauri::async_runtime::spawn(async move {
+                mcp_gate.wait().await;
                 commands::mcp_http_server::start_if_enabled(mcp_http_state, mcp_http_server).await;
             });
             app.manage(commands::redis_pubsub_server::start_pubsub_server(state.clone()));
@@ -1700,7 +1777,10 @@ pub fn run() {
             open_plugin_install_deep_links(app.handle(), startup_plugin_install_links);
 
             let app_handle = app.handle().clone();
-            commands::mcp_bridge::start(app_handle, state, data_dir);
+            tauri::async_runtime::spawn(async move {
+                migration_gate.wait().await;
+                commands::mcp_bridge::start(app_handle, state, data_dir);
+            });
             eprintln!("[STARTUP] setup complete in {:?} (total {:?})", setup_start.elapsed(), startup_begin.elapsed());
             append_startup_probe(format!(
                 "setup tasks complete in {:?} total {:?}",
@@ -1733,7 +1813,31 @@ pub fn run() {
             Ok(())
         })
         .on_window_event(|window, event| {
+            // Anchor the plugin-file drop consent on the Rust side: paths are
+            // registered for the webview that physically received the drop,
+            // and plugin_file_open_dropped consumes them there. Folders are
+            // granted as themselves and expand to their contained files at
+            // open time. Renderer-side drop events stay display-only; they
+            // cannot mint file access.
+            if let tauri::WindowEvent::DragDrop(tauri::DragDropEvent::Drop { paths, .. }) = event {
+                let dropped: Vec<String> = paths
+                    .iter()
+                    .filter(|path| path.is_file() || path.is_dir())
+                    .map(|path| path.to_string_lossy().into_owned())
+                    .collect();
+                if !dropped.is_empty() {
+                    if let Some(state) = window.try_state::<commands::plugin_file::PluginFileState>() {
+                        state.register_dropped_paths(window.label(), dropped);
+                    }
+                }
+                return;
+            }
             if let tauri::WindowEvent::Destroyed = event {
+                // A webview that no longer exists must not leave drop grants
+                // behind for a future renderer to claim.
+                if let Some(state) = window.try_state::<commands::plugin_file::PluginFileState>() {
+                    state.clear_dropped_paths(window.label());
+                }
                 if let Some(tab_id) = window.label().strip_prefix("detached-tab-") {
                     let _ = window.emit("chiron-horizon:detached-tab-lost", serde_json::json!({ "tabId": tab_id }));
                 }
@@ -1765,11 +1869,15 @@ pub fn run() {
                 request_app_close(app, "settings");
             }
         })
-        .invoke_handler(tauri::generate_handler![
+        .invoke_handler(migration_gate::guard_handler(route_external_commands(tauri::generate_handler![
             commands::ai::ai_complete,
             commands::ai::ai_stream,
             commands::ai::ai_agent_stream,
             commands::ai::ai_cancel_stream,
+            commands::ai::ai_resolve_tool_approval,
+            commands::ai::get_ai_plugin_tool_plugins,
+            commands::ai::set_ai_plugin_tool_plugin_enabled,
+            commands::ai::preview_plugin_ai_tools,
             commands::ai::ai_test_connection,
             commands::ai::ai_resolve_endpoint,
             commands::ai::ai_list_models,
@@ -1796,12 +1904,20 @@ pub fn run() {
             commands::prompt_template::delete_prompt_template,
             commands::prompt_template::get_ai_global_custom_instructions,
             commands::prompt_template::set_ai_global_custom_instructions,
+            commands::user_skills::list_user_skills,
+            commands::user_skills::read_user_skills,
             commands::app_settings::load_desktop_settings,
             commands::app_settings::save_desktop_settings,
             commands::app_settings::load_max_agent_turns,
             commands::app_settings::save_max_agent_turns,
+            commands::app_settings::load_history_retention_limit,
+            commands::app_settings::save_history_retention_limit,
+            commands::app_settings::load_mcp_history_retention_limit,
+            commands::app_settings::save_mcp_history_retention_limit,
             commands::app_settings::load_max_retries,
             commands::app_settings::save_max_retries,
+            commands::app_settings::load_app_appearance_settings,
+            commands::app_settings::update_app_appearance_settings,
             commands::app_settings::set_app_locale,
             commands::app_settings::complete_app_close,
             commands::app_settings::mark_frontend_ready,
@@ -1825,6 +1941,8 @@ pub fn run() {
             commands::mcp_http_server::rotate_mcp_http_server_token,
             commands::app_settings::load_editor_settings,
             commands::app_settings::save_editor_settings,
+            commands::app_settings::load_global_search_settings,
+            commands::app_settings::save_global_search_settings,
             commands::app_settings::load_open_tabs_state,
             commands::app_settings::save_open_tabs_state,
             commands::app_settings::save_detached_tab_handoff,
@@ -1840,6 +1958,10 @@ pub fn run() {
             commands::diagnostics::get_process_memory_info,
             commands::support_info::get_app_support_info,
             commands::cloud_sync::webdav_sync_test,
+            commands::cloud_sync::migration_status,
+            commands::cloud_sync::migration_start,
+            commands::cloud_sync::migration_retry,
+            commands::cloud_sync::migration_cleanup_backups,
             commands::cloud_sync::webdav_password_status,
             commands::cloud_sync::save_webdav_saved_password,
             commands::cloud_sync::forget_webdav_saved_password,
@@ -1848,6 +1970,8 @@ pub fn run() {
             commands::cloud_sync::forget_webdav_sync_secrets_passphrase,
             commands::cloud_sync::webdav_sync_upload,
             commands::cloud_sync::webdav_sync_download,
+            commands::cloud_sync::webdav_sync_inspect,
+            commands::cloud_sync::cloud_sync_local_catalog,
             commands::cloud_sync::snippet_sync_test,
             commands::cloud_sync::snippet_token_status,
             commands::cloud_sync::save_snippet_saved_token,
@@ -1857,9 +1981,19 @@ pub fn run() {
             commands::cloud_sync::retry_snippet_legacy_cleanup,
             commands::cloud_sync::snippet_sync_upload,
             commands::cloud_sync::snippet_sync_download,
+            commands::cloud_sync::snippet_sync_inspect,
+            commands::local_backup::local_backup_export,
+            commands::local_backup::local_backup_inspect,
+            commands::local_backup::local_backup_import,
             commands::connection::test_connection,
             commands::connection::test_connection_with_info,
             commands::connection::test_ssh_tunnel,
+            commands::salesforce_oauth::salesforce_oauth_browser_authorize,
+            commands::salesforce_oauth::salesforce_oauth_device_start,
+            commands::salesforce_oauth::salesforce_oauth_device_poll,
+            commands::salesforce_oauth::salesforce_oauth_refresh,
+            commands::salesforce_oauth::salesforce_oauth_password_login,
+            commands::salesforce_oauth::salesforce_current_user,
             commands::connection::connect_db,
             commands::connection::connection_final_proxy_port,
             commands::connection::disconnect_db,
@@ -1870,6 +2004,8 @@ pub fn run() {
             commands::connection::clear_all_session_credentials,
             commands::connection::refresh_connections,
             commands::connection::check_connection_health,
+            commands::connection::connection_is_open,
+            commands::connection::prewarm_connection,
             commands::connection::connection_identifier_quote,
             commands::connection::connection_database_info,
             commands::connection::save_connection_database_info,
@@ -1880,6 +2016,20 @@ pub fn run() {
             commands::connection::load_connections,
             commands::connection::save_sidebar_layout,
             commands::connection::load_sidebar_layout,
+            commands::connection::save_table_vgroups,
+            commands::connection::load_table_vgroups,
+            commands::connection::delete_table_vgroups_for_connection,
+            commands::plugin_file::plugin_file_open_dropped,
+            commands::plugin_file::plugin_file_pick_files,
+            commands::plugin_file::plugin_file_save_as,
+            commands::plugin_file::plugin_file_read,
+            commands::plugin_file::plugin_file_write,
+            commands::plugin_file::plugin_file_close,
+            commands::plugin_media::plugin_media_open,
+            commands::plugin_media::plugin_media_close,
+            commands::plugin_storage::plugin_ui_storage_get,
+            commands::plugin_storage::plugin_ui_storage_set,
+            commands::plugin_storage::plugin_ui_storage_delete,
             commands::plugins::list_plugins,
             commands::plugins::list_plugin_trusted_keys,
             commands::plugins::save_plugin_trusted_key,
@@ -1897,6 +2047,8 @@ pub fn run() {
             commands::plugins::list_active_plugins,
             commands::plugins::stop_plugin,
             commands::plugins::invoke_plugin,
+            commands::plugin_download::download_plugin_file,
+            commands::plugin_download::cancel_plugin_download,
             commands::plugins::invoke_plugin_connection_action,
             commands::plugins::notify_plugin,
             commands::plugins::send_plugin_binary,
@@ -1922,54 +2074,6 @@ pub fn run() {
             commands::plugins::install_jdbc_plugin,
             commands::plugins::install_jdbc_plugin_local,
             commands::plugins::uninstall_jdbc_plugin,
-            commands::schema::list_databases,
-            commands::schema::list_database_metadata,
-            commands::schema::list_database_storage,
-            commands::schema::list_xugu_tablespaces,
-            commands::schema::get_sqlserver_completion_context,
-            commands::schema::list_doris_catalogs,
-            commands::schema::list_doris_catalog_databases,
-            commands::schema::list_sqlserver_linked_servers,
-            commands::schema::list_sqlserver_linked_server_catalogs,
-            commands::schema::list_sqlserver_linked_server_schemas,
-            commands::schema::list_sqlserver_linked_server_tables,
-            commands::schema::list_tables,
-            commands::schema::describe_schema_viewer,
-            commands::schema::list_schema_viewer_scopes,
-            commands::schema::get_schema_view,
-            commands::schema::get_table_comment,
-            commands::schema::get_mysql_table_auto_increment,
-            commands::schema::list_objects,
-            commands::schema::list_object_statistics,
-            commands::schema::list_completion_objects,
-            commands::schema::completion_assistant_search,
-            commands::schema::get_object_source,
-            commands::schema::get_event_info,
-            commands::schema::get_custom_type_details,
-            commands::schema::list_schemas,
-            commands::schema::list_schema_infos,
-            commands::schema::list_data_types,
-            commands::schema::get_columns,
-            commands::schema::get_all_columns,
-            commands::schema::get_sqlserver_column_metadata,
-            commands::schema::list_indexes,
-            commands::schema::list_reference_key_columns,
-            commands::schema::list_reference_keys,
-            commands::schema::list_foreign_keys,
-            commands::schema::list_triggers,
-            commands::schema::list_constraints,
-            commands::schema::list_partitions,
-            commands::schema::get_table_partition_status,
-            commands::schema::list_invalid_indexes,
-            commands::schema::list_subpartitions,
-            commands::schema::get_table_ddl,
-            commands::schema::list_functions,
-            commands::schema::list_sequences,
-            commands::schema::list_rules,
-            commands::schema::list_owners,
-            commands::schema::get_table_owner,
-            commands::schema::list_extensions,
-            commands::schema::list_available_extensions,
             commands::schema_diff::prepare_schema_diff,
             commands::schema_diff::generate_schema_sync_sql,
             commands::schema_diff::generate_schema_sync_plan,
@@ -2004,6 +2108,11 @@ pub fn run() {
             commands::query::build_sorted_query_sql,
             commands::query::build_explain_sql,
             commands::query::get_explain_info,
+            commands::query::get_plugin_plan_capabilities,
+            commands::query::get_plugin_estimated_plan,
+            commands::query::query_plugin_data,
+            commands::query::get_plugin_data_grants,
+            commands::query::set_plugin_data_grant,
             commands::query::build_create_user_sql,
             commands::query::build_dropped_file_preview_sql,
             commands::query::build_table_select_sql,
@@ -2039,6 +2148,8 @@ pub fn run() {
             commands::query::preview_sqlite_table_structure_change,
             commands::query::apply_sqlite_table_structure_change,
             commands::query::build_create_table_sql,
+            commands::query::build_create_partitioned_table_sql,
+            commands::query::build_table_partition_operation_sql,
             commands::query::build_single_column_alter_sql,
             commands::query::analyze_editable_query_editability,
             commands::query::prepare_data_grid_save,
@@ -2074,6 +2185,7 @@ pub fn run() {
             commands::list_sql_files::create_sql_file_in_folder,
             commands::list_sql_files::rename_sql_file_in_folder,
             commands::list_sql_files::delete_sql_file_in_folder,
+            commands::global_search::global_search,
             commands::external_db::pending_open_db_files,
             commands::keychain::read_keychain_password,
             commands::keychain::read_keychain_passwords,
@@ -2099,6 +2211,7 @@ pub fn run() {
             commands::redis_cmd::redis_scan_keys_batch,
             commands::redis_cmd::redis_scan_values,
             commands::redis_cmd::redis_get_value,
+            commands::redis_cmd::redis_get_raw_value,
             commands::redis_cmd::redis_get_ttl,
             commands::redis_cmd::redis_get_stream_entries,
             commands::redis_cmd::redis_get_stream_groups,
@@ -2128,6 +2241,7 @@ pub fn run() {
             commands::redis_cmd::redis_set_keys_ttl,
             commands::redis_cmd::redis_set_keys_expire_at,
             commands::redis_cmd::redis_delete_keys,
+            commands::redis_cmd::redis_delete_keys_by_pattern,
             commands::redis_cmd::redis_flush_db,
             commands::redis_cmd::redis_execute_command,
             commands::redis_cmd::redis_load_more,
@@ -2156,109 +2270,6 @@ pub fn run() {
             commands::zookeeper_cmd::zookeeper_get,
             commands::zookeeper_cmd::zookeeper_put,
             commands::zookeeper_cmd::zookeeper_delete,
-            commands::consul_cmd::consul_capabilities,
-            commands::consul_cmd::consul_txn,
-            commands::consul_cmd::consul_rename_key,
-            commands::consul_cmd::consul_blocking_query,
-            commands::consul_cmd::consul_domain_watch,
-            commands::consul_cmd::consul_cancel_blocking,
-            commands::consul_cmd::consul_watch_start,
-            commands::consul_cmd::consul_list_prefix,
-            commands::consul_cmd::consul_list_recursive,
-            commands::consul_cmd::consul_search,
-            commands::consul_cmd::consul_search_progress,
-            commands::consul_cmd::consul_cancel_search,
-            commands::consul_cmd::consul_export_bundle,
-            commands::consul_cmd::consul_import_preview,
-            commands::consul_cmd::consul_import_execute,
-            commands::consul_cmd::consul_delete_prefix_preview,
-            commands::consul_cmd::consul_delete_prefix_execute,
-            commands::consul_cmd::consul_get,
-            commands::consul_cmd::consul_put,
-            commands::consul_cmd::consul_delete,
-            commands::consul_cmd::consul_prepared_query_list,
-            commands::consul_cmd::consul_prepared_query_read,
-            commands::consul_cmd::consul_prepared_query_create,
-            commands::consul_cmd::consul_prepared_query_update,
-            commands::consul_cmd::consul_prepared_query_delete,
-            commands::consul_cmd::consul_prepared_query_execute,
-            commands::consul_cmd::consul_prepared_query_explain,
-            commands::consul_cmd::consul_event_list,
-            commands::consul_cmd::consul_event_fire,
-            commands::consul_cmd::consul_coordinate_nodes,
-            commands::consul_cmd::consul_operator_read,
-            commands::consul_cmd::consul_snapshot_generate,
-            commands::consul_cmd::consul_snapshot_restore,
-            commands::consul_cmd::consul_autopilot_update,
-            commands::consul_cmd::consul_raft_transfer,
-            commands::consul_cmd::consul_raft_remove,
-            commands::consul_cmd::consul_keyring_write,
-            commands::consul_cmd::consul_license_write,
-            commands::consul_cmd::consul_status_leader,
-            commands::consul_cmd::consul_status_peers,
-            commands::consul_cmd::consul_agent_self,
-            commands::consul_cmd::consul_agent_members,
-            commands::consul_cmd::consul_agent_metrics,
-            commands::consul_cmd::consul_catalog_datacenters,
-            commands::consul_cmd::consul_catalog_nodes,
-            commands::consul_cmd::consul_catalog_services,
-            commands::consul_cmd::consul_catalog_service_nodes,
-            commands::consul_cmd::consul_catalog_node_services,
-            commands::consul_cmd::consul_health_node,
-            commands::consul_cmd::consul_health_checks,
-            commands::consul_cmd::consul_health_service,
-            commands::consul_cmd::consul_health_state,
-            commands::consul_cmd::consul_agent_services,
-            commands::consul_cmd::consul_agent_service,
-            commands::consul_cmd::consul_agent_checks,
-            commands::consul_cmd::consul_agent_register_service,
-            commands::consul_cmd::consul_agent_deregister_service,
-            commands::consul_cmd::consul_agent_service_maintenance,
-            commands::consul_cmd::consul_agent_register_check,
-            commands::consul_cmd::consul_agent_deregister_check,
-            commands::consul_cmd::consul_agent_update_ttl,
-            commands::consul_cmd::consul_sessions,
-            commands::consul_cmd::consul_node_sessions,
-            commands::consul_cmd::consul_session,
-            commands::consul_cmd::consul_session_keys,
-            commands::consul_cmd::consul_session_destroy_impact,
-            commands::consul_cmd::consul_create_session,
-            commands::consul_cmd::consul_renew_session,
-            commands::consul_cmd::consul_destroy_session,
-            commands::consul_cmd::consul_acquire_lock,
-            commands::consul_cmd::consul_release_lock,
-            commands::consul_cmd::consul_acl_list,
-            commands::consul_cmd::consul_acl_token_self,
-            commands::consul_cmd::consul_acl_token_clone,
-            commands::consul_cmd::consul_acl_get,
-            commands::consul_cmd::consul_acl_apply,
-            commands::consul_cmd::consul_acl_references,
-            commands::consul_cmd::consul_acl_delete,
-            commands::consul_cmd::consul_enterprise_list,
-            commands::consul_cmd::consul_enterprise_get,
-            commands::consul_cmd::consul_enterprise_apply,
-            commands::consul_cmd::consul_enterprise_impact,
-            commands::consul_cmd::consul_enterprise_delete,
-            commands::consul_cmd::consul_mesh_config_list,
-            commands::consul_cmd::consul_mesh_config_get,
-            commands::consul_cmd::consul_mesh_config_apply,
-            commands::consul_cmd::consul_mesh_config_delete,
-            commands::consul_cmd::consul_mesh_intentions_list,
-            commands::consul_cmd::consul_mesh_intention_get,
-            commands::consul_cmd::consul_mesh_intention_get_exact,
-            commands::consul_cmd::consul_mesh_intention_upsert,
-            commands::consul_cmd::consul_mesh_intention_delete,
-            commands::consul_cmd::consul_mesh_intention_delete_exact,
-            commands::consul_cmd::consul_mesh_intention_match,
-            commands::consul_cmd::consul_mesh_intention_check,
-            commands::consul_cmd::consul_mesh_discovery_chain,
-            commands::consul_cmd::consul_mesh_peering_list,
-            commands::consul_cmd::consul_mesh_peering_get,
-            commands::consul_cmd::consul_mesh_peering_generate_token,
-            commands::consul_cmd::consul_mesh_peering_establish,
-            commands::consul_cmd::consul_mesh_peering_delete,
-            commands::consul_cmd::consul_mesh_exported_services_list,
-            commands::consul_cmd::consul_mesh_exported_services_apply,
             commands::nacos_cmd::nacos_test_connection,
             commands::nacos_cmd::nacos_list_namespaces,
             commands::nacos_cmd::nacos_sidebar_snapshot,
@@ -2317,6 +2328,8 @@ pub fn run() {
             commands::fs_open::reveal_path_in_file_manager,
             commands::fs_open::is_sqlite_database_file,
             commands::fs_open::delete_database_backup_files,
+            background_backup::database_backup_command,
+            background_backup::database_backup_background,
             commands::sqlite_backup::backup_sqlite_database,
             commands::sqlite_backup::restore_sqlite_database,
             commands::mongo_cmd::mongo_list_databases,
@@ -2332,6 +2345,7 @@ pub fn run() {
             commands::mongo_cmd::mongo_rename_collection,
             commands::mongo_cmd::mongo_clone_collection,
             commands::docs::docs_collect_snapshot,
+            commands::docs::docs_collect_snapshot_for_export,
             commands::docs::docs_load_annotations,
             commands::docs::docs_apply_annotations,
             commands::docs::docs_save_annotations,
@@ -2382,6 +2396,7 @@ pub fn run() {
             commands::document_cmd::meilisearch_update_index_settings,
             commands::document_cmd::meilisearch_get_index_stats,
             commands::document_cmd::meilisearch_get_index_overview,
+            commands::document_cmd::meilisearch_create_index,
             commands::document_cmd::meilisearch_delete_index,
             commands::document_cmd::meilisearch_delete_all_documents,
             commands::document_cmd::meilisearch_get_system_overview,
@@ -2429,6 +2444,8 @@ pub fn run() {
             #[cfg(feature = "mq-admin")]
             commands::mq_cmd::mq_list_topics,
             #[cfg(feature = "mq-admin")]
+            commands::mq_cmd::mq_list_topics_page,
+            #[cfg(feature = "mq-admin")]
             commands::mq_cmd::mq_create_topic,
             #[cfg(feature = "mq-admin")]
             commands::mq_cmd::mq_delete_topic,
@@ -2440,6 +2457,8 @@ pub fn run() {
             commands::mq_cmd::mq_get_topic_internal_stats,
             #[cfg(feature = "mq-admin")]
             commands::mq_cmd::mq_list_exchanges,
+            #[cfg(feature = "mq-admin")]
+            commands::mq_cmd::mq_list_exchanges_page,
             #[cfg(feature = "mq-admin")]
             commands::mq_cmd::mq_create_exchange,
             #[cfg(feature = "mq-admin")]
@@ -2579,10 +2598,14 @@ pub fn run() {
             commands::history::search_history,
             commands::history::load_history_connection_options,
             commands::history::clear_history,
+            commands::history::clear_history_by_source,
+            commands::history::cleanup_mcp_history_retention,
             commands::history::delete_history_entry,
             commands::mcp::check_mcp_server_status,
             commands::mcp::install_mcp_server,
+            commands::mcp::install_native_mcp_server,
             commands::mcp::uninstall_mcp_server,
+            commands::mcp::uninstall_npm_mcp_server,
             commands::update::check_for_updates,
             commands::update::fetch_changelog,
             commands::update::get_system_proxy_url,
@@ -2603,6 +2626,8 @@ pub fn run() {
             commands::table_export::start_table_export,
             commands::table_export::cancel_table_export,
             commands::query_result_export::start_query_result_export,
+            commands::query_result_export::create_query_result_temp_file,
+            commands::query_result_export::open_query_result_temp_file,
             commands::query_result_export::cancel_query_result_export,
             commands::csv_export::export_query_result_csv,
             commands::csv_export::export_table_data_csv,
@@ -2645,7 +2670,7 @@ pub fn run() {
             commands::tunnel_profiles::load_tunnel_profiles,
             commands::tunnel_profiles::save_tunnel_profiles,
             commands::tunnel_profiles::test_tunnel_profile,
-        ])
+        ])))
         .build(tauri::generate_context!())
         .inspect(|app| {
             append_startup_probe(format!("tauri application built after {:?}", startup_begin.elapsed()));
@@ -2678,6 +2703,9 @@ pub fn run() {
                         }
                     }
                     tauri::async_runtime::block_on(async {
+                        if let Some(backups) = app_handle.try_state::<background_backup::BackgroundBackup>() {
+                            backups.shutdown().await;
+                        }
                         if let Some(server) = app_handle.try_state::<commands::redis_pubsub_server::PubSubServerState>()
                         {
                             server.shutdown(Duration::from_secs(1)).await;
@@ -2762,7 +2790,13 @@ pub fn run() {
                     );
                 }
                 let app_handle = app_handle.clone();
+                let migration_gate =
+                    app_handle.try_state::<Arc<migration_gate::MigrationGate>>().map(|state| state.inner().clone());
                 tauri::async_runtime::spawn(async move {
+                    let Some(migration_gate) = migration_gate else {
+                        return;
+                    };
+                    migration_gate.wait().await;
                     if let Some(state) = app_handle.try_state::<AppState>() {
                         state.refresh_connections().await;
                     }
@@ -2771,7 +2805,13 @@ pub fn run() {
 
             if let RunEvent::Resumed = &event {
                 let app_handle = app_handle.clone();
+                let migration_gate =
+                    app_handle.try_state::<Arc<migration_gate::MigrationGate>>().map(|state| state.inner().clone());
                 tauri::async_runtime::spawn(async move {
+                    let Some(migration_gate) = migration_gate else {
+                        return;
+                    };
+                    migration_gate.wait().await;
                     if let Some(state) = app_handle.try_state::<AppState>() {
                         state.refresh_connections().await;
                     }

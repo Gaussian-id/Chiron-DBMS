@@ -1,8 +1,6 @@
-import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
+import aiAssistantSource from "@/components/editor/AiAssistant.vue?raw";
 import { canSubmitAiPrompt } from "@/lib/ai/aiPromptKeyboard";
-
-const aiAssistantSource = readFileSync(new URL("../../../components/editor/AiAssistant.vue", import.meta.url), "utf8");
 
 function submissionState(overrides: Partial<Parameters<typeof canSubmitAiPrompt>[0]> = {}) {
   return {

@@ -12,11 +12,24 @@ cargo build --release -p chiron-horizon-cli
 
 Use the desktop application's built-in MCP service for supported client integrations.
 
+## Official Agent Skill
+
+The CLI binary includes the official Chiron Horizon Skill for shell-capable AI agents. Enable it once after installing or upgrading the CLI:
+
+```bash
+chiron-horizon agent setup
+chiron-horizon agent status
+```
+
+The default location is `~/.agents/skills/chiron-horizon`. `setup` runs entirely offline and can be repeated to install a newer bundled version. It refuses to overwrite an unmanaged or locally modified Chiron Horizon Skill unless `--force` is supplied. Use `--skills-dir <path>` when the agent reads a different skills root.
+
 ## Usage
 
 ```bash
 chiron-horizon doctor
 chiron-horizon capabilities
+chiron-horizon agent setup
+chiron-horizon agent status --json
 chiron-horizon connections list --json
 chiron-horizon connections list --format csv
 chiron-horizon schema list local --json
@@ -35,6 +48,8 @@ chiron-horizon open local users
 | ------------------------------------------- | ----------------------------------------------------- |
 | `chiron-horizon doctor`                                | Show local Chiron Horizon config and desktop bridge diagnostics  |
 | `chiron-horizon capabilities`                          | Show direct-query and desktop-bridge database support |
+| `chiron-horizon agent setup`                           | Install or update the bundled official Chiron Horizon Skill      |
+| `chiron-horizon agent status`                          | Inspect the installed Chiron Horizon Skill                       |
 | `chiron-horizon connections list`                      | List Chiron Horizon connections without printing secrets         |
 | `chiron-horizon schema list <connection>`              | List tables and views                                 |
 | `chiron-horizon schema describe <connection> <table>`  | Show table columns                                    |
@@ -109,6 +124,11 @@ CLI JSON errors use stable codes:
 | `CONNECTION_NOT_FOUND`   | No Chiron Horizon connection matched the requested name        |
 | `SQL_BLOCKED`            | SQL safety rules blocked execution                  |
 | `CHIRON_HORIZON_NOT_RUNNING`        | Chiron Horizon Desktop bridge is unavailable                   |
+| `HOME_NOT_FOUND`         | The default user skills directory cannot be resolved |
+| `SKILL_MODIFIED`         | An unmanaged or locally edited Chiron Horizon Skill was found  |
+| `SKILL_PATH_UNSAFE`      | A managed Skill path is a symbolic link             |
+| `SKILL_READ_FAILED`      | An installed Skill file could not be read            |
+| `SKILL_WRITE_FAILED`     | The bundled Skill could not be installed             |
 | `ERROR`                  | Unexpected runtime failure                          |
 
 ## Codex

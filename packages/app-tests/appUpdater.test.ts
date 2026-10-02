@@ -15,7 +15,7 @@ function updateInfo(overrides: Partial<UpdateInfo> = {}): UpdateInfo {
     portable_mode: false,
     manual_update_only: false,
     release_name: "Chiron Horizon v0.5.26",
-    release_url: "https://github.com/Gaussian-id/Chiron-Horizon/releases/tag/v0.5.26",
+    release_url: "https://github.com/Gaussian-id/Chiron-DBMS/releases/tag/v0.5.26",
     release_notes: "",
     ...overrides,
   };
@@ -81,10 +81,10 @@ test("normalizes release tag versions", () => {
 });
 
 test("resolves release page URL from update download source", () => {
-  const fallbackUrl = "https://github.com/Gaussian-id/Chiron-Horizon/releases/latest";
-  assert.equal(resolveUpdateReleaseUrl(updateInfo({ latest_version: "0.5.39" }), "cnb", fallbackUrl), "https://distribution-disabled.invalid/-/releases/tag/v0.5.39");
-  assert.equal(resolveUpdateReleaseUrl(updateInfo({ release_url: "https://github.com/Gaussian-id/Chiron-Horizon/releases/tag/v0.5.39" }), "official", fallbackUrl), "https://github.com/Gaussian-id/Chiron-Horizon/releases/tag/v0.5.39");
-  assert.equal(resolveUpdateReleaseUrl(null, "cnb", fallbackUrl), "https://distribution-disabled.invalid/-/releases");
+  const fallbackUrl = "https://github.com/Gaussian-id/Chiron-DBMS/releases/latest";
+  assert.equal(resolveUpdateReleaseUrl(updateInfo({ latest_version: "0.5.39" }), "cnb", fallbackUrl), "https://github.com/Gaussian-id/Chiron-DBMS/releases/tag/v0.5.39");
+  assert.equal(resolveUpdateReleaseUrl(updateInfo({ latest_version: "0.5.39", release_url: "https://github.com/Gaussian-id/Chiron-DBMS/releases/tag/v0.5.39" }), "official", fallbackUrl), "https://github.com/Gaussian-id/Chiron-DBMS/releases/tag/v0.5.39");
+  assert.equal(resolveUpdateReleaseUrl(null, "cnb", fallbackUrl), "https://github.com/Gaussian-id/Chiron-DBMS/releases");
 });
 
 test("counts background and query tasks that must finish before updating", () => {
@@ -124,7 +124,7 @@ test("wires the active task guard into update installation and restart, but not 
   // starting the background download itself never blocks.
   assert.match(updaterSource, /shouldBlockAppUpdate\(activeTaskCount.value\)/);
   assert.match(dialogSource, /role="alert"[\s\S]*updates\.activeTasksBlockUpdate/);
-  assert.equal(dialogSource.match(/:disabled="activeTaskCount > 0 \|\| isIgnoringUpdate"/g)?.length, 2);
+  assert.equal(dialogSource.match(/:disabled="activeTaskCount > 0 \|\| isIgnoringUpdate \|\| isUpdatingAll"/g)?.length, 2);
   assert.match(dialogSource, /ignore-version/);
   assert.match(updaterSource, /ignoreCurrentVersion/);
 });

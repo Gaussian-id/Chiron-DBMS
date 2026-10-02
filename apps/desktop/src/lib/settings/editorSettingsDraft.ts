@@ -4,8 +4,10 @@ import { normalizeResultPageSize } from "@/lib/dataGrid/paginationPageSize";
 import { normalizeQueryResultMaxRows } from "@/lib/dataGrid/queryResultRowLimit";
 import { normalizeExternalSqlEditorMaxMb } from "@/lib/sql/sqlFileOpen";
 import { normalizeCompletionTriggerMode } from "@/lib/sql/sqlCompletionTriggerPolicy";
+import { normalizeSqlTableCompletionSchemaQualification } from "@/lib/sql/sqlCompletionSchemaQualification";
 import { normalizeTableHoverLookupMode } from "@/lib/editor/hoverTableLookup";
 import { normalizeRedisKeyTemplates } from "@/lib/redis/redisKeyTemplates";
+import { normalizeCsvNullMode } from "@/lib/export/csvNullMode";
 
 export const EDITOR_SETTINGS_DRAFT_KEYS = [
   "fontFamily",
@@ -25,12 +27,18 @@ export const EDITOR_SETTINGS_DRAFT_KEYS = [
   "showCurrentStatementFrame",
   "showInsertValueHints",
   "autoAliasTables",
+  "tableCompletionSchemaQualification",
   "insertSpaceAfterCompletion",
+  "sqlServerSpaceConfirmsCompletion",
   "sortCompletionColumnsAlphabetically",
   "selectFirstCompletionOnOpen",
   "wordWrap",
+  "showWhitespace",
+  "ddlOpenMode",
   "vimModeEnabled",
+  "doubleClickStringSelectionMode",
   "autoCloseBrackets",
+  "restoreSqlFromSourcePasteEnabled",
   "sqlSemanticDiagnosticsMode",
   "confirmDangerousSqlExecution",
   "confirmUnsavedSqlClose",
@@ -39,10 +47,15 @@ export const EDITOR_SETTINGS_DRAFT_KEYS = [
   "appLayout",
   "tabLayout",
   "tabPlacement",
+  "colorizeConnectionTabs",
   "tabGroupMode",
   "tabSortMode",
   "showColumnCommentsInHeader",
   "showColumnTypesInHeader",
+  "showColumnHeaderTooltips",
+  "showResultSourceDatabase",
+  "resultTabNamingMode",
+  "resultTabPreferComments",
   "dataGridShowTransposeFieldMetadata",
   "colorizeDataGridCellTypes",
   "dataGridTypeColorSchemes",
@@ -51,6 +64,7 @@ export const EDITOR_SETTINGS_DRAFT_KEYS = [
   "compactColumnHeaderActions",
   "dataGridQuickEntry",
   "dataGridFilterEditorView",
+  "dataGridToolbarLayout",
   "dataGridKeepFilterEditorExpanded",
   "dataGridTextFilterPanelHeight",
   "defaultAutoKeepResults",
@@ -60,6 +74,9 @@ export const EDITOR_SETTINGS_DRAFT_KEYS = [
   "dataGridCrosshairHighlight",
   "pageSize",
   "tableOpenPageSize",
+  "tableOpenSortMode",
+  "tableDatabaseSortDirection",
+  "tableLocalSortDirection",
   "queryResultMaxRowsEnabled",
   "queryResultMaxRows",
   "externalSqlEditorMaxMb",
@@ -75,10 +92,13 @@ export const EDITOR_SETTINGS_DRAFT_KEYS = [
   "sidebarObjectDisplay",
   "routineSourceOpenMode",
   "sidebarTableSearchEnabled",
+  "sidebarSearchOpenedDatabasesOnly",
   "autoSelectActiveSidebarNode",
   "sidebarBrowseObjectsOnDatabaseActivation",
   "openTabsRestoreMode",
   "disconnectTabHandlingMode",
+  "deleteConnectionTabHandlingMode",
+  "rememberConnectionDatabaseOnDelete",
   "dataTabReuseMode",
   "openDataTabsNextToActive",
   "prefillNewQueryWithSelect",
@@ -89,6 +109,11 @@ export const EDITOR_SETTINGS_DRAFT_KEYS = [
   "tableHoverLookupMode",
   "updateNotificationsEnabled",
   "autoDownloadUpdates",
+  "autoUpdateApp",
+  "autoUpdateDrivers",
+  "autoUpdateJdbc",
+  "autoUpdateMcp",
+  "autoUpdatePlugins",
   "sidebarObjectInfoMode",
   "sidebarAllowHorizontalScroll",
   "sidebarShowTooltips",
@@ -98,8 +123,10 @@ export const EDITOR_SETTINGS_DRAFT_KEYS = [
   "sidebarCopyTableNameSeparator",
   "sidebarCopyTableNameIncludeSchema",
   "redisKeyTemplates",
+  "redisDatabaseDisplayLimit",
   "exportBatchSize",
   "csvQuoteMode",
+  "csvNullMode",
   "exportRowLimitEnabled",
   "exportRowLimit",
   "queryExportKeysetOptimizationEnabled",
@@ -116,6 +143,7 @@ export const EDITOR_SETTINGS_DRAFT_KEYS = [
   "clickTableNavigationTarget",
   "completionTriggerMode",
   "defaultTransactionMode",
+  "keepExplicitTransactionInAutoCommit",
 ] as const satisfies readonly (keyof EditorSettings)[];
 
 export type EditorSettingsDraftKey = (typeof EDITOR_SETTINGS_DRAFT_KEYS)[number];
@@ -140,8 +168,10 @@ function normalizedDraftValue(key: EditorSettingsDraftKey, value: unknown): unkn
   if (key === "queryResultMaxRows") return normalizeQueryResultMaxRowsDraft(value);
   if (key === "externalSqlEditorMaxMb") return normalizeExternalSqlEditorMaxMb(value);
   if (key === "completionTriggerMode") return normalizeCompletionTriggerMode(value);
+  if (key === "tableCompletionSchemaQualification") return normalizeSqlTableCompletionSchemaQualification(value);
   if (key === "tableHoverLookupMode") return normalizeTableHoverLookupMode(value);
   if (key === "redisKeyTemplates") return normalizeRedisKeyTemplates(value);
+  if (key === "csvNullMode") return normalizeCsvNullMode(value);
   if (key === "backgroundImage") return normalizeBackgroundImageSettings(value);
   return value;
 }

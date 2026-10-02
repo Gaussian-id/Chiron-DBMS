@@ -1,0 +1,45 @@
+schemaVersion: 1
+order: 800
+dbType: salesforce
+rustVariant: Salesforce
+label: Salesforce
+dialect: SOQL
+runtimeMode: native
+mcpMode: bridge
+singleConnectionPool: true
+metadataConnectionScoped: false
+skipTcpProbe: true
+defaultPort: 443
+traits:
+  singleDatabase: true
+supportLevel: operate
+access:
+  connectionPicker: direct
+  runtimeProvider: native
+  connectSupported: true
+  testConnectionSupported: true
+  requiredFeatures: []
+schemaViewer:
+  kind: service
+  provider: service-metadata
+  scopeLevels:
+    - database
+    - object
+capabilities:
+  schemaViewer: true
+  queryExecution: true
+  metadataBrowse: true
+  objectBrowser: true
+  objectSource: false
+  schemaSearch: true
+  diagram: false
+  tableDataEdit: true
+  tableStructureEdit: false
+  tableImport: false
+  dataTransfer: false
+  sqlFileExecution: false
+  databaseCreate: false
+  fieldLineage: false
+  sqlExplain: false
+  userAdmin: false
+  driverManagement: false

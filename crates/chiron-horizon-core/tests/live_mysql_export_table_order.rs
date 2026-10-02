@@ -2,7 +2,6 @@ use chiron_horizon_core::connection::AppState;
 use chiron_horizon_core::database_export::{export_database_sql_core, DatabaseExportRequest};
 use chiron_horizon_core::models::connection::{ConnectionConfig, DatabaseType};
 use chiron_horizon_core::query::execute_sql_statement;
-use chiron_horizon_core::storage::Storage;
 use std::sync::Arc;
 
 fn live_mysql_config(id: &str) -> ConnectionConfig {
@@ -59,7 +58,7 @@ async fn live_mysql_database_export_table_order_is_not_alphabetical_when_fk_reor
     let database = format!("chiron_horizon_export_order_{suffix}");
     let dir = std::env::temp_dir().join(format!("chiron-horizon-live-mysql-export-order-{suffix}"));
     std::fs::create_dir_all(&dir).unwrap();
-    let storage = Storage::open(&dir.join("storage.db")).await.unwrap();
+    let storage = chiron_horizon_core::persistence::test_storage::open(&dir.join("storage.db")).await.unwrap();
     let state = Arc::new(AppState::new(storage));
     state.configs.write().await.insert(connection_id.clone(), live_mysql_config(&connection_id));
 
@@ -108,6 +107,8 @@ async fn live_mysql_database_export_table_order_is_not_alphabetical_when_fk_reor
         fail_on_error: true,
         prevent_overwrite: false,
         output_compression: Default::default(),
+        insert_dialect: Default::default(),
+        insert_mode: Default::default(),
         snapshot_session_id: None,
         batch_size: 1000,
         split_max_mb: None,

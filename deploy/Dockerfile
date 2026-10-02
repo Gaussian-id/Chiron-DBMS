@@ -35,13 +35,42 @@ RUN dpkg --add-architecture arm64 \
 # This layer is cached by GHA as long as Cargo.toml/Cargo.lock don't change.
 COPY Cargo.toml Cargo.lock ./
 COPY crates/chiron-horizon-core/Cargo.toml crates/chiron-horizon-core/
+COPY crates/chiron-horizon-platform/Cargo.toml crates/chiron-horizon-platform/
+COPY crates/chiron-horizon-types/Cargo.toml crates/chiron-horizon-types/
+COPY crates/chiron-horizon-sql/Cargo.toml crates/chiron-horizon-sql/
+COPY crates/chiron-horizon-sql-core/Cargo.toml crates/chiron-horizon-sql-core/
+COPY crates/chiron-horizon-sql-data/Cargo.toml crates/chiron-horizon-sql-data/
+COPY crates/chiron-horizon-sql-dialect/Cargo.toml crates/chiron-horizon-sql-dialect/
+COPY crates/chiron-horizon-sql-schema/Cargo.toml crates/chiron-horizon-sql-schema/
+COPY crates/chiron-horizon-formats/Cargo.toml crates/chiron-horizon-formats/
+COPY crates/chiron-horizon-ai-provider/Cargo.toml crates/chiron-horizon-ai-provider/
+COPY crates/chiron-horizon-plugin-runtime/Cargo.toml crates/chiron-horizon-plugin-runtime/
+COPY crates/chiron-horizon-driver-agent/Cargo.toml crates/chiron-horizon-driver-agent/
+COPY crates/chiron-horizon-driver-support/Cargo.toml crates/chiron-horizon-driver-support/
+COPY crates/chiron-horizon-driver-elasticsearch/Cargo.toml crates/chiron-horizon-driver-elasticsearch/
+COPY crates/chiron-horizon-driver-mongodb/Cargo.toml crates/chiron-horizon-driver-mongodb/
+COPY crates/chiron-horizon-driver-mysql/Cargo.toml crates/chiron-horizon-driver-mysql/
+COPY crates/chiron-horizon-driver-postgres/Cargo.toml crates/chiron-horizon-driver-postgres/
+COPY crates/chiron-horizon-driver-redis/Cargo.toml crates/chiron-horizon-driver-redis/
+COPY crates/chiron-horizon-driver-sqlserver/Cargo.toml crates/chiron-horizon-driver-sqlserver/
+COPY crates/chiron-horizon-drivers/Cargo.toml crates/chiron-horizon-drivers/
+COPY crates/chiron-horizon-sqlite-worker/Cargo.toml crates/chiron-horizon-sqlite-worker/
 COPY crates/chiron-horizon-web/Cargo.toml crates/chiron-horizon-web/
 COPY crates/chiron-horizon-mcp/Cargo.toml crates/chiron-horizon-mcp/
 COPY crates/chiron-horizon-cli/Cargo.toml crates/chiron-horizon-cli/
+COPY crates/chiron-horizon-tauri-consul/Cargo.toml crates/chiron-horizon-tauri-consul/
+COPY crates/chiron-horizon-tauri-schema/Cargo.toml crates/chiron-horizon-tauri-schema/
 COPY src-tauri/Cargo.toml src-tauri/
 # Copy every vendored crate: root Cargo.toml [patch.crates-io] points at
 # vendor/{ctor,rumqttc,dirs-sys,pageant,wry}; omitting any breaks the offline build.
 COPY vendor/ vendor/
+RUN for crate in chiron-horizon-platform chiron-horizon-types chiron-horizon-sql chiron-horizon-sql-core chiron-horizon-sql-data chiron-horizon-sql-dialect chiron-horizon-sql-schema \
+      chiron-horizon-formats chiron-horizon-ai-provider chiron-horizon-plugin-runtime chiron-horizon-driver-agent chiron-horizon-driver-support \
+      chiron-horizon-driver-elasticsearch chiron-horizon-driver-mongodb chiron-horizon-driver-mysql chiron-horizon-driver-postgres \
+      chiron-horizon-driver-redis chiron-horizon-driver-sqlserver chiron-horizon-drivers chiron-horizon-sqlite-worker chiron-horizon-tauri-consul chiron-horizon-tauri-schema; do \
+      mkdir -p "crates/$crate/src" && printf "" > "crates/$crate/src/lib.rs"; \
+    done \
+    && echo 'fn main() {}' > crates/chiron-horizon-sqlite-worker/src/main.rs
 RUN mkdir -p crates/chiron-horizon-core/src && echo '' > crates/chiron-horizon-core/src/lib.rs \
     && mkdir -p crates/chiron-horizon-web/src && echo 'fn main() {}' > crates/chiron-horizon-web/src/main.rs \
     && mkdir -p crates/chiron-horizon-mcp/src && echo '' > crates/chiron-horizon-mcp/src/lib.rs && echo 'fn main() {}' > crates/chiron-horizon-mcp/src/main.rs \
@@ -64,7 +93,7 @@ RUN case "$TARGETARCH" in \
 
 # Copy real sources and rebuild (only application code recompiles)
 COPY crates/ crates/
-# chiron-horizon-core's build.rs embeds plugins/dialects (SQL dialects) and
+# chiron-horizon-sql-dialect/build.rs embeds plugins/dialects; chiron-horizon-types/build.rs embeds
 # plugins/connection-types (database manifest + DatabaseType enum);
 # either directory missing makes the build script panic.
 COPY plugins/dialects/ plugins/dialects/
@@ -103,6 +132,7 @@ COPY --from=backend /out/${TARGETPLATFORM}/chiron-horizon-web /usr/local/bin/
 COPY --from=frontend /app/dist /app/static
 ENV CHIRON_HORIZON_STATIC_DIR=/app/static
 ENV CHIRON_HORIZON_DATA_DIR=/app/data
+ENV CHIRON_HORIZON_BACKUP_ROOT=/app/backups
 ENV CHIRON_HORIZON_JAVA_BIN=/usr/bin/java
 EXPOSE 4224
 CMD ["chiron-horizon-web"]

@@ -1,4 +1,4 @@
-module github.com/Gaussian-id/Chiron-Horizon/agents/drivers/iotdb
+module github.com/Gaussian-id/Chiron-DBMS/agents/drivers/iotdb
 
 go 1.25
 

@@ -452,6 +452,34 @@ func TestBuildDSNUsesConnectionFields(t *testing.T) {
 	}
 }
 
+func TestOpenDBRejectsMissingDatabaseBeforeOpeningDriver(t *testing.T) {
+	tests := []struct {
+		name   string
+		params connectParams
+	}{
+		{name: "empty structured database", params: connectParams{Host: "db.example.com", Username: "app"}},
+		{name: "whitespace structured database", params: connectParams{Host: "db.example.com", Database: " \t ", Username: "app"}},
+		{name: "empty native DSN database", params: connectParams{ConnectionString: "IP=db.example.com;DB=;User=app"}},
+		{name: "quoted whitespace native DSN database", params: connectParams{ConnectionString: "IP=db.example.com;DB='  ';User=app"}},
+		{name: "URL without database", params: connectParams{ConnectionString: "xugu://app:secret@db.example.com:5138/"}},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			db, err := openDB(test.params)
+			if err == nil {
+				if db != nil {
+					_ = db.Close()
+				}
+				t.Fatal("expected missing database to be rejected before opening the driver")
+			}
+			if !strings.Contains(err.Error(), "XuguDB requires an existing database name") {
+				t.Fatalf("unexpected missing-database error: %v", err)
+			}
+		})
+	}
+}
+
 func TestBuildDSNUsesDefaultPort(t *testing.T) {
 	dsn := buildDSN(connectParams{
 		Host:     "db.example.com",
@@ -707,6 +735,9 @@ func TestConfiguredDatabaseName(t *testing.T) {
 		{params: connectParams{ConnectionString: "xugu://user:secret@db.example.com:5138/demo"}, want: "demo"},
 		{params: connectParams{ConnectionString: "jdbc:xugu://db.example.com:5138/reporting"}, want: "reporting"},
 		{params: connectParams{ConnectionString: "IP=db.example.com;DB=SYSTEM;User=SYSDBA;PWD=secret"}, want: "SYSTEM"},
+		{params: connectParams{ConnectionString: "IP=db.example.com;DB='shop;east';User=APP"}, want: "shop;east"},
+		{params: connectParams{ConnectionString: "IP=db.example.com;DB='sales''east';User=APP"}, want: "sales'east"},
+		{params: connectParams{ConnectionString: "IP=db.example.com;DB='  ';User=APP"}, want: ""},
 	}
 
 	for _, tc := range cases {
@@ -963,6 +994,42 @@ func TestXuguPrimaryKeyMatchingDoesNotGuessAmbiguousCase(t *testing.T) {
 	primaryKeys := map[string]bool{"ID": true, "id": true}
 	if xuguPrimaryKeyMatches("Id", primaryKeys) {
 		t.Fatal("must not choose between primary-key names that differ only by case")
+	}
+}
+
+func TestGetColumnsMarksXuguIdentityColumnsAsAutoIncrement(t *testing.T) {
+	db, err := sql.Open("xugu-test-table-ddl", "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer db.Close()
+
+	s := newServer()
+	s.db = db
+	columns, err := s.getColumns("APP", "CHILD")
+	if err != nil {
+		t.Fatalf("get columns: %v", err)
+	}
+	if len(columns) != 2 {
+		t.Fatalf("expected two columns, got %#v", columns)
+	}
+	if columns[0].Name != "ID" || columns[0].Extra == nil || *columns[0].Extra != "auto_increment" {
+		t.Fatalf("identity column should be marked auto_increment: %#v", columns[0])
+	}
+	if columns[1].Name != "PARENT_ID" || columns[1].Extra != nil {
+		t.Fatalf("ordinary column must not be marked auto_increment: %#v", columns[1])
+	}
+}
+
+func TestXuguIdentityColumnMatchingIsCaseInsensitiveOnlyWhenUnambiguous(t *testing.T) {
+	if !xuguIdentityMatchesColumn("id", map[string]xuguIdentityInfo{"ID": {Column: "ID"}}) {
+		t.Fatal("expected an unambiguous case-insensitive identity match")
+	}
+	if xuguIdentityMatchesColumn("id", map[string]xuguIdentityInfo{
+		"ID": {Column: "ID"},
+		"Id": {Column: "Id"},
+	}) {
+		t.Fatal("ambiguous case-insensitive identity names must not match")
 	}
 }
 
@@ -1645,15 +1712,15 @@ func TestGetSynonymSourceReconstructsPublicDDLWithoutSyntheticSchema(t *testing.
 
 func TestXuguCatalogSynonymQueryUsesReservedPublicScope(t *testing.T) {
 	exact := strings.ToUpper(xuguCatalogSynonymQuery(xuguPublicSynonymScope, "ChironHorizonPublicMixed", false))
-	if !strings.Contains(exact, "Y.IS_PUBLIC = TRUE") || !strings.Contains(exact, "Y.SYNO_NAME = 'ChironHorizonPUBLICMIXED'") {
+	if !strings.Contains(exact, "Y.IS_PUBLIC = TRUE") || !strings.Contains(exact, "Y.SYNO_NAME = 'CHIRONHORIZONPUBLICMIXED'") {
 		t.Fatalf("exact public synonym lookup must be global and exact:\n%s", exact)
 	}
 	if strings.Contains(exact, "S.SCHEMA_NAME =") {
 		t.Fatalf("exact public synonym lookup must not require an owning schema:\n%s", exact)
 	}
 
-	folded := strings.ToUpper(xuguCatalogSynonymQuery(xuguPublicSynonymScope, "chiron-horizonpublicmixed", true))
-	if !strings.Contains(folded, "Y.IS_PUBLIC = TRUE") || !strings.Contains(folded, "UPPER(Y.SYNO_NAME) = 'ChironHorizonPUBLICMIXED'") {
+	folded := strings.ToUpper(xuguCatalogSynonymQuery(xuguPublicSynonymScope, "chironhorizonpublicmixed", true))
+	if !strings.Contains(folded, "Y.IS_PUBLIC = TRUE") || !strings.Contains(folded, "UPPER(Y.SYNO_NAME) = 'CHIRONHORIZONPUBLICMIXED'") {
 		t.Fatalf("case-insensitive public synonym lookup must remain global:\n%s", folded)
 	}
 	if strings.Contains(folded, "S.SCHEMA_NAME =") {
@@ -3548,11 +3615,13 @@ func (r *xuguStaticRows) Next(dest []driver.Value) error {
 }
 
 var xuguBlockingUnblock chan struct{}
+var xuguBlockingStarted chan struct{}
 
 // resetXuguBlockingDriver creates a fresh unblock channel for the blocking
 // driver. Call before each test that uses "xugu-test-blocking".
 func resetXuguBlockingDriver() {
 	xuguBlockingUnblock = make(chan struct{})
+	xuguBlockingStarted = make(chan struct{}, 1)
 }
 
 type xuguBlockingDriver struct{}
@@ -3574,10 +3643,18 @@ type xuguBlockingStmt struct{}
 func (s *xuguBlockingStmt) Close() error  { return nil }
 func (s *xuguBlockingStmt) NumInput() int { return -1 }
 func (s *xuguBlockingStmt) Exec(args []driver.Value) (driver.Result, error) {
+	select {
+	case xuguBlockingStarted <- struct{}{}:
+	default:
+	}
 	<-xuguBlockingUnblock
 	return nil, errors.New("killed")
 }
 func (s *xuguBlockingStmt) Query(args []driver.Value) (driver.Rows, error) {
+	select {
+	case xuguBlockingStarted <- struct{}{}:
+	default:
+	}
 	<-xuguBlockingUnblock
 	return nil, errors.New("killed")
 }
@@ -3871,6 +3948,11 @@ func TestXuguExplicitCancelClassifiesBlockingQueryAndExec(t *testing.T) {
 			errCh := make(chan error, 1)
 			go func() { errCh <- test.run(s) }()
 			waitForXuguActiveOperation(t, s)
+			select {
+			case <-xuguBlockingStarted:
+			case <-time.After(time.Second):
+				t.Fatal("driver did not start the blocking operation")
+			}
 			s.cancelActiveQuery()
 			select {
 			case <-killCh:

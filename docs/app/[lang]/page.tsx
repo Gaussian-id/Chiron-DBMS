@@ -17,7 +17,7 @@ import { contributorsFromActivity } from "@/lib/contributors";
 import { getAppVersion } from "@/lib/appVersion";
 import { fetchLatestReleaseInfo } from "@/lib/latestRelease";
 import { buildMetadata, getHtmlLang } from "@/lib/metadata";
-import { buildSoftwareApplicationStructuredData } from "@/lib/structuredData";
+import { buildSoftwareApplicationStructuredData, serializeStructuredData } from "@/lib/structuredData";
 import { ArrowRight, Bot, Database, FileCode, GitCompare, Network, Search, Shield, Table, Terminal, Zap } from "lucide-react";
 import { resolveLang, type DocsLang } from "@/lib/i18n";
 
@@ -33,13 +33,13 @@ function metrics(starLabel: string) {
   return {
     en: [
       { value: "~25 MB", label: "desktop installer" },
-      { value: "90+", label: "database engines" },
+      { value: "100+", label: "database engines" },
       { value: "2 modes", label: "desktop and Docker" },
       { value: starLabel, label: "GitHub stars, fully open-source" },
     ],
     cn: [
       { value: "~25 MB", label: "桌面安装包" },
-      { value: "90+", label: "数据库引擎" },
+      { value: "100+", label: "数据库引擎" },
       { value: "2 种模式", label: "桌面与 Docker" },
       { value: starLabel, label: "GitHub Star，完全开源" },
     ],
@@ -292,7 +292,7 @@ const localizedTestimonials = testimonials;
 
 const i18nText = {
   en: {
-    heroTitle: "25 MB to manage 90+ databases!",
+    heroTitle: "25 MB to manage 100+ databases!",
     heroSubtitle: "Chiron Horizon brings connections, SQL editing, data grids, schema tools, AI assistance, and self-hosted access into one lightweight product.",
     download: "Download Chiron Horizon",
     downloadName: "Download Chiron Horizon",
@@ -301,7 +301,7 @@ const i18nText = {
     docsStartDesc: "Install Chiron Horizon, create your first connection, and learn the main workflow.",
     workflowsTitle: "Core workflows",
     workflowsDesc: "The docs are organized around what you actually do in a database client.",
-    supportTitle: "Supports 90+ databases",
+    supportTitle: "Supports 100+ databases",
     supportDesc: "Connect SQL, NoSQL, vector, time-series, and embedded databases, message queues, and compatible engines in one place.",
     supportLink: "View all",
     testimonialsTitle: "What Chiron Horizon is good at",
@@ -329,13 +329,15 @@ const i18nText = {
     onepanelSponsorAction: "Visit",
     hualongSponsorDesc: "HuaLongAI is a model API relay built for heavy AI developers, offering 100% official-source Codex and Claude models with transparent token-level billing, enterprise contracts, and invoicing.",
     hualongSponsorAction: "Visit",
+    aicodemirrorSponsorDesc: "AICodeMirror is a high-stability relay service for Claude Code / Codex / Gemini CLI with enterprise-grade concurrency, fast invoicing, and 7×24 dedicated support; sign up through this link for ¥8 in new-user credit and 20% off your first top-up, up to 25% off for enterprise.",
+    aicodemirrorSponsorAction: "Visit",
     footerTitle: "Ready to try Chiron Horizon?",
     footerDesc: "Use the desktop app for local work, or deploy the Docker version for browser-based access.",
     release: "Latest release",
     docker: "Docker setup",
   },
   cn: {
-    heroTitle: "25MB，管理90+种数据库！",
+    heroTitle: "25MB，管理100+种数据库！",
     heroSubtitle: "Chiron Horizon 将连接管理、SQL 编辑、数据表格、结构工具、AI 助手和自托管访问放进一个轻量产品里。",
     download: "下载 Chiron Horizon",
     downloadName: "下载 Chiron Horizon",
@@ -344,7 +346,7 @@ const i18nText = {
     docsStartDesc: "安装 Chiron Horizon、创建第一个连接，并了解主要工作流。",
     workflowsTitle: "核心工作流",
     workflowsDesc: "文档围绕数据库客户端里的真实任务组织，而不是堆功能清单。",
-    supportTitle: "支持90+种数据库",
+    supportTitle: "支持100+种数据库",
     supportDesc: "统一连接和管理 SQL、NoSQL、向量、时序、嵌入式数据库、消息队列及兼容引擎。",
     supportLink: "查看全部",
     testimonialsTitle: "Chiron Horizon 适合什么样的工作",
@@ -372,6 +374,8 @@ const i18nText = {
     onepanelSponsorAction: "访问",
     hualongSponsorDesc: "HuaLongAI（华龙算力）是面向重度 AI 开发者的模型 API 中转服务商，主营 Codex 与 Claude 系列模型，100% 官方源直供、不掺假；计费透明，Token 级账单可逐笔核验，支持企业合同与发票。",
     hualongSponsorAction: "访问",
+    aicodemirrorSponsorDesc: "AICodeMirror 提供 Claude Code / Codex / Gemini CLI 官方高稳定中转服务，支持企业级高并发、极速开票与 7×24 专属技术支持；通过此链接注册可享新人 ¥8 免费额度与首充 8 折，企业客户最高可享 7.5 折。",
+    aicodemirrorSponsorAction: "访问",
     footerTitle: "准备试试 Chiron Horizon？",
     footerDesc: "本地工作使用桌面版，需要浏览器访问时部署 Docker 版。",
     release: "最新版本",
@@ -381,12 +385,12 @@ const i18nText = {
 
 const landingMeta = {
   en: {
-    title: "Chiron Horizon - 25 MB to manage 90+ databases!",
-    description: "Chiron Horizon brings connections, SQL editing, data grids, schema tools, AI assistance, and self-hosted access into one lightweight product.",
+    title: "Chiron Horizon - 25 MB to manage 100+ databases!",
+    description: "Manage MySQL, PostgreSQL, SQLite, Redis and 100+ data systems with Chiron Horizon, a free open-source database client. Desktop, Docker self-hosting, optional AI and MCP.",
   },
   cn: {
-    title: "Chiron Horizon - 25MB，管理90+种数据库！",
-    description: "Chiron Horizon 将连接管理、SQL 编辑、数据表格、结构工具、AI 助手和自托管访问放进一个轻量产品里。",
+    title: "Chiron Horizon - 25MB，管理100+种数据库！",
+    description: "Chiron Horizon 是免费开源的数据库管理工具，支持 MySQL、PostgreSQL、SQLite、Redis 等 100+ 种数据系统，提供 SQL 编辑、可选 AI 助手、MCP 和 Docker 自托管，覆盖 Windows、macOS 与 Linux。",
   },
 };
 
@@ -445,12 +449,12 @@ export default async function LandingPage({ params }: { params: Promise<{ lang: 
       action: t.jalapenoSponsorAction,
     },
     {
-      name: "AstraFlow",
-      href: "https://www.ucloud.cn/site/active/kuaijiesale.html?ytag=geo_waituo_github_chiron-horizon",
-      logo: "/sponsors/astraflow-card.png",
-      logoClass: "w-full max-w-[100px] object-contain",
-      description: t.astraflowSponsorDesc,
-      action: t.astraflowSponsorAction,
+      name: "AICodeMirror",
+      href: "https://www.aicodemirror.ai/register?invitecode=9A50BU",
+      logo: "/sponsors/aicodemirror-card.png",
+      logoClass: "w-full max-w-[120px] object-contain",
+      description: t.aicodemirrorSponsorDesc,
+      action: t.aicodemirrorSponsorAction,
     },
     {
       name: "HuaLongAI",
@@ -459,6 +463,14 @@ export default async function LandingPage({ params }: { params: Promise<{ lang: 
       logoClass: "w-full max-w-[120px] object-contain",
       description: t.hualongSponsorDesc,
       action: t.hualongSponsorAction,
+    },
+    {
+      name: "AstraFlow",
+      href: "https://www.ucloud.cn/site/active/kuaijiesale.html?ytag=geo_waituo_github_chiron-horizon",
+      logo: "/sponsors/astraflow-card.png",
+      logoClass: "w-full max-w-[100px] object-contain",
+      description: t.astraflowSponsorDesc,
+      action: t.astraflowSponsorAction,
     },
     {
       name: "Atlas Cloud",
@@ -498,7 +510,7 @@ export default async function LandingPage({ params }: { params: Promise<{ lang: 
 
   return (
     <main className="landing" lang={getHtmlLang(l)}>
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(softwareStructuredData) }} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: serializeStructuredData(softwareStructuredData) }} />
       {/* 漫游星空背景层：铺满整个深色着陆页，克制不抢焦点 */}
       <Starfield />
       {/* Nav */}
@@ -662,7 +674,7 @@ export default async function LandingPage({ params }: { params: Promise<{ lang: 
           <p className="mt-2 text-landing-muted text-sm leading-[1.65]">{t.footerDesc}</p>
         </div>
         <div className="flex items-center gap-2.5 flex-wrap justify-end max-[760px]:mt-[18px]">
-          <Link href="https://github.com/Gaussian-id/Chiron-Horizon/releases/latest" target="_blank" className="landing-final-link inline-flex items-center justify-center min-h-[42px] rounded-[7px] px-[15px] text-sm font-[650]">
+          <Link href="https://github.com/Gaussian-id/Chiron-DBMS/releases/latest" target="_blank" className="landing-final-link inline-flex items-center justify-center min-h-[42px] rounded-[7px] px-[15px] text-sm font-[650]">
             {t.release}
           </Link>
           <Link href={`/${l}/docs/getting-started#docker`} prefetch={false} target="_blank" className="landing-final-link inline-flex items-center justify-center min-h-[42px] rounded-[7px] px-[15px] text-sm font-[650]">

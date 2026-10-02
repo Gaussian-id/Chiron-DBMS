@@ -6,11 +6,8 @@ use axum::{
     Router,
 };
 use chiron_horizon_core::{
-    agent_tools::AgentSqlPermissions,
-    connection::AppState,
-    models::connection::ConnectionConfig,
-    query::QueryExecutionOptions,
-    storage::{McpGlobalPolicy, Storage},
+    agent_tools::AgentSqlPermissions, connection::AppState, models::connection::ConnectionConfig,
+    query::QueryExecutionOptions, storage::McpGlobalPolicy,
 };
 use chiron_horizon_mcp::{ChironHorizonBackend, LocalBackend, WebBackend};
 use serde_json::{json, Value};
@@ -19,7 +16,7 @@ use std::sync::Arc;
 async fn run_object_cache_regression(postgres: bool) {
     let dir = std::env::temp_dir().join(format!("chiron-horizon-object-cache-{}", uuid::Uuid::new_v4()));
     std::fs::create_dir_all(&dir).unwrap();
-    let storage = Storage::open(&dir.join("storage.db")).await.unwrap();
+    let storage = chiron_horizon_core::persistence::test_storage::open(&dir.join("storage.db")).await.unwrap();
     let database = if postgres {
         std::env::var("CHIRON_HORIZON_LIVE_POSTGRES_DATABASE").expect("test database")
     } else {

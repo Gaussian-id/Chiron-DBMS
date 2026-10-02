@@ -115,6 +115,10 @@ Returns saved connection profiles. Secrets such as passwords are stored separate
 
 ### Save Connections
 
+Connections are upserted by `id`: connections the request does not mention are left untouched, so several
+clients can share one server without deleting each other's profiles. Deletions are explicit through the
+optional `removedIds` array.
+
 ```http
 POST /api/connection/save
 Content-Type: application/json
@@ -130,7 +134,8 @@ Cookie: chiron_horizon_session=...
       "username": "root",
       "database": "app"
     }
-  ]
+  ],
+  "removedIds": ["connection-to-delete"]
 }
 ```
 
@@ -331,9 +336,9 @@ CLI supports the same `CHIRON_HORIZON_WEB_URL` and `CHIRON_HORIZON_WEB_PASSWORD`
 
 See the repository examples:
 
-- [examples/web-api/automation.sh](https://github.com/Gaussian-id/Chiron-Horizon/tree/main/examples/web-api/automation.sh)
-- [examples/docker/docker-compose.yml](https://github.com/Gaussian-id/Chiron-Horizon/tree/main/examples/docker/docker-compose.yml)
-- [examples/cli/basic-workflow.sh](https://github.com/Gaussian-id/Chiron-Horizon/tree/main/examples/cli/basic-workflow.sh)
+- [examples/web-api/automation.sh](https://github.com/Gaussian-id/Chiron-DBMS/tree/main/examples/web-api/automation.sh)
+- [examples/docker/docker-compose.yml](https://github.com/Gaussian-id/Chiron-DBMS/tree/main/examples/docker/docker-compose.yml)
+- [examples/cli/basic-workflow.sh](https://github.com/Gaussian-id/Chiron-DBMS/tree/main/examples/cli/basic-workflow.sh)
 
 ## Route Groups
 

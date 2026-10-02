@@ -5,9 +5,11 @@ pub mod diagnostics;
 pub mod http;
 pub mod http_auth;
 pub mod paths;
+pub mod plugin_tools;
 pub mod runtime;
 pub mod server;
 pub mod session;
+pub mod transaction;
 pub mod transport;
 
 pub use backend::{ChironHorizonBackend, ConnectionSummary, LocalBackend, WebBackend};

@@ -82,6 +82,24 @@ public final class ChironHorizonJdbcPlugin {
         "SYSTEM TABLE",
         "SYSTEM VIEW"
     };
+    /**
+     * MySQL/PostgreSQL 家族（含金仓、瀚高、优炫、海量这类 PG 衍生库）里 BIT 是位字段/位串：数据库自带
+     * 工具和 Chiron Horizon 的内置驱动都按 `0`/`1`/`10101010` 展示。JDBC 驱动把这些列暴露成裸字节或强制转布尔，
+     * 走通用分支就成了 `0x00`/`true`。这类连接由 readBitStringColumnValue 按位串读取。
+     * SQL Server 这类把 BIT 当布尔类型的库不在名单内，保持驱动返回的布尔值。
+     */
+    private static final String[] BIT_STRING_JDBC_URL_PREFIXES = new String[] {
+        "jdbc:mysql:",
+        "jdbc:mariadb:",
+        "jdbc:starrocks:",
+        "jdbc:doris:",
+        "jdbc:postgresql:",
+        "jdbc:kingbase",
+        "jdbc:highgo:",
+        "jdbc:uxdb:",
+        "jdbc:vastbase:"
+    };
+
     private static final JdbcDriverQuirks DEFAULT_QUIRKS = new JdbcDriverQuirks(
         false,
         false,
@@ -148,11 +166,28 @@ public final class ChironHorizonJdbcPlugin {
         new JdbcDriverQuirkRule("jdbc:taos-rs:", TAOS_QUIRKS)
     );
     private static String registeredDriverKey = "";
+    private static String logicalDriverKey;
     private static Driver registeredDriver;
-    private static String sharedConnectionKey = "";
-    private static Connection sharedConnection;
-    private static boolean manualTransactionActive;
-    private static final Map<String, QuerySession> QUERY_SESSIONS = new HashMap<>();
+    private static ClassLoader registeredDriverClassLoader;
+    private static final JdbcConnectionState DEFAULT_CONNECTION_STATE = new JdbcConnectionState();
+    private static final ThreadLocal<JdbcConnectionState> CONNECTION_STATE =
+        ThreadLocal.withInitial(() -> DEFAULT_CONNECTION_STATE);
+    private static final Map<String, JdbcConnectionState> LOGICAL_SESSIONS = new java.util.concurrent.ConcurrentHashMap<>();
+    private static volatile boolean shuttingDown;
+
+    private static final class JdbcConnectionState {
+        String sharedConnectionKey = "";
+        Connection sharedConnection;
+        boolean manualTransactionActive;
+        final Map<String, QuerySession> querySessions = new HashMap<>();
+        volatile Statement activeStatement;
+        volatile boolean closing;
+        final java.util.concurrent.locks.ReentrantLock operation = new java.util.concurrent.locks.ReentrantLock();
+    }
+
+    private static JdbcConnectionState connectionState() {
+        return CONNECTION_STATE.get();
+    }
 
     record JdbcDriverQuirks(
         boolean skipExecutionContext,
@@ -248,6 +283,7 @@ public final class ChironHorizonJdbcPlugin {
     }
 
     public static void main(String[] args) throws Exception {
+        java.util.concurrent.ExecutorService requests = java.util.concurrent.Executors.newCachedThreadPool();
         try (
             BufferedReader reader = new BufferedReader(new InputStreamReader(System.in, StandardCharsets.UTF_8));
             BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(System.out, StandardCharsets.UTF_8))
@@ -257,21 +293,128 @@ public final class ChironHorizonJdbcPlugin {
                 if (line.isBlank()) {
                     continue;
                 }
+                JsonNode incoming = MAPPER.readTree(line);
+                if (incoming.path("params").hasNonNull("jdbcSessionId")) {
+                    JdbcConnectionState retainedState = retainLogicalState(incoming);
+                    requests.execute(() -> {
+                        try {
+                            writeResponse(writer, handleRequest(incoming, retainedState));
+                        } catch (Exception error) {
+                            System.err.println("JDBC session response failed: " + error.getClass().getSimpleName());
+                        }
+                    });
+                    continue;
+                }
+                if ("close".equals(incoming.path("method").asText())) shuttingDown = true;
                 ObjectNode response = handleLine(line);
-                writer.write(MAPPER.writeValueAsString(response));
-                writer.newLine();
-                writer.flush();
+                writeResponse(writer, response);
                 if (response.path("_chiron_horizon_close").asBoolean(false)) {
                     break;
                 }
             }
         } finally {
+            shuttingDown = true;
+            for (JdbcConnectionState state : LOGICAL_SESSIONS.values()) {
+                closeLogicalSession(state);
+            }
+            LOGICAL_SESSIONS.clear();
+            requests.shutdown();
             closeSharedConnection();
+        }
+    }
+
+    private static void writeResponse(BufferedWriter writer, ObjectNode response) throws IOException {
+        synchronized (writer) {
+            writer.write(MAPPER.writeValueAsString(response));
+            writer.newLine();
+            writer.flush();
+        }
+    }
+
+    private static void closeLogicalSession(JdbcConnectionState state) {
+        state.closing = true;
+        boolean locked = false;
+        while (!locked) {
+            Statement statement = state.activeStatement;
+            if (statement != null) {
+                try {
+                    statement.cancel();
+                } catch (SQLException ignored) {
+                }
+            }
+            try {
+                locked = state.operation.tryLock(50, java.util.concurrent.TimeUnit.MILLISECONDS);
+            } catch (InterruptedException ignored) {
+            }
+        }
+        try {
+            JdbcConnectionState previous = connectionState();
+            CONNECTION_STATE.set(state);
+            try {
+                closeSharedConnection();
+            } finally {
+                CONNECTION_STATE.set(previous);
+            }
+        } finally {
+            state.operation.unlock();
+        }
+    }
+
+    private static JdbcConnectionState retainLogicalState(JsonNode request) {
+        JsonNode params = request.path("params");
+        if (!params.hasNonNull("jdbcSessionId") || shuttingDown) return null;
+        String sessionId = params.path("jdbcSessionId").asText();
+        String method = request.path("method").asText();
+        if ("openJdbcSession".equals(method)) {
+            return LOGICAL_SESSIONS.computeIfAbsent(sessionId, ignored -> new JdbcConnectionState());
+        }
+        if ("closeJdbcSession".equals(method)) {
+            JdbcConnectionState state = LOGICAL_SESSIONS.remove(sessionId);
+            if (state != null) state.closing = true;
+            return state;
+        }
+        return LOGICAL_SESSIONS.get(sessionId);
+    }
+
+    private static JsonNode handleLogicalSession(String method, JsonNode params, JsonNode connection,
+                                                  JdbcConnectionState state) throws Exception {
+        String id = requireText(params, "jdbcSessionId");
+        if ("closeJdbcSession".equals(method)) {
+            if (state != null) closeLogicalSession(state);
+            return okResult();
+        }
+        if (state == null) throw new SQLException("Unknown JDBC logical session");
+        state.operation.lock();
+        try {
+            if (shuttingDown || state.closing) throw new SQLException("JDBC logical session is closed");
+            if ("openJdbcSession".equals(method)) return okResult();
+            CONNECTION_STATE.set(state);
+            try {
+                registerDrivers(connection);
+                return handle(method, params, connection);
+            } catch (Exception | LinkageError error) {
+                if ("connect".equals(method)
+                    && (state.sharedConnection == null || !isPostgresJdbcUrl(optionalText(connection, "connection_string")))) {
+                    closeSharedConnection();
+                    state.closing = true;
+                    LOGICAL_SESSIONS.remove(id, state);
+                }
+                throw error;
+            } finally {
+                state.activeStatement = null;
+                CONNECTION_STATE.remove();
+            }
+        } finally {
+            state.operation.unlock();
         }
     }
 
     private static ObjectNode handleLine(String line) throws Exception {
         JsonNode request = MAPPER.readTree(line);
+        return handleRequest(request, retainLogicalState(request));
+    }
+
+    private static ObjectNode handleRequest(JsonNode request, JdbcConnectionState retainedState) throws Exception {
         JsonNode id = request.path("id");
         ObjectNode response = MAPPER.createObjectNode();
         response.set("id", id.isMissingNode() ? MAPPER.getNodeFactory().numberNode(1) : id);
@@ -281,7 +424,19 @@ public final class ChironHorizonJdbcPlugin {
             String method = requireText(request, "method");
             JsonNode params = request.path("params");
             connection = params.path("connection");
+            if ("jdbcSessionProtocol".equals(method)) {
+                response.set("result", MAPPER.createObjectNode().put("version", 2));
+                return response;
+            }
+            if (params.hasNonNull("jdbcSessionId")) {
+                response.set("result", handleLogicalSession(method, params, connection, retainedState));
+                return response;
+            }
             if ("close".equals(method)) {
+                for (JdbcConnectionState state : LOGICAL_SESSIONS.values()) {
+                    closeLogicalSession(state);
+                }
+                LOGICAL_SESSIONS.clear();
                 closeSharedConnection();
                 ObjectNode result = MAPPER.createObjectNode();
                 result.put("ok", true);
@@ -373,6 +528,15 @@ public final class ChironHorizonJdbcPlugin {
     }
 
     private static JsonNode handle(String method, JsonNode params, JsonNode connection) throws Exception {
+        String database = optionalText(params, "database");
+        if (isPostgresJdbcUrl(optionalText(connection, "connection_string"))) {
+            database = postgresDatabase(params);
+            if (database != null) {
+                ObjectNode targeted = connection.deepCopy();
+                targeted.put("database", database);
+                connection = targeted;
+            }
+        }
         return switch (method) {
             case "testConnection" -> connectionTestResult(openConnection(connection));
             case "connect" -> {
@@ -385,7 +549,7 @@ public final class ChironHorizonJdbcPlugin {
             case "executeQuery" -> executeQuery(
                 connection,
                 requireText(params, "sql"),
-                optionalText(params, "database"),
+                database,
                 optionalText(params, "schema"),
                 positiveInt(params, "maxRows", MAX_ROWS),
                 nonNegativeInt(params, "fetchSize", 0),
@@ -394,13 +558,13 @@ public final class ChironHorizonJdbcPlugin {
             );
             case "beginManualTransaction", "begin_manual_transaction" -> beginManualTransaction(
                 connection,
-                optionalText(params, "database"),
+                database,
                 optionalText(params, "schema")
             );
             case "executeInManualTransaction", "execute_in_manual_transaction" -> executeInManualTransaction(
                 connection,
                 requireText(params, "sql"),
-                optionalText(params, "database"),
+                database,
                 optionalText(params, "schema"),
                 positiveInt(params, "maxRows", MAX_ROWS),
                 nonNegativeInt(params, "fetchSize", 0),
@@ -412,7 +576,7 @@ public final class ChironHorizonJdbcPlugin {
             case "executeQueryPage", "execute_query_page" -> executeQueryPage(
                 connection,
                 requireText(params, "sql"),
-                optionalText(params, "database"),
+                database,
                 optionalText(params, "schema"),
                 positiveInt(params, "pageSize", 100),
                 positiveInt(params, "maxRows", MAX_ROWS),
@@ -425,10 +589,10 @@ public final class ChironHorizonJdbcPlugin {
             );
             case "closeQuerySession", "close_query_session" -> closeQuerySessionResult(requireText(params, "sessionId"));
             case "listDatabases" -> listDatabases(connection);
-            case "listSchemas" -> listSchemas(connection, optionalText(params, "database"));
+            case "listSchemas" -> listSchemas(connection, database);
             case "listTables" -> listTables(
                 connection,
-                optionalText(params, "database"),
+                database,
                 optionalText(params, "schema"),
                 optionalText(params, "filter"),
                 nonNegativeInt(params, "limit", 0),
@@ -437,7 +601,7 @@ public final class ChironHorizonJdbcPlugin {
             );
             case "listObjects", "list_objects" -> listObjects(
                 connection,
-                optionalText(params, "database"),
+                database,
                 optionalText(params, "schema"),
                 optionalText(params, "filter"),
                 nonNegativeInt(params, "limit", 0),
@@ -446,28 +610,28 @@ public final class ChironHorizonJdbcPlugin {
             );
             case "listIndexes", "list_indexes" -> listIndexes(
                 connection,
-                optionalText(params, "database"),
+                database,
                 optionalText(params, "schema"),
                 requireText(params, "table")
             );
-            case "listDataTypes", "list_data_types" -> listDataTypes(connection, optionalText(params, "database"));
+            case "listDataTypes", "list_data_types" -> listDataTypes(connection, database);
             case "getObjectSource", "get_object_source" -> getObjectSource(
                 connection,
-                optionalText(params, "database"),
+                database,
                 optionalText(params, "schema"),
                 requireText(params, "name"),
                 requireText(params, "object_type")
             );
             case "getColumns" -> getColumns(
                 connection,
-                optionalText(params, "database"),
+                database,
                 optionalText(params, "schema"),
                 requireText(params, "table")
             );
             case "getExplainInfo" -> getExplainInfo(
                 connection,
                 requireText(params, "sql"),
-                optionalText(params, "database"),
+                database,
                 optionalText(params, "schema"),
                 nonNegativeInt(params, "timeoutSecs", -1),
                 optionalText(params, "mode")
@@ -572,9 +736,26 @@ public final class ChironHorizonJdbcPlugin {
         T get() throws SQLException;
     }
 
-    private static void registerDrivers(JsonNode connection) throws Exception {
+    private static synchronized void registerDrivers(JsonNode connection) throws Exception {
         String driverKey = driverKey(connection);
+        if (logicalDriverKey != null && !logicalDriverKey.equals(driverKey)) {
+            throw new SQLException("JDBC logical sessions require the same selected driver");
+        }
+        if (connectionState() != DEFAULT_CONNECTION_STATE) logicalDriverKey = driverKey;
+        String driverClass = optionalText(connection, "jdbc_driver_class");
         if (driverKey.equals(registeredDriverKey) && registeredDriver != null) {
+            if (driverClass != null) {
+                LegacyJdbcDriverClass.load(
+                    driverClass,
+                    optionalText(connection, "connection_string"),
+                    registeredDriverClassLoader != null
+                        ? registeredDriverClassLoader
+                        : Thread.currentThread().getContextClassLoader()
+                );
+            }
+            if (registeredDriverClassLoader != null) {
+                Thread.currentThread().setContextClassLoader(registeredDriverClassLoader);
+            }
             return;
         }
         closeSharedConnection();
@@ -594,10 +775,12 @@ public final class ChironHorizonJdbcPlugin {
             ? Thread.currentThread().getContextClassLoader()
             : new URLClassLoader(urls.toArray(URL[]::new), ChironHorizonJdbcPlugin.class.getClassLoader());
         Thread.currentThread().setContextClassLoader(loader);
+        registeredDriverClassLoader = loader;
 
-        String driverClass = optionalText(connection, "jdbc_driver_class");
         if (driverClass != null) {
-            Constructor<?> constructor = Class.forName(driverClass, true, loader).getDeclaredConstructor();
+            Constructor<?> constructor = LegacyJdbcDriverClass.load(
+                driverClass, optionalText(connection, "connection_string"), loader
+            ).getDeclaredConstructor();
             constructor.setAccessible(true);
             Driver driver = (Driver) constructor.newInstance();
             registeredDriver = new DriverShim(driver);
@@ -629,11 +812,17 @@ public final class ChironHorizonJdbcPlugin {
             throw new IllegalArgumentException("JDBC URL is required.");
         }
         String key = connectionKey(connection);
-        if (sharedConnection != null && key.equals(sharedConnectionKey) && !isConnectionClosed(sharedConnection)) {
-            configureOrdinaryAutoCommit(sharedConnection);
-            return sharedConnection;
+        JdbcConnectionState state = connectionState();
+        if (state.sharedConnection != null && key.equals(state.sharedConnectionKey) && !isConnectionClosed(state.sharedConnection)) {
+            configureOrdinaryAutoCommit(state.sharedConnection);
+            return state.sharedConnection;
         }
-        closeSharedConnection();
+        boolean postgres = isPostgresJdbcUrl(url);
+        if (postgres && state.sharedConnection != null
+            && (state.manualTransactionActive || hasActiveQuerySession(state.sharedConnection))) {
+            throw new SQLException("Cannot change PostgreSQL database while a transaction or query session is active");
+        }
+        if (!postgres) closeSharedConnection();
 
         JdbcUrlCredentials urlCredentials = extractJdbcUrlCredentials(url);
         url = urlCredentials.url;
@@ -661,10 +850,24 @@ public final class ChironHorizonJdbcPlugin {
         // Prefer the explicitly registered driver. DriverManager.getConnection only catches
         // SQLException; Hive/Inceptor drivers may throw UnsupportedOperationException for optional
         // methods, which aborts connect before the intended driver is reached.
-        sharedConnection = connectWithRegisteredDriver(url, properties);
-        sharedConnectionKey = key;
-        configureOrdinaryAutoCommit(sharedConnection);
-        return sharedConnection;
+        Connection opened = connectWithRegisteredDriver(url, properties);
+        if (postgres) {
+            try {
+                configureOrdinaryAutoCommit(opened);
+            } catch (SQLException | RuntimeException | Error error) {
+                try {
+                    opened.close();
+                } catch (SQLException closeError) {
+                    error.addSuppressed(closeError);
+                }
+                throw error;
+            }
+            closeSharedConnection();
+        }
+        state.sharedConnection = opened;
+        state.sharedConnectionKey = key;
+        configureOrdinaryAutoCommit(state.sharedConnection);
+        return state.sharedConnection;
     }
 
     private static Connection connectWithRegisteredDriver(String url, Properties properties) throws SQLException {
@@ -714,14 +917,14 @@ public final class ChironHorizonJdbcPlugin {
     }
 
     private static void configureOrdinaryAutoCommit(Connection jdbcConnection) throws SQLException {
-        if (manualTransactionActive || hasActiveQuerySession(jdbcConnection) || jdbcConnection.getAutoCommit()) {
+        if (connectionState().manualTransactionActive || hasActiveQuerySession(jdbcConnection) || jdbcConnection.getAutoCommit()) {
             return;
         }
         jdbcConnection.setAutoCommit(true);
     }
 
     private static boolean hasActiveQuerySession(Connection jdbcConnection) {
-        return QUERY_SESSIONS.values().stream().anyMatch(session -> session.connection == jdbcConnection);
+        return connectionState().querySessions.values().stream().anyMatch(session -> session.connection == jdbcConnection);
     }
 
     private static boolean isPhoenixConnection(JsonNode connection, String url) {
@@ -851,6 +1054,26 @@ public final class ChironHorizonJdbcPlugin {
         }
         String driverClass = optionalText(connection, "jdbc_driver_class");
         return driverClass != null && driverClass.equalsIgnoreCase("org.postgresql.Driver");
+    }
+
+    private static boolean usesBitStringColumns(JsonNode connection) {
+        String url = jdbcUrl(connection);
+        for (String prefix : BIT_STRING_JDBC_URL_PREFIXES) {
+            if (urlMatchesPrefix(url, prefix)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private static boolean usesFullPrecisionIntegers(JsonNode connection) {
+        String url = jdbcUrl(connection);
+        if (urlMatchesPrefix(url, "jdbc:cache:") || urlMatchesPrefix(url, "jdbc:iris:")) {
+            return true;
+        }
+        String driverClass = optionalText(connection, "jdbc_driver_class");
+        return "com.intersys.jdbc.CacheDriver".equals(driverClass)
+            || "com.intersystems.jdbc.IRISDriver".equals(driverClass);
     }
 
     private static boolean isPrestoOrTrinoConnection(JsonNode connection) {
@@ -993,7 +1216,11 @@ public final class ChironHorizonJdbcPlugin {
         JdbcDriverQuirks quirks = driverQuirks(connection);
         boolean preserveOracleDateTime = isOracleUrl(jdbcUrl(connection));
         ZoneId timestampZone = tdengineTimestampZone(connection, conn);
+        boolean bitStringColumns = usesBitStringColumns(connection);
+        boolean fullPrecisionIntegers = usesFullPrecisionIntegers(connection);
         try (Statement statement = conn.createStatement()) {
+            connectionState().activeStatement = statement;
+            if (connectionState().closing) throw new SQLException("JDBC logical session is closed");
             applyStatementOptions(statement, maxRows, fetchSize, timeoutSecs, quirks);
             String trimmedSql = trimStatementSql(sql);
             String effectiveSql = rewritePhoenixSystemCatalogQuery(connection, conn, trimmedSql);
@@ -1022,7 +1249,7 @@ public final class ChironHorizonJdbcPlugin {
                         }
                         ArrayNode row = MAPPER.createArrayNode();
                         for (int i = 1; i <= columnCount; i++) {
-                            row.add(MAPPER.valueToTree(readValue(rs, meta, i, preserveOracleDateTime, timestampZone)));
+                            row.add(MAPPER.valueToTree(readValue(rs, meta, i, preserveOracleDateTime, timestampZone, bitStringColumns, fullPrecisionIntegers)));
                         }
                         rows.add(row);
                     }
@@ -1040,7 +1267,7 @@ public final class ChironHorizonJdbcPlugin {
 
     private static ObjectNode beginManualTransaction(JsonNode connection, String database, String schema)
         throws SQLException {
-        if (manualTransactionActive) {
+        if (connectionState().manualTransactionActive) {
             throw new SQLException("A manual transaction is already active");
         }
         Connection conn = openConnection(connection);
@@ -1051,7 +1278,7 @@ public final class ChironHorizonJdbcPlugin {
         }
         applyExecutionContext(connection, conn, database, schema);
         conn.setAutoCommit(false);
-        manualTransactionActive = true;
+        connectionState().manualTransactionActive = true;
         return okResult();
     }
 
@@ -1073,7 +1300,7 @@ public final class ChironHorizonJdbcPlugin {
         Connection conn = activeManualTransactionConnection(null);
         conn.commit();
         conn.setAutoCommit(true);
-        manualTransactionActive = false;
+        connectionState().manualTransactionActive = false;
         return okResult();
     }
 
@@ -1081,18 +1308,19 @@ public final class ChironHorizonJdbcPlugin {
         Connection conn = activeManualTransactionConnection(null);
         conn.rollback();
         conn.setAutoCommit(true);
-        manualTransactionActive = false;
+        connectionState().manualTransactionActive = false;
         return okResult();
     }
 
     private static Connection activeManualTransactionConnection(JsonNode connection) throws SQLException {
-        if (!manualTransactionActive || sharedConnection == null || sharedConnection.isClosed()) {
+        JdbcConnectionState state = connectionState();
+        if (!state.manualTransactionActive || state.sharedConnection == null || state.sharedConnection.isClosed()) {
             throw new SQLException("No manual transaction is active");
         }
-        if (connection != null && !connectionKey(connection).equals(sharedConnectionKey)) {
+        if (connection != null && !connectionKey(connection).equals(state.sharedConnectionKey)) {
             throw new SQLException("The manual transaction belongs to a different JDBC connection");
         }
-        return sharedConnection;
+        return state.sharedConnection;
     }
 
     private static ObjectNode okResult() {
@@ -1116,6 +1344,8 @@ public final class ChironHorizonJdbcPlugin {
         private final boolean restoreAutoCommit;
         private final boolean preserveOracleDateTime;
         private final ZoneId timestampZone;
+        private final boolean bitStringColumns;
+        private final boolean fullPrecisionIntegers;
         private int rowsReturned;
         private ArrayNode pendingRow;
 
@@ -1130,7 +1360,9 @@ public final class ChironHorizonJdbcPlugin {
             Connection connection,
             boolean restoreAutoCommit,
             boolean preserveOracleDateTime,
-            ZoneId timestampZone
+            ZoneId timestampZone,
+            boolean bitStringColumns,
+            boolean fullPrecisionIntegers
         ) {
             this.id = id;
             this.statement = statement;
@@ -1143,6 +1375,8 @@ public final class ChironHorizonJdbcPlugin {
             this.restoreAutoCommit = restoreAutoCommit;
             this.preserveOracleDateTime = preserveOracleDateTime;
             this.timestampZone = timestampZone;
+            this.bitStringColumns = bitStringColumns;
+            this.fullPrecisionIntegers = fullPrecisionIntegers;
         }
     }
 
@@ -1162,15 +1396,18 @@ public final class ChironHorizonJdbcPlugin {
         JdbcDriverQuirks quirks = driverQuirks(connection);
         boolean preserveOracleDateTime = isOracleUrl(jdbcUrl(connection));
         ZoneId timestampZone = tdengineTimestampZone(connection, conn);
+        boolean bitStringColumns = usesBitStringColumns(connection);
         boolean restoreAutoCommit = beginPagedQueryTransaction(connection, conn);
         Statement statement;
         try {
             statement = createPagedQueryStatement(conn);
+            connectionState().activeStatement = statement;
         } catch (Exception | LinkageError error) {
             restorePagedQueryTransaction(conn, restoreAutoCommit);
             throw error;
         }
         try {
+            if (connectionState().closing) throw new SQLException("JDBC logical session is closed");
             applyStatementOptions(statement, maxRows, fetchSize, timeoutSecs, quirks);
             String trimmedSql = trimStatementSql(sql);
             String effectiveSql = rewritePhoenixSystemCatalogQuery(connection, conn, trimmedSql);
@@ -1209,13 +1446,15 @@ public final class ChironHorizonJdbcPlugin {
                 conn,
                 restoreAutoCommit,
                 preserveOracleDateTime,
-                timestampZone
+                timestampZone,
+                bitStringColumns,
+                usesFullPrecisionIntegers(connection)
             );
-            QUERY_SESSIONS.put(sessionId, session);
+            connectionState().querySessions.put(sessionId, session);
             try {
                 return readQuerySessionPage(session, pageSize);
             } catch (Exception | LinkageError error) {
-                QUERY_SESSIONS.remove(sessionId);
+                connectionState().querySessions.remove(sessionId);
                 throw error;
             }
         } catch (Exception | LinkageError error) {
@@ -1260,7 +1499,7 @@ public final class ChironHorizonJdbcPlugin {
     }
 
     private static JsonNode fetchQueryPage(String sessionId, int pageSize) throws SQLException {
-        QuerySession session = QUERY_SESSIONS.get(sessionId);
+        QuerySession session = connectionState().querySessions.get(sessionId);
         if (session == null) {
             throw new IllegalArgumentException("Unknown query session: " + sessionId);
         }
@@ -1268,6 +1507,8 @@ public final class ChironHorizonJdbcPlugin {
     }
 
     private static JsonNode readQuerySessionPage(QuerySession session, int pageSize) throws SQLException {
+        connectionState().activeStatement = session.statement;
+        if (connectionState().closing) throw new SQLException("JDBC logical session is closed");
         int effectivePageSize = Math.max(1, pageSize);
         ArrayNode rows = MAPPER.createArrayNode();
         boolean truncated = false;
@@ -1282,7 +1523,7 @@ public final class ChironHorizonJdbcPlugin {
                     closeQuerySession(session.id);
                     return queryPageResult(session, rows, false, false);
                 }
-                row = readRow(session.resultSet, session.meta, session.preserveOracleDateTime, session.timestampZone);
+                row = readRow(session.resultSet, session.meta, session.preserveOracleDateTime, session.timestampZone, session.bitStringColumns, session.fullPrecisionIntegers);
             }
             rows.add(row);
             session.rowsReturned++;
@@ -1300,7 +1541,7 @@ public final class ChironHorizonJdbcPlugin {
             return queryPageResult(session, rows, false, false);
         }
 
-        session.pendingRow = readRow(session.resultSet, session.meta, session.preserveOracleDateTime, session.timestampZone);
+        session.pendingRow = readRow(session.resultSet, session.meta, session.preserveOracleDateTime, session.timestampZone, session.bitStringColumns, session.fullPrecisionIntegers);
         return queryPageResult(session, rows, false, true);
     }
 
@@ -1327,7 +1568,7 @@ public final class ChironHorizonJdbcPlugin {
     }
 
     private static boolean closeQuerySession(String sessionId) {
-        QuerySession session = QUERY_SESSIONS.remove(sessionId);
+        QuerySession session = connectionState().querySessions.remove(sessionId);
         if (session == null) {
             return false;
         }
@@ -1344,7 +1585,7 @@ public final class ChironHorizonJdbcPlugin {
     }
 
     private static void closeAllQuerySessions() {
-        List<String> sessionIds = new ArrayList<>(QUERY_SESSIONS.keySet());
+        List<String> sessionIds = new ArrayList<>(connectionState().querySessions.keySet());
         for (String sessionId : sessionIds) {
             closeQuerySession(sessionId);
         }
@@ -1354,11 +1595,13 @@ public final class ChironHorizonJdbcPlugin {
         ResultSet rs,
         ResultSetMetaData meta,
         boolean preserveOracleDateTime,
-        ZoneId timestampZone
+        ZoneId timestampZone,
+        boolean bitStringColumns,
+        boolean fullPrecisionIntegers
     ) throws SQLException {
         ArrayNode row = MAPPER.createArrayNode();
         for (int i = 1; i <= meta.getColumnCount(); i++) {
-            row.add(MAPPER.valueToTree(readValue(rs, meta, i, preserveOracleDateTime, timestampZone)));
+            row.add(MAPPER.valueToTree(readValue(rs, meta, i, preserveOracleDateTime, timestampZone, bitStringColumns, fullPrecisionIntegers)));
         }
         return row;
     }
@@ -2437,6 +2680,21 @@ public final class ChironHorizonJdbcPlugin {
             }
         } catch (SQLException | AbstractMethodError | UnsupportedOperationException ignored) {
         }
+        if (primaryColumnsBySequence.isEmpty() && isSybaseConnection(connection) && schemaPattern != null) {
+            try (ResultSet rs = meta.getPrimaryKeys(catalog, null, table)) {
+                while (rs != null && rs.next()) {
+                    String name = rs.getString("PK_NAME");
+                    if (name != null && !name.isBlank()) {
+                        primaryIndexNames.add(name);
+                    }
+                    String column = rs.getString("COLUMN_NAME");
+                    if (column != null && !column.isBlank()) {
+                        primaryColumnsBySequence.put((int) rs.getShort("KEY_SEQ"), column);
+                    }
+                }
+            } catch (SQLException | AbstractMethodError | UnsupportedOperationException ignored) {
+            }
+        }
 
         // Presto/Trino JDBC throws SQLFeatureNotSupportedException from getIndexInfo, and
         // drivers compiled before JDBC 4 surface unimplemented DatabaseMetaData methods as
@@ -2447,8 +2705,20 @@ public final class ChironHorizonJdbcPlugin {
             appendJdbcIndexes(indexes, primaryIndexNames, rs);
         } catch (SQLException | AbstractMethodError | UnsupportedOperationException ignored) {
         }
+        if (indexes.isEmpty() && isSybaseConnection(connection) && schemaPattern != null) {
+            try (ResultSet rs = meta.getIndexInfo(catalog, null, table, false, false)) {
+                appendJdbcIndexes(indexes, primaryIndexNames, rs);
+            } catch (SQLException | AbstractMethodError | UnsupportedOperationException ignored) {
+            }
+        }
         if (indexes.isEmpty() && catalog != null) {
             try (ResultSet rs = meta.getIndexInfo(null, schemaPattern, table, false, false)) {
+                appendJdbcIndexes(indexes, primaryIndexNames, rs);
+            } catch (SQLException | AbstractMethodError | UnsupportedOperationException ignored) {
+            }
+        }
+        if (indexes.isEmpty() && isSybaseConnection(connection) && schemaPattern != null && catalog != null) {
+            try (ResultSet rs = meta.getIndexInfo(null, null, table, false, false)) {
                 appendJdbcIndexes(indexes, primaryIndexNames, rs);
             } catch (SQLException | AbstractMethodError | UnsupportedOperationException ignored) {
             }
@@ -2551,10 +2821,19 @@ public final class ChironHorizonJdbcPlugin {
         String catalog = metadataCatalog(database, quirks);
         String schemaPattern = resolveSchemaPattern(meta, database, schema, quirks);
         JdbcMetadataIdentity identity = appendColumns(result, meta, catalog, schemaPattern, table);
+        if (result.isEmpty() && isSybaseConnection(connection) && schemaPattern != null) {
+            identity = appendColumns(result, meta, catalog, null, table);
+        }
         if (result.isEmpty() && catalog != null) {
             identity = appendColumns(result, meta, null, schemaPattern, table);
+            if (result.isEmpty() && isSybaseConnection(connection) && schemaPattern != null) {
+                identity = appendColumns(result, meta, null, null, table);
+            }
         }
         Set<String> primaryKeys = safePrimaryKeys(meta, identity.catalog(), identity.schema(), identity.table());
+        if (primaryKeys.isEmpty() && isSybaseConnection(connection) && identity.schema() != null) {
+            primaryKeys = safePrimaryKeys(meta, identity.catalog(), null, identity.table());
+        }
         markPrimaryKeyColumns(result, primaryKeys);
         if (quirks.useCatalogFallbackSql()) {
             mergeShowFullColumnMetadata(conn, result, schemaPattern, table);
@@ -3255,6 +3534,19 @@ public final class ChironHorizonJdbcPlugin {
         return urlMatchesPrefix(url, "jdbc:kingbase");
     }
 
+    private static boolean isSybaseConnection(JsonNode connection) {
+        String url = optionalText(connection, "connection_string");
+        if (urlMatchesPrefix(url, "jdbc:sybase:") || urlMatchesPrefix(url, "jdbc:jtds:sybase:")) {
+            return true;
+        }
+        String driverClass = optionalText(connection, "jdbc_driver_class");
+        if (driverClass == null) {
+            return false;
+        }
+        String normalized = driverClass.toLowerCase(Locale.ROOT);
+        return normalized.contains("sybdriver") || normalized.contains("sybase");
+    }
+
     private static String quoteAnsiIdentifier(String identifier) {
         return "\"" + identifier.replace("\"", "\"\"") + "\"";
     }
@@ -3404,22 +3696,23 @@ public final class ChironHorizonJdbcPlugin {
     }
 
     private static void closeSharedConnection() {
+        JdbcConnectionState state = connectionState();
         closeAllQuerySessions();
-        if (sharedConnection != null) {
-            if (manualTransactionActive) {
+        if (state.sharedConnection != null) {
+            if (state.manualTransactionActive) {
                 try {
-                    sharedConnection.rollback();
+                    state.sharedConnection.rollback();
                 } catch (SQLException ignored) {
                 }
             }
             try {
-                sharedConnection.close();
+                state.sharedConnection.close();
             } catch (SQLException ignored) {
             }
-            sharedConnection = null;
-            sharedConnectionKey = "";
+            state.sharedConnection = null;
+            state.sharedConnectionKey = "";
         }
-        manualTransactionActive = false;
+        state.manualTransactionActive = false;
     }
 
     private static String driverKey(JsonNode connection) {
@@ -3428,6 +3721,7 @@ public final class ChironHorizonJdbcPlugin {
 
     private static String connectionKey(JsonNode connection) {
         String connectionString = optionalText(connection, "connection_string");
+        if (isPostgresJdbcUrl(connectionString)) connectionString = jdbcUrl(connection);
         String jdbcxSecurityKey = isJdbcxUrl(connectionString)
             ? "|jdbcxHighPrivilegeExtensions=" + jdbcxHighPrivilegeExtensionsEnabled(connection)
             : "";
@@ -3475,7 +3769,51 @@ public final class ChironHorizonJdbcPlugin {
 
     static String jdbcUrl(JsonNode connection) {
         String url = appendJdbcUrlParams(optionalText(connection, "connection_string"), optionalText(connection, "url_params"));
+        url = postgresDatabaseUrl(url, postgresDatabase(connection));
         return jdbcUrlWithPasswordKey(url, optionalText(connection, "password"));
+    }
+
+    private static boolean isPostgresJdbcUrl(String url) {
+        return url != null && url.startsWith("jdbc:postgresql:");
+    }
+
+    private static String postgresDatabase(JsonNode node) {
+        String database = node.path("database").asText(null);
+        return database == null || database.isBlank() ? null : database;
+    }
+
+    private static String postgresDatabaseUrl(String url, String database) {
+        if (!isPostgresJdbcUrl(url) || database == null) return url;
+        String prefix = "jdbc:postgresql:";
+        int queryStart = url.indexOf('?');
+        String location = url.substring(prefix.length(), queryStart < 0 ? url.length() : queryStart);
+        String authority = "";
+        String originalDatabase = location;
+        if (location.equals("//") || location.equals("///")) {
+            originalDatabase = "";
+        } else if (location.startsWith("//")) {
+            int slash = location.indexOf('/', 2);
+            if (slash < 0 || location.indexOf('/', slash + 1) >= 0) {
+                throw new IllegalArgumentException("Invalid PostgreSQL JDBC URL database path");
+            }
+            authority = location.substring(0, slash + 1);
+            originalDatabase = location.substring(slash + 1);
+        } else if (location.startsWith("/")) {
+            throw new IllegalArgumentException("Invalid PostgreSQL JDBC URL database path");
+        }
+        try {
+            URLDecoder.decode(originalDatabase, StandardCharsets.UTF_8);
+        } catch (IllegalArgumentException error) {
+            throw new IllegalArgumentException("Invalid PostgreSQL JDBC URL database encoding");
+        }
+        String targeted = prefix + authority + URLEncoder.encode(database, StandardCharsets.UTF_8);
+        if (queryStart < 0) return targeted;
+        List<String> parameters = new ArrayList<>();
+        for (String part : url.substring(queryStart + 1).split("&", -1)) {
+            String name = partName(part);
+            if (!name.equals("PGDBNAME") && !name.equals("dbname")) parameters.add(part);
+        }
+        return targeted + "?" + String.join("&", parameters);
     }
 
     private record JdbcUrlCredentials(String url, String username, String password) {}
@@ -4057,6 +4395,9 @@ public final class ChironHorizonJdbcPlugin {
             String catalog = metadataCatalog(database, quirks);
             String schemaPattern = resolveSchemaPattern(meta, database, schema, quirks);
             foreignKeys = listGenericForeignKeys(meta, catalog, schemaPattern, table);
+            if (foreignKeys.isEmpty() && isSybaseConnection(connection) && schemaPattern != null) {
+                foreignKeys = listGenericForeignKeys(meta, catalog, null, table);
+            }
         }
 
         String source = GenericJdbcDdlBuilder.buildTableDdl(
@@ -4258,7 +4599,7 @@ public final class ChironHorizonJdbcPlugin {
         int index,
         boolean preserveOracleDateTime
     ) throws SQLException {
-        return readValue(rs, meta, index, preserveOracleDateTime, null);
+        return readValue(rs, meta, index, preserveOracleDateTime, null, false);
     }
 
     private static Object readValue(
@@ -4266,9 +4607,27 @@ public final class ChironHorizonJdbcPlugin {
         ResultSetMetaData meta,
         int index,
         boolean preserveOracleDateTime,
-        ZoneId timestampZone
+        ZoneId timestampZone,
+        boolean bitStringColumns
+    ) throws SQLException {
+        return readValue(rs, meta, index, preserveOracleDateTime, timestampZone, bitStringColumns, false);
+    }
+
+    private static Object readValue(
+        ResultSet rs,
+        ResultSetMetaData meta,
+        int index,
+        boolean preserveOracleDateTime,
+        ZoneId timestampZone,
+        boolean bitStringColumns,
+        boolean fullPrecisionIntegers
     ) throws SQLException {
         int columnType = meta.getColumnType(index);
+
+        if (fullPrecisionIntegers && (columnType == Types.TINYINT || columnType == Types.SMALLINT
+            || columnType == Types.INTEGER || columnType == Types.BIGINT)) {
+            return rs.getBigDecimal(index);
+        }
 
         if (columnType == Types.BOOLEAN) {
             boolean boolValue = rs.getBoolean(index);
@@ -4293,6 +4652,13 @@ public final class ChironHorizonJdbcPlugin {
         if (isPhoenixEncodedBinaryColumn(meta, index, columnType)) {
             byte[] bytes = rs.getBytes(index);
             return bytes == null ? null : binaryToHex(bytes);
+        }
+
+        if (bitStringColumns && isBitStringColumn(meta, index, columnType)) {
+            Object bitValue = readBitStringColumnValue(rs, meta, index);
+            if (bitValue != BIT_COLUMN_UNSUPPORTED) {
+                return bitValue;
+            }
         }
 
         Object value = rs.getObject(index);
@@ -4452,6 +4818,116 @@ public final class ChironHorizonJdbcPlugin {
 
     private static String quotePhoenixIdentifier(String identifier) {
         return "\"" + identifier.replace("\"", "\"\"") + "\"";
+    }
+
+    /**
+     * readBitStringColumnValue 的哨兵：驱动读不出位串（例如 mssql-jdbc 不允许把 BIT 读成 byte[]），
+     * 调用方据此回落到原来的取值路径。SQL NULL 用 null 表示，两者必须分开。
+     */
+    private static final Object BIT_COLUMN_UNSUPPORTED = new Object();
+
+    private static boolean isBitStringColumn(ResultSetMetaData meta, int index, int columnType) {
+        String typeName = columnTypeName(meta, index);
+        String normalized = typeName.trim().toLowerCase(Locale.ROOT);
+        if (normalized.equals("bool") || normalized.equals("boolean")) {
+            // 金仓/PostgreSQL 的布尔列走 Types.BIT 上报，它们继续保持布尔值。
+            return false;
+        }
+        if (normalized.equals("bit") || normalized.equals("varbit") || normalized.startsWith("bit ")
+            || normalized.startsWith("bit(") || normalized.startsWith("bit varying")) {
+            return true;
+        }
+        return columnType == Types.BIT;
+    }
+
+    private static String columnTypeName(ResultSetMetaData meta, int index) {
+        try {
+            String typeName = meta.getColumnTypeName(index);
+            return typeName == null ? "" : typeName;
+        } catch (SQLException | RuntimeException error) {
+            return "";
+        }
+    }
+
+    private static Object readBitStringColumnValue(ResultSet rs, ResultSetMetaData meta, int index) throws SQLException {
+        byte[] payload;
+        try {
+            payload = rs.getBytes(index);
+        } catch (SQLException | AbstractMethodError | UnsupportedOperationException error) {
+            return BIT_COLUMN_UNSUPPORTED;
+        }
+        if (payload == null) {
+            // wasNull() 区分 SQL NULL 与「驱动不支持按字节读取」。
+            return rs.wasNull() ? null : BIT_COLUMN_UNSUPPORTED;
+        }
+        int precision = bitColumnPrecision(meta, index);
+        if (payload.length == 1 && precision <= 1 && (payload[0] == 't' || payload[0] == 'f')) {
+            // GaussDB/金仓的布尔位串按 't'/'f' 返回，保持布尔语义；位宽大于 1 的列是位字段而不是布尔。
+            return payload[0] == 't';
+        }
+        if (payload.length == 1 && precision == 1 && payload[0] != 0x00 && payload[0] != 0x01
+            && payload[0] != '0' && payload[0] != '1') {
+            // Connector/J 默认把 tinyint(1) 上报成 Types.BIT 且位宽为 1，载荷超出 0/1 说明是数值列：
+            // 截成单个比特会静默丢数据，按有符号字节十进制展示（`'0'`/`'1'` 文本是驱动的位串形式，除外）。
+            return payload[0];
+        }
+        String bitString = bitStringFromPayload(payload, precision);
+        // 位宽不可信时 bitStringFromPayload 返回 null（不是 SQL NULL），交给通用分支保持 `0x..` 展示。
+        return bitString == null ? BIT_COLUMN_UNSUPPORTED : bitString;
+    }
+
+    private static int bitColumnPrecision(ResultSetMetaData meta, int index) {
+        try {
+            return meta.getPrecision(index);
+        } catch (SQLException | RuntimeException error) {
+            return 0;
+        }
+    }
+
+    /**
+     * 把 BIT 列的字节载荷还原成位串：
+     *
+     * - `0x30`/`0x31`（`'0'`/`'1'` 文本）是 PG 家族驱动的文本形式，位串长度等于声明位宽；
+     * - 其余载荷是裸位字段（MySQL 的 `bit(n)`、驱动不返回文本的 PG 列），按声明位宽展开；
+     * - 声明位宽超出载荷容量时返回 null，交给调用方保持原有的 `0x..` 展示。
+     */
+    private static String bitStringFromPayload(byte[] payload, int precision) {
+        if (payload.length == 0) {
+            return "";
+        }
+        if (isAsciiBitStringPayload(payload) && (precision <= 0 || payload.length == precision)) {
+            return new String(payload, StandardCharsets.US_ASCII);
+        }
+        int width = precision > 0 ? precision : significantBitWidth(payload);
+        if (width > payload.length * 8) {
+            return null;
+        }
+        StringBuilder bits = new StringBuilder(width);
+        for (int bit = width - 1; bit >= 0; bit--) {
+            int value = payload[payload.length - 1 - bit / 8];
+            bits.append(((value >> bit % 8) & 1) == 1 ? '1' : '0');
+        }
+        return bits.toString();
+    }
+
+    private static boolean isAsciiBitStringPayload(byte[] payload) {
+        for (byte value : payload) {
+            if (value != '0' && value != '1') {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    /** 没有声明位宽时，用能表达该数值的最短位宽（`0x00` -> 1 位，`0xaa` -> 8 位）。 */
+    private static int significantBitWidth(byte[] payload) {
+        for (int index = 0; index < payload.length; index++) {
+            int value = payload[index] & 0xff;
+            if (value != 0) {
+                return (payload.length - index - 1) * 8 + (32 - Integer.numberOfLeadingZeros(value));
+            }
+        }
+        return 1;
     }
 
     private static String binaryToHex(byte[] bytes) {

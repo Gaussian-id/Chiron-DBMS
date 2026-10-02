@@ -28,7 +28,7 @@ describe("uiTuning", () => {
     fs.readTextFile.mockReset();
   });
 
-  it("uses the defaults when ~/.chiron-horizon/ui-tuning.json is absent", async () => {
+  it("uses the defaults when ~/.chiron_horizon/ui-tuning.json is absent", async () => {
     fs.exists.mockResolvedValue(false);
     const { uiTuning, DEFAULT_UI_TUNING } = await loadFresh();
     expect(uiTuning.value.panelResizeTrackEveryFrames).toBe(DEFAULT_UI_TUNING.panelResizeTrackEveryFrames);
@@ -53,8 +53,8 @@ describe("uiTuning", () => {
     fs.readTextFile.mockResolvedValue(JSON.stringify({ panelResizeTrackEveryFrames: 2 }));
     const { uiTuning } = await loadFresh();
     expect(uiTuning.value.panelResizeTrackEveryFrames).toBe(2);
-    expect(fs.exists).toHaveBeenCalledWith("/home/tester/.chiron-horizon/ui-tuning.json");
-    expect(fs.readTextFile).toHaveBeenCalledWith("/home/tester/.chiron-horizon/ui-tuning.json");
+    expect(fs.exists).toHaveBeenCalledWith("/home/tester/.chiron_horizon/ui-tuning.json");
+    expect(fs.readTextFile).toHaveBeenCalledWith("/home/tester/.chiron_horizon/ui-tuning.json");
   });
 
   it.each(["exists", "readTextFile"] as const)("keeps defaults when %s access is denied", async (command) => {

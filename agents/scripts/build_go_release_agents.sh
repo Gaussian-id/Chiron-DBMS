@@ -14,6 +14,7 @@ MODULES=(
   xugu:agents/drivers/xugu
   kingbase:agents/drivers/kingbase-go
   iotdb:agents/drivers/iotdb
+  nebula:agents/drivers/nebula-go
   neo4j:agents/drivers/neo4j-go
   vastbase:agents/drivers/vastbase-go
   rabbitmq:agents/drivers/rabbitmq

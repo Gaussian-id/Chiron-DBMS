@@ -3,7 +3,6 @@ use chiron_horizon_core::models::connection::DatabaseType;
 use chiron_horizon_core::query_result_export::{export_query_result_core, ExportStatus, QueryResultExportRequest};
 use chiron_horizon_core::sql::{SqlFileRequest, SqlFileStatus};
 use chiron_horizon_core::sql_file_import::execute_sql_file_content;
-use chiron_horizon_core::storage::Storage;
 use chiron_horizon_core::table_import::{
     build_import_insert_batches, import_table_file_core, parse_delimited_file_with_options, TableImportColumnMapping,
     TableImportMode, TableImportParseOptions, TableImportRequest, TableImportSourceFormat, TableImportStatus,
@@ -19,6 +18,8 @@ use tokio_util::sync::CancellationToken;
 
 fn live_sqlserver_config(id: &str, database: &str) -> chiron_horizon_core::models::connection::ConnectionConfig {
     chiron_horizon_core::models::connection::ConnectionConfig {
+        oracle_oci_nls_lang: None,
+        oracle_oci_tns_admin: None,
         docs_notes_path: None,
         id: id.to_string(),
         name: id.to_string(),
@@ -86,6 +87,7 @@ fn live_sqlserver_config(id: &str, database: &str) -> chiron_horizon_core::model
         is_production: false,
         production_databases: vec![],
         show_system_schemas: false,
+        sidebar_auto_load_all_tables: false,
         database_info: None,
     }
 }
@@ -97,7 +99,9 @@ async fn live_sqlserver_import_state(
 ) -> (AppState, String, std::path::PathBuf) {
     let dir = std::env::temp_dir().join(format!("chiron-horizon-live-sqlserver-import-{suffix}"));
     std::fs::create_dir_all(&dir).expect("create live import directory");
-    let storage = Storage::open(&dir.join("storage.db")).await.expect("open live import storage");
+    let storage = chiron_horizon_core::persistence::test_storage::open(&dir.join("storage.db"))
+        .await
+        .expect("open live import storage");
     let state = AppState::new(storage);
     let config = live_sqlserver_config(connection_id, database);
     state.configs.write().await.insert(connection_id.to_string(), config);
@@ -139,6 +143,8 @@ fn live_sqlserver_import_request(
         date_time_format: None,
         prepared_source: None,
         retain_source: false,
+        conflict_policy: None,
+        skip_duplicate_rows: false,
     }
 }
 
@@ -1124,6 +1130,7 @@ async fn live_sqlserver_table_structure_default_changes_drop_existing_constraint
         table_comment: None,
         original_table_comment: None,
         mysql_engine: None,
+        transwarp_create: None,
         partitioned: false,
         is_gaussdb_m_mode: false,
         table_collation: None,
@@ -1314,7 +1321,7 @@ async fn live_sqlserver_query_result_export_streams_cte_query_to_csv() {
 
     let dir = std::env::temp_dir().join(format!("chiron-horizon-live-sqlserver-export-{suffix}"));
     std::fs::create_dir_all(&dir).unwrap();
-    let storage = Storage::open(&dir.join("storage.db")).await.unwrap();
+    let storage = chiron_horizon_core::persistence::test_storage::open(&dir.join("storage.db")).await.unwrap();
     let state = AppState::new(storage);
     let connection_id = "live-sqlserver-export";
     let pool_key = format!("{connection_id}:{database}");
@@ -1357,8 +1364,11 @@ async fn live_sqlserver_query_result_export_streams_cte_query_to_csv() {
         execution_id: Some(format!("live-sqlserver-export-{suffix}")),
         date_time_format: None,
         csv_quote_mode: Default::default(),
+        null_literal: String::new(),
         export_table_name: None,
         export_column_types: None,
+        selected_columns: None,
+        export_column_extras: None,
         column_comments: None,
         auto_filter: None,
         identifier_quote: None,
@@ -1420,7 +1430,7 @@ async fn live_sqlserver_sql_file_import_executes_go_batches() {
     let procedure = format!("chiron_horizon_sql_file_proc_{suffix}");
     let dir = std::env::temp_dir().join(format!("chiron-horizon-live-sqlserver-file-{suffix}"));
     std::fs::create_dir_all(&dir).unwrap();
-    let storage = Storage::open(&dir.join("storage.db")).await.unwrap();
+    let storage = chiron_horizon_core::persistence::test_storage::open(&dir.join("storage.db")).await.unwrap();
     let state = AppState::new(storage);
     let connection_id = "live-sqlserver-file";
     let mut config = live_sqlserver_config(connection_id, &database);
@@ -1450,9 +1460,11 @@ async fn live_sqlserver_sql_file_import_executes_go_batches() {
          GO"
     );
     let request = SqlFileRequest {
+        txn_session_id: None,
         execution_id: format!("live-sqlserver-file-{suffix}"),
         connection_id: connection_id.to_string(),
         database: database.clone(),
+        schema: None,
         file_path: "fixture.sql".to_string(),
         continue_on_error: false,
         selected_tables: None,
@@ -1544,7 +1556,7 @@ async fn live_sqlserver_transfer_table_skips_rowversion_insert_column() {
 
     let dir = std::env::temp_dir().join(format!("chiron-horizon-live-sqlserver-rowversion-{suffix}"));
     std::fs::create_dir_all(&dir).unwrap();
-    let storage = Storage::open(&dir.join("storage.db")).await.unwrap();
+    let storage = chiron_horizon_core::persistence::test_storage::open(&dir.join("storage.db")).await.unwrap();
     let state = Arc::new(AppState::new(storage));
     let config = live_sqlserver_config("live-sqlserver-rowversion", &database);
     state.configs.write().await.insert(config.id.clone(), config);
@@ -1768,7 +1780,7 @@ async fn live_sqlserver_cross_database_metadata_and_query() {
 
     let dir = std::env::temp_dir().join(format!("chiron-horizon-live-sqlserver-cross-database-{suffix}"));
     std::fs::create_dir_all(&dir).unwrap();
-    let storage = Storage::open(&dir.join("storage.db")).await.unwrap();
+    let storage = chiron_horizon_core::persistence::test_storage::open(&dir.join("storage.db")).await.unwrap();
     let state = AppState::new(storage);
     let connection_id = "live-sqlserver-cross-database";
     let mut config = live_sqlserver_config(connection_id, &default_database);

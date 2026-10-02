@@ -22,7 +22,8 @@ async fn ssh_sftp_package_installs_and_serves_mcp_tools() {
 
     // 1. Install the .chiron-horizonp exactly like the Chiron Horizon desktop app would.
     let installer = PluginPackageInstaller::new(plugins_root.clone(), "0.6.0").expect("installer");
-    let result = installer.install_file(&package, PluginInstallPolicy::LocalDevelopment).expect("install .chiron-horizonp");
+    let result =
+        installer.install_file(&package, PluginInstallPolicy::LocalDevelopment).expect("install .chiron-horizonp");
     let response = result.response();
     assert_eq!(response.plugin.manifest.id, "chiron.horizon.ssh-sftp");
     assert!(!response.plugin.manifest.version.is_empty());
@@ -34,8 +35,10 @@ async fn ssh_sftp_package_installs_and_serves_mcp_tools() {
     drop(storage);
     let backend = LocalBackend::open_with_app_version(&database_path, "0.6.0").await.unwrap();
     let installed = backend.state().plugins.list_installed().unwrap();
-    let plugin =
-        installed.iter().find(|plugin| plugin.manifest.id == "chiron.horizon.ssh-sftp").expect("installed plugin listed");
+    let plugin = installed
+        .iter()
+        .find(|plugin| plugin.manifest.id == "chiron.horizon.ssh-sftp")
+        .expect("installed plugin listed");
     assert!(plugin.compatibility.compatible, "plugin incompatible: {:?}", plugin.compatibility.errors);
 
     // 3. MCP bridge: tool discovery over the real sidecar process.

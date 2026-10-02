@@ -19,18 +19,21 @@ const compatibility = new Set([
   "packages/mcp-server/bin/legacy-environment.js",
   "packages/plugin-cli/bin/legacy-environment.js",
   "crates/chiron-horizon-core/src/legacy.rs",
+  "crates/chiron-horizon-platform/src/legacy.rs",
   "src-tauri/src/data_dir.rs",
   "README.md",
   "AGENTS.md",
   "docs/development/white-label.md",
+  "docs/development/upstream-0.6.31.md",
   "scripts/audit-branding.mjs",
   "scripts/stage-desktop-release.mjs",
+  "scripts/release.test.mjs",
   "agents/scripts/verify_release_assets.py",
 ]);
 const failures = [];
 let checked = 0;
 for (const file of files) {
-  if (!existsSync(file) || excluded.test(file) || /(?:LICENSE|NOTICE)/i.test(file) || compatibility.has(file) || file.startsWith("apps/desktop/src/lib/compat/")) continue;
+  if (!existsSync(file) || excluded.test(file) || /(?:^|\/)(?:[^/]*-)?(?:LICENSE|NOTICE)(?:[._-]|$)/i.test(file) || compatibility.has(file) || file.startsWith("apps/desktop/src/lib/compat/")) continue;
   const bytes = readFileSync(file);
   if (bytes.includes(0) || file.endsWith("go.sum")) continue;
   const text = bytes.toString("utf8");

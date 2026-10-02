@@ -7,6 +7,7 @@ services:
       - "4224:4224"
     environment:
       - CHIRON_HORIZON_PASSWORD=changeme
+      - CHIRON_HORIZON_BACKUP_ROOT=/app/backups
       # Native Streamable HTTP MCP is served by this same Web listener at /mcp.
       # Set the host authority clients use (including its externally mapped port).
       # - CHIRON_HORIZON_WEB_MCP_TOKEN=replace-with-a-long-random-secret
@@ -15,9 +16,20 @@ services:
       # - CHIRON_HORIZON_WEB_MCP_ALLOWED_ORIGINS=https://mcp-client.example.com
       # Uncomment when publishing Chiron Horizon under a reverse-proxy subpath, e.g. https://example.com/chiron-horizon/
       # - CHIRON_HORIZON_PUBLIC_BASE_PATH=/chiron-horizon
+      # Optional production override. The default key is /app/data/.chiron-horizon/secret.key.
+      # - CHIRON_HORIZON_SECRET_KEY_FILE=/run/secrets/chiron_horizon_secret_key
+    # secrets:
+    #   - chiron_horizon_secret_key
     volumes:
       - chiron-horizon-data:/app/data
+      - chiron-horizon-backups:/app/backups
+    stop_grace_period: 90s
     restart: unless-stopped
 
 volumes:
   chiron-horizon-data:
+  chiron-horizon-backups:
+
+# secrets:
+#   chiron_horizon_secret_key:
+#     file: ./chiron_horizon_secret_key

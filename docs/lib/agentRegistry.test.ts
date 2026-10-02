@@ -13,8 +13,8 @@ test("offline download catalog includes the JDBC plugin ZIP", () => {
 
   assert.deepEqual(catalog.jdbcPlugin, {
     label: "Chiron Horizon JDBC Plugin",
-    filename: "chiron-horizon-jdbc-plugin-0.1.1.zip",
-    url: "https://github.com/Gaussian-id/Chiron-Horizon/releases/download/v0.1.1/chiron-horizon-jdbc-plugin-0.1.1.zip",
+    filename: "chiron-horizon-jdbc-plugin-0.1.3.zip",
+    url: "https://github.com/Gaussian-id/Chiron-DBMS/releases/download/v0.1.3/chiron-horizon-jdbc-plugin-0.1.3.zip",
   });
 });
 
@@ -115,8 +115,8 @@ test("DuckDB native tar.zst packages appear in the native catalog", () => {
 test("RabbitMQ native tar.zst packages appear in the native catalog", () => {
   const entries = buildNativeAgentEntries([
     {
-      name: "chiron-horizon-agent-rabbitmq-0.1.1-windows-x64.tar.zst",
-      browser_download_url: "https://example.com/chiron-horizon-agent-rabbitmq-0.1.1-windows-x64.tar.zst",
+      name: "chiron-horizon-agent-rabbitmq-0.1.3-windows-x64.tar.zst",
+      browser_download_url: "https://example.com/chiron-horizon-agent-rabbitmq-0.1.3-windows-x64.tar.zst",
       size: 4096,
     },
   ]);
@@ -127,7 +127,7 @@ test("RabbitMQ native tar.zst packages appear in the native catalog", () => {
       {
         key: "rabbitmq",
         platformKey: "windows-x64",
-        filename: "chiron-horizon-agent-rabbitmq-0.1.1-windows-x64.tar.zst",
+        filename: "chiron-horizon-agent-rabbitmq-0.1.3-windows-x64.tar.zst",
       },
     ],
   );
@@ -135,7 +135,7 @@ test("RabbitMQ native tar.zst packages appear in the native catalog", () => {
 });
 
 test("all current native-only agent packages appear in the native catalog", () => {
-  const nativeKeys = ["cassandra", "duckdb", "hive", "iotdb", "kingbase", "neo4j", "oracle", "rabbitmq", "rocketmq", "tdengine", "vastbase", "xugu", "zookeeper"];
+  const nativeKeys = ["cassandra", "duckdb", "hive", "iotdb", "kingbase", "neo4j", "oracle", "oracle-oci", "rabbitmq", "rocketmq", "tdengine", "vastbase", "xugu", "zookeeper"];
   const entries = buildNativeAgentEntries(
     nativeKeys.map((key) => ({
       name: `chiron-horizon-agent-${key}-${driverVersions[key as keyof typeof driverVersions]}-macos-aarch64.tar.zst`,
@@ -149,4 +149,7 @@ test("all current native-only agent packages appear in the native catalog", () =
   assert.equal(entries.find(({ key }) => key === "hive")?.label, "Apache Hive");
   assert.equal(entries.find(({ key }) => key === "rocketmq")?.label, "Apache RocketMQ");
   assert.equal(entries.find(({ key }) => key === "zookeeper")?.label, "Apache ZooKeeper");
+  assert.equal(entries.find(({ key }) => key === "oracle")?.label, "Oracle");
+  // The OCI (thick driver) agent is a separate package from the thin one.
+  assert.equal(entries.find(({ key }) => key === "oracle-oci")?.label, "Oracle (OCI)");
 });

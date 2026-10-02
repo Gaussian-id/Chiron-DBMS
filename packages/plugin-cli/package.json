@@ -9,11 +9,11 @@
     "plugin",
     "plugin-development"
   ],
-  "homepage": "https://github.com/Gaussian-id/Chiron-Horizon/tree/main/plugins",
+  "homepage": "https://github.com/Gaussian-id/Chiron-DBMS/tree/main/plugins",
   "license": "Apache-2.0",
   "repository": {
     "type": "git",
-    "url": "https://github.com/Gaussian-id/Chiron-Horizon",
+    "url": "https://github.com/Gaussian-id/Chiron-DBMS",
     "directory": "packages/plugin-cli"
   },
   "bin": {

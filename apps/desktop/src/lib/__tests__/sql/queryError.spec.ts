@@ -11,7 +11,7 @@ describe("isConnectionTimeoutErrorMessage", () => {
   it("detects structured connect-stage timeouts", () => {
     const timeoutError = {
       version: 1,
-      code: "Chiron Horizon-JDBC-2001",
+      code: "CHIRON-HORIZON-JDBC-2001",
       messageKey: "backendErrors.jdbc.operationTimedOut",
       messageParams: { stage: "connect" },
       source: "jdbcAgent",
@@ -29,7 +29,7 @@ describe("isConnectionTimeoutErrorMessage", () => {
     expect(
       isConnectionTimeoutErrorMessage("Database operation timed out (stage: execute).", {
         version: 1,
-        code: "Chiron Horizon-JDBC-2002",
+        code: "CHIRON-HORIZON-JDBC-2002",
         messageKey: "backendErrors.jdbc.operationTimedOut",
         messageParams: { stage: "execute" },
         source: "jdbcAgent",
@@ -80,7 +80,7 @@ describe("isQueryTimeoutErrorMessage", () => {
   it("detects structured query operation timeouts before localized text matching", () => {
     const timeoutError = {
       version: 1,
-      code: "Chiron Horizon-JDBC-2002",
+      code: "CHIRON-HORIZON-JDBC-2002",
       messageKey: "backendErrors.jdbc.operationTimedOut",
       messageParams: { stage: "execute" },
       source: "jdbcAgent",
@@ -94,7 +94,7 @@ describe("isQueryTimeoutErrorMessage", () => {
   it("does not offer query timeout settings for structured infrastructure timeouts", () => {
     const timeoutError = {
       version: 1,
-      code: "Chiron Horizon-JDBC-2001",
+      code: "CHIRON-HORIZON-JDBC-2001",
       messageKey: "backendErrors.jdbc.operationTimedOut",
       messageParams: { stage: "connect" },
       source: "jdbcAgent",

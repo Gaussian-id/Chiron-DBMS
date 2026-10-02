@@ -4095,3 +4095,328 @@ func (r *oracleManualTxRows) Next(dest []driver.Value) error {
 	r.next++
 	return nil
 }
+
+func TestOracleOpaqueObjectTypeDetection(t *testing.T) {
+	cases := []struct {
+		name   string
+		column oracleColumnMeta
+		want   bool
+	}{
+		{"object type", oracleColumnMeta{Name: "G", DataType: "GEOM_T", DataTypeOwner: "CHIRON_HORIZON_TEST"}, true},
+		{"collection type", oracleColumnMeta{Name: "V", DataType: "Chiron Horizon9180_VARRAY", DataTypeOwner: "CHIRON_HORIZON_TEST"}, true},
+		{"anydata", oracleColumnMeta{Name: "V", DataType: "ANYDATA", DataTypeOwner: "SYS"}, true},
+		{"number", oracleColumnMeta{Name: "ID", DataType: "NUMBER"}, false},
+		{"varchar2", oracleColumnMeta{Name: "NOTE", DataType: "VARCHAR2"}, false},
+		{"clob", oracleColumnMeta{Name: "PAYLOAD", DataType: "CLOB"}, false},
+		{"xmltype", oracleColumnMeta{Name: "DOC", DataType: "XMLTYPE", DataTypeOwner: "SYS"}, false},
+		{"sdo geometry", oracleColumnMeta{Name: "SHAPE", DataType: "SDO_GEOMETRY", DataTypeOwner: "MDSYS"}, false},
+		{"sde geometry", oracleColumnMeta{Name: "SHAPE", DataType: "ST_GEOMETRY", DataTypeOwner: "SDE"}, false},
+	}
+	for _, testCase := range cases {
+		if got := isOracleOpaqueObjectType(testCase.column); got != testCase.want {
+			t.Fatalf("%s: isOracleOpaqueObjectType() = %v, want %v", testCase.name, got, testCase.want)
+		}
+	}
+}
+
+func TestRewriteOracleOpaqueObjectSelectStar(t *testing.T) {
+	sqlText, err := rewriteOracleSelectSQL(
+		`SELECT * FROM TEST_UDT`,
+		func(schema, table string) ([]oracleColumnMeta, error) {
+			return []oracleColumnMeta{
+				{Name: "ID", DataType: "NUMBER"},
+				{Name: "G", DataType: "GEOM_T", DataTypeOwner: "CHIRON_HORIZON_TEST"},
+				{Name: "NOTE", DataType: "VARCHAR2"},
+			}, nil
+		},
+		false,
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+	want := `SELECT "ID", CASE WHEN "G" IS NULL THEN NULL ELSE '<GEOM_T>' END AS "G", "NOTE" FROM TEST_UDT`
+	if sqlText != want {
+		t.Fatalf("rewriteOracleSelectSQL() = %s, want %s", sqlText, want)
+	}
+}
+
+func TestRewriteOracleOpaqueObjectExplicitColumn(t *testing.T) {
+	sqlText, err := rewriteOracleSelectSQL(
+		`SELECT t.G AS shape, t.ID FROM TEST_UDT t`,
+		func(schema, table string) ([]oracleColumnMeta, error) {
+			return []oracleColumnMeta{
+				{Name: "ID", DataType: "NUMBER"},
+				{Name: "G", DataType: "GEOM_T", DataTypeOwner: "CHIRON_HORIZON_TEST"},
+			}, nil
+		},
+		false,
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+	want := `SELECT CASE WHEN t."G" IS NULL THEN NULL ELSE '<GEOM_T>' END AS shape, t.ID FROM TEST_UDT t`
+	if sqlText != want {
+		t.Fatalf("rewriteOracleSelectSQL() = %s, want %s", sqlText, want)
+	}
+}
+
+func TestRewriteOracleKeepsBuiltinColumnsUntouched(t *testing.T) {
+	input := `SELECT ID, NOTE FROM TEST_PLAIN`
+	sqlText, err := rewriteOracleSelectSQL(
+		input,
+		func(schema, table string) ([]oracleColumnMeta, error) {
+			return []oracleColumnMeta{
+				{Name: "ID", DataType: "NUMBER"},
+				{Name: "NOTE", DataType: "VARCHAR2"},
+				{Name: "PAYLOAD", DataType: "CLOB"},
+			}, nil
+		},
+		false,
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if sqlText != input {
+		t.Fatalf("rewriteOracleSelectSQL() = %s, want %s", sqlText, input)
+	}
+}
+
+func TestOracleSQLLocksRowsDetection(t *testing.T) {
+	cases := []struct {
+		name string
+		sql  string
+		want bool
+	}{
+		{"for update", "SELECT * FROM T FOR UPDATE", true},
+		{"for update skip locked", "SELECT * FROM T FOR UPDATE SKIP LOCKED", true},
+		{"for update of column", "SELECT ID FROM T FOR UPDATE OF ID NOWAIT", true},
+		{"lowercase", "select id from t for update", true},
+		{"plain select", "SELECT * FROM T", false},
+		{"string literal", "SELECT 'FOR UPDATE' FROM T", false},
+		{"comment", "SELECT * FROM T -- FOR UPDATE", false},
+		{"subquery for update", "SELECT * FROM (SELECT ID FROM T FOR UPDATE) X", false},
+		{"column named update", "SELECT FOR_UPDATE FROM T", false},
+	}
+	for _, testCase := range cases {
+		if got := oracleSQLLocksRows(testCase.sql); got != testCase.want {
+			t.Fatalf("%s: oracleSQLLocksRows(%q) = %v, want %v", testCase.name, testCase.sql, got, testCase.want)
+		}
+	}
+}
+
+func TestRewriteOracleOpaqueObjectInDeferredProjection(t *testing.T) {
+	sqlText, err := rewriteOracleSelectSQL(
+		`SELECT * FROM TEST_UDT_LOB`,
+		func(schema, table string) ([]oracleColumnMeta, error) {
+			return []oracleColumnMeta{
+				{Name: "ID", DataType: "NUMBER"},
+				{Name: "DOC", DataType: "CLOB"},
+				{Name: "G", DataType: "GEOM_T", DataTypeOwner: "CHIRON_HORIZON_TEST"},
+			}, nil
+		},
+		true,
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(sqlText, `CASE WHEN "G" IS NULL THEN NULL ELSE '<GEOM_T>' END AS "G"`) {
+		t.Fatalf("deferred rewrite did not substitute the opaque column: %s", sqlText)
+	}
+	if !strings.Contains(sqlText, `"DOC"`) {
+		t.Fatalf("deferred rewrite dropped the LOB column: %s", sqlText)
+	}
+}
+
+func TestParseSingleOracleTableRefReadsDatabaseLinkAndAlias(t *testing.T) {
+	cases := []struct {
+		name string
+		from string
+		want oracleTableRef
+		ok   bool
+	}{
+		{
+			name: "unqualified link with alias",
+			from: `T_UDT@CHIRON_HORIZON_LOOP t`,
+			want: oracleTableRef{Table: "T_UDT", Alias: "T", AliasText: "t"},
+			ok:   true,
+		},
+		{
+			name: "schema qualified link with alias",
+			from: `CHIRON_HORIZON_TEST.T_UDT@CHIRON_HORIZON_LOOP t`,
+			want: oracleTableRef{Schema: "CHIRON_HORIZON_TEST", Table: "T_UDT", Alias: "T", AliasText: "t"},
+			ok:   true,
+		},
+		{
+			name: "remote link marker",
+			from: `CHIRON_HORIZON_TEST.T_UDT@!CHIRON_HORIZON_LOOP x`,
+			want: oracleTableRef{Schema: "CHIRON_HORIZON_TEST", Table: "T_UDT", Alias: "X", AliasText: "x"},
+			ok:   true,
+		},
+		{
+			name: "quoted link followed by a clause",
+			from: `CHIRON_HORIZON_TEST.T_UDT@"Loop Link" WHERE ID > 0`,
+			want: oracleTableRef{Schema: "CHIRON_HORIZON_TEST", Table: "T_UDT"},
+			ok:   true,
+		},
+		{
+			name: "link without alias",
+			from: `CHIRON_HORIZON_TEST.T_UDT@CHIRON_HORIZON_LOOP`,
+			want: oracleTableRef{Schema: "CHIRON_HORIZON_TEST", Table: "T_UDT"},
+			ok:   true,
+		},
+		{
+			name: "local table is unchanged",
+			from: `CHIRON_HORIZON_TEST.T_UDT t`,
+			want: oracleTableRef{Schema: "CHIRON_HORIZON_TEST", Table: "T_UDT", Alias: "T", AliasText: "t"},
+			ok:   true,
+		},
+		{
+			name: "link followed by another table is not a single reference",
+			from: `CHIRON_HORIZON_TEST.T_UDT@CHIRON_HORIZON_LOOP, CHIRON_HORIZON_TEST.OTHER`,
+			ok:   false,
+		},
+		{
+			name: "link followed by a join is not a single reference",
+			from: `CHIRON_HORIZON_TEST.T_UDT@CHIRON_HORIZON_LOOP JOIN CHIRON_HORIZON_TEST.OTHER ON 1 = 1`,
+			ok:   false,
+		},
+		{
+			name: "connect string link keeps the previous shape",
+			from: `CHIRON_HORIZON_TEST.T_UDT@'XE'`,
+			want: oracleTableRef{Schema: "CHIRON_HORIZON_TEST", Table: "T_UDT"},
+			ok:   true,
+		},
+	}
+	for _, testCase := range cases {
+		got, ok := parseSingleOracleTableRef(testCase.from)
+		if ok != testCase.ok {
+			t.Fatalf("%s: parseSingleOracleTableRef(%q) ok = %v, want %v", testCase.name, testCase.from, ok, testCase.ok)
+		}
+		if !testCase.ok {
+			continue
+		}
+		if got != testCase.want {
+			t.Fatalf("%s: parseSingleOracleTableRef(%q) = %+v, want %+v", testCase.name, testCase.from, got, testCase.want)
+		}
+	}
+}
+
+func TestRewriteOracleOpaqueObjectProjectionKeepsLinkedAlias(t *testing.T) {
+	var gotSchema, gotTable string
+	sqlText, err := rewriteOracleSelectSQL(
+		`SELECT t.*, ROWIDTOCHAR(t.ROWID) AS "__CHIRON_HORIZON_PK_0" FROM CHIRON_HORIZON_TEST.T_UDT@CHIRON_HORIZON_LOOP t`,
+		func(schema, table string) ([]oracleColumnMeta, error) {
+			gotSchema, gotTable = schema, table
+			return []oracleColumnMeta{
+				{Name: "ID", DataType: "NUMBER"},
+				{Name: "G", DataType: "GEOM_T", DataTypeOwner: "CHIRON_HORIZON_TEST"},
+			}, nil
+		},
+		false,
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if gotSchema != "CHIRON_HORIZON_TEST" || gotTable != "T_UDT" {
+		t.Fatalf("column metadata loaded for (%q, %q), want (CHIRON_HORIZON_TEST, T_UDT)", gotSchema, gotTable)
+	}
+	want := `SELECT t."ID", CASE WHEN t."G" IS NULL THEN NULL ELSE '<GEOM_T>' END AS "G", ROWIDTOCHAR(t.ROWID) AS "__CHIRON_HORIZON_PK_0" FROM CHIRON_HORIZON_TEST.T_UDT@CHIRON_HORIZON_LOOP t`
+	if sqlText != want {
+		t.Fatalf("rewriteOracleSelectSQL() = %s, want %s", sqlText, want)
+	}
+}
+
+func TestRewriteOracleOpaqueObjectExplicitColumnKeepsLinkedAlias(t *testing.T) {
+	sqlText, err := rewriteOracleSelectSQL(
+		`SELECT t.ID, t.G FROM T_UDT@CHIRON_HORIZON_LOOP t`,
+		func(schema, table string) ([]oracleColumnMeta, error) {
+			return []oracleColumnMeta{
+				{Name: "ID", DataType: "NUMBER"},
+				{Name: "G", DataType: "GEOM_T", DataTypeOwner: "CHIRON_HORIZON_TEST"},
+			}, nil
+		},
+		false,
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+	want := `SELECT t.ID, CASE WHEN t."G" IS NULL THEN NULL ELSE '<GEOM_T>' END AS "G" FROM T_UDT@CHIRON_HORIZON_LOOP t`
+	if sqlText != want {
+		t.Fatalf("rewriteOracleSelectSQL() = %s, want %s", sqlText, want)
+	}
+}
+
+// OCI 模式的连接串解析：oci8 前缀、TNS 别名与 thin 形式共用同一套规则。
+func TestParseOracleJDBCURLAcceptsOci8FormsAndTnsAliases(t *testing.T) {
+	cases := []struct {
+		name string
+		url  string
+		want jdbcURLInfo
+	}{
+		{
+			name: "service",
+			url:  "jdbc:oracle:oci8:@//db.example.com:1521/ORCLPDB1",
+			want: jdbcURLInfo{Kind: "service", Host: "db.example.com", Port: 1521, Database: "ORCLPDB1"},
+		},
+		{
+			name: "sid",
+			url:  "jdbc:oracle:oci8:@db.example.com:1521:ORCL",
+			want: jdbcURLInfo{Kind: "sid", Host: "db.example.com", Port: 1521, Database: "ORCL"},
+		},
+		{
+			name: "descriptor",
+			url:  "jdbc:oracle:oci8:@(DESCRIPTION=(ADDRESS=(PROTOCOL=TCP)(HOST=h)(PORT=1521))(CONNECT_DATA=(SERVICE_NAME=x)))",
+			want: jdbcURLInfo{Kind: "descriptor", Descriptor: "(DESCRIPTION=(ADDRESS=(PROTOCOL=TCP)(HOST=h)(PORT=1521))(CONNECT_DATA=(SERVICE_NAME=x)))"},
+		},
+		{
+			name: "tns alias",
+			url:  "jdbc:oracle:oci8:@ORCLPDB1",
+			want: jdbcURLInfo{Kind: "tns", Database: "ORCLPDB1"},
+		},
+		{
+			name: "tns alias with admin query",
+			url:  "jdbc:oracle:oci8:@ORCLPDB1?TNS_ADMIN=C:/wallets",
+			want: jdbcURLInfo{Kind: "tns", Database: "ORCLPDB1"},
+		},
+		{
+			name: "thin form still parses",
+			url:  "jdbc:oracle:thin:@//db.example.com:1521/ORCLPDB1",
+			want: jdbcURLInfo{Kind: "service", Host: "db.example.com", Port: 1521, Database: "ORCLPDB1"},
+		},
+	}
+	for _, tc := range cases {
+		if got := parseOracleJDBCURL(tc.url); got != tc.want {
+			t.Errorf("%s: parseOracleJDBCURL(%q) = %+v, want %+v", tc.name, tc.url, got, tc.want)
+		}
+	}
+}
+
+func TestParseOracleJDBCURLRejectsUnknownSchemes(t *testing.T) {
+	for _, url := range []string{
+		"jdbc:postgresql://db/app",
+		"jdbc:mysql://db:3306/app",
+		"",
+	} {
+		if got := parseOracleJDBCURL(url); got != (jdbcURLInfo{}) {
+			t.Errorf("parseOracleJDBCURL(%q) = %+v, want the zero value", url, got)
+		}
+	}
+}
+
+func TestOracleTnsAliasName(t *testing.T) {
+	cases := []struct{ in, want string }{
+		{"ORCLPDB1", "ORCLPDB1"},
+		{"ORCLPDB1?TNS_ADMIN=C:/wallets", "ORCLPDB1"},
+		{"ORCLPDB1 ", "ORCLPDB1"},
+		{"(DESCRIPTION=(ADDRESS=...))", ""},
+		{"//host:1521/svc", ""},
+		{"host:1521:orcl", ""},
+		{"host/svc", ""},
+		{"", ""},
+	}
+	for _, tc := range cases {
+		if got := oracleTnsAliasName(tc.in); got != tc.want {
+			t.Errorf("oracleTnsAliasName(%q) = %q, want %q", tc.in, got, tc.want)
+		}
+	}
+}

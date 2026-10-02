@@ -20,6 +20,7 @@ import { Input } from "@/components/ui/input";
 import { Download, Square, CheckSquare, Search, X, Loader2, Wrench } from "@lucide/vue";
 import { formatDataTransferDuration, useExportTracker } from "@/composables/useExportTracker";
 import { isQueryTimeoutErrorMessage } from "@/lib/sql/queryError";
+import type { SqlInsertDialect, SqlInsertMode } from "@/lib/export/sqlInsertMode";
 
 const { t } = useI18n();
 const { toast } = useToast();
@@ -64,6 +65,8 @@ const POSTGRES_ALL_SCHEMAS = "__CHIRON_HORIZON_ALL_SCHEMAS__";
 // Options
 const includeStructure = ref(true);
 const includeData = ref(true);
+const insertDialect = ref<SqlInsertDialect>("source");
+const insertMode = ref<SqlInsertMode>("batch");
 const includeObjects = ref(true);
 const includeCreateDatabase = ref(false);
 const dropTableIfExists = ref(false);
@@ -115,7 +118,7 @@ const exportElapsedText = computed(() => {
   return formatDataTransferDuration((exportFinishedAt.value ?? currentTime.value) - exportStartedAt.value);
 });
 
-const sqlConnections = computed(() => store.connections.filter((c) => !["redis", "mongodb", "elasticsearch", "easysearch", "meilisearch", "qdrant", "milvus", "weaviate", "chromadb", "etcd", "zookeeper", "consul", "mq", "nacos"].includes(c.db_type)));
+const sqlConnections = computed(() => store.connections.filter((c) => !["redis", "mongodb", "elasticsearch", "easysearch", "meilisearch", "solr", "qdrant", "milvus", "weaviate", "chromadb", "etcd", "zookeeper", "consul", "mq", "nacos", "salesforce"].includes(c.db_type)));
 
 const canExport = computed(() => {
   const hasContent = includeStructure.value || includeData.value || includeObjects.value;
@@ -396,6 +399,8 @@ async function startExport() {
           selectedTables: !isPostgresAllSchemas.value && (includeStructure.value || includeData.value) ? buildSelectedTablesPayload(tables.value, selectedTables.value) : undefined,
           includeStructure: includeStructure.value,
           includeData: includeData.value,
+          insertDialect: insertDialect.value,
+          insertMode: insertMode.value,
           includeObjects: includeObjects.value,
           includeCreateDatabase: includeCreateDatabase.value,
           dropTableIfExists: dropTableIfExists.value,
@@ -538,6 +543,8 @@ async function startAllDatabasesExport() {
               filePath,
               includeStructure: includeStructure.value,
               includeData: includeData.value,
+              insertDialect: insertDialect.value,
+              insertMode: insertMode.value,
               includeObjects: includeObjects.value,
               includeCreateDatabase: includeCreateDatabase.value,
               dropTableIfExists: dropTableIfExists.value,
@@ -659,6 +666,8 @@ function resetState() {
   databaseFilter.value = "";
   includeStructure.value = true;
   includeData.value = true;
+  insertDialect.value = "source";
+  insertMode.value = "batch";
   includeObjects.value = true;
   includeCreateDatabase.value = false;
   dropTableIfExists.value = false;
@@ -946,6 +955,30 @@ watch(
               <CheckSquare v-if="includeData" class="w-3.5 h-3.5 text-primary shrink-0" />
               <Square v-else class="w-3.5 h-3.5 text-muted-foreground/40 shrink-0" />
               {{ t("databaseExport.includeData") }}
+            </div>
+            <div class="space-y-1">
+              <button type="button" class="flex items-center gap-2 text-left text-xs" :class="includeData ? 'cursor-pointer' : 'cursor-not-allowed text-muted-foreground/50'" :disabled="!includeData" @click="insertDialect = insertDialect === 'standard' ? 'source' : 'standard'">
+                <CheckSquare v-if="includeData && insertDialect === 'standard'" class="w-3.5 h-3.5 text-primary shrink-0" />
+                <Square v-else class="w-3.5 h-3.5 text-muted-foreground/40 shrink-0" />
+                {{ t("databaseExport.standardSqlInsert") }}
+              </button>
+              <p class="pl-5 text-[11px] text-muted-foreground">
+                {{ t("databaseExport.standardSqlInsertDescription") }}
+              </p>
+            </div>
+            <div v-if="includeData" class="space-y-1">
+              <div class="text-xs font-medium">{{ t("grid.sqlInsertModeTitle") }}</div>
+              <label class="flex cursor-pointer items-center gap-2 text-xs">
+                <input v-model="insertMode" type="radio" value="batch" class="h-3.5 w-3.5" />
+                <span>{{ t("grid.sqlInsertModeBatch") }}</span>
+              </label>
+              <label class="flex cursor-pointer items-center gap-2 text-xs">
+                <input v-model="insertMode" type="radio" value="single" class="h-3.5 w-3.5" />
+                <span>{{ t("grid.sqlInsertModeSingle") }}</span>
+              </label>
+              <p class="pl-5 text-[11px] text-muted-foreground">
+                {{ insertMode === "single" ? t("grid.sqlInsertModeSingleDescription") : t("grid.sqlInsertModeBatchDescription") }}
+              </p>
             </div>
             <div class="flex items-center gap-2 cursor-pointer text-xs" @click="includeObjects = !includeObjects">
               <CheckSquare v-if="includeObjects" class="w-3.5 h-3.5 text-primary shrink-0" />

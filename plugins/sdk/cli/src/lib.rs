@@ -272,7 +272,10 @@ const SHARED_TEMPLATES: &[TemplateFile] = &[
 ];
 
 const FRONTEND_TEMPLATES: &[TemplateFile] = &[
-    TemplateFile { path: "chiron-horizon-plugin.toml", content: include_str!("../templates/frontend/chiron-horizon-plugin.toml") },
+    TemplateFile {
+        path: "chiron-horizon-plugin.toml",
+        content: include_str!("../templates/frontend/chiron-horizon-plugin.toml"),
+    },
     TemplateFile { path: "manifest.json", content: include_str!("../templates/frontend/manifest.json") },
     TemplateFile { path: "README.md", content: include_str!("../templates/frontend/README.md") },
     TemplateFile { path: "ui/index.html", content: include_str!("../templates/frontend/ui/index.html") },
@@ -283,7 +286,10 @@ const FRONTEND_TEMPLATES: &[TemplateFile] = &[
 ];
 
 const SVELTE_TEMPLATES: &[TemplateFile] = &[
-    TemplateFile { path: "chiron-horizon-plugin.toml", content: include_str!("../templates/svelte/chiron-horizon-plugin.toml") },
+    TemplateFile {
+        path: "chiron-horizon-plugin.toml",
+        content: include_str!("../templates/svelte/chiron-horizon-plugin.toml"),
+    },
     TemplateFile { path: "manifest.json", content: include_str!("../templates/svelte/manifest.json") },
     TemplateFile { path: "README.md", content: include_str!("../templates/svelte/README.md") },
     TemplateFile { path: "package.json", content: include_str!("../templates/svelte/package.json") },
@@ -299,7 +305,10 @@ const SVELTE_TEMPLATES: &[TemplateFile] = &[
 ];
 
 const NATIVE_TEMPLATES: &[TemplateFile] = &[
-    TemplateFile { path: "chiron-horizon-plugin.toml", content: include_str!("../templates/common/chiron-horizon-plugin.toml") },
+    TemplateFile {
+        path: "chiron-horizon-plugin.toml",
+        content: include_str!("../templates/common/chiron-horizon-plugin.toml"),
+    },
     TemplateFile { path: "manifest.json", content: include_str!("../templates/common/manifest.json") },
     TemplateFile { path: "README.md", content: include_str!("../templates/common/README.md") },
     TemplateFile { path: "ui/index.html", content: include_str!("../templates/common/ui/index.html") },
@@ -330,7 +339,11 @@ where
         Some("dev") => dev::run(arguments.collect()),
         Some("keygen") => run_keygen(arguments.collect()),
         Some("--version" | "-V" | "version") => {
-            println!("{} {}", styled_stdout("chiron-horizon-plugin", ANSI_ACCENT), styled_stdout(CLI_VERSION, ANSI_MUTED));
+            println!(
+                "{} {}",
+                styled_stdout("chiron-horizon-plugin", ANSI_ACCENT),
+                styled_stdout(CLI_VERSION, ANSI_MUTED)
+            );
             Ok(())
         }
         Some("--help" | "-h" | "help") | None => {
@@ -362,7 +375,7 @@ fn run_create(arguments: Vec<String>) -> Result<(), String> {
             "--version" => inputs.version = Some(value_after(&arguments, &mut index)?.to_string()),
             "--signing-key-id" => {
                 return Err(
-                    "--signing-key-id is no longer used when creating plugins; official packages are signed by Chiron Horizon Store after review"
+                    "--signing-key-id is no longer used when creating plugins; sign packages separately with the sign command"
                         .to_string(),
                 );
             }
@@ -551,7 +564,8 @@ fn resolve_create_options<R: BufRead, W: Write>(
     writer: &mut W,
 ) -> Result<Option<CreateOptions>, String> {
     if interactive {
-        writeln!(writer, "{}", styled_stdout("Create a Chiron Horizon plugin", ANSI_ACCENT)).map_err(|error| error.to_string())?;
+        writeln!(writer, "{}", styled_stdout("Create a Chiron Horizon plugin", ANSI_ACCENT))
+            .map_err(|error| error.to_string())?;
     }
     let directory = resolve_project_directory(inputs.directory, inputs.force, interactive, reader, writer)?;
     let slug = project_slug(&directory)?;
@@ -766,7 +780,7 @@ fn print_create_summary<W: Write>(options: &CreateOptions, writer: &mut W) -> Re
         writer,
         "  {}        {}",
         styled_stdout("Release:", ANSI_PROMPT),
-        styled_stdout("builds unsigned candidates; Chiron Horizon Store signs approved official releases", ANSI_MUTED)
+        styled_stdout("builds unsigned candidates for your custom repository", ANSI_MUTED)
     )
     .map_err(|error| error.to_string())?;
     if let Some(sdk_root) = &options.sdk_root {
@@ -903,7 +917,8 @@ pub fn package_project(options: &PackageOptions) -> Result<(PathBuf, PathBuf), S
     validate_display_text(&manifest.publisher, "manifest publisher")?;
     validate_display_text(&manifest.engines.host_api, "manifest engines.host_api")?;
     if manifest.entrypoints.backend.is_some() != config.backend.is_some() {
-        return Err("chiron-horizon-plugin.toml and manifest.json must either both declare a backend or both omit it".to_string());
+        return Err("chiron-horizon-plugin.toml and manifest.json must either both declare a backend or both omit it"
+            .to_string());
     }
 
     let detected_target = config.backend.as_ref().map(|_| current_target()).transpose()?;
@@ -951,9 +966,9 @@ pub fn package_project(options: &PackageOptions) -> Result<(PathBuf, PathBuf), S
         copy_path(&source, &stage.path().join(include))?;
     }
 
-    let package_name = format!("{}-{}-{target}.chiron_horizonp", manifest.id, manifest.version);
+    let package_name = format!("{}-{}-{target}.chiron-horizonp", manifest.id, manifest.version);
     let package_path = output_directory.join(&package_name);
-    let metadata_path = output_directory.join(package_name.replace(".chiron_horizonp", ".artifact.json"));
+    let metadata_path = output_directory.join(package_name.replace(".chiron-horizonp", ".artifact.json"));
     let artifact_url = options.artifact_url.clone().unwrap_or(package_name);
     let packager_arguments = vec![
         stage.path().to_string_lossy().into_owned(),
@@ -986,7 +1001,8 @@ fn package_manifest(mut manifest: Value, backend: Option<&BackendConfig>, target
         .and_then(Value::as_object_mut)
     {
         if ui_entrypoint.contains_key("kind") {
-            return Err("manifest.json entrypoints.ui.kind is obsolete; Chiron Horizon plugin UI is always sandboxed".to_string());
+            return Err("manifest.json entrypoints.ui.kind is obsolete; Chiron Horizon plugin UI is always sandboxed"
+                .to_string());
         }
     }
     if let Some(backend) = backend {
@@ -1122,10 +1138,45 @@ fn build_rust_backend(
     }
     command.env("CARGO_TARGET_DIR", target_directory);
     run_command(&mut command, "Rust backend build")?;
-    let built = target_directory.join("release").join(executable_name(&backend.binary));
+    let built = rust_backend_binary_path(target_directory, &backend.binary, cargo_build_target().as_deref())?;
     fs::copy(&built, staged_executable)
         .map_err(|error| format!("Failed to copy Rust backend {}: {error}", built.display()))?;
     Ok(())
+}
+
+/// Read the cross-build target cargo was told to use, if any. `cargo build
+/// --release` writes into `<target-dir>/<triple>/release` when this is set (for
+/// example a musl triple for fully static Linux sidecars) instead of
+/// `<target-dir>/release`.
+fn cargo_build_target() -> Option<String> {
+    let value = std::env::var("CARGO_BUILD_TARGET").ok()?;
+    let trimmed = value.trim();
+    if trimmed.is_empty() || trimmed.contains(['/', '\\']) || trimmed.contains("..") {
+        return None;
+    }
+    Some(trimmed.to_string())
+}
+
+/// Locate the release binary cargo produced for the plugin backend. Cargo
+/// changes the output layout when a build target is configured, so the
+/// triple-qualified path is checked first and the plain host layout is kept as
+/// a fallback for older cargo behaviour and for prebuilt directories.
+fn rust_backend_binary_path(
+    target_directory: &Path,
+    binary: &str,
+    build_target: Option<&str>,
+) -> Result<PathBuf, String> {
+    let executable = executable_name(binary);
+    let mut candidates = Vec::new();
+    if let Some(triple) = build_target {
+        candidates.push(target_directory.join(triple).join("release").join(&executable));
+    }
+    candidates.push(target_directory.join("release").join(executable));
+    if let Some(found) = candidates.iter().find(|candidate| candidate.is_file()) {
+        return Ok(found.clone());
+    }
+    let searched = candidates.iter().map(|path| path.display().to_string()).collect::<Vec<_>>().join(", ");
+    Err(format!("Failed to locate the Rust backend binary after build; looked in {searched}"))
 }
 
 fn build_go_backend(
@@ -1153,16 +1204,10 @@ fn build_go_backend(
             fs::copy(source_sum, build_directory.join("go.sum")).map_err(|error| error.to_string())?;
         }
         let mut replace = Command::new("go");
-        replace
-            .current_dir(&backend_directory)
-            .arg("mod")
-            .arg("edit")
-            .arg("-modfile")
-            .arg(&mod_file)
-            .arg(format!(
-                "-replace=github.com/t8y2/chiron-horizon/plugins/sdk/go/chiron-horizon-plugin-sdk={}",
-                go_work_path(&sdk)
-            ));
+        replace.current_dir(&backend_directory).arg("mod").arg("edit").arg("-modfile").arg(&mod_file).arg(format!(
+            "-replace=github.com/Gaussian-id/Chiron-DBMS/plugins/sdk/go/chiron-horizon-plugin-sdk={}",
+            go_work_path(&sdk)
+        ));
         run_command(&mut replace, "Go module setup")?;
         command.env("GOWORK", "off").arg("-modfile").arg(&mod_file);
     }
@@ -1294,7 +1339,10 @@ fn go_sdk_replace(sdk_root: Option<&Path>) -> Result<String, String> {
             if !path.join("go.mod").is_file() {
                 return Err(format!("Go plugin SDK was not found at {}", path.display()));
             }
-            Ok(format!("replace github.com/t8y2/chiron-horizon/plugins/sdk/go/chiron-horizon-plugin-sdk => {}", path.display()))
+            Ok(format!(
+                "replace github.com/Gaussian-id/Chiron-DBMS/plugins/sdk/go/chiron-horizon-plugin-sdk => {}",
+                path.display()
+            ))
         }
         None => Ok(String::new()),
     }
@@ -1411,9 +1459,8 @@ fn title_from_slug(slug: &str) -> String {
 
 fn title_word(word: &str) -> String {
     match word {
-        "api" | "chiron_horizon" | "http" | "https" | "jdbc" | "sdk" | "sftp" | "sql" | "ssh" | "tcp" | "tls" | "udp" | "ui" => {
-            word.to_ascii_uppercase()
-        }
+        "api" | "chiron_horizon" | "http" | "https" | "jdbc" | "sdk" | "sftp" | "sql" | "ssh" | "tcp" | "tls"
+        | "udp" | "ui" => word.to_ascii_uppercase(),
         _ => {
             let mut characters = word.chars();
             characters
@@ -1501,7 +1548,7 @@ fn print_usage() {
         "  {}     Create a frontend-only, Svelte, Rust, or Go plugin project",
         styled_stdout("create", ANSI_SUCCESS)
     );
-    println!("  {}    Build a .chiron_horizonp package and artifact metadata", styled_stdout("package", ANSI_SUCCESS));
+    println!("  {}    Build a .chiron-horizonp package and artifact metadata", styled_stdout("package", ANSI_SUCCESS));
     println!(
         "  {}        Run a plugin in the local browser development host (Node.js 22+)",
         styled_stdout("dev", ANSI_SUCCESS)
@@ -1537,7 +1584,7 @@ fn print_create_help() {
     println!("      --force               Overwrite generated files");
     println!("  -y, --yes                 Use defaults without prompts");
     println!("  -h, --help                Print this help");
-    println!("\nGenerated release workflows publish unsigned candidates for Chiron Horizon Store review and signing.");
+    println!("\nConfigure your own release workflow to sign and publish candidates.");
 }
 
 fn print_package_help() {
@@ -1560,9 +1607,7 @@ fn print_keygen_help() {
     println!("\n{}\n  {}", styled_stdout("Usage:", ANSI_PROMPT), keygen_usage());
     println!("\n{}", styled_stdout("Output:", ANSI_PROMPT));
     println!("  Writes a private environment file with mode 0600 on Unix.");
-    println!(
-        "  Intended for private or custom repository operators; official Chiron Horizon Store authors do not need this command."
-    );
+    println!("  Use this command to sign packages for private or custom repositories.");
     println!("\n{}", styled_stdout("Options:", ANSI_PROMPT));
     println!("      --key-id ID       Public repository key identifier");
     println!("  -o, --output FILE     Secret output file (default: .chiron-horizon-repository-signing-key.env)");
@@ -1572,7 +1617,12 @@ fn print_keygen_help() {
 }
 
 fn usage() -> String {
-    format!("{}\n{}\n{}\nRun 'chiron-horizon-plugin --help' for details.", create_usage(), package_usage(), keygen_usage())
+    format!(
+        "{}\n{}\n{}\nRun 'chiron-horizon-plugin --help' for details.",
+        create_usage(),
+        package_usage(),
+        keygen_usage()
+    )
 }
 
 fn create_usage() -> String {
@@ -1593,10 +1643,49 @@ mod tests {
     use std::path::{Path, PathBuf};
 
     use super::{
-        color_enabled_with, create_project, generate_signing_key_file, package_manifest, package_project,
-        resolve_create_options, run_cli, styled, title_from_slug, validate_manifest_assets, validate_semver,
-        BackendConfig, CreateInputs, CreateOptions, PackageOptions, ProjectTemplate, ANSI_ACCENT, CLI_VERSION,
+        color_enabled_with, create_project, executable_name, generate_signing_key_file, package_manifest,
+        package_project, resolve_create_options, run_cli, rust_backend_binary_path, styled, title_from_slug,
+        validate_manifest_assets, validate_semver, BackendConfig, CreateInputs, CreateOptions, PackageOptions,
+        ProjectTemplate, ANSI_ACCENT, CLI_VERSION,
     };
+
+    #[test]
+    fn rust_backend_binary_path_prefers_cross_build_target_layout() {
+        let root = tempfile::tempdir().unwrap();
+        let triple_directory = root.path().join("x86_64-unknown-linux-musl").join("release");
+        std::fs::create_dir_all(&triple_directory).unwrap();
+        let binary = triple_directory.join(executable_name("chiron-horizon-market-watch"));
+        std::fs::write(&binary, b"binary").unwrap();
+
+        let found =
+            rust_backend_binary_path(root.path(), "chiron-horizon-market-watch", Some("x86_64-unknown-linux-musl"))
+                .unwrap();
+        assert_eq!(found, binary);
+    }
+
+    #[test]
+    fn rust_backend_binary_path_falls_back_to_host_release_layout() {
+        let root = tempfile::tempdir().unwrap();
+        let release_directory = root.path().join("release");
+        std::fs::create_dir_all(&release_directory).unwrap();
+        let binary = release_directory.join(executable_name("chiron-horizon-demo"));
+        std::fs::write(&binary, b"binary").unwrap();
+
+        assert_eq!(
+            rust_backend_binary_path(root.path(), "chiron-horizon-demo", Some("aarch64-apple-darwin")).unwrap(),
+            binary
+        );
+        assert_eq!(rust_backend_binary_path(root.path(), "chiron-horizon-demo", None).unwrap(), binary);
+    }
+
+    #[test]
+    fn rust_backend_binary_path_reports_every_searched_location() {
+        let root = tempfile::tempdir().unwrap();
+        let error = rust_backend_binary_path(root.path(), "chiron-horizon-demo", Some("x86_64-unknown-linux-musl"))
+            .unwrap_err();
+        assert!(error.contains("x86_64-unknown-linux-musl"), "{error}");
+        assert!(error.contains("release"), "{error}");
+    }
 
     #[test]
     fn rejects_development_data_in_package_inputs() {
@@ -1638,7 +1727,8 @@ mod tests {
         let content = std::fs::read_to_string(&output).unwrap();
         assert!(content.contains(&format!("export CHIRON_HORIZON_PLUGIN_SIGNING_KEY={}", material.private_seed_base64)));
         assert!(content.contains("export CHIRON_HORIZON_PLUGIN_SIGNING_KEY_ID=example.release"));
-        assert!(content.contains(&format!("export CHIRON_HORIZON_PLUGIN_SIGNING_PUBLIC_KEY={}", material.public_key_base64)));
+        assert!(content
+            .contains(&format!("export CHIRON_HORIZON_PLUGIN_SIGNING_PUBLIC_KEY={}", material.public_key_base64)));
         assert!(generate_signing_key_file("example.release", &output, false).is_err());
         generate_signing_key_file("example.release", &output, true).unwrap();
         #[cfg(unix)]
@@ -1839,11 +1929,12 @@ mod tests {
                 .is_file());
             assert!(directory.join(".github/workflows/plugin-release.yml").is_file());
             let readme = std::fs::read_to_string(directory.join("README.md")).unwrap();
-            assert!(readme.contains("autoUpdate: true"));
-            assert!(readme.contains("submission Issue is not required"));
-            assert!(readme.contains("https://chiron_horizonio.com/en/docs/plugin-development"));
-            assert!(readme.contains("t8y2/chiron-horizon-store:main"));
-            assert!(readme.contains("Do not submit ordinary plugin source to `t8y2/chiron_horizon`"));
+            assert!(readme.contains("custom repository"));
+            assert!(readme.contains(
+                "https://github.com/Gaussian-id/Chiron-DBMS/blob/main/docs/content/docs/plugin-development.mdx"
+            ));
+
+            assert!(readme.contains("Do not submit ordinary plugin source to `Gaussian-id/Chiron-DBMS`"));
             assert!(std::fs::read_to_string(directory.join(".gitignore"))
                 .unwrap()
                 .contains(".chiron-horizon-repository-signing-key.env"));
@@ -1851,17 +1942,13 @@ mod tests {
                 serde_json::from_slice(&std::fs::read(directory.join("manifest.json")).unwrap()).unwrap();
             assert_eq!(manifest["version"], "1.2.3");
             let config: toml::Value =
-                toml::from_str(&std::fs::read_to_string(directory.join("chiron-horizon-plugin.toml")).unwrap()).unwrap();
+                toml::from_str(&std::fs::read_to_string(directory.join("chiron-horizon-plugin.toml")).unwrap())
+                    .unwrap();
             let workflow = std::fs::read_to_string(directory.join(".github/workflows/plugin-release.yml")).unwrap();
             assert!(!workflow.contains("signing-key-id"));
             assert!(!workflow.contains("CHIRON_HORIZON_PLUGIN_SIGNING_KEY"));
-            assert!(workflow.contains(&format!("plugin-cli-version: {CLI_VERSION}")));
-            assert!(workflow.contains(&format!("plugin-release-reusable.yml@plugin-cli-v{CLI_VERSION}")));
-            assert!(!workflow.contains("@plugin-sdk-v1"));
-            let go_version = if template == ProjectTemplate::Go { "1.22.x" } else { "" };
-            let rust_toolchain = if template == ProjectTemplate::Rust { "stable" } else { "" };
-            assert!(workflow.contains(&format!("go-version: \"{go_version}\"")));
-            assert!(workflow.contains(&format!("rust-toolchain: \"{rust_toolchain}\"")));
+            assert!(workflow.contains("custom repository"));
+            assert!(!workflow.contains("uses:"));
             assert!(!workflow.contains("sdk-ref:"));
 
             match template {
@@ -1869,17 +1956,14 @@ mod tests {
                     assert!(manifest["entrypoints"].get("backend").is_none());
                     assert!(config.get("backend").is_none());
                     assert!(!directory.join("backend").exists());
-                    assert!(workflow.contains("\"target\":\"universal\""));
                 }
                 ProjectTemplate::Svelte => {
-                    assert!(workflow.contains("package-command: npm ci && npm run build && chiron-horizon-plugin package ."));
                     assert!(manifest["entrypoints"].get("backend").is_none());
                     assert!(config.get("backend").is_none());
                     assert!(directory.join("src/App.svelte").is_file());
                     assert!(directory.join("package.json").is_file());
                     assert!(directory.join("svelte.config.js").is_file());
                     assert!(directory.join("index.html").is_file());
-                    assert!(workflow.contains("\"target\":\"universal\""));
                 }
                 ProjectTemplate::Rust => {
                     assert!(manifest["entrypoints"].get("backend").is_some());
@@ -1919,7 +2003,7 @@ mod tests {
             artifact_url: None,
         })
         .unwrap();
-        assert_eq!(package.file_name().unwrap(), "com.example.frontend-package-1.2.3-universal.chiron_horizonp");
+        assert_eq!(package.file_name().unwrap(), "com.example.frontend-package-1.2.3-universal.chiron-horizonp");
         assert!(package.is_file());
         assert!(metadata.is_file());
         let artifact: serde_json::Value = serde_json::from_slice(&std::fs::read(metadata).unwrap()).unwrap();
@@ -1951,7 +2035,7 @@ mod tests {
         assert!(output.contains("Invalid: choose 1/Frontend, 2/Svelte, 3/Rust, or 4/Go"));
         assert!(output.contains("Invalid: plugin id must use lowercase letters"));
         assert!(output.contains("Invalid: Version must be valid SemVer"));
-        assert!(output.contains("Chiron Horizon Store signs approved official releases"));
+        assert!(output.contains("builds unsigned candidates for your custom repository"));
         assert!(output.contains("Plugin configuration:"));
         assert!(output.contains("Invalid: enter y or n"));
     }
