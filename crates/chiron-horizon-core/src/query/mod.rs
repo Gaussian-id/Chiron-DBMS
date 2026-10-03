@@ -5191,7 +5191,7 @@ async fn exec_tx_pg_inner(
     }
     let tx_result = exec_tx_pg_statements(&mut client, statements, &budget, cancel_context).await;
 
-    // GaussDB/openGauss reject PostgreSQL's RESET search_path syntax.
+    // Use the portable reset spelling for PostgreSQL-compatible servers.
     let reset_result = if had_schema {
         db::postgres::execute_postgres_infra_statement(
             &client,

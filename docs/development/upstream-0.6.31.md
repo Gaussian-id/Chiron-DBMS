@@ -12,7 +12,7 @@ The upstream crate extraction required resolving the fork at logical module boun
 | Native ChironDB | HTTP transport extracted into drivers; connector integration tests and live disposable database smoke |
 | ChironQL scripts | Sequential statements, run-local USE, cancellation and exact write approvals; script tests and live browser execution |
 | Native assistant | Restored in the newer frozen-connection conversation UI; lifecycle, prompt, result and live approval/privacy tests |
-| ChironDB Relational | PostgreSQL-wire profile and access registration retained; database availability tests |
+| ChironDB Relational | PostgreSQL-wire profile and access registration retained; live DDL/DML/join, table/column discovery and partial-catalog Schema Viewer checks |
 | Schema Viewer | Existing modes and metadata-only adapters retained and registered through the new Tauri schema crate; affected frontend/Rust tests |
 | Profile and export migration | Legacy paths, environment fallbacks, encrypted material and browser storage compatibility retained; migration/compatibility tests |
 | Credential storage and sync | Native envelope survives generalized migration; encrypted upstream secrets migrate on load; CLI/proxy fields remain encrypted; credential and sync tests |
@@ -25,9 +25,10 @@ The upstream crate extraction required resolving the fork at logical module boun
 - Frontend: 1,630 suites and 19,389 tests passed.
 - Rust core: 2,969 passed, 8 ignored; credentials: 7 passed; ChironDB connector: 14 passed.
 - Platform/plugin runtime/SQL dialect: 325 passed; plugin CLI: 23 passed.
+- PostgreSQL driver: 262 unit tests passed, 30 ignored; four automatic Docker-image tests excluded because their image pulls did not complete. A separate live PostgreSQL schema-context/cleanup test passed against a disposable cached PostgreSQL image.
 - Java agent test and shaded-JAR build passed; manifest and packaging validation passed.
 - Desktop and documentation type checks, native desktop compilation, production frontend build, branding audit, and whitespace checks passed.
-- Live smoke tests used real local ChironDB plus a synthetic local AI provider; external AI providers and other live database engines were not exercised by that smoke run.
+- Live smoke tests used real local ChironDB plus a synthetic local AI provider; external AI providers were not exercised by that smoke run. A separate relational smoke and PostgreSQL cleanup test covered the PostgreSQL-wire path.
 
 ## Validation commands
 
@@ -61,3 +62,9 @@ Before publication, native verification jobs must pass, the PR must merge into m
 A disposable ChironDB profile completed `USE dbm_smoke; COUNT dbm_smoke;` and a native assistant `SHOW COLLECTIONS;` request. The UI displayed successful statement results and confirmed that assistant results remained local.
 
 ![Horizon 0.1.3 native ChironDB editor and assistant](horizon-0.1.3-chirondb.jpg)
+
+## Relational cleanup compatibility
+
+Upstream began surfacing schema cleanup errors after successful queries. ChironDB’s current SQL subset accepts `SET search_path TO DEFAULT` but rejects `RESET search_path`. Horizon uses the portable SET form for compatible drivers; PostgreSQL documents [identical default-restoration and transaction semantics](https://www.postgresql.org/docs/current/sql-reset.html). This retains cleanup error handling rather than suppressing errors.
+
+Run `scripts/chirondb-relational-smoke.mjs` with the same two local binary environment variables. It verifies connection, sequential DDL/DML, joins, table and column discovery, and Schema Viewer partial-catalog diagnostics against fresh disposable data.

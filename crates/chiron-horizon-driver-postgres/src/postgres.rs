@@ -8644,15 +8644,13 @@ pub async fn execute_query_with_schema_and_max_rows_and_cancel(
     merge_postgres_query_and_reset_result(result, reset_result)
 }
 
-/// GaussDB/openGauss reject PostgreSQL's `RESET search_path` syntax, so the
-/// post-query schema cleanup must re-issue `SET search_path TO DEFAULT` for
-/// those engines. Every other backend — and an unknown (`None`) type — keeps
-/// the historical `RESET search_path` behavior.
-pub fn reset_search_path_sql(db_type: Option<DatabaseType>) -> &'static str {
-    match db_type {
-        Some(DatabaseType::Gaussdb | DatabaseType::OpenGauss) => "SET search_path TO DEFAULT",
-        _ => "RESET search_path",
-    }
+/// SET TO DEFAULT has exactly the same reset and transaction semantics as RESET
+/// in PostgreSQL, and also works with ChironDB Relational and GaussDB/openGauss.
+/// Keep one portable cleanup statement so a successful user query is not turned
+/// into an error by a compatibility server that does not implement RESET.
+/// https://www.postgresql.org/docs/current/sql-reset.html
+pub fn reset_search_path_sql(_db_type: Option<DatabaseType>) -> &'static str {
+    "SET search_path TO DEFAULT"
 }
 
 async fn reset_postgres_search_path(
@@ -11317,8 +11315,8 @@ mod tests {
     fn postgres_reset_search_path_sql_selects_dialect_compatible_statement() {
         assert_eq!(reset_search_path_sql(Some(DatabaseType::Gaussdb)), "SET search_path TO DEFAULT");
         assert_eq!(reset_search_path_sql(Some(DatabaseType::OpenGauss)), "SET search_path TO DEFAULT");
-        assert_eq!(reset_search_path_sql(Some(DatabaseType::Postgres)), "RESET search_path");
-        assert_eq!(reset_search_path_sql(None), "RESET search_path");
+        assert_eq!(reset_search_path_sql(Some(DatabaseType::Postgres)), "SET search_path TO DEFAULT");
+        assert_eq!(reset_search_path_sql(None), "SET search_path TO DEFAULT");
     }
 
     #[test]
