@@ -35,6 +35,21 @@ jobs:
           cache: false
       - name: Test agents and build every release target with fresh dependencies
         run: agents/scripts/build_go_release_agents.sh release-agents
+      - uses: actions/upload-artifact@v4
+        with:
+          name: verified-go-agents
+          path: release-agents/
+          if-no-files-found: error
+
+  offline-packaging:
+    name: Offline driver package integrity
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+      - run: sudo apt-get update && sudo apt-get install -y zstd zip
+      - name: Check raw offline registries and compressed download packages
+        working-directory: agents/scripts
+        run: python3 -m unittest discover -p '*_test.py'
 
   managed-jre:
     name: Managed Java runtime ${{ matrix.platform }}
@@ -69,6 +84,11 @@ jobs:
       - name: Build and smoke the managed Java runtime
         shell: bash
         run: agents/scripts/build_managed_jre.sh release-jre ${{ matrix.platform }}
+      - uses: actions/upload-artifact@v4
+        with:
+          name: verified-jre-${{ matrix.platform }}
+          path: release-jre/
+          if-no-files-found: error
 
   desktop:
     strategy:
@@ -123,6 +143,7 @@ jobs:
         if: runner.os == 'Linux'
         run: cargo test -p chiron-horizon-core --no-default-features --features sqlite-bundled --lib
       - run: cargo test -p chiron-horizon-core --no-default-features --features sqlite-bundled --test ai_credentials --test chirondb_connector
+      - run: cargo test -p chiron-horizon-driver-agent --lib
       - run: cargo test -p chiron-horizon-driver-postgres --lib postgres_reset_search_path_sql_selects_dialect_compatible_statement
       - run: cargo check -p chiron-horizon-cli -p chiron-horizon-web --no-default-features
       - run: cargo test --manifest-path plugins/sdk/cli/Cargo.toml creates_frontend_rust_and_go_projects
@@ -136,6 +157,6 @@ jobs:
         run: codesign --verify --deep --strict --verbose=2 "target/${{ matrix.target }}/release/bundle/macos/Chiron Horizon.app"
       - uses: actions/upload-artifact@v4
         with:
-          name: Chiron Horizon-0.1.5-${{ matrix.target }}
+          name: Chiron Horizon-0.1.6-${{ matrix.target }}
           path: target/${{ matrix.target }}/release/bundle/
           if-no-files-found: error

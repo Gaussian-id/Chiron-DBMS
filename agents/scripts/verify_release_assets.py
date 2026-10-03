@@ -5,6 +5,7 @@ import hashlib
 import json
 import re
 import sys
+import zipfile
 from pathlib import Path
 from urllib.parse import urlparse
 
@@ -26,6 +27,72 @@ def check_artifact(root: Path, value: dict, errors: list[str], location: str, pr
         errors.append(f"{location}: size does not match {path.name}")
     if value.get("sha256") != sha256(path):
         errors.append(f"{location}: SHA-256 does not match {path.name}")
+
+
+def check_offline_bundle(path: Path, platform: str, public_registry: dict, errors: list[str]) -> None:
+    """Check the raw artifacts consumed by the application's offline importer.
+
+    The public registry describes compressed downloads. Each offline ZIP must
+    retain the earlier raw registry, whose sizes/hashes describe its own files.
+    """
+    label = f"offline {platform}"
+    try:
+        with zipfile.ZipFile(path) as archive:
+            names = [item.filename for item in archive.infolist() if not item.is_dir()]
+            if len(names) != len(set(names)):
+                errors.append(f"{label}: duplicate archive entries")
+                return
+            registry = json.loads(archive.read("agent-registry.json"))
+            if registry.get("jres") != public_registry.get("jres"):
+                errors.append(f"{label}: runtime metadata differs from the public registry")
+            drivers = registry.get("drivers", {})
+            public_drivers = public_registry.get("drivers", {})
+            if set(drivers) != set(public_drivers):
+                errors.append(f"{label}: driver catalog differs from the public registry")
+            expected = {}
+            for key, jre in registry.get("jres", {}).items():
+                artifact = jre.get("platforms", {}).get(platform)
+                if artifact:
+                    if artifact.get("format") != "tar_zstd":
+                        errors.append(f"{label}: JRE {key} is not a tar.zst archive")
+                    expected[f"jre/{Path(urlparse(artifact['url']).path).name}"] = artifact
+            for key, driver in drivers.items():
+                public = public_drivers.get(key, {})
+                for field in ("version", "min_app_version", "jre"):
+                    if driver.get(field) != public.get(field):
+                        errors.append(f"{label}: driver {key} {field} differs from the public registry")
+                artifacts = []
+                jar = driver.get("jar", {})
+                if jar.get("size", 0) > 0:
+                    artifacts.append(jar)
+                    jre = registry.get("jres", {}).get(driver.get("jre"), {})
+                    if platform not in jre.get("platforms", {}):
+                        errors.append(f"{label}: Java driver {key} has no compatible runtime")
+                for target, artifact in driver.get("native", {}).items():
+                    if target == platform or (key == "sqlite-worker" and target.startswith("linux-")):
+                        artifacts.append(artifact)
+                for artifact in artifacts:
+                    if artifact.get("format") is not None:
+                        errors.append(f"{label}: driver {key} must describe a raw offline artifact")
+                    expected[f"drivers/{Path(urlparse(artifact['url']).path).name}"] = artifact
+
+            actual = {name for name in names if name.startswith(("drivers/", "jre/"))}
+            for missing in sorted(set(expected) - actual):
+                errors.append(f"{label}: missing artifact {missing}")
+            for extra in sorted(actual - set(expected)):
+                errors.append(f"{label}: unregistered artifact {extra}")
+            for name in sorted(actual & set(expected)):
+                artifact = expected[name]
+                if artifact.get("size") != archive.getinfo(name).file_size:
+                    errors.append(f"{label}: size mismatch for {name}")
+                digest = hashlib.sha256()
+                with archive.open(name) as source:
+                    for chunk in iter(lambda: source.read(1024 * 1024), b""):
+                        digest.update(chunk)
+                if artifact.get("sha256") != digest.hexdigest():
+                    errors.append(f"{label}: SHA-256 mismatch for {name}")
+    except (OSError, KeyError, ValueError, zipfile.BadZipFile) as error:
+        errors.append(f"{label}: invalid bundle: {error}")
 
 
 def main() -> int:
@@ -63,6 +130,8 @@ def main() -> int:
                 if platform not in PLATFORMS:
                     errors.append(f"driver {key}: unsupported native platform {platform}")
                 check_artifact(root, value, errors, f"driver {key} {platform}", prefix)
+        for platform in sorted(PLATFORMS):
+            check_offline_bundle(root / f"chiron-horizon-agents-offline-{platform}.zip", platform, registry, errors)
     for path in root.iterdir():
         if re.search(r"(?:dbx|gauss[-_]?horizon)", path.name, re.I):
             errors.append(f"legacy product name in release asset: {path.name}")
