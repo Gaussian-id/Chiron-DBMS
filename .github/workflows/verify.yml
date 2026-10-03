@@ -72,7 +72,7 @@ jobs:
       - run: pnpm test:database-availability
       - run: cargo test -p chiron-horizon-core --no-default-features --features sqlite-bundled --lib legacy::tests
       - name: Test backup lifecycle
-        run: cargo test -p chiron-horizon-core --no-default-features --features sqlite-bundled --lib scheduled_backup::
+        run: "cargo test -p chiron-horizon-core --no-default-features --features sqlite-bundled --lib scheduled_backup::"
       - name: Test the complete Rust core before release tagging
         if: runner.os == 'Linux'
         run: cargo test -p chiron-horizon-core --no-default-features --features sqlite-bundled --lib
