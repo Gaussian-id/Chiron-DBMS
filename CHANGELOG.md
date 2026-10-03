@@ -4,6 +4,19 @@ Canonical repository: [Gaussian-id/Chiron-DBMS](https://github.com/Gaussian-id/C
 
 The in-application changelog checks the canonical file on GitHub and falls back to the copy bundled with the installed build. Detailed, landing-page-ready notes are kept in [`docs/releases`](docs/releases/).
 
+## 0.1.6
+
+Stable upstream 0.6.31 integration with importable offline driver bundles.
+
+- Includes the preserved Horizon features, backup correction, checksum protection, and Windows Java runtime fixes from the unpublished 0.1.3–0.1.5 builds.
+- Builds offline ZIPs while their registry still describes raw JARs and executables, before packaging the public compressed downloads.
+- Verifies every offline runtime and driver against its bundled registry, including hashes, sizes, catalog/version consistency, and remote Linux SQLite workers.
+- Adds offline assembly regressions to PR and release checks.
+
+The earlier tags remain unchanged and unpublished. This patch corrects the offline packages for the complete integration.
+
+See [the full 0.1.6 release notes](docs/releases/v0.1.6.md).
+
 ## 0.1.5
 
 Stable upstream 0.6.31 integration with verified dependency hashes and cross-platform runtime packaging.

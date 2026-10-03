@@ -59,6 +59,7 @@ jobs:
       - run: pnpm --dir docs content:check
       - run: cargo test -p chiron-horizon-core --no-default-features --features sqlite-bundled --lib
       - run: cargo test -p chiron-horizon-core --no-default-features --features sqlite-bundled --test ai_credentials --test chirondb_connector
+      - run: cargo test -p chiron-horizon-driver-agent --lib
       - run: cargo test -p chiron-horizon-driver-postgres --lib postgres_reset_search_path_sql_selects_dialect_compatible_statement
       - run: cargo check -p chiron-horizon-cli -p chiron-horizon-web -p chiron-horizon-mcp --no-default-features
       - run: cargo test --manifest-path plugins/sdk/cli/Cargo.toml creates_frontend_rust_and_go_projects
@@ -71,7 +72,7 @@ jobs:
           python3 scripts/validate_agent_jars.py
       - name: Validate release packaging helpers
         run: |
-          (cd agents/scripts && python3 -m unittest validate_agents_test.py driver_release_packages_test.py)
+          (cd agents/scripts && python3 -m unittest discover -p '*_test.py')
           node --check scripts/stage-desktop-release.mjs
           node --check scripts/create-release-manifest.mjs
           node --test scripts/release.test.mjs scripts/dependency-checksums.test.mjs agents/scripts/verify_offline_jdbc_release.test.mjs
@@ -88,31 +89,31 @@ jobs:
             platform: macos-arm64
             bundles: app,dmg
             extension: .dmg
-            output: Chiron-Horizon_0.1.5_macos-arm64.dmg
+            output: Chiron-Horizon_0.1.6_macos-arm64.dmg
           - os: macos-15-intel
             target: x86_64-apple-darwin
             platform: macos-x64
             bundles: app,dmg
             extension: .dmg
-            output: Chiron-Horizon_0.1.5_macos-x64.dmg
+            output: Chiron-Horizon_0.1.6_macos-x64.dmg
           - os: windows-2022
             target: x86_64-pc-windows-msvc
             platform: windows-x64
             bundles: nsis
             extension: .exe
-            output: Chiron-Horizon_0.1.5_windows-x64-setup.exe
+            output: Chiron-Horizon_0.1.6_windows-x64-setup.exe
           - os: ubuntu-22.04
             target: x86_64-unknown-linux-gnu
             platform: linux-x64
             bundles: deb,appimage
             extension: .deb
-            output: Chiron-Horizon_0.1.5_linux-x64.deb
+            output: Chiron-Horizon_0.1.6_linux-x64.deb
           - os: ubuntu-22.04
             target: x86_64-unknown-linux-gnu
             platform: linux-appimage-x64
             bundles: appimage
             extension: .AppImage
-            output: Chiron-Horizon_0.1.5_linux-x64.AppImage
+            output: Chiron-Horizon_0.1.6_linux-x64.AppImage
     runs-on: ${{ matrix.os }}
     env:
       CARGO_INCREMENTAL: "0"
@@ -402,7 +403,7 @@ jobs:
           if-no-files-found: error
 
   publish:
-    name: Publish verified v0.1.5 release
+    name: Publish verified v0.1.6 release
     needs: [desktop, java-agents, go-agents, oracle-oci-agent, rust-agents, managed-jre]
     runs-on: ubuntu-22.04
     steps:
@@ -423,7 +424,6 @@ jobs:
           mkdir -p release
           find release-input -maxdepth 1 -type f -exec cp {} release/ \;
           python3 agents/scripts/create_release_registry.py release --tag "$GITHUB_REF_NAME" --jre-version "$(java -version 2>&1 | head -1 | sed -E 's/.*\"([^\"]+)\".*/\1/')"
-          python3 agents/scripts/build_driver_zips.py release
           JDBC_ARCHIVE="$(find release -maxdepth 1 -name "chiron-horizon-jdbc-plugin-${GITHUB_REF_NAME#v}.zip" -type f | head -1)"
           test -n "$JDBC_ARCHIVE"
           JDBC_WORK="$(mktemp -d)"
@@ -434,6 +434,9 @@ jobs:
           node agents/scripts/build_offline_jdbc_payload.mjs release "$JDBC_ARCHIVE" "$JDBC_RESOLVER"
           agents/scripts/build_offline_zip.sh release
           node agents/scripts/verify_offline_jdbc_release.mjs release
+          # Offline ZIPs contain raw drivers, so preserve their raw registry
+          # before switching the public download registry to tar.zst packages.
+          python3 agents/scripts/build_driver_zips.py release
           python3 agents/scripts/verify_release_assets.py release --tag "$GITHUB_REF_NAME"
           node scripts/create-release-manifest.mjs release
       - name: Validate staged public assets

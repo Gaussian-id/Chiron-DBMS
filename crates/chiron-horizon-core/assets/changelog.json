@@ -2,6 +2,69 @@
   "updatedAt": "2026-10-03",
   "releases": [
     {
+      "tag": "v0.1.6",
+      "name": "Chiron Horizon 0.1.6",
+      "date": "2026-10-03",
+      "sections": [
+        {
+          "type": "changed",
+          "title": "Stable upstream update",
+          "items": [
+            {
+              "title": "Upstream v0.6.31",
+              "desc": "Integrated the latest stable upstream architecture, drivers, AI workflow, editor, plugin and platform fixes."
+            },
+            {
+              "title": "Horizon features preserved",
+              "desc": "Retained native ChironDB and PostgreSQL-wire access, ChironQL write approvals, protected AI credentials, profile migration, Schema Viewer, branding and English documentation."
+            },
+            {
+              "title": "Database coverage",
+              "desc": "Expanded explicit access and schema contracts to 86 connection types and 110 product/version profiles."
+            }
+          ]
+        },
+        {
+          "type": "fixed",
+          "title": "Reliable backup shutdown",
+          "items": [
+            {
+              "title": "Backup worker lock release",
+              "desc": "Release backup leadership explicitly when workers stop, drain, or are cancelled, including during concurrent child-process startup."
+            }
+          ]
+        },
+        {
+          "type": "fixed",
+          "title": "Verified release packaging",
+          "items": [
+            {
+              "title": "Dependency checksum preservation",
+              "desc": "Keep pinned dependency hashes byte-for-byte intact and validate them independently from product branding."
+            },
+            {
+              "title": "Windows Java runtime",
+              "desc": "Build and smoke the bundled runtime through Bash with normalized JDK paths; verify runtime packaging on all four platforms before release tagging."
+            }
+          ]
+        },
+        {
+          "type": "fixed",
+          "title": "Offline driver bundle integrity",
+          "items": [
+            {
+              "title": "Raw offline registry",
+              "desc": "Keep raw-file metadata in offline bundles while publishing compressed individual downloads separately."
+            },
+            {
+              "title": "Complete offline package verification",
+              "desc": "Check driver and runtime hashes, sizes, versions, and platform coverage before publication, including the remote Linux SQLite worker."
+            }
+          ]
+        }
+      ]
+    },
+    {
       "tag": "v0.1.5",
       "name": "Chiron Horizon 0.1.5",
       "date": "2026-10-03",
@@ -48,7 +111,8 @@
             }
           ]
         }
-      ]
+      ],
+      "unreleased": true
     },
     {
       "tag": "v0.1.4",
