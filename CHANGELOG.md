@@ -4,6 +4,18 @@ Canonical repository: [Gaussian-id/Chiron-DBMS](https://github.com/Gaussian-id/C
 
 The in-application changelog checks the canonical file on GitHub and falls back to the copy bundled with the installed build. Detailed, landing-page-ready notes are kept in [`docs/releases`](docs/releases/).
 
+## 0.1.4
+
+Stable upstream 0.6.31 integration with reliable scheduled-backup leadership release.
+
+- Includes the Horizon features and upstream improvements prepared in 0.1.3.
+- Explicitly releases backup worker locks on stop, drain, cancellation, and failed startup, even while another process retains a duplicated handle.
+- Adds a deterministic lock-lifecycle regression and runs the complete Rust core suite in Linux PR verification before tagging.
+
+The 0.1.3 tag did not produce a public release because preflight caught the backup-lock race. This patch supersedes that unpublished build.
+
+See [the full 0.1.4 release notes](docs/releases/v0.1.4.md).
+
 ## 0.1.3
 
 Stable upstream 0.6.31 integration with Horizon feature preservation.
