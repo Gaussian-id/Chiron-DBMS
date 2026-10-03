@@ -1,5 +1,5 @@
 {
-  "$schema": "https://raw.githubusercontent.com/Gaussian-id/Chiron-Horizon/plugin-sdk-v1/plugins/manifest.schema.json",
+  "$schema": "https://raw.githubusercontent.com/Gaussian-id/Chiron-DBMS/main/plugins/manifest.schema.json",
   "manifest_version": 1,
   "id": "{{PLUGIN_ID}}",
   "name": "{{PLUGIN_NAME_JSON}}",
@@ -7,8 +7,9 @@
   "publisher": "{{PUBLISHER_JSON}}",
   "description": "{{DESCRIPTION_JSON}}",
   "icon": "assets/plugin.svg",
+  "permissions": ["host.ai"],
   "engines": {
-    "chiron-horizon": ">=0.5.68",
+    "chiron-horizon": ">=0.1.3",
     "host_api": "1"
   },
   "entrypoints": {
@@ -62,7 +63,17 @@
       "id": "{{PLUGIN_ID}}.workbench",
       "label": "{{PLUGIN_NAME_JSON}} Workbench",
       "description": "Sandboxed UI contributed by {{PLUGIN_NAME_JSON}}.",
-      "icon": "assets/plugin.svg"
+      "icon": "assets/plugin.svg",
+      "ai": {
+        "recommendations": [
+          {
+            "id": "inspect-context",
+            "label": "Inspect current workbench",
+            "prompt": "Analyze the current workbench context and list the most important risks.",
+            "order": 10
+          }
+        ]
+      }
     }
   ],
   "localizations": {

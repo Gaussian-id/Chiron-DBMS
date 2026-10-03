@@ -15,7 +15,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/Gaussian-id/Chiron-Horizon/agents/go-common/gohive"
+	"github.com/Gaussian-id/Chiron-DBMS/agents/go-common/gohive"
 )
 
 var scriptedDriverSequence atomic.Uint64

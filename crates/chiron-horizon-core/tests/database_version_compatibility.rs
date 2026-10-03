@@ -11,7 +11,9 @@ fn unique_table(prefix: &str) -> String {
 #[ignore = "requires CHIRON_HORIZON_COMPAT_POSTGRES_URL pointing at the monitored PostgreSQL recipe"]
 async fn postgresql_version_monitor_crud() {
     let url = std::env::var("CHIRON_HORIZON_COMPAT_POSTGRES_URL").expect("CHIRON_HORIZON_COMPAT_POSTGRES_URL");
-    let pool = postgres::connect(&url, Duration::from_secs(10)).await.expect("connect through Chiron Horizon PostgreSQL driver");
+    let pool = postgres::connect(&url, Duration::from_secs(10))
+        .await
+        .expect("connect through Chiron Horizon PostgreSQL driver");
     let table = unique_table("chiron_horizon_version_monitor");
 
     postgres::execute_query(&pool, &format!("CREATE TABLE {table} (id integer PRIMARY KEY, note text NOT NULL)"))
@@ -52,7 +54,8 @@ async fn postgresql_version_monitor_crud() {
 #[ignore = "requires CHIRON_HORIZON_COMPAT_MYSQL_URL pointing at the monitored MySQL recipe"]
 async fn mysql_version_monitor_crud() {
     let url = std::env::var("CHIRON_HORIZON_COMPAT_MYSQL_URL").expect("CHIRON_HORIZON_COMPAT_MYSQL_URL");
-    let pool = mysql::connect(&url, Duration::from_secs(10)).await.expect("connect through Chiron Horizon MySQL driver");
+    let pool =
+        mysql::connect(&url, Duration::from_secs(10)).await.expect("connect through Chiron Horizon MySQL driver");
     let table = unique_table("chiron_horizon_version_monitor");
 
     mysql::execute_query(

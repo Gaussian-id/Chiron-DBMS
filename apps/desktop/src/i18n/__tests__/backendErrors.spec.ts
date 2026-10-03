@@ -6,10 +6,12 @@ import { BackendErrorException, formatError, normalizeBackendError, sanitizeBack
 import az from "@/i18n/locales/az";
 import en from "@/i18n/locales/en";
 import es from "@/i18n/locales/es";
+import id from "@/i18n/locales/id";
 import it from "@/i18n/locales/it";
 import ja from "@/i18n/locales/ja";
 import ko from "@/i18n/locales/ko";
 import ptBR from "@/i18n/locales/pt-BR";
+import ru from "@/i18n/locales/ru";
 import tr from "@/i18n/locales/tr";
 import zhCN from "@/i18n/locales/zh-CN";
 import zhTW from "@/i18n/locales/zh-TW";
@@ -19,10 +21,12 @@ const LOCALES = {
   az,
   en,
   es,
+  id,
   it,
   ja,
   ko,
   "pt-BR": ptBR,
+  ru,
   tr,
   "zh-CN": zhCN,
   "zh-TW": zhTW,
@@ -46,7 +50,7 @@ const STRUCTURED_BACKEND_ERROR_KEYS = [
   "backendErrors.unknown",
 ] as const;
 
-// Reproduces the exact string crates/chiron-horizon-core/src/agent_service.rs builds on
+// Reproduces the exact string crates/chiron-horizon-driver-agent/src/agent_service.rs builds on
 // Windows: `\` line continuations strip the newline plus the following indent.
 const WINDOWS_JRE_REMOVE_ERROR = [
   "Failed to remove the old JRE directory: C:\\chiron_horizon\\jre21",
@@ -70,6 +74,16 @@ const CASES: { name: string; message: string; key: string; params?: Record<strin
     name: "plugin update waits for active operations",
     message: "Plugin update blocked by active operations. Please wait for them to finish.",
     key: "pluginPlatform.updateBlockedByOperations",
+  },
+  {
+    name: "plugin update from a changed source needs confirmation",
+    message: "Plugin update source change requires confirmation: the offering repository, publisher, or signing key differs from the recorded install",
+    key: "pluginPlatform.updateSourceChangeRequired",
+  },
+  {
+    name: "plugin downgrade is rejected",
+    message: "Plugin downgrade to version 1.0.5 is not allowed (installed 1.1.0)",
+    key: "pluginPlatform.updateDowngradeRejected",
   },
   {
     name: "connection admission waits for plugin update",
@@ -123,7 +137,7 @@ const CASES: { name: string; message: string; key: string; params?: Record<strin
     key: "mongo.import.legacyInsertUnsupported",
   },
   {
-    // crates/chiron-horizon-core/src/mongodb_import_export.rs attributes a batch-level failure to a row.
+    // crates/chiron-horizon-core/src/data/mongodb_import_export.rs attributes a batch-level failure to a row.
     name: "MongoDB Legacy insertMany unsupported on a located row",
     message: "row 1: MongoDB Legacy Agent does not support insertMany; upgrade or reinstall the MongoDB Legacy driver",
     key: "mongo.import.legacyInsertUnsupported",
@@ -274,6 +288,31 @@ describe("backend error translation", () => {
     expect(sanitizeBackendErrorMessage(message)).toBe(message);
   });
 
+  test("hides internal Agent error data that precedes appended fallback context", () => {
+    const t = translatorFor("zh-CN");
+    const message =
+      'Agent RPC error (-1): ORA-12514: TNS:listener does not currently know of service requested in connect descriptor\nCHIRON_HORIZON_AGENT_ERROR_DATA:{"category":null,"retryable":null,"sessionDisposition":null,"stage":null,"operationOutcome":null,"agentSessionId":null}\n\nFallback with alternate Oracle descriptor failed: Agent RPC error (-1): ORA-12505';
+    const expected = "Agent RPC error (-1): ORA-12514: TNS:listener does not currently know of service requested in connect descriptor\n\nFallback with alternate Oracle descriptor failed: Agent RPC error (-1): ORA-12505";
+
+    expect(sanitizeBackendErrorMessage(message)).toBe(expected);
+    expect(formatError(new Error(message))).toBe(expected);
+    expect(translateBackendError(t, message)).toBe(expected);
+  });
+
+  test("hides nested Agent error data inside fallback context", () => {
+    const message = 'native wire version error\nCHIRON_HORIZON_AGENT_ERROR_DATA:{"category":"connection"}\n\nFallback with MongoDB (Legacy) driver failed: Agent RPC error (-1): handshake rejected\nCHIRON_HORIZON_AGENT_ERROR_DATA:{"agentSessionId":"session-1"}';
+    const expected = "native wire version error\n\nFallback with MongoDB (Legacy) driver failed: Agent RPC error (-1): handshake rejected";
+
+    expect(sanitizeBackendErrorMessage(message)).toBe(expected);
+  });
+
+  test("keeps invalid internal-looking data while hiding valid payloads after it", () => {
+    const message = 'database returned\nCHIRON_HORIZON_AGENT_ERROR_DATA:not-json\n\nFallback failed: Agent RPC error (-1): closed\nCHIRON_HORIZON_AGENT_ERROR_DATA:{"agentSessionId":"session-1"}';
+    const expected = "database returned\nCHIRON_HORIZON_AGENT_ERROR_DATA:not-json\n\nFallback failed: Agent RPC error (-1): closed";
+
+    expect(sanitizeBackendErrorMessage(message)).toBe(expected);
+  });
+
   test("strips the SQL error-position transport suffix from raw messages", () => {
     const message = 'ERROR: relation "missing" does not exist\nCHIRON_HORIZON_SQL_ERROR_POSITION:15';
     const expected = 'ERROR: relation "missing" does not exist';
@@ -301,7 +340,7 @@ describe("backend error translation", () => {
     const t = translatorFor("zh-CN");
     const error = {
       version: 1,
-      code: "Chiron Horizon-JDBC-2002",
+      code: "CHIRON-HORIZON-JDBC-2002",
       messageKey: "backendErrors.jdbc.operationTimedOut",
       messageParams: { stage: "execute" },
       source: "jdbcAgent",
@@ -319,7 +358,7 @@ describe("backend error translation", () => {
     const t = translatorFor("zh-CN");
     const error = {
       version: 1,
-      code: "Chiron Horizon-JDBC-9001",
+      code: "CHIRON-HORIZON-JDBC-9001",
       messageKey: "backendErrors.jdbc.legacyFailure",
       messageParams: {},
       source: "jdbcAgentLegacy",
@@ -334,7 +373,7 @@ describe("backend error translation", () => {
     const t = translatorFor("en");
     const error = {
       version: 1,
-      code: "Chiron Horizon-JDBC-4001",
+      code: "CHIRON-HORIZON-JDBC-4001",
       messageKey: "backendErrors.jdbc.sqlFailed",
       messageParams: { stage: "execute" },
       source: "jdbcAgent",
@@ -352,7 +391,7 @@ describe("backend error translation", () => {
     const detail = 'driver: bad connection\nCHIRON_HORIZON_AGENT_ERROR_DATA:{"category":null,"agentSessionId":"session-1"}';
     const error = {
       version: 1,
-      code: "Chiron Horizon-JDBC-9001",
+      code: "CHIRON-HORIZON-JDBC-9001",
       messageKey: "backendErrors.jdbc.legacyFailure",
       messageParams: {},
       source: "jdbcAgentLegacy",
@@ -375,7 +414,7 @@ describe("backend error translation", () => {
     expect(
       normalizeBackendError({
         version: 1,
-        code: "Chiron Horizon-JDBC-2002",
+        code: "CHIRON-HORIZON-JDBC-2002",
         messageKey: "backendErrors.jdbc.operationTimedOut",
         messageParams: { stage: "execute" },
         source: "jdbcAgent",
@@ -388,7 +427,7 @@ describe("backend error translation", () => {
   test("accepts an optional driver-reported error position", () => {
     const error = normalizeBackendError({
       version: 1,
-      code: "Chiron Horizon-JDBC-4001",
+      code: "CHIRON-HORIZON-JDBC-4001",
       messageKey: "backendErrors.jdbc.sqlFailed",
       messageParams: { stage: "execute" },
       source: "jdbcAgent",
@@ -413,7 +452,7 @@ describe("backend error translation", () => {
     expect(
       normalizeBackendError({
         version: 1,
-        code: "Chiron Horizon-JDBC-4001",
+        code: "CHIRON-HORIZON-JDBC-4001",
         messageKey: "backendErrors.jdbc.sqlFailed",
         messageParams: { stage: "execute" },
         source: "jdbcAgent",
@@ -474,7 +513,7 @@ describe("backend error translation", () => {
     const detail = "Plugin package is signed by untrusted key 'chiron-horizon-store-release-2026'";
     const error = JSON.stringify({
       version: 1,
-      code: "CHIRON_HORIZON-LEGACY-0001",
+      code: "CHIRON-HORIZON-LEGACY-0001",
       messageKey: "backendErrors.legacy",
       messageParams: {},
       source: "legacyBackend",
@@ -522,7 +561,7 @@ describe("backend error translation", () => {
   test("preserves JSON envelopes carried by strings and Error messages", () => {
     const envelope = {
       version: 1,
-      code: "Chiron Horizon-JDBC-4001",
+      code: "CHIRON-HORIZON-JDBC-4001",
       messageKey: "backendErrors.jdbc.sqlFailed",
       messageParams: { stage: "execute" },
       source: "jdbcAgent",
@@ -543,7 +582,7 @@ describe("backend error translation", () => {
   test("normalizes structured errors across Error realms and module copies", () => {
     const envelope = {
       version: 1,
-      code: "Chiron Horizon-JDBC-5001",
+      code: "CHIRON-HORIZON-JDBC-5001",
       messageKey: "backendErrors.jdbc.protocolFailed",
       messageParams: {},
       source: "jdbcAgent" as const,
@@ -585,13 +624,13 @@ describe("backend error translation", () => {
     expect(
       formatError({
         version: 1,
-        code: "Chiron Horizon-JDBC-5001",
+        code: "CHIRON-HORIZON-JDBC-5001",
         messageKey: "backendErrors.jdbc.protocolFailed",
         messageParams: {},
         source: "jdbcAgent",
         operationOutcome: "unknown",
       }),
-    ).toBe("Chiron Horizon-JDBC-5001");
+    ).toBe("CHIRON-HORIZON-JDBC-5001");
   });
 });
 
@@ -602,15 +641,17 @@ describe("backend error wording is pinned to the Rust sources", () => {
   const rust = (path: string) => readFileSync(new URL(`../../../../../${path}`, import.meta.url), "utf8");
 
   test.each([
-    ["crates/chiron-horizon-core/src/query_result_export.rs", "Streaming export is unsupported for this query. Simplify it or use a supported driver."],
-    ["crates/chiron-horizon-core/src/query_result_export.rs", "Streaming export needs a result-set session, but this driver returned no session_id."],
-    ["crates/chiron-horizon-core/src/mongodb_import_export.rs", "MongoDB Legacy Agent does not support insertMany; upgrade or reinstall the MongoDB Legacy driver"],
-    ["crates/chiron-horizon-core/src/mongodb_import_export.rs", "MongoDB Legacy Agent returned an invalid find cursor"],
-    ["crates/chiron-horizon-core/src/mongo_ops.rs", "MongoDB Legacy Agent rejected "],
-    ["crates/chiron-horizon-core/src/agent_service.rs", "Failed to remove the old JRE directory: "],
-    ["crates/chiron-horizon-core/src/agent_service.rs", "is in use by drivers: "],
-    ["crates/chiron-horizon-core/src/agent_service.rs", "agent-registry.json not found in the ZIP; not a valid offline driver package."],
-    ["crates/chiron-horizon-core/src/mq/adapters/kafka.rs", "Kafka does not support unloading topics"],
+    ["crates/chiron-horizon-core/src/data/query_result_export.rs", "Streaming export is unsupported for this query. Simplify it or use a supported driver."],
+    ["crates/chiron-horizon-core/src/data/query_result_export.rs", "Streaming export needs a result-set session, but this driver returned no session_id."],
+    ["crates/chiron-horizon-core/src/data/mongodb_import_export.rs", "MongoDB Legacy Agent does not support insertMany; upgrade or reinstall the MongoDB Legacy driver"],
+    ["crates/chiron-horizon-core/src/data/mongodb_import_export.rs", "MongoDB Legacy Agent returned an invalid find cursor"],
+    ["crates/chiron-horizon-core/src/query/mongo_ops.rs", "MongoDB Legacy Agent rejected "],
+    ["crates/chiron-horizon-driver-agent/src/agent_service.rs", "Failed to remove the old JRE directory: "],
+    ["crates/chiron-horizon-driver-agent/src/agent_service.rs", "is in use by drivers: "],
+    ["crates/chiron-horizon-driver-agent/src/agent_service.rs", "agent-registry.json not found in the ZIP; not a valid offline driver package."],
+    ["crates/chiron-horizon-core/src/admin/mq/adapters/kafka.rs", "Kafka does not support unloading topics"],
+    ["crates/chiron-horizon-plugin-runtime/src/plugins/installer.rs", "Plugin update source change requires confirmation:"],
+    ["crates/chiron-horizon-plugin-runtime/src/plugins/installer.rs", "Plugin downgrade to version "],
     ["crates/chiron-horizon-web/src/auth.rs", "Please try again in {remaining}s"],
     ["crates/chiron-horizon-web/src/routes/agents.rs", "Close these database connections before updating drivers: "],
     ["src-tauri/src/commands/agents.rs", "Close these database connections before updating drivers: "],

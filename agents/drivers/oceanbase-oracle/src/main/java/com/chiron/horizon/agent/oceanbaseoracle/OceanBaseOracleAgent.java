@@ -1,10 +1,18 @@
 package com.chiron.horizon.agent.oceanbaseoracle;
 
 import com.chiron.horizon.agent.ColumnInfo;
+import com.chiron.horizon.agent.AgentProtocol;
+import com.chiron.horizon.agent.CompletionAssistantCandidate;
+import com.chiron.horizon.agent.CompletionAssistantCandidateKind;
+import com.chiron.horizon.agent.CompletionAssistantMatchMode;
+import com.chiron.horizon.agent.CompletionAssistantObjectKind;
+import com.chiron.horizon.agent.CompletionAssistantRequest;
+import com.chiron.horizon.agent.CompletionAssistantResponse;
 import com.chiron.horizon.agent.ConfiguredJdbcAgent;
 import com.chiron.horizon.agent.ConnectParams;
 import com.chiron.horizon.agent.DatabaseInfo;
 import com.chiron.horizon.agent.DdlBuilder;
+import com.chiron.horizon.agent.ExecuteQueryOptions;
 import com.chiron.horizon.agent.ForeignKeyInfo;
 import com.chiron.horizon.agent.IndexInfo;
 import com.chiron.horizon.agent.JdbcAgentProfile;
@@ -16,10 +24,15 @@ import com.chiron.horizon.agent.ObjectInfo;
 import com.chiron.horizon.agent.ObjectSource;
 import com.chiron.horizon.agent.OracleObjectPrivilege;
 import com.chiron.horizon.agent.PartitionInfo;
+import com.chiron.horizon.agent.QueryPageOptions;
+import com.chiron.horizon.agent.QueryPageResult;
+import com.chiron.horizon.agent.QueryResult;
+import com.chiron.horizon.agent.QueryTiming;
 import com.chiron.horizon.agent.TableInfo;
 import com.chiron.horizon.agent.TriggerInfo;
 
 import java.sql.Connection;
+import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Types;
@@ -27,8 +40,10 @@ import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Deque;
+import java.util.HashSet;
 import java.util.IdentityHashMap;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -68,6 +83,36 @@ public final class OceanBaseOracleAgent extends ConfiguredJdbcAgent {
 
     public OceanBaseOracleAgent() {
         super(OCEANBASE_ORACLE_PROFILE);
+    }
+
+    @Override
+    public boolean supportsQueryTiming() { return true; }
+
+    @Override
+    public QueryResult executeQuery(String sql, String schema, ExecuteQueryOptions options) {
+        try (QueryTiming timing = QueryTiming.begin()) {
+            QueryResult result = super.executeQuery(sql, schema, options);
+            result.setQuery_timings_ms(timing.finish());
+            return result;
+        }
+    }
+
+    @Override
+    public QueryPageResult executeQueryPage(String sql, String schema, QueryPageOptions options) {
+        try (QueryTiming timing = QueryTiming.begin()) {
+            QueryPageResult result = super.executeQueryPage(sql, schema, options);
+            result.setQuery_timings_ms(timing.finish());
+            return result;
+        }
+    }
+
+    @Override
+    public QueryPageResult fetchQueryPage(String sessionId, int pageSize) {
+        try (QueryTiming timing = QueryTiming.begin()) {
+            QueryPageResult result = super.fetchQueryPage(sessionId, pageSize);
+            result.setQuery_timings_ms(timing.finish());
+            return result;
+        }
     }
 
     @Override
@@ -284,6 +329,330 @@ public final class OceanBaseOracleAgent extends ConfiguredJdbcAgent {
         });
     }
 
+    @Override
+    public CompletionAssistantResponse completionAssistantSearch(CompletionAssistantRequest request) {
+        if (hasTableLikeCompletionKind(request.getObject_kinds())) {
+            return unchecked(() -> completionAssistantTables(request));
+        }
+        return super.completionAssistantSearch(request);
+    }
+
+    private CompletionAssistantResponse completionAssistantTables(CompletionAssistantRequest request) throws SQLException {
+        int limit = boundedCompletionLimit(request.getMax_results());
+        int scanLimit = Math.min(1000, Math.max(limit * 3, limit + 1));
+        String preferredSchema = preferredCompletionSchema(request);
+        CompletionTablesQuery query = buildCompletionTablesQuery(request, preferredSchema, scanLimit + 1);
+        List<CompletionTableRow> rows = new ArrayList<>();
+        try (PreparedStatement stmt = requireConnection().prepareStatement(query.sql)) {
+            bindCompletionArgs(stmt, query.args);
+            try (ResultSet rs = stmt.executeQuery()) {
+                while (rs.next()) {
+                    rows.add(new CompletionTableRow(
+                        rs.getString(1),
+                        rs.getString(2),
+                        rs.getString(3),
+                        rs.getString(4),
+                        rs.getString(5)
+                    ));
+                }
+            }
+        }
+        Set<CompletionSynonymTarget> validTargets = validCompletionSynonymTargets(
+            rows,
+            completionTableObjectTypes(request.getObject_kinds())
+        );
+        List<CompletionAssistantCandidate> candidates = new ArrayList<>();
+        for (CompletionTableRow row : rows) {
+            if (row.name == null || row.name.isBlank()) {
+                continue;
+            }
+            if ("SYNONYM".equalsIgnoreCase(row.objectType)
+                && (row.targetOwner == null || row.targetName == null
+                    || !validTargets.contains(new CompletionSynonymTarget(row.targetOwner, row.targetName)))) {
+                continue;
+            }
+            CompletionAssistantCandidateKind kind = "VIEW".equalsIgnoreCase(row.objectType)
+                ? CompletionAssistantCandidateKind.VIEW
+                : CompletionAssistantCandidateKind.TABLE;
+            candidates.add(new CompletionAssistantCandidate(
+                row.name,
+                kind,
+                blankToNull(request.getDatabase()),
+                row.owner,
+                null,
+                null,
+                null,
+                row.objectType
+            ));
+        }
+        boolean incomplete = candidates.size() > limit;
+        if (incomplete) {
+            candidates = new ArrayList<>(candidates.subList(0, limit));
+        }
+        return new CompletionAssistantResponse(candidates, incomplete, false);
+    }
+
+    static CompletionTablesQuery buildCompletionTablesQuery(
+        CompletionAssistantRequest request,
+        String preferredSchema,
+        int limit
+    ) {
+        List<String> objectTypes = completionTableObjectTypes(request.getObject_kinds());
+        boolean caseSensitive = request.getCase_sensitive();
+        String pattern = completionLikePattern(request.getMask(), request.getMatch_mode());
+        // OceanBase Oracle matches metadata the same way as listTables: fold the
+        // bind value in Java and compare UPPER(column) LIKE ?. UPPER(?) on binds
+        // is unreliable for fuzzy/lowercase masks in this driver.
+        if (!caseSensitive) {
+            pattern = pattern.toUpperCase(Locale.ROOT);
+        }
+        List<Object> args = new ArrayList<>();
+        String namePredicate = completionNamePredicate("o.OBJECT_NAME", caseSensitive);
+        String synonymNamePredicate = completionNamePredicate("s.SYNONYM_NAME", caseSensitive);
+        args.add(pattern);
+
+        String ownerPredicate = "";
+        String synonymOwnerPredicate = "";
+        String owner = "";
+        if (!request.getGlobal_search()) {
+            owner = firstNonBlank(request.getParent_schema(), request.getSchema(), preferredSchema);
+            if (owner == null) {
+                owner = "";
+            }
+            owner = owner.toUpperCase(Locale.ROOT);
+            args.add(owner);
+            ownerPredicate = " AND UPPER(o.OWNER) = ?";
+        }
+
+        args.add(pattern);
+        if (!owner.isEmpty()) {
+            args.add(owner);
+            synonymOwnerPredicate = " AND UPPER(s.OWNER) = ?";
+        }
+
+        String preferred = preferredSchema == null ? "" : preferredSchema.trim();
+        String preferredFolded = caseSensitive ? preferred : preferred.toUpperCase(Locale.ROOT);
+        String exactMask = request.getMask() == null ? "" : request.getMask().trim();
+        String exactFolded = caseSensitive ? exactMask : exactMask.toUpperCase(Locale.ROOT);
+        args.add(preferredFolded);
+        args.add(exactFolded);
+        args.add(limit);
+
+        String typeList = String.join(", ", objectTypes);
+        String baseSql = """
+            SELECT o.OWNER,
+                   o.OBJECT_NAME,
+                   o.OBJECT_TYPE,
+                   CAST(NULL AS VARCHAR2(128)) AS TARGET_OWNER,
+                   CAST(NULL AS VARCHAR2(128)) AS TARGET_NAME
+              FROM ALL_OBJECTS o
+             WHERE o.OBJECT_TYPE IN (%s)
+               AND %s%s
+            UNION ALL
+            SELECT s.OWNER,
+                   s.SYNONYM_NAME AS OBJECT_NAME,
+                   'SYNONYM' AS OBJECT_TYPE,
+                   s.TABLE_OWNER AS TARGET_OWNER,
+                   s.TABLE_NAME AS TARGET_NAME
+              FROM ALL_SYNONYMS s
+             WHERE s.DB_LINK IS NULL
+               AND %s%s
+            """.formatted(typeList, namePredicate, ownerPredicate, synonymNamePredicate, synonymOwnerPredicate)
+            .stripIndent()
+            .trim();
+
+        String preferredOwnerPredicate = caseSensitive ? "OWNER = ?" : "UPPER(OWNER) = ?";
+        String exactNamePredicate = caseSensitive
+            ? "OBJECT_NAME = ?"
+            : "UPPER(OBJECT_NAME) = ?";
+        String orderedSql = """
+            SELECT OWNER, OBJECT_NAME, OBJECT_TYPE, TARGET_OWNER, TARGET_NAME
+              FROM (
+            %s
+              )
+            ORDER BY CASE
+                       WHEN %s THEN 0
+                       WHEN OWNER = 'PUBLIC' THEN 1
+                       WHEN OWNER IN ('SYS','SYSTEM','SYSMAN','DBSNMP','OUTLN','XDB','MDSYS','CTXSYS','WMSYS') THEN 3
+                       ELSE 2
+                     END,
+                     CASE WHEN %s THEN 0 ELSE 1 END,
+                     CASE OBJECT_TYPE WHEN 'TABLE' THEN 0 WHEN 'VIEW' THEN 1 WHEN 'SYNONYM' THEN 3 ELSE 4 END,
+                     OBJECT_NAME,
+                     OWNER
+            """.formatted(baseSql, preferredOwnerPredicate, exactNamePredicate).stripIndent().trim();
+
+        String sql = """
+            SELECT OWNER, OBJECT_NAME, OBJECT_TYPE, TARGET_OWNER, TARGET_NAME
+              FROM (
+            %s
+              )
+             WHERE ROWNUM <= ?
+            """.formatted(orderedSql).stripIndent().trim();
+
+        return new CompletionTablesQuery(sql, args);
+    }
+
+    private static List<String> completionTableObjectTypes(List<CompletionAssistantObjectKind> kinds) {
+        List<String> objectTypes = new ArrayList<>();
+        boolean any = kinds == null || kinds.isEmpty();
+        if (any || kinds.contains(CompletionAssistantObjectKind.TABLE)) {
+            objectTypes.add("'TABLE'");
+        }
+        if (any || kinds.contains(CompletionAssistantObjectKind.VIEW)) {
+            objectTypes.add("'VIEW'");
+        }
+        if (objectTypes.isEmpty()) {
+            objectTypes.add("'TABLE'");
+            objectTypes.add("'VIEW'");
+        }
+        return objectTypes;
+    }
+
+    private static boolean hasTableLikeCompletionKind(List<CompletionAssistantObjectKind> kinds) {
+        if (kinds == null || kinds.isEmpty()) {
+            return true;
+        }
+        for (CompletionAssistantObjectKind kind : kinds) {
+            if (kind == CompletionAssistantObjectKind.TABLE || kind == CompletionAssistantObjectKind.VIEW) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private String preferredCompletionSchema(CompletionAssistantRequest request) throws SQLException {
+        String preferred = firstNonBlank(request.getSchema());
+        if (preferred != null && !preferred.isBlank()) {
+            return preferred;
+        }
+        String current = currentSchema();
+        return current == null ? "" : current;
+    }
+
+    private static String completionLikePattern(String mask, CompletionAssistantMatchMode matchMode) {
+        String escaped = escapeLikePattern(mask == null ? "" : mask.trim());
+        if (matchMode == CompletionAssistantMatchMode.CONTAINS) {
+            return "%" + escaped + "%";
+        }
+        return escaped + "%";
+    }
+
+    private static String escapeLikePattern(String mask) {
+        return mask.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_");
+    }
+
+    private static String completionNamePredicate(String column, boolean caseSensitive) {
+        if (caseSensitive) {
+            return column + " LIKE ? ESCAPE '\\'";
+        }
+        return "UPPER(" + column + ") LIKE ? ESCAPE '\\'";
+    }
+
+    private static int boundedCompletionLimit(Integer requested) {
+        if (requested == null || requested <= 0) {
+            return 100;
+        }
+        return Math.min(requested, 1000);
+    }
+
+    private static String firstNonBlank(String... values) {
+        if (values == null) {
+            return null;
+        }
+        for (String value : values) {
+            if (value != null && !value.isBlank()) {
+                return value.trim();
+            }
+        }
+        return null;
+    }
+
+    private static String blankToNull(String value) {
+        return value == null || value.isBlank() ? null : value;
+    }
+
+    private static void bindCompletionArgs(PreparedStatement stmt, List<Object> args) throws SQLException {
+        for (int i = 0; i < args.size(); i++) {
+            Object arg = args.get(i);
+            if (arg instanceof Integer integer) {
+                stmt.setInt(i + 1, integer);
+            } else {
+                stmt.setString(i + 1, arg == null ? null : String.valueOf(arg));
+            }
+        }
+    }
+
+    private Set<CompletionSynonymTarget> validCompletionSynonymTargets(
+        List<CompletionTableRow> rows,
+        List<String> objectTypes
+    ) throws SQLException {
+        Set<CompletionSynonymTarget> targets = new LinkedHashSet<>();
+        for (CompletionTableRow row : rows) {
+            if ("SYNONYM".equalsIgnoreCase(row.objectType) && row.targetOwner != null && row.targetName != null) {
+                targets.add(new CompletionSynonymTarget(row.targetOwner, row.targetName));
+            }
+        }
+        Set<CompletionSynonymTarget> valid = new HashSet<>();
+        if (targets.isEmpty()) {
+            return valid;
+        }
+        String typeList = String.join(", ", objectTypes);
+        List<CompletionSynonymTarget> ordered = new ArrayList<>(targets);
+        for (int start = 0; start < ordered.size(); start += 100) {
+            List<CompletionSynonymTarget> batch = ordered.subList(start, Math.min(start + 100, ordered.size()));
+            List<Object> args = new ArrayList<>();
+            List<String> predicates = new ArrayList<>();
+            for (CompletionSynonymTarget target : batch) {
+                args.add(target.owner());
+                args.add(target.name());
+                predicates.add("(o.OWNER = ? AND o.OBJECT_NAME = ?)");
+            }
+            String sql = "SELECT DISTINCT o.OWNER, o.OBJECT_NAME"
+                + " FROM ALL_OBJECTS o"
+                + " WHERE o.OBJECT_TYPE IN (" + typeList + ")"
+                + " AND (" + String.join(" OR ", predicates) + ")";
+            try (PreparedStatement stmt = requireConnection().prepareStatement(sql)) {
+                bindCompletionArgs(stmt, args);
+                try (ResultSet rs = stmt.executeQuery()) {
+                    while (rs.next()) {
+                        valid.add(new CompletionSynonymTarget(rs.getString(1), rs.getString(2)));
+                    }
+                }
+            }
+        }
+        return valid;
+    }
+
+    record CompletionSynonymTarget(String owner, String name) {
+    }
+
+    static final class CompletionTableRow {
+        final String owner;
+        final String name;
+        final String objectType;
+        final String targetOwner;
+        final String targetName;
+
+        CompletionTableRow(String owner, String name, String objectType, String targetOwner, String targetName) {
+            this.owner = owner;
+            this.name = name;
+            this.objectType = objectType;
+            this.targetOwner = targetOwner;
+            this.targetName = targetName;
+        }
+    }
+
+    static final class CompletionTablesQuery {
+        final String sql;
+        final List<Object> args;
+
+        CompletionTablesQuery(String sql, List<Object> args) {
+            this.sql = sql;
+            this.args = List.copyOf(args);
+        }
+    }
+
     private static MetadataSql oceanBaseMetadataSql(
         String baseSql,
         String selectList,
@@ -351,11 +720,15 @@ public final class OceanBaseOracleAgent extends ConfiguredJdbcAgent {
     public ObjectSource getObjectSource(String schema, String name, String objectType) {
         return unchecked(() -> {
             String owner = normalizeSchema(schema);
+            String objectName = normalizeObjectName(name);
             String normalizedType = normalizeObjectSourceType(objectType);
+            if (prefersDictionarySource(normalizedType)) {
+                return getDictionaryFirstObjectSource(owner, objectName, normalizedType);
+            }
             String source;
             SQLException metadataError = null;
             try {
-                source = queryDbmsMetadataSource(owner, name, normalizedType);
+                source = queryDbmsMetadataSource(owner, objectName, normalizedType);
             } catch (SQLException e) {
                 metadataError = e;
                 source = null;
@@ -365,7 +738,7 @@ public final class OceanBaseOracleAgent extends ConfiguredJdbcAgent {
                 try {
                     // OceanBase versions and tenant privileges differ in DBMS_METADATA coverage.
                     // Oracle-compatible dictionary views keep schema compare and source editing usable.
-                    source = queryDictionarySource(owner, name, normalizedType);
+                    source = queryDictionarySource(owner, objectName, normalizedType);
                 } catch (SQLException fallbackError) {
                     if (metadataError != null) {
                         metadataError.addSuppressed(fallbackError);
@@ -377,11 +750,39 @@ public final class OceanBaseOracleAgent extends ConfiguredJdbcAgent {
             if (metadataError != null && (source == null || source.trim().isEmpty())) {
                 throw metadataError;
             }
-            return new ObjectSource(name, normalizedType, owner, source == null ? "" : source);
+            return new ObjectSource(objectName, normalizedType, owner, source == null ? "" : source);
         });
     }
 
+    private ObjectSource getDictionaryFirstObjectSource(String owner, String name, String objectType) throws SQLException {
+        String source;
+        SQLException dictionaryError = null;
+        try {
+            source = queryDictionarySource(owner, name, objectType);
+        } catch (SQLException e) {
+            dictionaryError = e;
+            source = null;
+        }
+
+        if (source == null || source.trim().isEmpty()) {
+            try {
+                source = queryDbmsMetadataSource(owner, name, objectType);
+            } catch (SQLException metadataError) {
+                if (dictionaryError != null) {
+                    dictionaryError.addSuppressed(metadataError);
+                    throw dictionaryError;
+                }
+                throw metadataError;
+            }
+        }
+        return new ObjectSource(name, objectType, owner, source == null ? "" : source);
+    }
+
     private String queryDbmsMetadataSource(String owner, String name, String objectType) throws SQLException {
+        if ("SYNONYM".equals(objectType)) {
+            // GET_DDL does not cover synonyms on every supported OB version.
+            return OceanBaseSchemaObjects.synonymSource(requireConnection(), owner, name);
+        }
         String sql = "SELECT DBMS_METADATA.GET_DDL(?, ?, ?) FROM DUAL";
         try (var stmt = requireConnection().prepareStatement(sql)) {
             stmt.setString(1, objectType);
@@ -394,6 +795,9 @@ public final class OceanBaseOracleAgent extends ConfiguredJdbcAgent {
     }
 
     private String queryDictionarySource(String owner, String name, String objectType) throws SQLException {
+        if ("SEQUENCE".equals(objectType)) {
+            return OceanBaseSchemaObjects.sequenceSource(requireConnection(), owner, name);
+        }
         if ("VIEW".equals(objectType)) {
             String sql = "SELECT TEXT FROM ALL_VIEWS WHERE OWNER = ? AND VIEW_NAME = ?";
             try (var stmt = requireConnection().prepareStatement(sql)) {
@@ -417,6 +821,7 @@ public final class OceanBaseOracleAgent extends ConfiguredJdbcAgent {
             stmt.setString(1, owner);
             stmt.setString(2, name);
             stmt.setString(3, sourceType);
+            stmt.setFetchSize(256);
             try (ResultSet rs = stmt.executeQuery()) {
                 while (rs.next()) {
                     String line = rs.getString(1);
@@ -434,7 +839,7 @@ public final class OceanBaseOracleAgent extends ConfiguredJdbcAgent {
             ? ""
             : objectType.trim().toUpperCase(Locale.ROOT).replace(' ', '_');
         return switch (normalized) {
-            case "VIEW", "MATERIALIZED_VIEW", "PROCEDURE", "FUNCTION", "TRIGGER", "SEQUENCE",
+            case "VIEW", "MATERIALIZED_VIEW", "PROCEDURE", "FUNCTION", "TRIGGER", "SEQUENCE", "SYNONYM",
                 "PACKAGE", "PACKAGE_BODY", "TYPE", "TYPE_BODY" -> normalized;
             default -> throw new IllegalArgumentException("Unsupported object type: " + objectType);
         };
@@ -442,7 +847,14 @@ public final class OceanBaseOracleAgent extends ConfiguredJdbcAgent {
 
     private static boolean supportsDictionarySource(String objectType) {
         return switch (objectType) {
-            case "VIEW", "PROCEDURE", "FUNCTION", "TRIGGER", "PACKAGE", "PACKAGE_BODY", "TYPE", "TYPE_BODY" -> true;
+            case "VIEW", "PROCEDURE", "FUNCTION", "TRIGGER", "PACKAGE", "PACKAGE_BODY", "TYPE", "TYPE_BODY", "SEQUENCE" -> true;
+            default -> false;
+        };
+    }
+
+    private static boolean prefersDictionarySource(String objectType) {
+        return switch (objectType) {
+            case "PROCEDURE", "FUNCTION", "PACKAGE", "PACKAGE_BODY", "TRIGGER", "TYPE", "TYPE_BODY" -> true;
             default -> false;
         };
     }
@@ -484,6 +896,7 @@ public final class OceanBaseOracleAgent extends ConfiguredJdbcAgent {
     public List<ColumnInfo> getColumns(String schema, String table) {
         return unchecked(() -> {
             String owner = normalizeSchema(schema);
+            String tableName = normalizeObjectName(table);
             String sql = """
                 SELECT c.COLUMN_NAME, c.DATA_TYPE, c.NULLABLE, c.DATA_PRECISION, c.DATA_SCALE,
                     c.DATA_LENGTH, c.CHAR_LENGTH, c.DATA_DEFAULT, cc.COMMENTS,
@@ -505,9 +918,9 @@ public final class OceanBaseOracleAgent extends ConfiguredJdbcAgent {
             List<ColumnInfo> result = new ArrayList<>();
             try (var stmt = requireConnection().prepareStatement(sql)) {
                 stmt.setString(1, owner);
-                stmt.setString(2, table);
+                stmt.setString(2, tableName);
                 stmt.setString(3, owner);
-                stmt.setString(4, table);
+                stmt.setString(4, tableName);
                 try (ResultSet rs = stmt.executeQuery()) {
                     while (rs.next()) {
                         // Oracle-compatible DATA_DEFAULT is LONG-like; read it before other metadata fields.
@@ -541,15 +954,16 @@ public final class OceanBaseOracleAgent extends ConfiguredJdbcAgent {
     public String getTableDdl(String schema, String table) {
         return unchecked(() -> {
             String owner = normalizeSchema(schema);
-            String ddl = queryDbmsMetadataSource(owner, table, "TABLE");
+            String tableName = normalizeObjectName(table);
+            String ddl = queryDbmsMetadataSource(owner, tableName, "TABLE");
             if (ddl == null || ddl.isBlank()) {
-                throw new SQLException("DBMS_METADATA.GET_DDL returned empty DDL for " + owner + "." + table);
+                throw new SQLException("DBMS_METADATA.GET_DDL returned empty DDL for " + owner + "." + tableName);
             }
             // OceanBase 4.2.5 omits the owner from CREATE TABLE, even for another schema.
             var header = Pattern.compile("(?i)^(\\s*CREATE\\s+(?:GLOBAL\\s+TEMPORARY\\s+)?TABLE\\s+)"
-                + Pattern.quote(quoteIdentifier(table)) + "(?=\\s*\\()").matcher(ddl);
+                + Pattern.quote(quoteIdentifier(tableName)) + "(?=\\s*\\()").matcher(ddl);
             if (header.find()) {
-                ddl = header.replaceFirst(Matcher.quoteReplacement(header.group(1) + quoteIdentifier(owner) + "." + quoteIdentifier(table)));
+                ddl = header.replaceFirst(Matcher.quoteReplacement(header.group(1) + quoteIdentifier(owner) + "." + quoteIdentifier(tableName)));
             }
             ddl = ddl.strip();
             if (!ddl.endsWith(";")) ddl += ";";
@@ -571,7 +985,7 @@ public final class OceanBaseOracleAgent extends ConfiguredJdbcAgent {
             List<String> indexNames = new ArrayList<>();
             try (var stmt = requireConnection().prepareStatement(indexSql)) {
                 stmt.setString(1, owner);
-                stmt.setString(2, table);
+                stmt.setString(2, tableName);
                 try (ResultSet rs = stmt.executeQuery()) {
                     while (rs.next()) indexNames.add(rs.getString(1));
                 }
@@ -581,15 +995,15 @@ public final class OceanBaseOracleAgent extends ConfiguredJdbcAgent {
                 if (indexDdl == null || indexDdl.isBlank()) throw new SQLException("Empty index DDL: " + index);
                 ddl = DdlBuilder.appendTrailingSql(ddl, indexDdl);
             }
-            String tableRef = quoteIdentifier(owner) + "." + quoteIdentifier(table);
-            String comment = getTableComment(owner, table);
+            String tableRef = quoteIdentifier(owner) + "." + quoteIdentifier(tableName);
+            String comment = getTableComment(owner, tableName);
             if (comment != null && !comment.isBlank()) {
                 ddl = DdlBuilder.appendTrailingSql(ddl, "COMMENT ON TABLE " + tableRef + " IS '" + comment.replace("'", "''") + "';");
             }
             String commentSql = "SELECT COLUMN_NAME, COMMENTS FROM ALL_COL_COMMENTS WHERE OWNER = ? AND TABLE_NAME = ? AND COMMENTS IS NOT NULL ORDER BY COLUMN_NAME";
             try (var stmt = requireConnection().prepareStatement(commentSql)) {
                 stmt.setString(1, owner);
-                stmt.setString(2, table);
+                stmt.setString(2, tableName);
                 try (ResultSet rs = stmt.executeQuery()) {
                     while (rs.next()) {
                         String text = rs.getString("COMMENTS");
@@ -599,7 +1013,7 @@ public final class OceanBaseOracleAgent extends ConfiguredJdbcAgent {
                 }
             }
             try {
-                ddl = DdlBuilder.appendTrailingSql(ddl, queryObjectGrantSql(owner, table));
+                ddl = DdlBuilder.appendTrailingSql(ddl, queryObjectGrantSql(owner, tableName));
             } catch (RuntimeException | SQLException ignored) {
                 // Privilege metadata remains optional for users without access to grant views.
             }
@@ -624,13 +1038,14 @@ public final class OceanBaseOracleAgent extends ConfiguredJdbcAgent {
     private List<PartitionInfo> queryPartitions(String schema, String table, boolean subpartition) {
         return unchecked(() -> {
             String owner = normalizeSchema(schema);
+            String tableName = normalizeObjectName(table);
             String prefix = subpartition ? "SUBPARTITION" : "PARTITION";
             String keysView = subpartition ? "ALL_SUBPART_KEY_COLUMNS" : "ALL_PART_KEY_COLUMNS";
             List<String> keys = new ArrayList<>();
             try (var stmt = requireConnection().prepareStatement("SELECT COLUMN_NAME FROM " + keysView
                 + " WHERE OWNER = ? AND NAME = ? AND OBJECT_TYPE = 'TABLE' ORDER BY COLUMN_POSITION")) {
                 stmt.setString(1, owner);
-                stmt.setString(2, table);
+                stmt.setString(2, tableName);
                 try (ResultSet rs = stmt.executeQuery()) {
                     while (rs.next()) keys.add(quoteIdentifier(rs.getString(1)));
                 }
@@ -643,7 +1058,7 @@ public final class OceanBaseOracleAgent extends ConfiguredJdbcAgent {
             List<PartitionInfo> result = new ArrayList<>();
             try (var stmt = requireConnection().prepareStatement(sql)) {
                 stmt.setString(1, owner);
-                stmt.setString(2, table);
+                stmt.setString(2, tableName);
                 try (ResultSet rs = stmt.executeQuery()) {
                     while (rs.next()) {
                         String value = rs.getString("HIGH_VALUE");
@@ -777,10 +1192,11 @@ public final class OceanBaseOracleAgent extends ConfiguredJdbcAgent {
     public String getTableComment(String schema, String table) {
         return unchecked(() -> {
             String owner = normalizeSchema(schema);
+            String tableName = normalizeObjectName(table);
             String sql = "SELECT COMMENTS FROM ALL_TAB_COMMENTS WHERE OWNER = ? AND TABLE_NAME = ? AND TABLE_TYPE = 'TABLE'";
             try (var stmt = requireConnection().prepareStatement(sql)) {
                 stmt.setString(1, owner);
-                stmt.setString(2, table);
+                stmt.setString(2, tableName);
                 try (var rs = stmt.executeQuery()) {
                     if (rs.next()) {
                         String comment = rs.getString("COMMENTS");
@@ -796,6 +1212,7 @@ public final class OceanBaseOracleAgent extends ConfiguredJdbcAgent {
     public List<IndexInfo> listIndexes(String schema, String table) {
         return unchecked(() -> {
             String owner = normalizeSchema(schema);
+            String tableName = normalizeObjectName(table);
             String sql = """
                 SELECT i.INDEX_NAME, ic.COLUMN_NAME, ic.COLUMN_POSITION, i.UNIQUENESS,
                     c.CONSTRAINT_TYPE, i.INDEX_TYPE
@@ -820,7 +1237,7 @@ public final class OceanBaseOracleAgent extends ConfiguredJdbcAgent {
             Map<String, String> typeByIndex = new LinkedHashMap<>();
             try (var stmt = requireConnection().prepareStatement(sql)) {
                 stmt.setString(1, owner);
-                stmt.setString(2, table);
+                stmt.setString(2, tableName);
                 try (ResultSet rs = stmt.executeQuery()) {
                     while (rs.next()) {
                         String indexName = rs.getString("INDEX_NAME");
@@ -854,6 +1271,7 @@ public final class OceanBaseOracleAgent extends ConfiguredJdbcAgent {
     public List<ForeignKeyInfo> listForeignKeys(String schema, String table) {
         return unchecked(() -> {
             String owner = normalizeSchema(schema);
+            String tableName = normalizeObjectName(table);
             String sql = """
                 SELECT c.CONSTRAINT_NAME, cc.COLUMN_NAME, rc.TABLE_NAME, rcc.COLUMN_NAME
                 FROM ALL_CONSTRAINTS c
@@ -870,7 +1288,7 @@ public final class OceanBaseOracleAgent extends ConfiguredJdbcAgent {
             List<ForeignKeyInfo> result = new ArrayList<>();
             try (var stmt = requireConnection().prepareStatement(sql)) {
                 stmt.setString(1, owner);
-                stmt.setString(2, table);
+                stmt.setString(2, tableName);
                 try (ResultSet rs = stmt.executeQuery()) {
                     while (rs.next()) {
                         result.add(new ForeignKeyInfo(
@@ -890,6 +1308,7 @@ public final class OceanBaseOracleAgent extends ConfiguredJdbcAgent {
     public List<TriggerInfo> listTriggers(String schema, String table) {
         return unchecked(() -> {
             String owner = normalizeSchema(schema);
+            String tableName = normalizeObjectName(table);
             String sql = """
                 SELECT TRIGGER_NAME, TRIGGERING_EVENT, TRIGGER_TYPE
                 FROM ALL_TRIGGERS
@@ -900,7 +1319,7 @@ public final class OceanBaseOracleAgent extends ConfiguredJdbcAgent {
             List<TriggerInfo> result = new ArrayList<>();
             try (var stmt = requireConnection().prepareStatement(sql)) {
                 stmt.setString(1, owner);
-                stmt.setString(2, table);
+                stmt.setString(2, tableName);
                 try (ResultSet rs = stmt.executeQuery()) {
                     while (rs.next()) {
                         result.add(new TriggerInfo(rs.getString(1), rs.getString(2), rs.getString(3)));
@@ -913,6 +1332,9 @@ public final class OceanBaseOracleAgent extends ConfiguredJdbcAgent {
 
     @Override
     public String setSchemaSQL(String schema) {
+        if (schema == null || schema.isBlank()) {
+            return "";
+        }
         return "ALTER SESSION SET CURRENT_SCHEMA = " + JdbcIdentifiers.INSTANCE.doubleQuote(schema);
     }
 
@@ -958,9 +1380,15 @@ public final class OceanBaseOracleAgent extends ConfiguredJdbcAgent {
         return result;
     }
 
+    private static String normalizeObjectName(String name) {
+        if (name == null || name.isBlank()) {
+            throw new IllegalArgumentException("Object name must not be blank");
+        }
+        return name;
+    }
+
     private String normalizeSchema(String schema) throws SQLException {
-        String value = schema == null ? "" : schema.trim();
-        return value.isEmpty() ? currentSchema() : value;
+        return schema == null || schema.isBlank() ? currentSchema() : schema;
     }
 
     private String currentSchema() throws SQLException {

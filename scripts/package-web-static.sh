@@ -31,10 +31,6 @@ if [ ! -x "$binary" ]; then
   exit 1
 fi
 
-if [ ! -f "${dist_dir}/index.html" ]; then
-  echo "missing frontend build output: ${dist_dir}/index.html" >&2
-  exit 1
-fi
 
 if readelf -l "$binary" | grep -q 'Requesting program interpreter'; then
   readelf -l "$binary" | grep 'Requesting program interpreter' >&2 || true
@@ -51,12 +47,11 @@ fi
 rm -rf "$output_dir"
 mkdir -p \
   "$package_dir/bin" \
-  "$package_dir/dist" \
   "$package_dir/data"
 
 cp "$binary" "$package_dir/bin/chiron-horizon-web-bin"
 chmod +x "$package_dir/bin/chiron-horizon-web-bin"
-cp -a "${dist_dir}/." "$package_dir/dist/"
+#cp -a "${dist_dir}/." "$package_dir/dist/"
 
 cat > "$package_dir/chiron-horizon" <<'EOF'
 #!/usr/bin/env bash
@@ -69,7 +64,7 @@ while [ -h "$SOURCE" ]; do
 done
 ROOT="$(cd -P "$(dirname "$SOURCE")" && pwd)"
 export CHIRON_HORIZON_PACKAGE_ROOT="$ROOT"
-export CHIRON_HORIZON_STATIC_DIR="${CHIRON_HORIZON_STATIC_DIR:-$ROOT/dist}"
+#export CHIRON_HORIZON_STATIC_DIR="${CHIRON_HORIZON_STATIC_DIR:-$ROOT/dist}"
 export CHIRON_HORIZON_DATA_DIR="${CHIRON_HORIZON_DATA_DIR:-$ROOT/data}"
 port="${CHIRON_HORIZON_PORT:-4224}"
 base_path="${CHIRON_HORIZON_PUBLIC_BASE_PATH:-/}"

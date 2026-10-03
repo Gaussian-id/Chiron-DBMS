@@ -4,7 +4,7 @@ import { join, resolve } from "node:path";
 import { pathToFileURL } from "node:url";
 import { afterEach, describe, expect, it } from "vitest";
 
-const bridgePath = resolve("crates/chiron-horizon-core/assets/pi-mcp-bridge.mjs");
+const bridgePath = resolve("crates/chiron-horizon-ai-provider/assets/pi-mcp-bridge.mjs");
 const envNames = ["CHIRON_HORIZON_PI_MCP_PROGRAM", "CHIRON_HORIZON_PI_MCP_ARGS", "CHIRON_HORIZON_PI_ENABLED_TOOLS", "CHIRON_HORIZON_PI_BRIDGE_READY_FILE"] as const;
 const originalEnv = Object.fromEntries(envNames.map((name) => [name, process.env[name]]));
 

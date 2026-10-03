@@ -1,8 +1,8 @@
 # Chiron Horizon MCP Server
 
-Rust-powered Model Context Protocol server for [Chiron Horizon](https://github.com/Gaussian-id/Chiron-Horizon). It lets MCP-compatible AI agents inspect schemas and run safe database operations using connections configured in Chiron Horizon.
+Rust-powered Model Context Protocol server for [Chiron Horizon](https://github.com/Gaussian-id/Chiron-DBMS). It lets MCP-compatible AI agents inspect schemas and run safe database operations using connections configured in Chiron Horizon.
 
-[Source repository](https://github.com/Gaussian-id/Chiron-Horizon) | [Desktop MCP guide](../../docs/content/docs/mcp.mdx)
+[Source repository](https://github.com/Gaussian-id/Chiron-DBMS) | [Desktop MCP guide](../../docs/content/docs/mcp.mdx)
 
 ## Architecture
 
@@ -84,11 +84,14 @@ Ask the MCP client to:
 | `chiron_horizon_list_routines` | List stored procedures and functions in a schema, with an optional `routine_type` filter (PROCEDURE or FUNCTION) |
 | `chiron_horizon_get_routine_source` | Return the source of a stored procedure or function by name, with an optional `signature` for overloaded names |
 | `chiron_horizon_get_schema_context` | Return compact schema context suitable for an AI model |
-| `chiron_horizon_execute_query` | Execute SQL or a supported MongoDB shell command, returning at most 100 rows |
+| `chiron_horizon_execute_query` | Execute SQL or a supported MongoDB shell command, returning 100 rows by default (up to 1000 with the `max_rows` parameter) |
 | `chiron_horizon_execute_batch` | Execute a SQL script containing multiple statements in one call, returning a result per statement (or a single merged result with `use_transaction` on a multi-statement script) |
 | `chiron_horizon_open_session` | Open a stateful SQL query session pinned to one backend connection |
 | `chiron_horizon_close_session` | Close a session and release its pinned connection resources |
 | `chiron_horizon_execute_redis_command` | Execute a Redis command |
+| `chiron_horizon_salesforce_current_user` | Show the Salesforce user and org behind a connection, including the "Modify All Data" flag |
+| `chiron_horizon_salesforce_prepare_write` | Prepare one Salesforce record write and return a summary plus a single-use confirm token |
+| `chiron_horizon_salesforce_apply_write` | Apply a prepared Salesforce write using its confirm token |
 | `chiron_horizon_peek_messages` | Read Kafka messages without committing consumer offsets |
 | `chiron_horizon_send_message` | Send a message to a supported message queue topic |
 | `chiron_horizon_open_table` | Open a table in the running Chiron Horizon desktop application |
@@ -96,9 +99,26 @@ Ask the MCP client to:
 
 When connection scoping is enabled, mutating connection tools and desktop UI tools are hidden.
 
+`chiron_horizon_execute_query` accepts an optional `max_rows` parameter (1–1000, default 100; out-of-range values are clamped, not rejected). It applies to SQL connections only: MongoDB shell commands always return at most 100 rows, and multi-statement scripts routed to the batch executor return at most 100 rows per statement.
+
 `chiron_horizon_peek_messages` reads a Kafka topic in local or Web mode when `mq-admin` is enabled. Pass `connection_id` or `connection_name`, `topic`, optional `count` (1–100, default 20), `start_position` (`latest` by default, `earliest`, or `offset`), and optional non-negative `partition`. A non-negative `offset` is required only in offset mode; without a partition it applies to all partitions. The JSON response preserves base64 payloads and metadata, reports broker partial reads via `incomplete`, and reports whole-message omissions under a 256 KiB output budget via `outputTruncated`. It respects connection/tool scopes and permits read-only and production reads without committing consumer offsets. It does not support other MQ types or continuous subscriptions.
 
 `chiron_horizon_list_databases` returns only database names allowed by the selected connection's MCP database scope. `chiron_horizon_send_message` is available when message-queue support is included in the server build.
+
+Salesforce connections take SOQL through `chiron_horizon_execute_query` and list objects through `chiron_horizon_list_tables`. `chiron_horizon_execute_batch` and `chiron_horizon_open_session` are refused: SOQL is read-only, and every call is a stateless REST request with no session to pin. A record write is a two-step confirmed operation — `chiron_horizon_salesforce_prepare_write` returns a summary plus a single-use `confirm_token` that expires after 5 minutes, a person approves that summary, and `chiron_horizon_salesforce_apply_write` sends exactly the prepared statement. Preparing needs the per-connection **Allow DML** switch in Chiron Horizon Settings → MCP, which is off by default, and Salesforce cannot roll an applied write back.
+
+## Resources
+
+Clients that support MCP Resources can read the connection catalog and expand templates for database metadata:
+
+| Resource URI | Description |
+| --- | --- |
+| `chiron-horizon://connections` | Connections visible to the current MCP scope |
+| `chiron-horizon://connections/{connection_id}/databases` | Databases visible through one connection |
+| `chiron-horizon://connections/{connection_id}/tables{?database,schema}` | Tables and views in an optional database/schema |
+| `chiron-horizon://connections/{connection_id}/table-schema{?database,schema,table}` | Column definitions for a table; `table` is required |
+
+Resource discovery and reads reuse the corresponding Tool allowlist plus connection, group, database, and runtime scopes. Query parameter values must be URI encoded. SQL execution and all write-capable operations remain Tools.
 
 ## Execution Modes
 
@@ -170,7 +190,7 @@ It listens on `http://127.0.0.1:5225/mcp` by default. Configure an HTTP-capable 
 
 The default loopback address accepts only clients on the same computer. Binding to a non-loopback address requires all of the following: `CHIRON_HORIZON_MCP_HTTP_ALLOW_REMOTE=1`, the `--http-allow-remote` flag, and non-empty `CHIRON_HORIZON_MCP_HTTP_ALLOWED_HOSTS` plus `CHIRON_HORIZON_MCP_HTTP_ALLOWED_ORIGINS` allowlists. Use exact public Host authorities and browser Origins.
 
-Chiron Horizon Web can host native Streamable HTTP on its existing listener, rather than opening a second port. Enable it with `CHIRON_HORIZON_WEB_MCP_TOKEN` (or `CHIRON_HORIZON_WEB_MCP_TOKEN_FILE`) and configure the public Host allowlist. For a container published as `4225:4224`, the endpoint is `http://localhost:4225/mcp`:
+Chiron Horizon Web can host native Streamable HTTP on its existing listener, rather than opening a second port. On a single password-protected Web instance, enable it in **Settings → MCP → HTTP Service** with the public Host allowlist; the generated token is encrypted in Chiron Horizon's secret store and can be rotated there. For multi-instance or deployment-managed setups, set `CHIRON_HORIZON_WEB_MCP_TOKEN` (or `CHIRON_HORIZON_WEB_MCP_TOKEN_FILE`) and `CHIRON_HORIZON_WEB_MCP_ALLOWED_HOSTS` in the deployment. Deployment secrets take precedence and make the page read-only. For a container published as `4225:4224`, the endpoint is `http://localhost:4225/mcp`:
 
 ```yaml
 environment:
@@ -244,6 +264,7 @@ SQL text is not included in normal MCP errors or logged by default. Enable tempo
 | Variable | Purpose |
 | --- | --- |
 | `CHIRON_HORIZON_DATA_DIR` | Override the local Chiron Horizon data directory |
+| `CHIRON_HORIZON_SESSION_IDLE_TTL_SECS` | Stateful session idle timeout in positive whole seconds (default: `1800`). Invalid, zero, negative or unrepresentable values use the default. Applies to transaction-owned connections too; restart the MCP host after changing it. |
 | `CHIRON_HORIZON_WEB_URL` | Use a Chiron Horizon Web/Docker backend |
 | `CHIRON_HORIZON_WEB_PASSWORD` | Authenticate to the Chiron Horizon Web backend |
 | `HTTP_PROXY` / `HTTPS_PROXY` / `ALL_PROXY` | Standard system proxy variables for Chiron Horizon Web requests; empty value means no proxy. Auth via `http://user:pass@host:port` |

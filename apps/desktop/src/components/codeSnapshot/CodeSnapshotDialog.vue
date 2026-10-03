@@ -158,7 +158,7 @@ const previewVisible = computed(() => open.value && !!props.source);
   <Dialog v-model:open="open">
     <!-- The dialog height follows --chiron-horizon-viewport-height to support older WebViews with inaccurate vh sizing.
          Its vertical flex layout fixes the header and footer so only the preview scrolls and the bottom actions stay visible. -->
-    <DialogContent class="flex max-h-[calc(var(--chiron-horizon-viewport-height)-2rem)] flex-col overflow-hidden border border-border !bg-background text-foreground shadow-2xl !backdrop-blur-none sm:max-w-[860px]">
+    <DialogContent class="flex max-h-[calc(var(--chiron-horizon-viewport-height)-2rem)] flex-col overflow-hidden border border-border !bg-background-solid text-foreground shadow-2xl !backdrop-blur-none sm:max-w-[860px]">
       <DialogHeader>
         <DialogTitle class="flex items-center gap-2">
           <Camera class="h-5 w-5 text-primary" />

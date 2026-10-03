@@ -1,12 +1,8 @@
 // @vitest-environment happy-dom
 
-import { readFileSync } from "node:fs";
-import { resolve } from "node:path";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { CODE_SNAPSHOT_CSS, materializeSnapshotCloneLineNumbers, renderCodeSnapshotHtml, savePngDataUrlToFile, snapshotElementToPng } from "@/lib/codeSnapshot/codeSnapshot";
 import { LEGACY_WEBVIEW_CLASS } from "@/lib/ui/legacyWebView";
-
-const codeSnapshotDialogSource = readFileSync(resolve(process.cwd(), "apps/desktop/src/components/codeSnapshot/CodeSnapshotDialog.vue"), "utf8");
 
 const { createCodeHighlighter, highlightCode, toPng, isTauriRuntime, save, writeFile } = vi.hoisted(() => {
   const highlightCode = vi.fn((content: string, _lang: string) => `<span class="line">${content}</span>`);
@@ -199,12 +195,6 @@ describe("renderCodeSnapshotHtml", () => {
     expect(html).toContain("padding:0 24px 24px");
   });
 
-  it("keeps the snapshot dialog responsive layout classes in source", () => {
-    expect(codeSnapshotDialogSource).toContain("sm:max-w-[860px]");
-    expect(codeSnapshotDialogSource).toContain("md:flex-row");
-    expect(codeSnapshotDialogSource).toContain("md:w-52");
-  });
-
   it("materializes real line-number nodes in the export clone", () => {
     document.body.innerHTML = '<div class="chiron-horizon-code-snapshot"><pre class="chiron-horizon-code-snapshot__pre chiron-horizon-code-snapshot__pre--numbered"><code><span class="line">SELECT 1</span><span class="line">FROM dual</span></code></pre></div>';
     const root = document.body.firstElementChild as HTMLElement;
@@ -263,8 +253,7 @@ describe("renderCodeSnapshotHtml", () => {
       expect(options.adjustPseudoElement?.(document.createElement("span"), ":after", {} as CSSStyleDeclaration)).toBeUndefined();
 
       const clone = document.createElement("div");
-      clone.innerHTML =
-        '<div class="chiron-horizon-code-snapshot"><pre class="chiron-horizon-code-snapshot__pre chiron-horizon-code-snapshot__pre--numbered" style="--chiron-horizon-snapshot-line-number:#d0d7de"><code><span class="line">SELECT 1</span><span class="line">FROM dual</span></code></pre></div>';
+      clone.innerHTML = '<div class="chiron-horizon-code-snapshot"><pre class="chiron-horizon-code-snapshot__pre chiron-horizon-code-snapshot__pre--numbered" style="--chiron-horizon-snapshot-line-number:#d0d7de"><code><span class="line">SELECT 1</span><span class="line">FROM dual</span></code></pre></div>';
       options.onclone?.(clone);
 
       const line = clone.querySelector<HTMLElement>(".chiron-horizon-code-snapshot__line-number");

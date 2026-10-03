@@ -2,12 +2,16 @@
 import { computed, nextTick, onBeforeUnmount, reactive, ref, watch } from "vue";
 import type { CSSProperties } from "vue";
 import { useI18n } from "vue-i18n";
-import { ArrowDownWideNarrow, ChevronsDownUp, Download, FilePlus, FileText, FolderCog, FolderClosed, FolderOpen, FolderPlus, Library, LocateFixed, Pencil, Play, Search, Trash2, Upload, X } from "@lucide/vue";
+import { ArrowDownWideNarrow, ArrowRightLeft, ChevronsDownUp, Database, Download, FilePlus, FileText, FolderCog, FolderClosed, FolderOpen, FolderPlus, Layers, Library, Loader2, LocateFixed, Pencil, Play, Search, Trash2, Upload, X } from "@lucide/vue";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { SearchableSelect } from "@/components/ui/searchable-select";
 import CustomContextMenu, { type ContextMenuItem as CtxMenuItem } from "@/components/ui/CustomContextMenu.vue";
+import ConnectionTreeSelect from "@/components/connection/ConnectionTreeSelect.vue";
 import HelpTooltip from "@/components/ui/tooltip/HelpTooltip.vue";
 import LightTooltip from "@/components/ui/LightTooltip.vue";
+import SqlLibrarySearchSnippet from "@/components/layout/SqlLibrarySearchSnippet.vue";
+import type { SavedSqlLineMatch } from "@/lib/savedSql/savedSqlSearch";
 import { useToast } from "@/composables/useToast";
 import { isTauriRuntime } from "@/lib/backend/tauriRuntime";
 import * as api from "@/lib/backend/api";
@@ -20,7 +24,7 @@ import { externalSqlEditorMaxBytes } from "@/lib/sql/sqlFileOpen";
 import { focusSidebarRenameInput } from "@/lib/sidebar/sidebarRenameFocus";
 import { savedSqlFolderBranchFileCount } from "@/lib/savedSql/savedSqlFolderCounts";
 import { collectSavedSqlDirectoryImportFiles } from "@/lib/savedSql/savedSqlDirectoryImport";
-import { savedSqlErrorMessage } from "@/lib/savedSql/savedSqlErrors";
+import { savedSqlBatchErrorMessage, savedSqlErrorMessage } from "@/lib/savedSql/savedSqlErrors";
 import { savedSqlDatabaseScopeKey } from "@/lib/savedSql/savedSqlDatabaseTree";
 import { ensureSqlExtension, stripSqlExtension } from "@/lib/savedSql/savedSqlFileName";
 import { savedSqlImportTarget } from "@/lib/savedSql/savedSqlImportTarget";
@@ -28,6 +32,9 @@ import { savedSqlExecutionTargetFromTab, type SavedSqlOpenTargetMode } from "@/l
 import { uniqueSavedSqlExportFileName, exportSavedSqlFileContent } from "@/lib/savedSql/savedSqlExport";
 import { orderedListRangeAnchorIndex, orderedListSelectionIntent } from "@/lib/selection/orderedListSelection";
 import { resolveExternalSqlFileTarget, unassociatedExternalSqlFileTarget } from "@/lib/sql/externalSqlFileTarget";
+import { catalogDatabaseOptionsKey, normalizedQueryTabCatalog, queryCatalogSelectorVisible, useDatabaseOptions } from "@/composables/useDatabaseOptions";
+import { formatDatabaseLabel } from "@/lib/database/defaultDatabase";
+import { sqlExecutionTargetCapabilities, targetDefaultDatabase, targetUsesConnectionOnlyScope } from "@/lib/database/sqlExecutionTargetCapabilities";
 import type { SavedSqlFile, SavedSqlFolder } from "@/types/database";
 
 const { t } = useI18n();
@@ -36,6 +43,7 @@ const savedSqlStore = useSavedSqlStore();
 const connectionStore = useConnectionStore();
 const queryStore = useQueryStore();
 const settingsStore = useSettingsStore();
+const { databaseOptions, loadingDatabaseOptions, loadDatabaseOptions, catalogOptions, loadingCatalogOptions, loadCatalogOptions, catalogDatabaseOptions, loadingCatalogDatabaseOptions, loadCatalogDatabaseOptions } = useDatabaseOptions();
 
 const emit = defineEmits<{
   close: [];
@@ -50,6 +58,12 @@ type DropPosition = "before" | "after" | "inside";
 const activeConnectionIds = computed(() => new Set(connectionStore.connections.map((c) => c.id)));
 const searchText = ref("");
 const searchQuery = computed(() => searchText.value.trim().toLowerCase());
+
+watch(searchText, (text) => {
+  if (text.trim()) {
+    void savedSqlStore.ensureAllFilesLoaded();
+  }
+});
 
 // Sort mode: "folder" (default tree structure) or "date" (flat list by update date)
 const sortMode = ref<"folder" | "date">("folder");
@@ -516,6 +530,140 @@ const allSelectableItems = computed(() => {
 
 const hasSelection = computed(() => selectedFileIds.value.size > 0 || selectedFolderIds.value.size > 0);
 const selectedCount = computed(() => selectedFileIds.value.size + selectedFolderIds.value.size);
+const showChangeTargetDialog = ref(false);
+const changeTargetFileIds = ref<string[]>([]);
+const changeTargetConnectionId = ref("");
+const changeTargetCatalog = ref("");
+const changeTargetDatabase = ref("");
+const changingTarget = ref(false);
+
+const changeTargetConnections = computed(() => connectionStore.connections.filter((connection) => !!sqlExecutionTargetCapabilities(connection)));
+const changeTargetConnection = computed(() => changeTargetConnections.value.find((connection) => connection.id === changeTargetConnectionId.value));
+const changeTargetCapabilities = computed(() => sqlExecutionTargetCapabilities(changeTargetConnection.value));
+const changeTargetCatalogs = computed(() => catalogOptions.value[changeTargetConnectionId.value] ?? []);
+const normalizedChangeTargetCatalog = computed(() => normalizedQueryTabCatalog(changeTargetCatalogs.value, changeTargetCatalog.value));
+const showChangeTargetCatalog = computed(() => {
+  if (!changeTargetCapabilities.value?.supportsCatalog) return false;
+  return changeTargetCatalogs.value.length === 0 || queryCatalogSelectorVisible(changeTargetCatalogs.value);
+});
+const changeTargetCatalogNames = computed(() => {
+  const names = changeTargetCatalogs.value.map((catalog) => catalog.name);
+  return changeTargetCatalog.value && !names.includes(changeTargetCatalog.value) ? [changeTargetCatalog.value, ...names] : names;
+});
+const changeTargetDatabaseCacheKey = computed(() => (normalizedChangeTargetCatalog.value ? catalogDatabaseOptionsKey(changeTargetConnectionId.value, normalizedChangeTargetCatalog.value) : changeTargetConnectionId.value));
+const changeTargetDatabaseNames = computed(() => {
+  const names = normalizedChangeTargetCatalog.value ? (catalogDatabaseOptions.value[changeTargetDatabaseCacheKey.value] ?? []) : (databaseOptions.value[changeTargetConnectionId.value] ?? []);
+  return changeTargetDatabase.value && !names.includes(changeTargetDatabase.value) ? [changeTargetDatabase.value, ...names] : names;
+});
+const changeTargetDatabaseLoading = computed(() => (normalizedChangeTargetCatalog.value ? (loadingCatalogDatabaseOptions.value[changeTargetDatabaseCacheKey.value] ?? false) : (loadingDatabaseOptions.value[changeTargetConnectionId.value] ?? false)));
+const showChangeTargetDatabase = computed(() => !!changeTargetCapabilities.value?.supportsDatabase && !targetUsesConnectionOnlyScope(changeTargetConnection.value));
+const canConfirmChangeTarget = computed(() => {
+  if (changingTarget.value || changeTargetFileIds.value.length === 0 || !changeTargetConnection.value || !changeTargetCapabilities.value) return false;
+  return !changeTargetCapabilities.value.databaseRequired || !!changeTargetDatabase.value;
+});
+
+function resetChangeTargetConnection(connectionId: string) {
+  const connection = changeTargetConnections.value.find((candidate) => candidate.id === connectionId);
+  changeTargetConnectionId.value = connection?.id ?? "";
+  changeTargetCatalog.value = "";
+  changeTargetDatabase.value = connection && !targetUsesConnectionOnlyScope(connection) ? targetDefaultDatabase(connection) : "";
+}
+
+function openChangeTarget(fileIds: readonly string[]) {
+  const selectedFiles = [...new Set(fileIds)].map((id) => savedSqlStore.getFile(id)).filter((file): file is SavedSqlFile => Boolean(file));
+  if (selectedFiles.length === 0) return;
+  changeTargetFileIds.value = selectedFiles.map((file) => file.id);
+
+  const first = selectedFiles[0]!;
+  const commonConnectionId = selectedFiles.every((file) => file.connectionId === first.connectionId) && changeTargetConnections.value.some((connection) => connection.id === first.connectionId) ? first.connectionId : "";
+  const fallbackConnectionId = [connectionStore.activeConnectionId, changeTargetConnections.value[0]?.id].find((id) => !!id && changeTargetConnections.value.some((connection) => connection.id === id)) ?? "";
+  resetChangeTargetConnection(commonConnectionId || fallbackConnectionId);
+
+  if (commonConnectionId) {
+    if (selectedFiles.every((file) => (file.catalog || "") === (first.catalog || ""))) changeTargetCatalog.value = first.catalog || "";
+    if (selectedFiles.every((file) => file.database === first.database)) changeTargetDatabase.value = first.database;
+  }
+  showChangeTargetDialog.value = true;
+}
+
+function cancelChangeTarget() {
+  if (changingTarget.value) return;
+  showChangeTargetDialog.value = false;
+  changeTargetFileIds.value = [];
+}
+
+async function loadChangeTargetCatalogs() {
+  if (!changeTargetConnection.value || !changeTargetCapabilities.value?.supportsCatalog) return;
+  try {
+    await loadCatalogOptions(changeTargetConnection.value.id);
+  } catch (error) {
+    toast(t("sqlLibrary.changeTargetLoadFailed", { message: savedSqlErrorMessage(error, t) }), 5000);
+  }
+}
+
+async function loadChangeTargetDatabases() {
+  const connection = changeTargetConnection.value;
+  if (!connection || targetUsesConnectionOnlyScope(connection)) return;
+  try {
+    if (normalizedChangeTargetCatalog.value) await loadCatalogDatabaseOptions(connection.id, normalizedChangeTargetCatalog.value);
+    else await loadDatabaseOptions(connection.id);
+  } catch (error) {
+    toast(t("sqlLibrary.changeTargetLoadFailed", { message: savedSqlErrorMessage(error, t) }), 5000);
+  }
+}
+
+function selectChangeTargetCatalog(catalog: string) {
+  if (changeTargetCatalog.value === catalog) return;
+  changeTargetCatalog.value = catalog;
+  changeTargetDatabase.value = "";
+}
+
+function changeTargetDatabaseLabel(database: string) {
+  return formatDatabaseLabel(changeTargetConnection.value, database, {
+    defaultDatabase: t("editor.defaultDatabase"),
+    noDatabase: t("editor.noDatabase"),
+  });
+}
+
+async function executeChangeTarget() {
+  if (!canConfirmChangeTarget.value) return;
+  const connection = changeTargetConnection.value;
+  if (!connection || !connectionStore.getConfig(connection.id)) {
+    cancelChangeTarget();
+    return;
+  }
+
+  changingTarget.value = true;
+  try {
+    const result = await savedSqlStore.updateFilesExecutionTarget(changeTargetFileIds.value, {
+      connectionId: connection.id,
+      database: targetUsesConnectionOnlyScope(connection) ? "" : changeTargetDatabase.value,
+      catalog: changeTargetCapabilities.value?.supportsCatalog ? normalizedChangeTargetCatalog.value : undefined,
+    });
+    showChangeTargetDialog.value = false;
+    changeTargetFileIds.value = [];
+
+    if (result.failures.length === 0) {
+      if (result.succeeded.length === 0) return;
+      clearSelection();
+      toast(t("sqlLibrary.changeTargetSuccess", { count: result.succeeded.length }), 2500);
+      return;
+    }
+
+    selectedFileIds.value = new Set(result.failures.map((failure) => failure.fileId));
+    selectedFolderIds.value = new Set();
+    const message = savedSqlBatchErrorMessage(result.failures, t);
+    if (result.succeeded.length > 0) {
+      toast(t("sqlLibrary.changeTargetPartial", { count: result.succeeded.length, failed: result.failures.length, message }), 8000);
+    } else {
+      toast(t("sqlLibrary.changeTargetFailed", { message }), 8000);
+    }
+  } catch (error) {
+    toast(t("sqlLibrary.changeTargetFailed", { message: savedSqlErrorMessage(error, t) }), 8000);
+  } finally {
+    changingTarget.value = false;
+  }
+}
 
 function clearSelection() {
   selectedFileIds.value = new Set();
@@ -735,14 +883,25 @@ async function moveFilesToFolder(fileIds: string[], folderId?: string) {
   }
 }
 
-async function openFile(file: SavedSqlFile, targetMode?: SavedSqlOpenTargetMode) {
+async function openFile(file: SavedSqlFile, targetMode?: SavedSqlOpenTargetMode, reveal?: { line: number; column?: number }) {
   if (suppressNextRowClick.value) return;
   const loadedFile = await savedSqlStore.ensureFileContent(file.id);
   if (!loadedFile) return;
-  const tabId = queryStore.openSavedSql(loadedFile, { targetMode });
+  const tabId = queryStore.openSavedSql(loadedFile, { targetMode, reveal });
   const openedConnectionId = queryStore.tabs.find((tab) => tab.id === tabId)?.connectionId ?? loadedFile.connectionId;
   if (openedConnectionId) connectionStore.activeConnectionId = openedConnectionId;
   void savedSqlStore.recordFileUsage(loadedFile.id);
+}
+
+function handleMatchClick(file: SavedSqlFile, match: SavedSqlLineMatch) {
+  if (suppressNextRowClick.value) return;
+  const currentIndex = allSelectableItems.value.findIndex((item) => item.type === "file" && item.id === file.id);
+  if (currentIndex >= 0) {
+    clearSelection();
+    lastClickedItemIndex.value = currentIndex;
+    setActiveItem(file.id, "file");
+  }
+  openFile(file, undefined, { line: match.lineNumber, column: match.column });
 }
 
 function handleFileClick(file: SavedSqlFile, event: MouseEvent) {
@@ -861,6 +1020,12 @@ const contextMenuItems = computed<CtxMenuItem[]>(() => {
     const selectedFiles = Array.from(selectedFileIds.value);
     return [
       {
+        label: t("sqlLibrary.changeTarget", { count: selectedFiles.length }),
+        action: () => openChangeTarget(selectedFiles),
+        icon: ArrowRightLeft,
+        visible: selectedFiles.length > 0,
+      },
+      {
         label: t("sqlLibrary.moveSelectedToFolder", { count: selectedFiles.length }),
         icon: FolderClosed,
         children: folderMoveMenuItems(selectedFiles),
@@ -904,6 +1069,7 @@ const contextMenuItems = computed<CtxMenuItem[]>(() => {
         icon: Play,
         disabled: !hasCurrentSavedSqlExecutionTarget.value,
       },
+      { label: t("sqlLibrary.changeTarget", { count: 1 }), action: () => openChangeTarget([target.id]), icon: ArrowRightLeft },
       { label: t("sqlLibrary.exportFile"), action: () => exportSingleFile(target), icon: Upload },
       { label: t("sqlLibrary.moveToFolder"), icon: FolderClosed, children: folderMoveMenuItems([target.id]) },
       { label: "", separator: true },
@@ -1209,7 +1375,16 @@ function showDropInside(targetId: string) {
     <div class="border-b shrink-0 px-2 py-1">
       <div class="relative">
         <Search class="absolute left-2 top-1/2 -translate-y-1/2 h-3 w-3 text-muted-foreground" />
-        <input data-sql-library-search v-model="searchText" autocapitalize="off" autocorrect="off" spellcheck="false" class="w-full h-6 pl-7 pr-6 text-[13px] rounded border border-border bg-background focus:outline-none focus:ring-1 focus:ring-ring" :placeholder="t('grid.search')" />
+        <input
+          data-sql-library-search
+          v-model="searchText"
+          @focus="savedSqlStore.ensureAllFilesLoaded()"
+          autocapitalize="off"
+          autocorrect="off"
+          spellcheck="false"
+          class="w-full h-6 pl-7 pr-6 text-[13px] rounded border border-border bg-background focus:outline-none focus:ring-1 focus:ring-ring"
+          :placeholder="t('grid.search')"
+        />
         <button v-if="searchText" type="button" class="absolute right-1.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground" @click="searchText = ''">
           <X class="h-3 w-3" />
         </button>
@@ -1275,36 +1450,38 @@ function showDropInside(targetId: string) {
                   </LightTooltip>
                 </div>
 
-                <div
-                  v-else
-                  class="relative flex cursor-default items-center gap-1 px-2 py-1.5 text-[13px] group"
-                  :class="[fileRowClass(item.item.id), isDraggingItem(item.item.id) ? 'opacity-50' : '']"
-                  @mousedown="handleDragMouseDown($event, item.item.id, 'file')"
-                  @click="handleFileClick(item.item, $event)"
-                  @contextmenu.capture="contextTarget = item.item"
-                  @contextmenu.prevent="
-                    contextTarget = item.item;
-                    onContextMenu($event);
-                  "
-                >
-                  <FileText class="h-3.5 w-3.5 text-blue-400 shrink-0" />
-                  <span v-if="isFileDirty(item.item)" aria-hidden="true" class="dirty-sql-library-marker">*</span>
-                  <template v-if="isRenamingFile(item.item.id)">
-                    <input
-                      :ref="setRenameInputRef"
-                      v-model="renameValue"
-                      data-no-drag="true"
-                      class="min-w-0 flex-1 rounded border border-primary/50 bg-transparent px-1 text-[13px] outline-none"
-                      @keydown.enter.prevent="confirmRename"
-                      @keydown.escape.prevent="cancelRename"
-                      @blur="confirmRename"
-                      @mousedown.stop
-                      @click.stop
-                    />
-                  </template>
-                  <span v-else class="chiron-horizon-sql-library-drag-label min-w-0 flex-1 truncate" :title="fileTitleLabel(item.item)" :style="fileTitleStyle(item.item)">{{ item.item.name }}</span>
-                  <span class="min-w-0 max-w-[45%] shrink truncate text-[13px]" :class="fileMetaClass(item.item.id)" :title="getConnectionLabel(item.item.connectionId)">[{{ getConnectionLabel(item.item.connectionId) }}]</span>
-                </div>
+                <template v-else>
+                  <div
+                    class="relative flex cursor-default items-center gap-1 px-2 py-1.5 text-[13px] group"
+                    :class="[fileRowClass(item.item.id), isDraggingItem(item.item.id) ? 'opacity-50' : '']"
+                    @mousedown="handleDragMouseDown($event, item.item.id, 'file')"
+                    @click="handleFileClick(item.item, $event)"
+                    @contextmenu.capture="contextTarget = item.item"
+                    @contextmenu.prevent="
+                      contextTarget = item.item;
+                      onContextMenu($event);
+                    "
+                  >
+                    <FileText class="h-3.5 w-3.5 text-blue-400 shrink-0" />
+                    <span v-if="isFileDirty(item.item)" aria-hidden="true" class="dirty-sql-library-marker">*</span>
+                    <template v-if="isRenamingFile(item.item.id)">
+                      <input
+                        :ref="setRenameInputRef"
+                        v-model="renameValue"
+                        data-no-drag="true"
+                        class="min-w-0 flex-1 rounded border border-primary/50 bg-transparent px-1 text-[13px] outline-none"
+                        @keydown.enter.prevent="confirmRename"
+                        @keydown.escape.prevent="cancelRename"
+                        @blur="confirmRename"
+                        @mousedown.stop
+                        @click.stop
+                      />
+                    </template>
+                    <span v-else class="chiron-horizon-sql-library-drag-label min-w-0 flex-1 truncate" :title="fileTitleLabel(item.item)" :style="fileTitleStyle(item.item)">{{ item.item.name }}</span>
+                    <span class="min-w-0 max-w-[45%] shrink truncate text-[13px]" :class="fileMetaClass(item.item.id)" :title="getConnectionLabel(item.item.connectionId)">[{{ getConnectionLabel(item.item.connectionId) }}]</span>
+                  </div>
+                  <SqlLibrarySearchSnippet v-if="searchQuery" :file="item.item" :query="searchQuery" @select-match="(match) => handleMatchClick(item.item, match)" />
+                </template>
               </div>
             </div>
 
@@ -1360,41 +1537,43 @@ function showDropInside(targetId: string) {
                   </LightTooltip>
                 </div>
 
-                <div
-                  v-else
-                  class="relative flex cursor-default items-center gap-1 py-1.5 pr-2 text-[13px] group"
-                  :style="{ paddingLeft: `${8 + row.depth * 16}px` }"
-                  :class="[fileRowClass(row.file.id), isDraggingItem(row.file.id) ? 'opacity-50' : '']"
-                  @mousedown="handleDragMouseDown($event, row.file.id, 'file')"
-                  @mousemove="updateDropTarget($event, row.file.id, 'file')"
-                  @mouseleave="clearDropTarget(row.file.id)"
-                  @click="handleFileClick(row.file, $event)"
-                  @contextmenu.capture="contextTarget = row.file"
-                  @contextmenu.prevent="
-                    contextTarget = row.file;
-                    onContextMenu($event);
-                  "
-                >
-                  <div v-if="showDropBefore(row.file.id)" class="absolute left-2 right-2 top-0 border-t-2 border-primary" />
-                  <div v-if="showDropAfter(row.file.id)" class="absolute left-2 right-2 bottom-0 border-b-2 border-primary" />
-                  <FileText class="h-3.5 w-3.5 text-blue-400 shrink-0" />
-                  <span v-if="isFileDirty(row.file)" aria-hidden="true" class="dirty-sql-library-marker">*</span>
-                  <template v-if="isRenamingFile(row.file.id)">
-                    <input
-                      :ref="setRenameInputRef"
-                      v-model="renameValue"
-                      data-no-drag="true"
-                      class="min-w-0 flex-1 rounded border border-primary/50 bg-transparent px-1 text-[13px] outline-none"
-                      @keydown.enter.prevent="confirmRename"
-                      @keydown.escape.prevent="cancelRename"
-                      @blur="confirmRename"
-                      @mousedown.stop
-                      @click.stop
-                    />
-                  </template>
-                  <span v-else class="chiron-horizon-sql-library-drag-label min-w-0 flex-1 truncate" :title="fileTitleLabel(row.file)" :style="fileTitleStyle(row.file)">{{ row.file.name }}</span>
-                  <span class="min-w-0 max-w-[45%] shrink truncate text-[13px]" :class="fileMetaClass(row.file.id)" :title="getConnectionLabel(row.file.connectionId)">[{{ getConnectionLabel(row.file.connectionId) }}]</span>
-                </div>
+                <template v-else>
+                  <div
+                    class="relative flex cursor-default items-center gap-1 py-1.5 pr-2 text-[13px] group"
+                    :style="{ paddingLeft: `${8 + row.depth * 16}px` }"
+                    :class="[fileRowClass(row.file.id), isDraggingItem(row.file.id) ? 'opacity-50' : '']"
+                    @mousedown="handleDragMouseDown($event, row.file.id, 'file')"
+                    @mousemove="updateDropTarget($event, row.file.id, 'file')"
+                    @mouseleave="clearDropTarget(row.file.id)"
+                    @click="handleFileClick(row.file, $event)"
+                    @contextmenu.capture="contextTarget = row.file"
+                    @contextmenu.prevent="
+                      contextTarget = row.file;
+                      onContextMenu($event);
+                    "
+                  >
+                    <div v-if="showDropBefore(row.file.id)" class="absolute left-2 right-2 top-0 border-t-2 border-primary" />
+                    <div v-if="showDropAfter(row.file.id)" class="absolute left-2 right-2 bottom-0 border-b-2 border-primary" />
+                    <FileText class="h-3.5 w-3.5 text-blue-400 shrink-0" />
+                    <span v-if="isFileDirty(row.file)" aria-hidden="true" class="dirty-sql-library-marker">*</span>
+                    <template v-if="isRenamingFile(row.file.id)">
+                      <input
+                        :ref="setRenameInputRef"
+                        v-model="renameValue"
+                        data-no-drag="true"
+                        class="min-w-0 flex-1 rounded border border-primary/50 bg-transparent px-1 text-[13px] outline-none"
+                        @keydown.enter.prevent="confirmRename"
+                        @keydown.escape.prevent="cancelRename"
+                        @blur="confirmRename"
+                        @mousedown.stop
+                        @click.stop
+                      />
+                    </template>
+                    <span v-else class="chiron-horizon-sql-library-drag-label min-w-0 flex-1 truncate" :title="fileTitleLabel(row.file)" :style="fileTitleStyle(row.file)">{{ row.file.name }}</span>
+                    <span class="min-w-0 max-w-[45%] shrink truncate text-[13px]" :class="fileMetaClass(row.file.id)" :title="getConnectionLabel(row.file.connectionId)">[{{ getConnectionLabel(row.file.connectionId) }}]</span>
+                  </div>
+                  <SqlLibrarySearchSnippet v-if="searchQuery" :file="row.file" :query="searchQuery" :depth="row.depth" @select-match="(match) => handleMatchClick(row.file, match)" />
+                </template>
               </div>
 
               <div v-if="visibleFiles.length > 0 || dragState.draggedType === 'file'">
@@ -1407,46 +1586,52 @@ function showDropInside(targetId: string) {
                 >
                   {{ t("sqlLibrary.unfiled") }}
                 </div>
-                <div
-                  v-for="file in visibleFiles"
-                  :key="file.id"
-                  class="relative flex cursor-default items-center gap-1 px-2 py-1.5 text-[13px] group"
-                  :class="[fileRowClass(file.id), isDraggingItem(file.id) ? 'opacity-50' : '']"
-                  @mousedown="handleDragMouseDown($event, file.id, 'file')"
-                  @mousemove="updateDropTarget($event, file.id, 'file')"
-                  @mouseleave="clearDropTarget(file.id)"
-                  @click="handleFileClick(file, $event)"
-                  @contextmenu.capture="contextTarget = file"
-                  @contextmenu.prevent="
-                    contextTarget = file;
-                    onContextMenu($event);
-                  "
-                >
-                  <div v-if="showDropBefore(file.id)" class="absolute left-2 right-2 top-0 border-t-2 border-primary" />
-                  <div v-if="showDropAfter(file.id)" class="absolute left-2 right-2 bottom-0 border-b-2 border-primary" />
-                  <FileText class="h-3.5 w-3.5 text-blue-400 shrink-0" />
-                  <span v-if="isFileDirty(file)" aria-hidden="true" class="dirty-sql-library-marker">*</span>
-                  <template v-if="isRenamingFile(file.id)">
-                    <input
-                      :ref="setRenameInputRef"
-                      v-model="renameValue"
-                      data-no-drag="true"
-                      class="min-w-0 flex-1 rounded border border-primary/50 bg-transparent px-1 text-[13px] outline-none"
-                      @keydown.enter.prevent="confirmRename"
-                      @keydown.escape.prevent="cancelRename"
-                      @blur="confirmRename"
-                      @mousedown.stop
-                      @click.stop
-                    />
-                  </template>
-                  <span v-else class="chiron-horizon-sql-library-drag-label min-w-0 flex-1 truncate" :title="fileTitleLabel(file)" :style="fileTitleStyle(file)">{{ file.name }}</span>
-                  <span class="min-w-0 max-w-[45%] shrink truncate text-[13px]" :class="fileMetaClass(file.id)" :title="getConnectionLabel(file.connectionId)">[{{ getConnectionLabel(file.connectionId) }}]</span>
-                </div>
+                <template v-for="file in visibleFiles" :key="file.id">
+                  <div
+                    class="relative flex cursor-default items-center gap-1 px-2 py-1.5 text-[13px] group"
+                    :class="[fileRowClass(file.id), isDraggingItem(file.id) ? 'opacity-50' : '']"
+                    @mousedown="handleDragMouseDown($event, file.id, 'file')"
+                    @mousemove="updateDropTarget($event, file.id, 'file')"
+                    @mouseleave="clearDropTarget(file.id)"
+                    @click="handleFileClick(file, $event)"
+                    @contextmenu.capture="contextTarget = file"
+                    @contextmenu.prevent="
+                      contextTarget = file;
+                      onContextMenu($event);
+                    "
+                  >
+                    <div v-if="showDropBefore(file.id)" class="absolute left-2 right-2 top-0 border-t-2 border-primary" />
+                    <div v-if="showDropAfter(file.id)" class="absolute left-2 right-2 bottom-0 border-b-2 border-primary" />
+                    <FileText class="h-3.5 w-3.5 text-blue-400 shrink-0" />
+                    <span v-if="isFileDirty(file)" aria-hidden="true" class="dirty-sql-library-marker">*</span>
+                    <template v-if="isRenamingFile(file.id)">
+                      <input
+                        :ref="setRenameInputRef"
+                        v-model="renameValue"
+                        data-no-drag="true"
+                        class="min-w-0 flex-1 rounded border border-primary/50 bg-transparent px-1 text-[13px] outline-none"
+                        @keydown.enter.prevent="confirmRename"
+                        @keydown.escape.prevent="cancelRename"
+                        @blur="confirmRename"
+                        @mousedown.stop
+                        @click.stop
+                      />
+                    </template>
+                    <span v-else class="chiron-horizon-sql-library-drag-label min-w-0 flex-1 truncate" :title="fileTitleLabel(file)" :style="fileTitleStyle(file)">{{ file.name }}</span>
+                    <span class="min-w-0 max-w-[45%] shrink truncate text-[13px]" :class="fileMetaClass(file.id)" :title="getConnectionLabel(file.connectionId)">[{{ getConnectionLabel(file.connectionId) }}]</span>
+                  </div>
+                  <SqlLibrarySearchSnippet v-if="searchQuery" :file="file" :query="searchQuery" @select-match="(match) => handleMatchClick(file, match)" />
+                </template>
               </div>
             </div>
             <!-- End tree structure -->
 
-            <div v-if="!hasAnyVisibleItem" class="flex h-full flex-col items-center justify-center gap-2 text-muted-foreground">
+            <div v-if="savedSqlStore.loadState === 'idle' || savedSqlStore.loadState === 'loading'" class="flex h-full flex-col items-center justify-center gap-2 text-muted-foreground" role="status" aria-live="polite">
+              <Loader2 class="h-6 w-6 animate-spin motion-reduce:animate-none" aria-hidden="true" />
+              <p class="text-[13px]">{{ t("common.loading") }}</p>
+            </div>
+
+            <div v-else-if="!hasAnyVisibleItem" class="flex h-full flex-col items-center justify-center gap-2 text-muted-foreground">
               <Library class="h-8 w-8 opacity-30" />
               <p class="text-[13px]">{{ t("sqlLibrary.empty") }}</p>
             </div>
@@ -1470,6 +1655,81 @@ function showDropInside(targetId: string) {
         <DialogFooter>
           <Button variant="outline" size="sm" @click="showDeleteConfirm = false">{{ t("dangerDialog.cancel") }}</Button>
           <Button variant="destructive" size="sm" @click="executeDelete">{{ t("dangerDialog.deleteConfirm") }}</Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+
+    <Dialog :open="showChangeTargetDialog" @update:open="(open) => (open ? (showChangeTargetDialog = true) : cancelChangeTarget())">
+      <DialogContent class="sm:max-w-[460px]">
+        <DialogHeader>
+          <DialogTitle>{{ t("sqlLibrary.changeTargetTitle") }}</DialogTitle>
+          <DialogDescription>{{ t("sqlLibrary.changeTargetDescription", { count: changeTargetFileIds.length }) }}</DialogDescription>
+        </DialogHeader>
+        <div v-if="changeTargetConnections.length" class="space-y-4 py-2">
+          <div class="space-y-1.5">
+            <label class="text-sm font-medium">{{ t("sqlLibrary.targetConnection") }}</label>
+            <ConnectionTreeSelect
+              :model-value="changeTargetConnectionId"
+              :connections="changeTargetConnections"
+              :layout="connectionStore.sidebarLayout"
+              :placeholder="t('editor.selectConnection')"
+              :search-placeholder="t('editor.searchConnection')"
+              :empty-text="t('grid.noSearchResults')"
+              :disabled="changingTarget"
+              trigger-class="h-8 w-full max-w-none justify-between border border-input bg-background px-2.5 text-sm"
+              list-class="w-[410px] max-w-[calc(100vw-2rem)]"
+              @update:model-value="resetChangeTargetConnection"
+            />
+          </div>
+          <div v-if="showChangeTargetCatalog" class="space-y-1.5">
+            <label class="text-sm font-medium">{{ t("sqlLibrary.targetCatalog") }}</label>
+            <SearchableSelect
+              :model-value="changeTargetCatalog"
+              :options="changeTargetCatalogNames"
+              :placeholder="t('editor.selectCatalog')"
+              :search-placeholder="t('editor.searchCatalog')"
+              :empty-text="t('grid.noSearchResults')"
+              :loading-text="t('common.loading')"
+              :loading="loadingCatalogOptions[changeTargetConnectionId] || false"
+              :disabled="changingTarget"
+              @update:model-value="selectChangeTargetCatalog"
+              @update:open="(open: boolean) => open && loadChangeTargetCatalogs()"
+            >
+              <template #trigger-label="{ label, loading }">
+                <Layers class="h-3.5 w-3.5 shrink-0" />
+                <span class="truncate">{{ loading ? t("common.loading") : label }}</span>
+              </template>
+            </SearchableSelect>
+          </div>
+          <div v-if="showChangeTargetDatabase" class="space-y-1.5">
+            <label class="text-sm font-medium">{{ t("sqlLibrary.targetDatabase") }}</label>
+            <SearchableSelect
+              :model-value="changeTargetDatabase"
+              :options="changeTargetDatabaseNames"
+              :placeholder="t('editor.selectDatabase')"
+              :search-placeholder="t('editor.searchDatabase')"
+              :empty-text="t('grid.noSearchResults')"
+              :loading-text="t('common.loading')"
+              :loading="changeTargetDatabaseLoading"
+              :disabled="changingTarget || !changeTargetConnection"
+              :display-name="changeTargetDatabaseLabel"
+              @update:model-value="(database) => (changeTargetDatabase = database)"
+              @update:open="(open: boolean) => open && loadChangeTargetDatabases()"
+            >
+              <template #trigger-label="{ label, loading }">
+                <Database class="h-3.5 w-3.5 shrink-0" />
+                <span class="truncate">{{ loading ? t("common.loading") : label }}</span>
+              </template>
+            </SearchableSelect>
+          </div>
+        </div>
+        <p v-else class="py-4 text-sm text-muted-foreground">{{ t("sqlLibrary.noTargetConnection") }}</p>
+        <DialogFooter>
+          <Button variant="outline" size="sm" :disabled="changingTarget" @click="cancelChangeTarget">{{ t("dangerDialog.cancel") }}</Button>
+          <Button size="sm" :disabled="!canConfirmChangeTarget" @click="executeChangeTarget">
+            <Loader2 v-if="changingTarget" class="mr-1.5 h-3.5 w-3.5 animate-spin" />
+            {{ t("sqlLibrary.changeTargetConfirm") }}
+          </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

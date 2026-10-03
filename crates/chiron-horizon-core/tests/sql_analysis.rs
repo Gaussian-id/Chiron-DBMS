@@ -799,3 +799,62 @@ fn generic_dialect_still_rejects_spark_datasource_clauses() {
 
     assert!(error.contains("USING"));
 }
+
+#[test]
+fn oracle_admin_ddl_statements_do_not_raise_syntax_errors() {
+    for sql in [
+        "create user chiron_horizon_tmp identified by \"pw\" account unlock;",
+        "alter user chiron_horizon_tmp identified by \"pw\";",
+        "alter user chiron_horizon_tmp default tablespace chiron_horizon_ts;",
+        "create tablespace chiron_horizon_ts datafile '/tmp/chiron_horizon_ts.dbf' size 10m autoextend on next 1m maxsize unlimited;",
+        "alter tablespace chiron_horizon_ts add datafile '/tmp/chiron_horizon_ts2.dbf' size 5m;",
+        "drop tablespace chiron_horizon_ts including contents and datafiles;",
+        "create profile chiron_horizon_prof limit failed_login_attempts 5;",
+        "create directory chiron_horizon_dir as '/tmp/chiron_horizon_dir';",
+        "create or replace public synonym chiron_horizon_syn for dual;",
+        "alter session set nls_date_format='YYYY-MM-DD';",
+        "grant create session to chiron_horizon_tmp;",
+        "revoke create session from chiron_horizon_tmp;",
+    ] {
+        let analysis = analyze_sql_references(sql, Some("oracle"))
+            .unwrap_or_else(|error| panic!("Oracle admin DDL should analyze: {error} ({sql})"));
+        assert!(analysis.tables.is_empty(), "unexpected table references for {sql}");
+        assert!(analysis.columns.is_empty(), "unexpected column references for {sql}");
+    }
+}
+
+#[test]
+fn oracle_admin_ddl_masking_keeps_following_statement_spans() {
+    let sql =
+        "select 1 from users;\ncreate user chiron_horizon_tmp identified by \"pw\" account unlock;\nselect u.id from users u;";
+
+    let analysis = analyze_sql_references(sql, Some("oracle"))
+        .unwrap_or_else(|error| panic!("masked Oracle admin DDL should analyze: {error}"));
+
+    let tables: Vec<_> = analysis.tables.iter().map(|table| (table.name.as_str(), table.scope_id)).collect();
+    assert_eq!(tables, vec![("users", 0), ("users", 1)]);
+    // The trailing statement keeps the exact line/column it had in the unmasked script
+    // ("users" starts after `select u.id from ` on line 3).
+    assert_eq!(analysis.tables[1].span.start_line, 3);
+    assert_eq!(analysis.tables[1].span.start_column, 18);
+
+    let columns: Vec<_> = analysis.columns.iter().map(|column| column.name.as_str()).collect();
+    assert_eq!(columns, vec!["id"]);
+    assert_eq!(analysis.columns[0].span.start_line, 3);
+}
+
+#[test]
+fn oracle_admin_ddl_tolerance_is_scoped_to_oracle_compatible_dialects() {
+    for dialect in [Some("generic"), Some("postgres"), Some("mysql"), None] {
+        let error = analyze_sql_references("create user chiron_horizon_tmp identified by \"pw\";", dialect)
+            .expect_err("non Oracle dialects must keep the parser error");
+        assert!(!error.is_empty());
+    }
+}
+
+#[test]
+fn oracle_syntax_errors_are_still_reported() {
+    let error = analyze_sql_references("select from where order;", Some("oracle"))
+        .expect_err("a real Oracle syntax error must still be reported");
+    assert!(error.contains("sql parser error"), "unexpected error: {error}");
+}

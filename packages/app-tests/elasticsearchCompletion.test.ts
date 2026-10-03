@@ -334,7 +334,7 @@ test("flattening mapping fields ignores object identity cycles", () => {
     title_text: { type: "text" },
   };
   (properties.title_text as Record<string, unknown>).properties = properties;
-  const flattened = flattenElasticsearchMappingFields({ chiron_horizon: { mappings: { properties } } });
+  const flattened = flattenElasticsearchMappingFields({ "chiron-horizon": { mappings: { properties } } });
   assert.equal(flattened.find((field) => field.name === "title_text")?.dataType, "text");
   assert.ok(flattened.length < 10);
 });

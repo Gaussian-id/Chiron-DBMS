@@ -36,6 +36,11 @@ pub struct ExecuteQueryRequest {
     pub use_transaction: Option<bool>,
     pub continue_on_error: Option<bool>,
     pub execution_mode: Option<chiron_horizon_core::query::QueryExecutionMode>,
+    /// MySQL auto-commit tabs: keep a transaction the user opened explicitly
+    /// (`BEGIN` / `START TRANSACTION`) open across executions until COMMIT /
+    /// ROLLBACK. Defaults to the historical cleanup when omitted.
+    #[serde(default)]
+    pub preserve_explicit_transaction: bool,
 }
 
 #[derive(Deserialize)]
@@ -75,6 +80,9 @@ pub struct ExecuteBatchRequest {
     pub catalog: Option<String>,
     pub timeout_secs: Option<u64>,
     pub destructive_confirmed: Option<bool>,
+    /// Opt-in single transaction for the whole batch (see
+    /// [`chiron_horizon_core::query::execute_statements_with_transaction_option`]).
+    pub use_transaction: Option<bool>,
 }
 
 #[derive(Deserialize)]
@@ -271,6 +279,19 @@ pub struct BuildTableStructureSqlRequest {
 #[serde(rename_all = "camelCase")]
 pub struct BuildTableOwnerChangeSqlRequest {
     pub options: chiron_horizon_core::table_structure_sql::TableOwnerChangeSqlOptions,
+}
+
+#[derive(Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct BuildTablePartitionOperationSqlRequest {
+    pub options: chiron_horizon_core::table_structure_sql::TablePartitionSqlOptions,
+}
+
+#[derive(Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct BuildCreatePartitionedTableSqlRequest {
+    pub options: chiron_horizon_core::table_structure_sql::TableStructureSqlOptions,
+    pub partitioning: chiron_horizon_core::table_structure_sql::TablePartitionDefinition,
 }
 
 #[derive(Deserialize)]
@@ -584,6 +605,7 @@ pub async fn execute_multi(
             use_transaction: req.use_transaction,
             continue_on_error: req.continue_on_error.unwrap_or(false),
             execution_mode: req.execution_mode.unwrap_or_default(),
+            preserve_explicit_transaction: req.preserve_explicit_transaction,
         },
     )
     .await;
@@ -625,12 +647,13 @@ pub async fn execute_batch(
         super::mcp_policy::ensure_sql(&state, &headers, &req.connection_id, &database, statement, false).await?;
     }
     tracing::debug!(connection_id = %req.connection_id, "execute_batch");
-    let result = chiron_horizon_core::query::execute_statements(
+    let result = chiron_horizon_core::query::execute_statements_with_transaction_option(
         &state.app,
         &req.connection_id,
         &database,
         &req.statements,
         req.schema.as_deref(),
+        req.use_transaction == Some(true),
         req.timeout_secs,
     )
     .await
@@ -814,6 +837,12 @@ pub struct GetExplainInfoRequest {
 
 #[derive(Deserialize)]
 #[serde(rename_all = "camelCase")]
+pub struct GetPluginPlanCapabilitiesRequest {
+    pub connection_id: String,
+}
+
+#[derive(Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct BuildCreateUserSqlRequest {
     pub username: String,
     pub password: String,
@@ -831,10 +860,89 @@ pub async fn get_explain_info(
         req.schema.as_deref(),
         &req.sql,
         req.mode.as_deref(),
+        None,
     )
     .await
     .map_err(AppError::from)?;
     Ok(Json(plan))
+}
+
+/// Plugin Host API: what the current host and connection can plan, reported
+/// without connecting or running any SQL.
+pub async fn get_plugin_plan_capabilities(
+    State(state): State<Arc<WebState>>,
+    Json(req): Json<GetPluginPlanCapabilitiesRequest>,
+) -> Result<Json<chiron_horizon_core::query::plugin_plan::PluginPlanCapabilities>, AppError> {
+    let capabilities =
+        chiron_horizon_core::query::plugin_plan::plugin_plan_capabilities(&state.app, &req.connection_id)
+            .await
+            .map_err(AppError::from)?;
+    Ok(Json(capabilities))
+}
+
+/// Plugin Host API: read-only estimated plan acquisition. The request carries
+/// the original SQL only; the host generates and owns the EXPLAIN.
+pub async fn get_plugin_estimated_plan(
+    State(state): State<Arc<WebState>>,
+    Json(request): Json<chiron_horizon_core::query::plugin_plan::PluginPlanRequest>,
+) -> Result<Json<chiron_horizon_core::query::plugin_plan::PluginPlanResult>, AppError> {
+    let result = chiron_horizon_core::query::plugin_plan::explain_estimated_plan(&state.app, request)
+        .await
+        .map_err(AppError::from)?;
+    Ok(Json(result))
+}
+
+#[derive(Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct QueryPluginDataRequest {
+    pub plugin_id: String,
+    pub request: chiron_horizon_core::query::plugin_data::PluginDataQueryRequest,
+}
+
+#[derive(Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct PluginDataGrantRequest {
+    pub plugin_id: String,
+    #[serde(default)]
+    pub connection_id: String,
+    #[serde(default)]
+    pub granted: bool,
+}
+
+/// Plugin Host API: consent-gated read-only data query (`host.data:read`).
+pub async fn query_plugin_data(
+    State(state): State<Arc<WebState>>,
+    Json(body): Json<QueryPluginDataRequest>,
+) -> Result<Json<chiron_horizon_core::query::plugin_data::PluginDataQueryResult>, AppError> {
+    let result = chiron_horizon_core::query::plugin_data::query_plugin_data(&state.app, &body.plugin_id, body.request)
+        .await
+        .map_err(AppError::from)?;
+    Ok(Json(result))
+}
+
+pub async fn get_plugin_data_grants(
+    State(state): State<Arc<WebState>>,
+    Json(body): Json<PluginDataGrantRequest>,
+) -> Result<Json<Vec<chiron_horizon_core::query::plugin_data::PluginDataGrant>>, AppError> {
+    let grants = chiron_horizon_core::query::plugin_data::list_plugin_data_grants(&state.app, &body.plugin_id)
+        .await
+        .map_err(AppError::from)?;
+    Ok(Json(grants))
+}
+
+pub async fn set_plugin_data_grant(
+    State(state): State<Arc<WebState>>,
+    Json(body): Json<PluginDataGrantRequest>,
+) -> Result<Json<Vec<chiron_horizon_core::query::plugin_data::PluginDataGrant>>, AppError> {
+    let grants = chiron_horizon_core::query::plugin_data::set_plugin_data_grant(
+        &state.app,
+        &body.plugin_id,
+        &body.connection_id,
+        body.granted,
+    )
+    .await
+    .map_err(AppError::bad_request)?;
+    Ok(Json(grants))
 }
 
 pub async fn build_create_user_sql(Json(req): Json<BuildCreateUserSqlRequest>) -> Result<Json<String>, AppError> {
@@ -1010,6 +1118,18 @@ pub async fn build_table_owner_change_sql(
     Json(chiron_horizon_core::table_structure_sql::build_table_owner_change_sql(req.options))
 }
 
+pub async fn build_table_partition_operation_sql(
+    Json(req): Json<BuildTablePartitionOperationSqlRequest>,
+) -> Json<chiron_horizon_core::table_structure_sql::TableStructureSqlResult> {
+    Json(chiron_horizon_core::table_structure_sql::build_table_partition_operation_sql(req.options))
+}
+
+pub async fn build_create_partitioned_table_sql(
+    Json(req): Json<BuildCreatePartitionedTableSqlRequest>,
+) -> Json<chiron_horizon_core::table_structure_sql::TableStructureSqlResult> {
+    Json(chiron_horizon_core::table_structure_sql::build_create_partitioned_table_sql(req.options, req.partitioning))
+}
+
 pub async fn preview_sqlite_table_structure_change(
     State(state): State<Arc<WebState>>,
     Json(req): Json<PreviewSqliteTableStructureChangeRequest>,
@@ -1088,7 +1208,10 @@ pub async fn extract_data_grid_selection(
     (axum::http::StatusCode, Json<chiron_horizon_core::data_grid_extractors::DataGridExtractError>),
 > {
     tokio::task::spawn_blocking(move || {
-        chiron_horizon_core::data_grid_extractors::extract_data_grid_selection(req.request)
+        // Cells pasted from the grid land in a spreadsheet, so formula-triggering text
+        // is neutralized before the extractor renders it (see chiron_horizon_core::data::grid_clipboard_guard).
+        let request = chiron_horizon_core::data::grid_clipboard_guard::neutralize_spreadsheet_formulas(req.request);
+        chiron_horizon_core::data_grid_extractors::extract_data_grid_selection(request)
     })
     .await
     .map_err(|error| {
@@ -1212,12 +1335,11 @@ mod tests {
     use crate::state::WebState;
     use axum::extract::State as AxumState;
     use chiron_horizon_core::connection::AppState;
-    use chiron_horizon_core::storage::Storage;
 
     async fn test_web_state() -> (Arc<WebState>, std::path::PathBuf) {
         let dir = std::env::temp_dir().join(format!("chiron-horizon-web-query-test-{}", uuid::Uuid::new_v4()));
         std::fs::create_dir_all(&dir).unwrap();
-        let storage = Storage::open(&dir.join("storage.db")).await.unwrap();
+        let storage = chiron_horizon_core::persistence::test_storage::open(&dir.join("storage.db")).await.unwrap();
         let app = Arc::new(AppState::new_with_plugin_dir(storage, dir.join("plugins")));
         let state = Arc::new(WebState::for_tests(app, dir.clone()));
         (state, dir)
@@ -1256,6 +1378,7 @@ mod tests {
             catalog: None,
             timeout_secs: None,
             destructive_confirmed: None,
+            use_transaction: None,
         };
 
         let result = execute_script_with_2pc(AxumState(state), Json(req))
@@ -1281,6 +1404,7 @@ mod tests {
             catalog: None,
             timeout_secs: None,
             destructive_confirmed: None,
+            use_transaction: None,
         };
 
         let result = execute_script_with_2pc(AxumState(state), Json(req)).await.expect("empty deploy should succeed");
@@ -1303,6 +1427,7 @@ mod tests {
             catalog: None,
             timeout_secs: None,
             destructive_confirmed: None,
+            use_transaction: None,
         };
 
         let result = execute_script_with_2pc(AxumState(state), Json(req))
@@ -1327,6 +1452,7 @@ mod tests {
             catalog: None,
             timeout_secs: None,
             destructive_confirmed: None,
+            use_transaction: None,
         };
 
         let result = execute_script_with_2pc(AxumState(state), Json(req))
@@ -1350,6 +1476,8 @@ mod tests {
                 rows: vec![vec![serde_json::json!("relation customer_orders does not exist")]],
                 affected_rows: 0,
                 execution_time_ms: 0,
+                server_execute_time_us: None,
+                query_timings_ms: None,
                 truncated: false,
                 session_id: None,
                 has_more: false,
@@ -1365,6 +1493,9 @@ mod tests {
             server_message: false,
             manual_transaction_proven_read_only: false,
             manual_transaction_no_statement: false,
+            auto_commit_open_transaction: None,
+            auto_commit_explicit_transaction_rolled_back: false,
+            auto_commit_session_autocommit_rolled_back: false,
         };
 
         let response = execute_multi_response(vec![result], 17).unwrap();
@@ -1377,7 +1508,7 @@ mod tests {
                 .unwrap();
 
         assert_eq!(payload[0]["statement_index"], 1);
-        assert_eq!(payload[0]["error"]["code"], "Chiron Horizon-JDBC-4001");
+        assert_eq!(payload[0]["error"]["code"], "CHIRON-HORIZON-JDBC-4001");
         assert_eq!(payload[0]["error"]["detail"], "relation customer_orders does not exist");
     }
 }

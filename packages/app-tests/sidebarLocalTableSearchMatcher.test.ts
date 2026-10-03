@@ -1,4 +1,4 @@
-// Regression test for Gaussian-id/Chiron-Horizon #6190.
+// Regression test for Gaussian-id/Chiron-DBMS #6190.
 //
 // The sidebar label matcher itself matches "erpncs"/"terpncs" against
 // "T_Erp_Nc_SuPlan_List" (via the separator-blind tiers). The reported bug is

@@ -7,7 +7,6 @@ use chiron_horizon_core::db::postgres;
 use chiron_horizon_core::models::connection::{ConnectionConfig, DatabaseType};
 use chiron_horizon_core::query::execute_sql_statement;
 use chiron_horizon_core::query_result_export::{export_query_result_core, ExportStatus, QueryResultExportRequest};
-use chiron_horizon_core::storage::Storage;
 
 fn live_postgres_config(
     id: &str,
@@ -18,6 +17,8 @@ fn live_postgres_config(
     database: &str,
 ) -> ConnectionConfig {
     ConnectionConfig {
+        oracle_oci_nls_lang: None,
+        oracle_oci_tns_admin: None,
         docs_notes_path: None,
         id: id.to_string(),
         name: id.to_string(),
@@ -79,6 +80,7 @@ fn live_postgres_config(
         is_production: false,
         production_databases: vec![],
         show_system_schemas: false,
+        sidebar_auto_load_all_tables: false,
         database_info: None,
     }
 }
@@ -123,7 +125,7 @@ async fn live_postgres_query_result_export_uses_single_streamed_query() {
 
     let dir = std::env::temp_dir().join(format!("chiron-horizon-live-postgres-query-export-{suffix}"));
     std::fs::create_dir_all(&dir).unwrap();
-    let storage = Storage::open(&dir.join("storage.db")).await.unwrap();
+    let storage = chiron_horizon_core::persistence::test_storage::open(&dir.join("storage.db")).await.unwrap();
     let state = AppState::new(storage);
     let connection_id = "live-postgres-query-export";
     let config = live_postgres_config(connection_id, &host, port, &user, &password, &database);
@@ -156,8 +158,11 @@ async fn live_postgres_query_result_export_uses_single_streamed_query() {
         execution_id: Some(format!("live-postgres-query-export-{suffix}")),
         date_time_format: None,
         csv_quote_mode: Default::default(),
+        null_literal: String::new(),
         export_table_name: None,
         export_column_types: None,
+        selected_columns: None,
+        export_column_extras: None,
         column_comments: None,
         auto_filter: None,
         identifier_quote: None,
@@ -217,7 +222,7 @@ async fn live_postgres_query_result_xlsx_preserves_temporal_cell_types() {
 
     let dir = std::env::temp_dir().join(format!("chiron-horizon-live-postgres-xlsx-temporal-{suffix}"));
     std::fs::create_dir_all(&dir).unwrap();
-    let storage = Storage::open(&dir.join("storage.db")).await.unwrap();
+    let storage = chiron_horizon_core::persistence::test_storage::open(&dir.join("storage.db")).await.unwrap();
     let state = AppState::new(storage);
     let connection_id = "live-postgres-xlsx-temporal";
     let config = live_postgres_config(connection_id, &host, port, &user, &password, &database);
@@ -248,8 +253,11 @@ async fn live_postgres_query_result_xlsx_preserves_temporal_cell_types() {
         execution_id: Some(format!("live-postgres-xlsx-temporal-{suffix}")),
         date_time_format: None,
         csv_quote_mode: Default::default(),
+        null_literal: String::new(),
         export_table_name: None,
         export_column_types: None,
+        selected_columns: None,
+        export_column_extras: None,
         column_comments: None,
         auto_filter: None,
         identifier_quote: None,
@@ -291,7 +299,7 @@ async fn live_postgres_numeric_xlsx_ignores_fractional_trailing_zeros() {
     let suffix = uuid::Uuid::new_v4().simple().to_string();
     let dir = std::env::temp_dir().join(format!("chiron-horizon-live-postgres-xlsx-numeric-{suffix}"));
     std::fs::create_dir_all(&dir).unwrap();
-    let storage = Storage::open(&dir.join("storage.db")).await.unwrap();
+    let storage = chiron_horizon_core::persistence::test_storage::open(&dir.join("storage.db")).await.unwrap();
     let state = AppState::new(storage);
     let connection_id = "live-postgres-xlsx-numeric";
     let config = live_postgres_config(connection_id, &host, port, &user, &password, &database);
@@ -329,8 +337,11 @@ async fn live_postgres_numeric_xlsx_ignores_fractional_trailing_zeros() {
         execution_id: Some(format!("live-postgres-xlsx-numeric-{suffix}")),
         date_time_format: None,
         csv_quote_mode: Default::default(),
+        null_literal: String::new(),
         export_table_name: None,
         export_column_types: None,
+        selected_columns: None,
+        export_column_extras: None,
         column_comments: None,
         auto_filter: None,
         identifier_quote: None,
@@ -375,7 +386,7 @@ async fn live_postgres_truncated_batch_result_export_replays_safe_temp_setup() {
     let config = live_postgres_config(&connection_id, &host, port, &user, &password, &database);
     let dir = std::env::temp_dir().join(format!("chiron-horizon-live-postgres-temp-export-{short_suffix}"));
     std::fs::create_dir_all(&dir).unwrap();
-    let storage = Storage::open(&dir.join("storage.db")).await.unwrap();
+    let storage = chiron_horizon_core::persistence::test_storage::open(&dir.join("storage.db")).await.unwrap();
     let state = AppState::new(storage);
     state.configs.write().await.insert(config.id.clone(), config);
 
@@ -415,8 +426,11 @@ async fn live_postgres_truncated_batch_result_export_replays_safe_temp_setup() {
         execution_id: Some(format!("temp-export-csv-{short_suffix}")),
         date_time_format: None,
         csv_quote_mode: Default::default(),
+        null_literal: String::new(),
         export_table_name: None,
         export_column_types: None,
+        selected_columns: None,
+        export_column_extras: None,
         column_comments: None,
         auto_filter: None,
         identifier_quote: None,
@@ -473,7 +487,7 @@ async fn live_postgres_xlsx_export_can_outlive_query_timeout_while_rows_keep_arr
     let config = live_postgres_config(&connection_id, &host, port, &user, &password, &database);
     let dir = std::env::temp_dir().join(format!("chiron-horizon-live-postgres-query-export-timeout-{suffix}"));
     std::fs::create_dir_all(&dir).unwrap();
-    let storage = Storage::open(&dir.join("storage.db")).await.unwrap();
+    let storage = chiron_horizon_core::persistence::test_storage::open(&dir.join("storage.db")).await.unwrap();
     let state = AppState::new(storage);
     state.configs.write().await.insert(config.id.clone(), config);
 
@@ -503,8 +517,11 @@ async fn live_postgres_xlsx_export_can_outlive_query_timeout_while_rows_keep_arr
         execution_id: Some(format!("live-postgres-query-export-timeout-{suffix}")),
         date_time_format: None,
         csv_quote_mode: Default::default(),
+        null_literal: String::new(),
         export_table_name: None,
         export_column_types: None,
+        selected_columns: None,
+        export_column_extras: None,
         column_comments: None,
         auto_filter: None,
         identifier_quote: None,
@@ -552,7 +569,7 @@ async fn live_postgres_stream_still_times_out_without_progress_and_recovers() {
     let config = live_postgres_config(&connection_id, &host, port, &user, &password, &database);
     let dir = std::env::temp_dir().join(format!("chiron-horizon-live-postgres-query-export-stall-{suffix}"));
     std::fs::create_dir_all(&dir).unwrap();
-    let storage = Storage::open(&dir.join("storage.db")).await.unwrap();
+    let storage = chiron_horizon_core::persistence::test_storage::open(&dir.join("storage.db")).await.unwrap();
     let state = AppState::new(storage);
     state.configs.write().await.insert(config.id.clone(), config);
 
@@ -582,8 +599,11 @@ async fn live_postgres_stream_still_times_out_without_progress_and_recovers() {
         execution_id: Some(format!("live-postgres-query-export-stall-{suffix}")),
         date_time_format: None,
         csv_quote_mode: Default::default(),
+        null_literal: String::new(),
         export_table_name: None,
         export_column_types: None,
+        selected_columns: None,
+        export_column_extras: None,
         column_comments: None,
         auto_filter: None,
         identifier_quote: None,

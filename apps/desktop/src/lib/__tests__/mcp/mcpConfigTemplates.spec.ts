@@ -1,7 +1,35 @@
 import { describe, expect, it } from "vitest";
-import { buildMcpCherryStudioConfig, buildMcpCodexConfig, buildMcpDeepSeekHarnessConfig, buildMcpJsonConfig, buildMcpOpenCodeConfig, buildMcpPiConfig, buildMcpQoderConfig, buildMcpTraeConfig, buildMcpVsCodeConfig, buildMcpWorkBuddyConfig, mcpWebBackendUrl } from "@/lib/mcp/mcpConfigTemplates";
+import {
+  buildMcpCherryStudioConfig,
+  buildMcpCodexConfig,
+  buildMcpDeepSeekHarnessConfig,
+  buildMcpJsonConfig,
+  buildMcpOpenCodeConfig,
+  buildMcpPiConfig,
+  buildMcpQoderConfig,
+  buildMcpTraeConfig,
+  buildMcpVsCodeConfig,
+  buildMcpWorkBuddyConfig,
+  mcpWebBackendUrl,
+  preferMcpNativeLaunch,
+} from "@/lib/mcp/mcpConfigTemplates";
 
 describe("MCP config templates", () => {
+  it.each(["/Users/Chiron Horizon User/.chiron-horizon/bin/chiron-horizon-mcp", "/home/chiron-horizon/.chiron-horizon/bin/chiron-horizon-mcp", "C:\\Users\\Chiron Horizon User\\.chiron-horizon\\bin\\chiron-horizon-mcp.exe"])("prefers native launch for every client: %s", (binary) => {
+    const shim = { command: "node", args: ["/old/shim.js"], env: { CHIRON_HORIZON_DATA_DIR: "/custom/data" } };
+    const native = preferMcpNativeLaunch(shim, binary);
+    expect(native).toEqual({ command: binary, env: shim.env });
+    for (const builder of [buildMcpJsonConfig, buildMcpTraeConfig, buildMcpQoderConfig, buildMcpVsCodeConfig, buildMcpCherryStudioConfig, buildMcpCodexConfig, buildMcpDeepSeekHarnessConfig, buildMcpOpenCodeConfig, buildMcpPiConfig, buildMcpWorkBuddyConfig]) {
+      const result = builder(native);
+      expect(result).toContain(JSON.stringify(binary));
+      expect(result).toContain("CHIRON_HORIZON_DATA_DIR");
+      expect(result).not.toContain("shim.js");
+    }
+    expect(preferMcpNativeLaunch(shim)).toBe(shim);
+    expect(preferMcpNativeLaunch(shim, "")).toBe(shim);
+    expect(preferMcpNativeLaunch()).toBeUndefined();
+  });
+
   it("builds the standard mcpServers JSON used by Claude, Cursor, TRAE, and Windsurf", () => {
     const config = JSON.parse(buildMcpJsonConfig());
 
@@ -42,7 +70,7 @@ describe("MCP config templates", () => {
 
     expect(JSON.parse(buildMcpWorkBuddyConfig(launch))).toEqual({
       mcpServers: {
-        chiron_horizon: launch,
+        "chiron-horizon": launch,
       },
     });
   });
@@ -93,7 +121,7 @@ describe("MCP config templates", () => {
     const launch = {
       command: "chiron-horizon-mcp-server",
       env: {
-        CHIRON_HORIZON_WEB_URL: "https://chiron-horizon.example.com/tools/chiron-horizon",
+        CHIRON_HORIZON_WEB_URL: "https://chiron.horizon.example.com/tools/chiron-horizon",
         CHIRON_HORIZON_WEB_PASSWORD: "your-web-login-password",
       },
     };
@@ -101,7 +129,7 @@ describe("MCP config templates", () => {
     expect(JSON.parse(buildMcpJsonConfig(launch))).toEqual({
       mcpServers: { "chiron-horizon": { command: "chiron-horizon-mcp-server", env: launch.env } },
     });
-    expect(buildMcpCodexConfig(launch)).toContain('[mcp_servers."chiron-horizon".env]\nCHIRON_HORIZON_WEB_URL = "https://chiron-horizon.example.com/tools/chiron-horizon"');
+    expect(buildMcpCodexConfig(launch)).toContain('[mcp_servers."chiron-horizon".env]\nCHIRON_HORIZON_WEB_URL = "https://chiron.horizon.example.com/tools/chiron-horizon"');
     expect(JSON.parse(buildMcpOpenCodeConfig(launch)).mcp["chiron-horizon"].environment).toEqual(launch.env);
     expect(buildMcpJsonConfig(launch)).not.toContain("CHIRON_HORIZON_MCP_ALLOW_WRITES");
   });
@@ -117,7 +145,7 @@ describe("MCP config templates", () => {
   });
 
   it("keeps a deployed Web base path in CHIRON_HORIZON_WEB_URL", () => {
-    expect(mcpWebBackendUrl("https://chiron-horizon.example.com", "/tools/chiron-horizon/api")).toBe("https://chiron-horizon.example.com/tools/chiron-horizon");
+    expect(mcpWebBackendUrl("https://chiron.horizon.example.com", "/tools/chiron-horizon/api")).toBe("https://chiron.horizon.example.com/tools/chiron-horizon");
   });
 
   it("builds VS Code MCP config with the servers root and no policy environment", () => {
@@ -152,7 +180,7 @@ describe("MCP config templates", () => {
       buildMcpCherryStudioConfig({
         command: "/opt/homebrew/bin/node",
         args: ["/opt/chiron-horizon/mcp-server/dist/index.js"],
-        env: { CHIRON_HORIZON_WEB_URL: "https://chiron-horizon.example.com" },
+        env: { CHIRON_HORIZON_WEB_URL: "https://chiron.horizon.example.com" },
       }),
     );
 
@@ -164,7 +192,7 @@ describe("MCP config templates", () => {
           baseUrl: "",
           command: "/opt/homebrew/bin/node",
           args: ["/opt/chiron-horizon/mcp-server/dist/index.js"],
-          env: { CHIRON_HORIZON_WEB_URL: "https://chiron-horizon.example.com" },
+          env: { CHIRON_HORIZON_WEB_URL: "https://chiron.horizon.example.com" },
           isActive: true,
           type: "stdio",
         },

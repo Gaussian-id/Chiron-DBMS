@@ -13,7 +13,6 @@ use chiron_horizon_core::query::{
 use chiron_horizon_core::query_result_export::{export_query_result_core, ExportStatus, QueryResultExportRequest};
 use chiron_horizon_core::sql::{split_sql_statements_for_database, SqlFileRequest};
 use chiron_horizon_core::sql_file_import::execute_sql_file_path;
-use chiron_horizon_core::storage::Storage;
 use chiron_horizon_core::table_import::{
     build_import_insert_batch_from_rows, parse_csv_bytes, parse_xlsx_file, TableImportColumnMapping,
 };
@@ -52,7 +51,7 @@ fn live_mysql_sql_file_config(id: &str) -> ConnectionConfig {
 async fn app_state_with_config(config: ConnectionConfig) -> (AppState, std::path::PathBuf) {
     let db_path =
         std::env::temp_dir().join(format!("chiron-horizon-live-sql-file-{}.db", uuid::Uuid::new_v4().simple()));
-    let storage = Storage::open(&db_path).await.expect("open temp storage");
+    let storage = chiron_horizon_core::persistence::test_storage::open(&db_path).await.expect("open temp storage");
     let state = AppState::new(storage);
     state.configs.write().await.insert(config.id.clone(), config);
     (state, db_path)
@@ -400,19 +399,19 @@ async fn live_mysql_single_call_public_route_preserves_all_result_sets() {
     assert!(sql_error[0].execution_error);
     let sql_error_message = sql_error[0].result.rows[0][0].as_str().expect("missing procedure error message");
     assert!(sql_error_message.contains("does not exist"), "unexpected SQL error: {sql_error_message}");
-    assert_eq!(sql_error[0].error.as_ref().map(|error| error.code()), Some("Chiron Horizon-JDBC-4001"));
+    assert_eq!(sql_error[0].error.as_ref().map(|error| error.code()), Some("CHIRON-HORIZON-JDBC-4001"));
     assert!(read_only_error.into_legacy_string().to_ascii_lowercase().contains("read-only"));
     assert_eq!(timeout_results.len(), 1);
     assert!(timeout_results[0].execution_error);
     assert_eq!(timeout_results[0].statement_index, Some(0));
     let timeout_message = timeout_results[0].result.rows[0][0].as_str().expect("timeout error message");
     assert_eq!(timeout_message, "Query timed out after 1 seconds");
-    assert_eq!(timeout_results[0].error.as_ref().map(|error| error.code()), Some("Chiron Horizon-LEGACY-0001"));
+    assert_eq!(timeout_results[0].error.as_ref().map(|error| error.code()), Some("CHIRON-HORIZON-LEGACY-0001"));
     assert_eq!(canceled_results.len(), 1);
     assert!(canceled_results[0].execution_error);
     assert_eq!(canceled_results[0].statement_index, Some(0));
     assert_eq!(canceled_results[0].result.rows[0][0], serde_json::json!("Query canceled"));
-    assert_eq!(canceled_results[0].error.as_ref().map(|error| error.code()), Some("Chiron Horizon-JDBC-2003"));
+    assert_eq!(canceled_results[0].error.as_ref().map(|error| error.code()), Some("CHIRON-HORIZON-JDBC-2003"));
     assert_eq!(recovery_result[0].result.rows, vec![vec![serde_json::json!("7")]]);
 }
 
@@ -456,7 +455,7 @@ async fn live_mysql_query_result_export_xlsx_streams_single_query_without_duplic
     let config = live_mysql_query_export_config(&connection_id, &host, port, &user, &password, &database);
     let dir = std::env::temp_dir().join(format!("chiron-horizon-live-mysql-query-export-{suffix}"));
     std::fs::create_dir_all(&dir).unwrap();
-    let storage = Storage::open(&dir.join("storage.db")).await.unwrap();
+    let storage = chiron_horizon_core::persistence::test_storage::open(&dir.join("storage.db")).await.unwrap();
     let state = AppState::new(storage);
     state.configs.write().await.insert(config.id.clone(), config);
 
@@ -498,8 +497,11 @@ async fn live_mysql_query_result_export_xlsx_streams_single_query_without_duplic
         execution_id: Some(format!("live-mysql-query-export-{suffix}")),
         date_time_format: None,
         csv_quote_mode: Default::default(),
+        null_literal: String::new(),
         export_table_name: None,
         export_column_types: None,
+        selected_columns: None,
+        export_column_extras: None,
         column_comments: None,
         auto_filter: None,
         identifier_quote: None,
@@ -557,7 +559,7 @@ async fn live_mysql_csv_temporal_export_round_trip_preserves_chiron_horizon_forc
     let config = live_mysql_query_export_config(&connection_id, &host, port, &user, &password, &database);
     let dir = std::env::temp_dir().join(format!("chiron-horizon-live-issue-8803-{suffix}"));
     std::fs::create_dir_all(&dir).unwrap();
-    let storage = Storage::open(&dir.join("storage.db")).await.unwrap();
+    let storage = chiron_horizon_core::persistence::test_storage::open(&dir.join("storage.db")).await.unwrap();
     let state = AppState::new(storage);
     state.configs.write().await.insert(config.id.clone(), config);
 
@@ -598,8 +600,11 @@ async fn live_mysql_csv_temporal_export_round_trip_preserves_chiron_horizon_forc
         execution_id: Some(format!("live-mysql-issue-8803-{suffix}")),
         date_time_format: None,
         csv_quote_mode: Default::default(),
+        null_literal: String::new(),
         export_table_name: None,
         export_column_types: None,
+        selected_columns: None,
+        export_column_extras: None,
         column_comments: None,
         auto_filter: None,
         identifier_quote: None,
@@ -677,7 +682,7 @@ async fn live_mysql_xlsx_export_can_outlive_query_timeout_while_rows_keep_arrivi
     let config = live_mysql_query_export_config(&connection_id, &host, port, &user, &password, &database);
     let dir = std::env::temp_dir().join(format!("chiron-horizon-live-mysql-query-export-timeout-{suffix}"));
     std::fs::create_dir_all(&dir).unwrap();
-    let storage = Storage::open(&dir.join("storage.db")).await.unwrap();
+    let storage = chiron_horizon_core::persistence::test_storage::open(&dir.join("storage.db")).await.unwrap();
     let state = AppState::new(storage);
     state.configs.write().await.insert(config.id.clone(), config);
 
@@ -722,8 +727,11 @@ async fn live_mysql_xlsx_export_can_outlive_query_timeout_while_rows_keep_arrivi
         execution_id: Some(format!("live-mysql-query-export-timeout-{suffix}")),
         date_time_format: None,
         csv_quote_mode: Default::default(),
+        null_literal: String::new(),
         export_table_name: None,
         export_column_types: None,
+        selected_columns: None,
+        export_column_extras: None,
         column_comments: None,
         auto_filter: None,
         identifier_quote: None,
@@ -1341,9 +1349,11 @@ INSERT INTO install_check (id) VALUES (1), (2);
 "#
     );
     let request = SqlFileRequest {
+        txn_session_id: None,
         execution_id: format!("exec-{suffix}"),
         connection_id: config.id.clone(),
         database: String::new(),
+        schema: None,
         file_path: std::env::temp_dir()
             .join(format!("issue-2356-mysql-install-{suffix}.sql"))
             .to_string_lossy()
@@ -1429,9 +1439,11 @@ INSERT INTO children (parent_id) VALUES (LAST_INSERT_ID());
 "#
     );
     let request = SqlFileRequest {
+        txn_session_id: None,
         execution_id: format!("exec-{suffix}"),
         connection_id: config.id.clone(),
         database: String::new(),
+        schema: None,
         file_path: std::env::temp_dir()
             .join(format!("issue-7738-mysql-order-{suffix}.sql"))
             .to_string_lossy()
@@ -1505,9 +1517,11 @@ async fn live_sql_file_import_preserves_raw_mysql_binary_literal_bytes() {
     script.extend_from_slice(&[0xAC, b'\\', 0xED, b'\\', b'0', 0x05]);
     script.extend_from_slice(b"');\n");
     let request = SqlFileRequest {
+        txn_session_id: None,
         execution_id: format!("exec-{suffix}"),
         connection_id: config.id.clone(),
         database: String::new(),
+        schema: None,
         file_path: std::env::temp_dir().join(format!("mysql-binary-dump-{suffix}.sql")).to_string_lossy().into_owned(),
         continue_on_error: false,
         selected_tables: None,

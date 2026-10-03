@@ -1,0 +1,16 @@
+version: "3.8"
+
+services:
+  chiron_horizon:
+    image: __CHIRON_HORIZON_IMAGE__
+    container_name: chiron-horizon-fnos
+    restart: unless-stopped
+    ports:
+      - "${TRIM_SERVICE_PORT}:4224"
+    volumes:
+      - "${TRIM_PKGVAR}:/app/data"
+      - "${TRIM_PKGVAR}/backups:/app/backups"
+    environment:
+      CHIRON_HORIZON_DATA_DIR: /app/data
+      CHIRON_HORIZON_BACKUP_ROOT: /app/backups
+    stop_grace_period: 90s

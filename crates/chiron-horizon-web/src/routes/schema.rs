@@ -544,6 +544,16 @@ fn should_cache_columns(client_session_id: Option<&str>) -> bool {
     client_session_id.is_none()
 }
 
+pub async fn get_plugin_table_metadata(
+    State(state): State<Arc<WebState>>,
+    Json(request): Json<chiron_horizon_core::schema::plugin_metadata::PluginTableContext>,
+) -> Result<Json<chiron_horizon_core::schema::plugin_metadata::PluginTableMetadata>, AppError> {
+    let result = chiron_horizon_core::schema::plugin_metadata::get_table_metadata(&state.app, request)
+        .await
+        .map_err(AppError::from)?;
+    Ok(Json(result))
+}
+
 pub async fn list_columns(
     State(state): State<Arc<WebState>>,
     Query(q): Query<SchemaQuery>,
@@ -818,6 +828,19 @@ pub async fn get_table_partition_status(
         .map_err(AppError::from)
 }
 
+pub async fn get_table_partitioning(
+    State(state): State<Arc<WebState>>,
+    Query(q): Query<SchemaQuery>,
+) -> Result<Json<chiron_horizon_core::db::PgTablePartitioning>, AppError> {
+    let database = q.database.as_deref().unwrap_or("");
+    let schema = q.schema.as_deref().unwrap_or("");
+    let table = q.table.as_deref().unwrap_or("");
+    chiron_horizon_core::schema::get_table_partitioning_core(&state.app, &q.connection_id, database, schema, table)
+        .await
+        .map(Json)
+        .map_err(AppError::from)
+}
+
 pub async fn list_invalid_indexes(
     State(state): State<Arc<WebState>>,
     Query(q): Query<SchemaQuery>,
@@ -993,6 +1016,17 @@ pub async fn list_available_extensions(
 ) -> Result<Json<serde_json::Value>, AppError> {
     let database = q.database.as_deref().unwrap_or("");
     let result = chiron_horizon_core::schema::list_available_extensions_core(&state.app, &q.connection_id, database)
+        .await
+        .map_err(AppError::from)?;
+    Ok(Json(serde_json::to_value(result).map_err(|e| AppError::from(e.to_string()))?))
+}
+
+pub async fn list_event_triggers(
+    State(state): State<Arc<WebState>>,
+    Query(q): Query<SchemaQuery>,
+) -> Result<Json<serde_json::Value>, AppError> {
+    let database = q.database.as_deref().unwrap_or("");
+    let result = chiron_horizon_core::schema::list_event_triggers_core(&state.app, &q.connection_id, database)
         .await
         .map_err(AppError::from)?;
     Ok(Json(serde_json::to_value(result).map_err(|e| AppError::from(e.to_string()))?))

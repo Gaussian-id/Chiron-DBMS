@@ -79,7 +79,7 @@ describe("connectionAttemptTimeout", () => {
           {
             type: "http_tunnel",
             id: "http",
-            url: "https://chiron-horizon.example.com/chiron_horizon_tunnel.php",
+            url: "https://chiron.horizon.example.com/chiron_horizon_tunnel.php",
             connect_timeout_secs: 25,
           },
         ],
@@ -180,7 +180,7 @@ describe("connectionAttemptTimeout", () => {
             type: "http_tunnel",
             id: "http",
             enabled: false,
-            url: "https://chiron-horizon.example.com/chiron_horizon_tunnel.php",
+            url: "https://chiron.horizon.example.com/chiron_horizon_tunnel.php",
             connect_timeout_secs: 60,
           },
         ],

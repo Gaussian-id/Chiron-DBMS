@@ -1,7 +1,7 @@
 # Chiron Horizon white-label boundary
 
 Product: Chiron Horizon. Application identifier: `id.chiron.horizon`.
-Initial Chiron Horizon version: 0.1.0 (unreleased). Repository: Gaussian-id/Chiron-Horizon.
+Current Chiron Horizon version: 0.1.3. Repository: Gaussian-id/Chiron-DBMS.
 
 The active application, internally owned packages, events, environment names, exporters and installers use the Chiron Horizon identity. The old upstream updater is unavailable at the frontend and backend; old cached packages cannot be installed. Default driver/plugin distribution is unavailable until Chiron Horizon artifacts exist. `.invalid` distribution sentinels are explicitly disabled before network access; they are not proposed Chiron Horizon services.
 
@@ -26,11 +26,11 @@ macOS persistent WKWebView data is copied before the application data profile is
 
 ## Distribution and acceptance
 
-Only `.github/workflows/verify.yml` is active. It builds CI artifacts, with read-only repository permissions. Archived workflows have a `.disabled` suffix. Release entry scripts stop before publication.
+The verification, tagged release, and database version monitor workflows are active. Verification builds use read-only repository permissions. The release workflow publishes desktop and driver assets only for a matching version tag on main. Other upstream publication workflows remain archived with a `.disabled` suffix.
 
 Native launch evidence is required for each supported target: macOS arm64/x64, Windows 10/11 x64 and Ubuntu 22.04+ x64. A configuration or successful cross-build alone does not establish native acceptance. No Apple Developer ID/notarization, Windows signing or Chiron Horizon updater signing is implied by development builds.
 
 
-Build prerequisites follow [Tauri prerequisites](https://v2.tauri.app/start/prerequisites/) and [distribution guidance](https://v2.tauri.app/distribute/). CI uses native OS runners, Linux WebKitGTK 4.1 dependencies, Windows NSIS/WebView2, and local ad-hoc macOS signing. No updater artifacts or publication steps run.
+Build prerequisites follow [Tauri prerequisites](https://v2.tauri.app/start/prerequisites/) and [distribution guidance](https://v2.tauri.app/distribute/). CI uses native OS runners, Linux WebKitGTK 4.1 dependencies, Windows NSIS/WebView2, and local ad-hoc macOS signing. No updater artifacts or package-manager publication steps run.
 
 See [0.1.0 implementation verification](chiron-horizon-0.1.0-verification.md) for measured outcomes and pending acceptance.

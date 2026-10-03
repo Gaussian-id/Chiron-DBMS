@@ -14,6 +14,15 @@ function fileWith(editor: Record<string, unknown>, overrides: Record<string, unk
 }
 
 describe("settingsTransfer", () => {
+  it("round-trips an opt-out of comment-first result names and rejects non-booleans", () => {
+    const text = serializeSettingsTransfer({ ...DEFAULT_EDITOR_SETTINGS, resultTabPreferComments: false });
+    const result = parseSettingsTransferFile(text);
+    expect(result.ok).toBe(true);
+    if (result.ok) expect(result.value.editorSettings.resultTabPreferComments).toBe(false);
+    expect(transferCategoryForKey("resultTabPreferComments")).toBe("data");
+    expect(parseSettingsTransferFile(fileWith({ resultTabPreferComments: "false" })).ok).toBe(false);
+  });
+
   it("builds a dated transfer filename", () => {
     expect(buildSettingsTransferFilename(new Date(2026, 8, 6))).toBe("Chiron Horizon-settings-2026-09-06.json");
   });
@@ -68,6 +77,18 @@ describe("settingsTransfer", () => {
     expect(result.error.detail).toContain("updateDownloadSource");
   });
 
+  it("round-trips table completion schema qualification as an editor setting", () => {
+    const result = parseSettingsTransferFile(fileWith({ tableCompletionSchemaQualification: "always" }));
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.value.editorSettings.tableCompletionSchemaQualification).toBe("always");
+    expect(result.value.categories).toEqual(["editor"]);
+
+    const invalid = parseSettingsTransferFile(fileWith({ tableCompletionSchemaQualification: "sometimes" }));
+    expect(invalid.ok).toBe(false);
+    if (!invalid.ok) expect(invalid.error.detail).toContain("tableCompletionSchemaQualification");
+  });
+
   it("rejects out-of-range numbers that the normalizer clamps", () => {
     const result = parseSettingsTransferFile(fileWith({ sidebarIndent: 99999 }));
     expect(result.ok).toBe(false);
@@ -106,6 +127,21 @@ describe("settingsTransfer", () => {
     expect(result.ok).toBe(false);
     if (!result.ok) return;
     expect(result.error.detail).toContain("wordWrap");
+  });
+
+  it("transfers the column header hover tooltip preference as a data setting", () => {
+    expect(transferCategoryForKey("showColumnHeaderTooltips")).toBe("data");
+
+    const result = parseSettingsTransferFile(fileWith({ showColumnHeaderTooltips: false }));
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.value.editorSettings.showColumnHeaderTooltips).toBe(false);
+    expect(result.value.categories).toContain("data");
+
+    const rejected = parseSettingsTransferFile(fileWith({ showColumnHeaderTooltips: "no" }));
+    expect(rejected.ok).toBe(false);
+    if (rejected.ok) return;
+    expect(rejected.error.detail).toContain("showColumnHeaderTooltips");
   });
 
   it("rejects toolbar items whose known keys are not booleans", () => {
@@ -195,6 +231,7 @@ describe("settingsTransfer", () => {
     for (const key of EDITOR_SETTINGS_DRAFT_KEYS) {
       expect(transferCategoryForKey(key), key).toBeDefined();
     }
+    expect(transferCategoryForKey("ddlOpenMode")).toBe("editor");
     expect(transferCategoryForKey("notARealSetting")).toBeUndefined();
   });
 
@@ -232,6 +269,22 @@ describe("settingsTransfer", () => {
     if (!result.ok) return;
     expect(result.value.editorSettings.pageSize).toBe(200);
     expect(result.value.editorSettings.snippets).toEqual(settings.snippets);
+  });
+
+  it("round-trips table default sorting settings", () => {
+    const settings = {
+      ...DEFAULT_EDITOR_SETTINGS,
+      tableOpenSortMode: "database",
+      tableDatabaseSortDirection: "desc",
+      tableLocalSortDirection: "asc",
+    } as EditorSettings;
+    const result = parseSettingsTransferFile(serializeSettingsTransfer(settings));
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.value.editorSettings.tableOpenSortMode).toBe("database");
+    expect(result.value.editorSettings.tableDatabaseSortDirection).toBe("desc");
+    expect(result.value.editorSettings.tableLocalSortDirection).toBe("asc");
+    expect(transferCategoryForKey("tableOpenSortMode")).toBe("data");
   });
 
   it("rejects custom theme items that lack id or name", () => {
@@ -368,5 +421,10 @@ describe("settingsTransfer", () => {
   it("maps csvQuoteMode into the data category", () => {
     expect(transferCategoryForKey("csvQuoteMode")).toBe("data");
     expect(collectTransferCategories(["csvQuoteMode", "pageSize"])).toEqual(["data"]);
+  });
+
+  it("maps csvNullMode into the data category", () => {
+    expect(transferCategoryForKey("csvNullMode")).toBe("data");
+    expect(collectTransferCategories(["csvNullMode", "csvQuoteMode"])).toEqual(["data"]);
   });
 });

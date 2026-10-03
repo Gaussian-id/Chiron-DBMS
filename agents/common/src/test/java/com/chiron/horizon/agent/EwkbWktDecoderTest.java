@@ -22,7 +22,7 @@ class EwkbWktDecoderTest {
 
     // ──────────────────────────────────────────────────────────────────────
     // Cross-checked against the Rust ewkb_to_wkt tests in
-    // crates/chiron-horizon-core/src/db/postgres.rs (same hex inputs, same expected WKT).
+    // crates/chiron-horizon-driver-support/src/wkb.rs (same hex inputs, same expected WKT).
     // ──────────────────────────────────────────────────────────────────────
 
     @Test

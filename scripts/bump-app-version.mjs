@@ -1,5 +1,4 @@
-import { execFileSync } from "node:child_process";
-import { readFileSync, writeFileSync } from "node:fs";
+import { readFileSync, writeFileSync, readdirSync, existsSync } from "node:fs";
 
 const requested = process.argv[2];
 const current = JSON.parse(readFileSync("src-tauri/tauri.conf.json", "utf8")).version;
@@ -7,7 +6,7 @@ const next = requested === "patch" ? current.replace(/^0\.1\.(\d+)$/, (_, patch)
 if (!/^0\.1\.\d+$/.test(next)) throw new Error("Expected a 0.1.x application version.");
 if (requested === "patch" && !/^0\.1\.\d+$/.test(current)) throw new Error(`Current application version '${current}' is not on the 0.1.x release line.`);
 
-for (const file of execFileSync("git", ["ls-files", "crates/*/Cargo.toml", "src-tauri/Cargo.toml"]).toString().trim().split("\n").filter(Boolean)) {
+for (const file of ["src-tauri/Cargo.toml", ...readdirSync("crates").map((name) => `crates/${name}/Cargo.toml`).filter(existsSync)]) {
   const text = readFileSync(file, "utf8");
   if (/^(name\s*=\s*"chiron[-_]horizon)/m.test(text)) writeFileSync(file, text.replace(/^version\s*=\s*"[^"]+"$/m, `version = "${next}"`));
 }
@@ -38,8 +37,8 @@ for (const workflow of [".github/workflows/verify.yml", ".github/workflows/relea
   writeFileSync(workflow, readFileSync(workflow, "utf8").replaceAll(current, next));
 }
 for (const file of [
-  "crates/chiron-horizon-core/src/agent_service.rs",
-  "crates/chiron-horizon-core/src/jdbc.rs",
+  "crates/chiron-horizon-driver-agent/src/agent_service.rs",
+  "crates/chiron-horizon-core/src/connection/jdbc.rs",
   "docs/lib/agentRegistry.ts",
   "docs/content/docs/getting-started.mdx",
   "docs/content/docs/user-guide.mdx",

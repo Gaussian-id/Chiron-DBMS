@@ -1,4 +1,4 @@
-module github.com/Gaussian-id/Chiron-Horizon/agents/drivers/rabbitmq
+module github.com/Gaussian-id/Chiron-DBMS/agents/drivers/rabbitmq
 
 go 1.20
 

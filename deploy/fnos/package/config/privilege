@@ -1,0 +1,7 @@
+{
+  "defaults": {
+    "run-as": "package"
+  },
+  "username": "chiron-horizon",
+  "groupname": "chiron-horizon"
+}

@@ -92,6 +92,15 @@ pub(crate) struct ListTopicsReq {
 
 #[derive(serde::Deserialize)]
 #[serde(rename_all = "camelCase")]
+pub(crate) struct ListTopicsPageReq {
+    connection_id: String,
+    ns: chiron_horizon_core::mq::NamespaceRef,
+    opts: chiron_horizon_core::mq::ListTopicsOpts,
+    pagination: chiron_horizon_core::mq::MqListPageRequest,
+}
+
+#[derive(serde::Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub(crate) struct CreateTopicReq {
     connection_id: String,
     topic: chiron_horizon_core::mq::TopicRef,
@@ -127,6 +136,14 @@ pub(crate) struct TopicReq {
 pub(crate) struct ListExchangesReq {
     connection_id: String,
     ns: chiron_horizon_core::mq::NamespaceRef,
+}
+
+#[derive(serde::Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub(crate) struct ListExchangesPageReq {
+    connection_id: String,
+    ns: chiron_horizon_core::mq::NamespaceRef,
+    pagination: chiron_horizon_core::mq::MqListPageRequest,
 }
 
 #[derive(serde::Deserialize)]
@@ -599,6 +616,24 @@ pub async fn list_topics(
     Ok(Json(result))
 }
 
+pub async fn list_topics_page(
+    State(state): State<Arc<WebState>>,
+    headers: HeaderMap,
+    Json(req): Json<ListTopicsPageReq>,
+) -> Result<Json<chiron_horizon_core::mq::MqListPage<chiron_horizon_core::mq::TopicInfo>>, AppError> {
+    super::mcp_policy::ensure_scope(&state, &headers, &req.connection_id).await?;
+    let result = chiron_horizon_core::mq::service::mq_list_topics_page_core(
+        &state.app,
+        &req.connection_id,
+        req.ns,
+        req.opts,
+        req.pagination,
+    )
+    .await
+    .map_err(AppError::from)?;
+    Ok(Json(result))
+}
+
 pub async fn create_topic(
     State(state): State<Arc<WebState>>,
     headers: HeaderMap,
@@ -677,6 +712,23 @@ pub async fn list_exchanges(
     let result = chiron_horizon_core::mq::service::mq_list_exchanges_core(&state.app, &req.connection_id, req.ns)
         .await
         .map_err(AppError::internal)?;
+    Ok(Json(result))
+}
+
+pub async fn list_exchanges_page(
+    State(state): State<Arc<WebState>>,
+    headers: HeaderMap,
+    Json(req): Json<ListExchangesPageReq>,
+) -> Result<Json<chiron_horizon_core::mq::MqListPage<chiron_horizon_core::mq::MqExchangeInfo>>, AppError> {
+    super::mcp_policy::ensure_scope(&state, &headers, &req.connection_id).await?;
+    let result = chiron_horizon_core::mq::service::mq_list_exchanges_page_core(
+        &state.app,
+        &req.connection_id,
+        req.ns,
+        req.pagination,
+    )
+    .await
+    .map_err(AppError::internal)?;
     Ok(Json(result))
 }
 
@@ -1610,7 +1662,7 @@ mod tests {
     use axum::Json;
     use chiron_horizon_core::connection::AppState;
     use chiron_horizon_core::models::connection::ConnectionConfig;
-    use chiron_horizon_core::storage::{McpGlobalPolicy, Storage};
+    use chiron_horizon_core::storage::McpGlobalPolicy;
     use std::collections::{HashMap, HashSet};
     use std::sync::Arc;
     use tokio::sync::{Mutex, RwLock};
@@ -1632,23 +1684,28 @@ mod tests {
     async fn test_web_state() -> (Arc<WebState>, std::path::PathBuf) {
         let dir = std::env::temp_dir().join(format!("chiron-horizon-web-mq-policy-test-{}", uuid::Uuid::new_v4()));
         std::fs::create_dir_all(&dir).unwrap();
-        let storage = Storage::open(&dir.join("storage.db")).await.unwrap();
+        let storage = chiron_horizon_core::persistence::test_storage::open(&dir.join("storage.db")).await.unwrap();
         let app = Arc::new(AppState::new_with_plugin_dir(storage, dir.join("plugins")));
         let state = Arc::new(WebState {
             app,
             data_dir: dir.clone(),
+            notes_roots: Vec::new(),
             public_base_path: "/".to_string(),
             password_disabled: false,
+            demo_mode: false,
             password_hash: RwLock::new(None),
             sessions: RwLock::new(HashSet::new()),
             sse_channels: RwLock::new(HashMap::new()),
             transfer_progress_channels: RwLock::new(HashMap::new()),
             table_import_channels: RwLock::new(HashMap::new()),
             sql_file_executions: RwLock::new(HashMap::new()),
+            managed_sql_previews: Default::default(),
             nacos_imports: RwLock::new(HashMap::new()),
             login_rate_limit: Mutex::new(LoginRateLimit { fail_count: 0, locked_until: None }),
             export_files: RwLock::new(HashMap::new()),
             ssh_prompts: Arc::new(crate::ssh_prompt::SshPromptHub::new()),
+            migration_ready: Arc::new(std::sync::atomic::AtomicBool::new(true)),
+            web_mcp: Arc::new(crate::web_mcp::WebMcpRuntime::disabled()),
         });
         (state, dir)
     }

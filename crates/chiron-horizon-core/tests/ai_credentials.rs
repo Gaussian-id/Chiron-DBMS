@@ -188,3 +188,41 @@ fn native_attachment_limits_reject_invalid_or_oversized_input_without_truncation
         AiInlineImage { data: base64::engine::general_purpose::STANDARD.encode(vec![1; 5 * 1024 * 1024]), ..image };
     assert!(attachment_context(&[], &[large.clone(), large.clone(), large]).is_err());
 }
+
+#[tokio::test]
+async fn cli_environment_and_proxy_secrets_survive_keep_replace_clear_and_reopen() {
+    let dir = tempfile::tempdir().unwrap();
+    let path = dir.path().join("chiron-horizon.db");
+    let storage = Storage::open(&path).await.unwrap();
+    let mut item = config();
+    item.config.api_key.clear();
+    item.config.custom_headers.clear();
+    item.config.proxy_url = "http://test-user:test-password@127.0.0.1:8888".into();
+    item.config.opencode_cli_env.insert("TEST_TOKEN".into(), "private-cli-value".into());
+    item.config.opencode_cli_env.insert("EMPTY_OVERRIDE".into(), String::new());
+    storage.save_ai_config_item(&item).await.unwrap();
+    assert!(!disk_json(&path).contains("private-cli-value"));
+    assert!(!disk_json(&path).contains("test-password"));
+    let mut public = storage.load_ai_configs().await.unwrap().remove(0);
+    assert!(public.config.opencode_cli_env["TEST_TOKEN"].starts_with(REFERENCE_PREFIX));
+    assert!(public.config.proxy_url.starts_with(REFERENCE_PREFIX));
+    public.config.model = "edited-model".into();
+    storage.save_ai_config_item(&public).await.unwrap();
+    drop(storage);
+    let storage = Storage::open(&path).await.unwrap();
+    let mut public = storage.load_ai_configs().await.unwrap().remove(0);
+    let runtime = storage.resolve_ai_config(&public.config).await.unwrap();
+    assert_eq!(runtime.opencode_cli_env["TEST_TOKEN"], "private-cli-value");
+    assert_eq!(runtime.opencode_cli_env["EMPTY_OVERRIDE"], "");
+    assert_eq!(runtime.proxy_url, item.config.proxy_url);
+    let mut wrong_endpoint = public.config.clone();
+    wrong_endpoint.endpoint = "https://example.invalid".into();
+    assert!(storage.resolve_ai_config(&wrong_endpoint).await.is_err());
+    public.config.opencode_cli_env.insert("TEST_TOKEN".into(), "replacement-cli-value".into());
+    public.config.proxy_url.clear();
+    storage.save_ai_config_item(&public).await.unwrap();
+    let public = storage.load_ai_configs().await.unwrap().remove(0);
+    let runtime = storage.resolve_ai_config(&public.config).await.unwrap();
+    assert_eq!(runtime.opencode_cli_env["TEST_TOKEN"], "replacement-cli-value");
+    assert!(runtime.proxy_url.is_empty());
+}

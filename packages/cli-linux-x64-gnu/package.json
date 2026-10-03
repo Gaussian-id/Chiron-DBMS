@@ -1,6 +1,6 @@
 {
   "name": "@chiron-horizon/cli-linux-x64-gnu",
-  "version": "0.4.90",
+  "version": "0.4.103",
   "description": "Precompiled Chiron Horizon CLI binary for Linux x64 glibc",
   "license": "Apache-2.0",
   "repository": {

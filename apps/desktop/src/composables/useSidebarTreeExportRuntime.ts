@@ -1,4 +1,4 @@
-import { applyDdlStoragePreference } from "@/lib/sql/ddlStorage";
+import { applyDdlStoragePreference, supportsDdlStoragePreference } from "@/lib/sql/ddlStorage";
 import { watch, createApp, getCurrentScope, onScopeDispose, type ShallowRef } from "vue";
 import { useI18n } from "vue-i18n";
 import i18n from "@/i18n";
@@ -16,7 +16,7 @@ import { joinExportedDdls } from "@/lib/export/ddlExport";
 import { translateBackendError } from "@/i18n/backend-errors";
 import { sidebarStructureExportTargets, sidebarTableDataExportTargets } from "@/lib/sidebar/sidebarExportRuntime";
 import { fetchTableDataForExport } from "@/lib/table/tableDataExport";
-import { forceCsvTextForTemporalColumns } from "@/lib/dataGrid/columnFormatter";
+import { dropsSchemaQualifier } from "@/lib/table/tableSelectSql";
 import XlsxHeaderDialog from "@/components/export/XlsxHeaderDialog.vue";
 import { buildXlsxHeaderOverrides, hasXlsxHeaderComments, type XlsxExportOptions, type XlsxHeaderMode } from "@/lib/export/xlsxHeader";
 import {
@@ -29,9 +29,12 @@ import {
   structurePreviewError,
   structurePreviewSql,
   structurePreviewTitle,
-  structurePreviewHasOceanBase,
+  structurePreviewDdlStorageType,
 } from "@/components/sidebar/sidebarTreeDialogState";
 import type { CsvQuoteMode } from "@/lib/export/csvQuoteMode";
+import { csvNullLiteralForMode } from "@/lib/export/csvNullMode";
+import type { SqlInsertDialect } from "@/lib/export/sqlInsertMode";
+import { uuid } from "@/lib/common/utils";
 
 type StructureCopyFormat = "tsv" | "markdown";
 
@@ -57,6 +60,8 @@ interface SidebarTableExportTarget {
   batchSize: number;
   rowLimit: number | null;
   csvQuoteMode: CsvQuoteMode;
+  /** 导出 CSV 时 NULL 的字面量；空串表示关闭（旧行为）。 */
+  nullLiteral: string;
   fileNameBase?: string;
 }
 
@@ -90,6 +95,7 @@ interface ExportTableDataOptions {
   autoFilter?: boolean;
   outputDirectory?: string;
   suppressDoneToast?: boolean;
+  insertDialect?: SqlInsertDialect;
 }
 
 function joinExportFilePath(directory: string, fileName: string): string {
@@ -171,7 +177,7 @@ export function useSidebarTreeExportRuntime(options: SidebarTreeExportRuntimeOpt
     isLoadingStructurePreview.value = true;
     structurePreviewError.value = "";
     structurePreviewSql.value = "";
-    structurePreviewHasOceanBase.value = false;
+    structurePreviewDdlStorageType.value = undefined;
     structureSource = [];
     structurePreviewTitle.value = targets.length === 1 ? t("contextMenu.exportStructurePreviewTitle", { name: targets[0]!.label }) : t("contextMenu.exportStructurePreviewTitleMultiple", { count: targets.length });
     structurePreviewDefaultFileName.value = targets.length === 1 ? `${targets[0]!.label}.sql` : "structures.sql";
@@ -186,7 +192,7 @@ export function useSidebarTreeExportRuntime(options: SidebarTreeExportRuntimeOpt
         requestSource.push({ ddl, databaseType });
       }
       structureSource = requestSource;
-      structurePreviewHasOceanBase.value = requestSource.some(({ databaseType }) => databaseType === "oceanbase-oracle");
+      structurePreviewDdlStorageType.value = requestSource.map(({ databaseType }) => databaseType).find(supportsDdlStoragePreference);
       renderStructurePreview();
     } catch (error: any) {
       if (requestId !== structureRequestId) return;
@@ -353,6 +359,8 @@ export function useSidebarTreeExportRuntime(options: SidebarTreeExportRuntimeOpt
     try {
       await connectionStore.ensureConnected(connectionId);
       const queryColumns = config.db_type === "neo4j" ? (await api.getColumns(connectionId, database, target.metadataSchema, target.tableName, target.catalog)).map((column) => column.name) : undefined;
+      const useAgentCursor = config.db_type === "cassandra";
+      const clientSessionId = useAgentCursor ? `table-export:${uuid()}` : undefined;
       const result = await fetchTableDataForExport({
         databaseType: target.databaseType,
         identifierQuote: target.identifierQuote,
@@ -360,7 +368,17 @@ export function useSidebarTreeExportRuntime(options: SidebarTreeExportRuntimeOpt
         tableName: target.tableName,
         tableType: target.tableType,
         columns: queryColumns,
-        executePage: (sql) => api.executeQuery(connectionId, database, sql),
+        useAgentCursor,
+        executePage: (sql, cursorOptions) => (cursorOptions ? api.executeQuery(connectionId, database, sql, undefined, undefined, { ...cursorOptions, clientSessionId, catalog: target.catalog, timeoutSecs: config.query_timeout_secs }) : api.executeQuery(connectionId, database, sql)),
+        closeCursor: useAgentCursor
+          ? async (sessionId) => {
+              try {
+                if (sessionId) await api.closeQuerySession(connectionId, database, sessionId, clientSessionId, target.catalog);
+              } finally {
+                await api.closeClientConnectionSession(connectionId, database, clientSessionId!, target.catalog);
+              }
+            }
+          : undefined,
       });
 
       const outputPath = await resolveTableExportOutputPath(target, "json", outputDirectory);
@@ -422,6 +440,7 @@ export function useSidebarTreeExportRuntime(options: SidebarTreeExportRuntimeOpt
       batchSize: editorSettings.exportBatchSize,
       rowLimit: editorSettings.exportRowLimitEnabled ? editorSettings.exportRowLimit : null,
       csvQuoteMode: editorSettings.csvQuoteMode,
+      nullLiteral: csvNullLiteralForMode(editorSettings.csvNullMode),
     };
   }
 
@@ -434,7 +453,7 @@ export function useSidebarTreeExportRuntime(options: SidebarTreeExportRuntimeOpt
   }
 
   async function exportTableData(target: SidebarTableExportTarget, format: "csv" | "xlsx" | "sql", exportOptions: ExportTableDataOptions = {}) {
-    const { columnInfos, headerMode = "name", autoFilter = true, outputDirectory, suppressDoneToast = false } = exportOptions;
+    const { columnInfos, headerMode = "name", autoFilter = true, outputDirectory, suppressDoneToast = false, insertDialect = "source" } = exportOptions;
     const { connectionId, database } = target;
 
     let task: ExportTask | null = null;
@@ -457,7 +476,7 @@ export function useSidebarTreeExportRuntime(options: SidebarTreeExportRuntimeOpt
           executePage: (sql) => api.executeQuery(connectionId, database, sql),
         });
         if (format === "csv") {
-          await api.exportQueryResultCsv(outputPath, result.columns, forceCsvTextForTemporalColumns(result.rows, result.column_types ?? []), target.csvQuoteMode);
+          await api.exportQueryResultCsv(outputPath, result.columns, result.rows, target.csvQuoteMode, target.nullLiteral);
         } else {
           const comments = result.columns.map((name) => exportColumnInfos?.find((column) => column.name.toLocaleLowerCase() === name.toLocaleLowerCase())?.comment);
           const headerOverrides = buildXlsxHeaderOverrides(result.columns, comments, headerMode);
@@ -486,7 +505,14 @@ export function useSidebarTreeExportRuntime(options: SidebarTreeExportRuntimeOpt
         tableName: target.tableName,
         filePath: outputPath,
         format,
+        ...(format === "sql"
+          ? {
+              insertDialect,
+              omitDatabaseQualifier: dropsSchemaQualifier(target.databaseType, settingsStore.editorSettings.generateSqlIncludeDatabaseName, target.catalog),
+            }
+          : {}),
         csvQuoteMode: target.csvQuoteMode,
+        nullLiteral: target.nullLiteral,
         columns: queryColumns,
         columnComments,
         autoFilter: format === "xlsx" ? autoFilter : undefined,
@@ -566,7 +592,7 @@ export function useSidebarTreeExportRuntime(options: SidebarTreeExportRuntimeOpt
     }
   }
 
-  async function exportData(format: "csv" | "json" | "sql") {
+  async function exportData(format: "csv" | "json" | "sql", insertDialect: SqlInsertDialect = "source") {
     const targets = currentTableExportTargets();
     if (!targets.length) return;
 
@@ -584,7 +610,7 @@ export function useSidebarTreeExportRuntime(options: SidebarTreeExportRuntimeOpt
 
     let exported = 0;
     for (const target of targets) {
-      if (await exportTableData(target, format, { outputDirectory, suppressDoneToast: targets.length > 1 })) exported += 1;
+      if (await exportTableData(target, format, { outputDirectory, suppressDoneToast: targets.length > 1, insertDialect })) exported += 1;
     }
     if (targets.length > 1 && exported > 0) toast(t("contextMenu.exportDataMultipleSuccess", { count: exported }));
   }

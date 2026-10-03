@@ -1,6 +1,6 @@
 {
   "name": "@chiron-horizon/cli-win32-x64",
-  "version": "0.4.90",
+  "version": "0.4.103",
   "description": "Precompiled Chiron Horizon CLI binary for Windows x64",
   "license": "Apache-2.0",
   "repository": {

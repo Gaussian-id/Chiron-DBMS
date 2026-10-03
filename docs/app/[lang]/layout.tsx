@@ -3,7 +3,7 @@ import type { ReactNode } from "react";
 import type { Metadata, Viewport } from "next";
 import { RouteProgress } from "@/components/RouteProgress";
 import { buildMetadata, DEFAULT_DESCRIPTION, getHtmlLang, SITE_NAME, SITE_URL } from "@/lib/metadata";
-import { buildSiteStructuredData } from "@/lib/structuredData";
+import { buildSiteStructuredData, serializeStructuredData } from "@/lib/structuredData";
 import { i18n, resolveLang } from "@/lib/i18n";
 
 const LOCALE_MAP: Record<string, { locale: string; title: string; description: string }> = {
@@ -38,7 +38,6 @@ export async function generateMetadata({ params }: { params: Promise<{ lang: str
       shortcut: "/favicon-64.png",
       apple: "/logo.png",
     },
-    robots: { index: true, follow: true },
     openGraph: { ...pageMetadata.openGraph, locale: meta.locale },
   };
 }
@@ -60,7 +59,7 @@ export default async function LangLayout({ params, children }: { params: Promise
     <html lang={getHtmlLang(locale)} suppressHydrationWarning>
       <head>
         {siteStructuredData.map((structuredData) => (
-          <script key={structuredData["@id"]} type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }} />
+          <script key={structuredData["@id"]} type="application/ld+json" dangerouslySetInnerHTML={{ __html: serializeStructuredData(structuredData) }} />
         ))}
       </head>
       <body className="flex min-h-screen flex-col">

@@ -1,4 +1,4 @@
-module github.com/Gaussian-id/Chiron-Horizon/agents/drivers/neo4j-go
+module github.com/Gaussian-id/Chiron-DBMS/agents/drivers/neo4j-go
 
 go 1.24
 

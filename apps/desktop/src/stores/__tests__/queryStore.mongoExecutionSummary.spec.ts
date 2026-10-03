@@ -80,6 +80,9 @@ describe("queryStore MongoDB execution summary", () => {
 
     const tab = store.tabs.find((item) => item.id === tabId)!;
     expect(tab.result?.rows).toHaveLength(3);
+    expect(tab.result?.client_request_wait_ms).toEqual(expect.any(Number));
+    expect(tab.result?.client_result_ms).toEqual(expect.any(Number));
+    expect(tab.result?.timing_page_count).toBe(1);
     expect(tab.batchSqlExecution).toMatchObject({
       total: 1,
       completed: 1,
@@ -112,6 +115,27 @@ describe("queryStore MongoDB execution summary", () => {
 
     await store.executeTabSql(tabId, "db.users.find();\ndb.orders.find()");
 
+    const tab = store.tabs.find((item) => item.id === tabId)!;
+    expect(tab.batchSqlExecution).toMatchObject({
+      total: 2,
+      completed: 2,
+      items: [
+        { status: "success", statementIndex: 0 },
+        { status: "success", statementIndex: 1 },
+      ],
+    });
+  });
+
+  it("executes the authoritative inDatabase wrapper against the sibling database and restores the session database", async () => {
+    mocks.mongoFindDocuments.mockResolvedValue({ documents: [{ _id: "1" }], extended_documents: [], total: 1, total_is_exact: true });
+    const { useQueryStore } = await import("@/stores/queryStore");
+    const store = useQueryStore();
+    const tabId = store.createTab("mongo-1", "app", "Query");
+
+    await store.executeTabSql(tabId, 'db.getSiblingDB("reports").events.find();\ndb.users.find()');
+
+    expect(mocks.mongoFindDocuments).toHaveBeenNthCalledWith(1, "mongo-1", "reports", "events", expect.any(Number), expect.any(Number), "{}", undefined, undefined, undefined, expect.any(String));
+    expect(mocks.mongoFindDocuments).toHaveBeenNthCalledWith(2, "mongo-1", "app", "users", expect.any(Number), expect.any(Number), "{}", undefined, undefined, undefined, expect.any(String));
     const tab = store.tabs.find((item) => item.id === tabId)!;
     expect(tab.batchSqlExecution).toMatchObject({
       total: 2,

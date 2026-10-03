@@ -2,26 +2,13 @@
 //! Legacy names here are intentionally not product branding.
 use fs2::FileExt;
 use rusqlite::{Connection, OpenFlags, OptionalExtension};
-use std::{
-    ffi::{OsStr, OsString},
-    path::{Path, PathBuf},
-};
+use std::path::{Path, PathBuf};
 
 pub const OLD_APP_ID: &str = "com.dbx.app";
 pub const APP_ID: &str = "id.chiron.horizon";
 pub const OLD_AI_REFERENCE: &str = "dbx-ai-secret:v1:";
-pub fn var_os(name: impl AsRef<OsStr>) -> Option<OsString> {
-    let name = name.as_ref();
-    std::env::var_os(name).or_else(|| {
-        name.to_str()?.strip_prefix("CHIRON_HORIZON_").and_then(|suffix| std::env::var_os(format!("DBX_{suffix}")))
-    })
-}
-pub fn var(name: impl AsRef<OsStr>) -> Result<String, std::env::VarError> {
-    match var_os(name) {
-        Some(value) => value.into_string().map_err(std::env::VarError::NotUnicode),
-        None => Err(std::env::VarError::NotPresent),
-    }
-}
+pub use chiron_horizon_platform::legacy::{var, var_os};
+
 fn error(e: impl std::fmt::Display) -> String {
     format!("Profile migration stopped; original data unchanged: {e}")
 }

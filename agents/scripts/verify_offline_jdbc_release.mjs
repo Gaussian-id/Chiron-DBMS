@@ -74,7 +74,11 @@ async function main() {
   const expectedHashes = new Map();
   for (const file of expectedFiles) expectedHashes.set(file, await sha256(join(payloadDir, file)));
 
-  for (const platform of PLATFORMS) {
+  const registry = JSON.parse(readFileSync(join(releaseDir, "agent-registry.json"), "utf8"));
+  const platforms = [...new Set(Object.values(registry.jres || {}).flatMap((jre) => Object.keys(jre.platforms || {})))];
+  if (platforms.length === 0) fail("Release registry declares no managed JRE platforms");
+  for (const platform of platforms) {
+    if (!PLATFORMS.includes(platform)) fail(`Unsupported release platform: ${platform}`);
     const zip = join(releaseDir, `chiron-horizon-agents-offline-${platform}.zip`);
     if (!existsSync(zip)) fail(`Offline ZIP not found: ${zip}`);
     const extractionRoot = mkdtempSync(join(tmpdir(), `chiron-horizon-offline-verify-${platform}-`));

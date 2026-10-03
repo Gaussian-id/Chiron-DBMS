@@ -143,6 +143,7 @@ export function connectionDisplayUrlScheme(connection: Pick<ConnectionConfig, "d
     case "easysearch":
     case "meilisearch":
     case "chirondb":
+    case "solr":
     case "qdrant":
     case "milvus":
     case "weaviate":
@@ -152,6 +153,7 @@ export function connectionDisplayUrlScheme(connection: Pick<ConnectionConfig, "d
     case "dynamodb":
     case "mq":
     case "consul":
+    case "salesforce":
       return connection.ssl ? "https" : "http";
     case "cloudflare-d1":
       return "https";
@@ -211,6 +213,9 @@ export function connectionUrlPlaceholder(dbType: DatabaseType, driverProfile?: s
     case "mongodb":
       return "mongodb://user:password@host:port/database";
 
+    case "nebula":
+      return "nebula://root:password@graphd:9669/space";
+
     case "dynamodb":
       return "https://dynamodb.us-east-1.amazonaws.com";
 
@@ -235,6 +240,9 @@ export function connectionUrlPlaceholder(dbType: DatabaseType, driverProfile?: s
       return "http://host:port/base/path";
     case "chirondb":
       return "http://host:7401";
+
+    case "solr":
+      return "http://user:password@host:8983";
 
     case "dameng":
       return "dm://user:password@host:port";
@@ -263,6 +271,9 @@ export function connectionUrlPlaceholder(dbType: DatabaseType, driverProfile?: s
     case "iris":
       return driverProfile === "cache" ? "cache://user:password@host:port/namespace" : "iris://user:password@host:port/namespace";
 
+    case "transwarp":
+      return "jdbc:inceptor2://host:10000/default";
+
     case "influxdb":
       return "influxdb://user:password@host:port/database";
 
@@ -271,6 +282,9 @@ export function connectionUrlPlaceholder(dbType: DatabaseType, driverProfile?: s
 
     case "victoriametrics":
       return "http://user:password@host:port/prometheus";
+
+    case "salesforce":
+      return "https://acme.my.salesforce.com";
 
     case "jdbc":
       return "jdbc:mysql://host:3306/database";

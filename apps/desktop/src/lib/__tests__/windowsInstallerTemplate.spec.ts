@@ -14,11 +14,11 @@ const appCargoToml = readFileSync(resolve(process.cwd(), "src-tauri/Cargo.toml")
 const workspaceCargoToml = readFileSync(resolve(process.cwd(), "Cargo.toml"), "utf8");
 const appBuildScript = readFileSync(resolve(process.cwd(), "src-tauri/build.rs"), "utf8");
 const wryWebView2Source = readFileSync(resolve(process.cwd(), "vendor/wry/src/webview2/mod.rs"), "utf8");
-const ciWorkflow = readFileSync(resolve(process.cwd(), ".github/disabled-workflows/ci.yml.disabled"), "utf8");
-const releaseWorkflow = readFileSync(resolve(process.cwd(), ".github/disabled-workflows/release.yml.disabled"), "utf8");
+const ciWorkflow = readFileSync(resolve(process.cwd(), ".github/workflows/verify.yml"), "utf8");
+const releaseWorkflow = readFileSync(resolve(process.cwd(), ".github/workflows/release.yml"), "utf8");
 
 describe("Windows offline installer template", () => {
-  it("routes supported legacy Windows users from generic installers to the fixed-runtime package", () => {
+  it("rejects unsupported legacy Windows and links the canonical Horizon release", () => {
     expect(template).toContain("ManifestSupportedOS all");
     expect(template).toContain("!include WinVer.nsh");
     // Tauri 2.11 renders fixedRuntime as an empty NSIS install mode instead of
@@ -28,7 +28,7 @@ describe("Windows offline installer template", () => {
     expect(template).toContain("${If} ${IsWin7}");
     expect(template).toContain("${OrIf} ${IsWin2012R2}");
     expect(template).toContain('MessageBox MB_ICONSTOP|MB_YESNO|MB_DEFBUTTON1 "$(chironHorizonWin7InstallerRequired)" IDYES chiron_horizon_open_win7_installer');
-    expect(template).toContain("https://distribution-disabled.invalid/releases/v${VERSION}/CHIRON_HORIZON_${VERSION}_x64-win7-server2012r2-offline-setup.exe?v=${VERSION}");
+    expect(template).toContain("https://github.com/Gaussian-id/Chiron-DBMS/releases/tag/v${VERSION}");
     expect(template).toContain("SetErrorLevel 1633");
     expect(template).toContain("${OrIf} $PassiveMode = 1");
   });
@@ -136,30 +136,20 @@ describe("Windows 7 fixed WebView2 runtime bundle", () => {
     expect(win7LoaderAuditScript).toContain('"WebView2: Failed to find the WebView2 client dll at:"');
     expect(win7LoaderAuditScript).toContain('"WebView2: Failed to find an installed WebView2 runtime or non-stable Microsoft Edge installation."');
     expect(win7LoaderAuditScript).toContain("GetEncoding(28591)");
-    expect(ciWorkflow).toContain("./.github/scripts/assert-webview2-win7-loader.ps1");
-    expect(releaseWorkflow).toContain("./.github/scripts/assert-webview2-win7-loader.ps1");
   });
 
-  it("keeps compile caching away from the Win7 WebView2 loader patch", () => {
-    const releaseWin7Job = releaseWorkflow.slice(releaseWorkflow.indexOf("  build-windows-7-offline:"), releaseWorkflow.indexOf("  static-browser:"));
-    const ciWin7Job = ciWorkflow.slice(ciWorkflow.indexOf("  windows-win7-bundle:"), ciWorkflow.indexOf("  duckdb-windows-driver:"));
-
-    // The loader patch rewrites a file inside the cargo registry, which no
-    // compile cache can see. v0.6.0 linked a >= 1.0.1054.31 loader despite the
-    // patched 1.0.902.49 one being verified on disk, so neither Win7 job may
-    // route rustc through sccache until the loader is vendored into the tree.
-    expect(releaseWin7Job).not.toContain("RUSTC_WRAPPER");
-    expect(releaseWin7Job).not.toContain("sccache-action");
-    expect(ciWin7Job).not.toContain("RUSTC_WRAPPER");
-    expect(ciWin7Job).not.toContain("sccache-action");
+  it("publishes the supported standard Windows target", () => {
+    for (const workflow of [ciWorkflow, releaseWorkflow]) {
+      expect(workflow).toContain("x86_64-pc-windows-msvc");
+      expect(workflow).toContain("bundles: nsis");
+      expect(workflow).not.toContain("x86_64-win7-windows-msvc");
+    }
   });
 
   it("probes the fixed runtime through the Win7-compatible loader", () => {
     expect(win7RuntimeProbeScript).toContain("GetAvailableCoreWebView2BrowserVersionString");
     expect(win7RuntimeProbeScript).toContain('$ExpectedVersion = "109.0.1518.78"');
     expect(win7RuntimeProbeScript).toContain("msedgewebview2.exe");
-    expect(ciWorkflow).toContain("./.github/scripts/assert-webview2-win7-runtime.ps1");
-    expect(releaseWorkflow).toContain("./.github/scripts/assert-webview2-win7-runtime.ps1");
   });
 
   it("passes the configured fixed-runtime folder to WebView2 discovery and creation", () => {
@@ -175,19 +165,11 @@ describe("Windows 7 fixed WebView2 runtime bundle", () => {
   it("audits the files produced by the silent Win7 installer", () => {
     expect(win7InstallerAuditScript).toContain('"webview2-fixed-runtime\\msedgewebview2.exe"');
     expect(win7InstallerAuditScript).toContain('"chiron-horizon.exe"');
-    expect(ciWorkflow).toContain("./.github/scripts/assert-win7-installer-content.ps1");
-    expect(releaseWorkflow).toContain("./.github/scripts/assert-win7-installer-content.ps1");
   });
 
   it("builds the Windows 7 executable with the production custom protocol", () => {
     expect(appCargoToml).toContain('custom-protocol = ["tauri/custom-protocol"]');
     expect(appBuildScript).toContain("CARGO_FEATURE_CUSTOM_PROTOCOL");
     expect(appBuildScript).toContain("CARGO_CFG_TARGET_VENDOR");
-    expect(ciWorkflow).toContain("--release --features custom-protocol --target x86_64-win7-windows-msvc");
-    expect(releaseWorkflow).toContain("--release --features custom-protocol --target x86_64-win7-windows-msvc");
-    expect(ciWorkflow).toContain("TAURI_CONFIG = Get-Content src-tauri/tauri.webview2-win7-fixed.conf.json -Raw");
-    expect(releaseWorkflow).toContain("TAURI_CONFIG = Get-Content src-tauri/tauri.webview2-win7-fixed.conf.json -Raw");
-    expect(ciWorkflow).toContain("target-feature=+crt-static");
-    expect(releaseWorkflow).toContain("target-feature=+crt-static");
   });
 });

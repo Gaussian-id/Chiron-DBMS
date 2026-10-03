@@ -1,6 +1,6 @@
 {
   "name": "@chiron-horizon/cli",
-  "version": "0.4.90",
+  "version": "0.4.103",
   "description": "Command line interface for Chiron Horizon database connections, schema, and safe queries",
   "keywords": [
     "ai-agent",
@@ -13,7 +13,7 @@
     "postgresql",
     "terminal"
   ],
-  "homepage": "https://github.com/t8y2/chiron-horizon/tree/main/packages/cli",
+  "homepage": "https://github.com/Gaussian-id/Chiron-DBMS/tree/main/packages/cli",
   "license": "Apache-2.0",
   "repository": {
     "type": "git",
@@ -29,17 +29,17 @@
   "type": "module",
   "scripts": {
     "start": "cargo run -p chiron-horizon-cli --no-default-features --",
-    "test": "cargo test -p chiron-horizon-cli --no-default-features",
+    "test": "cargo nextest run -p chiron-horizon-cli --no-default-features --no-fail-fast",
     "build": "cargo build -p chiron-horizon-cli --release --no-default-features",
     "prepublishOnly": "node --check bin/chiron_horizon.js"
   },
   "optionalDependencies": {
-    "@chiron-horizon/cli-darwin-arm64": "0.4.90",
-    "@chiron-horizon/cli-darwin-x64": "0.4.90",
-    "@chiron-horizon/cli-linux-arm64-gnu": "0.4.90",
-    "@chiron-horizon/cli-linux-x64-gnu": "0.4.90",
-    "@chiron-horizon/cli-win32-arm64": "0.4.90",
-    "@chiron-horizon/cli-win32-x64": "0.4.90"
+    "@chiron-horizon/cli-darwin-arm64": "0.4.103",
+    "@chiron-horizon/cli-darwin-x64": "0.4.103",
+    "@chiron-horizon/cli-linux-arm64-gnu": "0.4.103",
+    "@chiron-horizon/cli-linux-x64-gnu": "0.4.103",
+    "@chiron-horizon/cli-win32-arm64": "0.4.103",
+    "@chiron-horizon/cli-win32-x64": "0.4.103"
   },
   "engines": {
     "node": ">=18.18.0"

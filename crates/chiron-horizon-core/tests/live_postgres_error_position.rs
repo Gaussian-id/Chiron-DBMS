@@ -24,7 +24,6 @@ use chiron_horizon_core::query::{
 use chiron_horizon_core::sql_error_position::{
     encode_marker, take_message_position, SqlErrorPosition, SQL_ERROR_POSITION_MARKER,
 };
-use chiron_horizon_core::storage::Storage;
 
 fn live_env() -> (String, u16, String, String, String) {
     let host = std::env::var("CHIRON_HORIZON_LIVE_POSTGRES_HOST").unwrap_or_else(|_| "127.0.0.1".to_string());
@@ -115,7 +114,7 @@ async fn live_pg_multi_core_reports_error_position_in_the_backend_envelope() {
 
     let dir = std::env::temp_dir().join(format!("chiron-horizon-live-pg-position-{}", uuid::Uuid::new_v4().simple()));
     std::fs::create_dir_all(&dir).unwrap();
-    let storage = Storage::open(&dir.join("storage.db")).await.unwrap();
+    let storage = chiron_horizon_core::persistence::test_storage::open(&dir.join("storage.db")).await.unwrap();
     let state = AppState::new(storage);
     let connection_id = "live-pg-position";
     state.configs.write().await.insert(
@@ -137,7 +136,7 @@ async fn live_pg_multi_core_reports_error_position_in_the_backend_envelope() {
     .await;
 
     let backend_error = result.expect_err("single-statement failure must surface as an error").into_backend_error();
-    assert_eq!(backend_error.code(), "Chiron Horizon-JDBC-4001");
+    assert_eq!(backend_error.code(), "CHIRON-HORIZON-JDBC-4001");
     assert_eq!(
         backend_error.error_position(),
         Some(expected_position(sql, "no_such_table")),
@@ -172,6 +171,8 @@ fn live_connection_config(
     database: &str,
 ) -> ConnectionConfig {
     ConnectionConfig {
+        oracle_oci_nls_lang: None,
+        oracle_oci_tns_admin: None,
         docs_notes_path: None,
         id: id.to_string(),
         name: id.to_string(),
@@ -233,6 +234,7 @@ fn live_connection_config(
         is_production: false,
         production_databases: vec![],
         show_system_schemas: false,
+        sidebar_auto_load_all_tables: false,
         database_info: None,
     }
 }

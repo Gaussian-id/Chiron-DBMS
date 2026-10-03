@@ -19,7 +19,7 @@ describe("normalizeDataGridSaveError", () => {
     const sqlError = Object.assign(new Error("Duplicate entry '1' for key 'PRIMARY'"), {
       backendError: {
         version: 1,
-        code: "Chiron Horizon-JDBC-4001",
+        code: "CHIRON-HORIZON-JDBC-4001",
         messageKey: "backendErrors.jdbc.sqlFailed",
         messageParams: { stage: "execute" },
         source: "jdbc_agent",

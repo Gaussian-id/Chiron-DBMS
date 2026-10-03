@@ -6,12 +6,12 @@
     "url": "https://github.com/t8y2/chiron_horizon",
     "source": "github"
   },
-  "version": "0.4.90",
+  "version": "0.4.103",
   "packages": [
     {
       "registryType": "npm",
       "identifier": "@chiron-horizon/mcp-server",
-      "version": "0.4.90",
+      "version": "0.4.103",
       "transport": {
         "type": "stdio"
       }

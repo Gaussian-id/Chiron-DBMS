@@ -1,20 +1,12 @@
-name: Release Chiron Horizon plugin
-
+name: Plugin release
 on:
-  release:
-    types: [published]
-
+  workflow_dispatch:
 permissions:
-  contents: write
-
+  contents: read
 jobs:
-  release:
-    uses: t8y2/chiron-horizon/.github/workflows/plugin-release-reusable.yml@plugin-cli-v{{CLI_VERSION}}
-    with:
-      release-tag: ${{ github.event.release.tag_name }}
-      package-command: chiron-horizon-plugin package .
-      package-path: dist/*.chiron_horizonp
-      metadata-path: dist/*.artifact.json
-      plugin-cli-version: {{CLI_VERSION}}
-      go-version: "{{GO_VERSION}}"
-      rust-toolchain: "{{RUST_TOOLCHAIN}}"
+  setup:
+    runs-on: ubuntu-latest
+    steps:
+      - run: |
+          echo "Build and sign candidates with the Horizon plugin CLI, then publish to your custom repository."
+          echo "Configure your own release workflow before enabling automatic publication."

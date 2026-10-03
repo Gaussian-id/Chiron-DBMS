@@ -8,7 +8,7 @@ import {
   handleIssueCommand,
 } from "./issue-commands.mjs";
 
-const repository = "Gaussian-id/Chiron-Horizon";
+const repository = "Gaussian-id/Chiron-DBMS";
 
 function issueContext(overrides = {}) {
   return {

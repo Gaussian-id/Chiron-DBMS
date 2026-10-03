@@ -33,7 +33,7 @@ import { BackendErrorException } from "@/lib/backend/errorUtils";
 
 const envelope = {
   version: 1,
-  code: "Chiron Horizon-JDBC-4001",
+  code: "CHIRON-HORIZON-JDBC-4001",
   messageKey: "backendErrors.jdbc.sqlFailed",
   messageParams: { stage: "execute" },
   source: "jdbcAgent",
@@ -52,14 +52,14 @@ describe("HTTP backend error parsing", () => {
     if (expected) {
       expect(error.backendError).toEqual(expected);
     } else {
-      expect(error.backendError.code).toBe("Chiron Horizon-LEGACY-0001");
+      expect(error.backendError.code).toBe("CHIRON-HORIZON-LEGACY-0001");
       expect(error.backendError.detail).toBe(body);
     }
   });
 
   test("uses a stable summary for an empty body", async () => {
     const error = await backendResponseError(new Response("", { status: 503 }));
-    expect(error.backendError.code).toBe("Chiron Horizon-LEGACY-0001");
+    expect(error.backendError.code).toBe("CHIRON-HORIZON-LEGACY-0001");
     expect(error.backendError.detail).toBeUndefined();
     expect(error.message).toBe("Backend request failed");
   });

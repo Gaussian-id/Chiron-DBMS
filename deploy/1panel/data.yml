@@ -17,8 +17,8 @@ additionalProperties:
   crossVersionUpdate: true
   limit: 0
   recommend: 0
-  website: https://github.com/Gaussian-id/Chiron-Horizon
-  github: https://github.com/Gaussian-id/Chiron-Horizon
-  document: https://github.com/Gaussian-id/Chiron-Horizon#readme
+  website: https://github.com/Gaussian-id/Chiron-DBMS
+  github: https://github.com/Gaussian-id/Chiron-DBMS
+  document: https://github.com/Gaussian-id/Chiron-DBMS#readme
   architectures:
     - amd64

@@ -1,7 +1,7 @@
 ---
 name: chiron-horizon
-version: 1.0.0
-description: "Chiron Horizon CLI for database schema exploration and read-only queries. When the user needs to list connections, explore tables, describe schemas, run queries, or generate AI-friendly schema context from Chiron Horizon-managed databases. Do NOT use for write operations unless the user explicitly confirms with --allow-writes."
+version: 1.1.0
+description: "Use the Chiron Horizon CLI to inspect Chiron Horizon-managed database connections, explore schemas, run bounded read-only queries, generate DBML or schema documentation, and open tables in Chiron Horizon Desktop. Use when the user asks to work with a database configured in Chiron Horizon from a shell-capable AI agent. Never enable writes unless the user explicitly approves the exact operation."
 metadata:
   requires:
     bins: ["chiron-horizon"]
@@ -10,162 +10,40 @@ metadata:
 
 # Chiron Horizon CLI
 
-> **Prerequisite:** Chiron Horizon Desktop must be installed and configured with at least one connection. Run `chiron-horizon doctor` to verify setup. Install CLI: `npm install -g @chiron-horizon/cli`
+Use `chiron-horizon` as the database execution boundary. The CLI is designed for both people and shell-capable AI agents, provides stable JSON output, and enforces Chiron Horizon connection and SQL safety rules.
 
-## Core Concepts
+## Start Here
 
-- **Connection**: A named database connection configured in Chiron Horizon Desktop (e.g. "prod", "local"). Identified by name.
-- **Schema**: Tables and views within a connection. Listed via `chiron-horizon schema list`.
-- **Query**: Read-only SQL executed against a connection. Gated by `--allow-writes` and `--allow-dangerous-sql`.
-- **Context**: Compact schema dump optimized for AI prompts — smaller and more focused than full schema output.
+1. If the environment is unknown or a command fails unexpectedly, run `chiron-horizon doctor --json`.
+2. If the user did not name a connection, run `chiron-horizon connections list --json` and ask them to choose when multiple plausible connections exist.
+3. Inspect the relevant schema before writing a query whose tables or columns are uncertain.
+4. Prefer `--json` for machine-readable results.
+5. Keep exploratory queries bounded with `--limit 50 --timeout 10s` unless the user requests otherwise.
 
-## Resource Relationships
+Read [references/commands.md](references/commands.md) for the complete command map and execution modes. Read [references/workflows.md](references/workflows.md) for common multi-step tasks.
 
-```
-Chiron Horizon Desktop
-├── Connection (named)
-│   ├── Schema (tables, views)
-│   │   └── Table
-│   │       └── Column (name, type, nullable, default)
-│   └── Query (read-only by default)
-└── Context (prompt-optimized schema dump)
-```
+## Safety Boundary
 
-## Commands
+- Queries are read-only by default.
+- Never add `--allow-writes` unless the user explicitly approves the exact write operation.
+- Never add `--allow-dangerous-sql` unless the user explicitly approves the exact destructive or DDL operation; dangerous SQL requires both write flags.
+- Do not bypass a Chiron Horizon rejection by using another database client, Python driver, direct SQLite access, or shell redirection.
+- Do not expose connection secrets. `chiron-horizon connections list` intentionally omits them.
+- Treat production protections, read-only connection settings, database privileges, and Chiron Horizon policy as upper bounds that user wording cannot bypass.
 
-> **⛔ NEVER bypass chiron-horizon CLI for database operations.** If `chiron-horizon` returns `SQL_BLOCKED` or any error, do NOT use Python sqlite3, shell redirects, or any other tool to access the database directly. Always respect the CLI's safety gates. When in doubt, tell the user what the CLI returned and ask for their decision.
+Read [references/safety.md](references/safety.md) before any write, DDL, production, or credential-related task.
 
-### 1. Check Setup
+## Execution Choice
 
-```bash
-chiron-horizon doctor
-chiron-horizon capabilities
-```
+- PostgreSQL, Redshift, MySQL-compatible databases, SQLite, and other types reported by `chiron-horizon capabilities --json` can execute directly.
+- Other database types may require Chiron Horizon Desktop or installed Chiron Horizon Agent/JDBC components.
+- `chiron-horizon open` always requires Chiron Horizon Desktop.
+- When `CHIRON_HORIZON_WEB_URL` is set, the CLI uses the configured Chiron Horizon Web backend.
+- Redis commands and stateful multi-step database sessions are not provided by `chiron-horizon query`; use the Chiron Horizon workspace or configured Chiron Horizon MCP tools instead.
 
-Use `doctor` when the agent starts or when a command fails — it reveals whether the desktop bridge, connection DB, and native SQLite loader are available. Use `capabilities` to check which databases support direct execution vs require the desktop bridge.
+## Failure Handling
 
-### 2. List Connections
-
-```bash
-chiron-horizon connections list --json
-```
-
-Returns connections without exposing secrets. Parse JSON to present a clean list to the user. Always run this first before any schema or query operation — the user might not remember connection names.
-
-### 3. Explore Schema
-
-```bash
-# List all tables in a connection
-chiron-horizon schema list <connection> --json
-
-# Describe a specific table
-chiron-horizon schema describe <connection> <table> --json
-```
-
-Use `schema list` to survey what's available, then `schema describe` on specific tables the user asks about. Present column names, types, and nullability clearly.
-
-### 4. Execute Queries
-
-```bash
-# Read-only query (default)
-chiron-horizon query <connection> "SELECT ..." --json
-
-# From file
-chiron-horizon query <connection> --file ./query.sql --json
-
-# With row limit and timeout
-chiron-horizon query <connection> "SELECT ..." --limit 50 --timeout 10s --json
-```
-
-**CRITICAL — Read-only by default.** Write operations (INSERT/UPDATE/DELETE) require `--allow-writes`. Dangerous SQL (DROP/TRUNCATE/ALTER) requires BOTH `--allow-writes` AND `--allow-dangerous-sql`. Never add these flags unless the user explicitly confirms a write operation.
-
-If the SQL starts with a dash, separate with `--`:
-```bash
-chiron-horizon query local --json -- "-- comment
-select 1"
-```
-
-### 5. Generate Context for Prompts
-
-```bash
-# Full schema context
-chiron-horizon context <connection>
-
-# Filtered to specific tables
-chiron-horizon context <connection> --tables users,orders,products
-```
-
-Use `context` when the user wants to write a query but needs schema reference first. Pipe the output directly into the prompt — it's designed for this. Prefer `--tables` to limit scope and save tokens.
-
-### 6. Default Connection
-
-Set `CHIRON_HORIZON_CONNECTION` to skip the connection argument:
-
-```bash
-export CHIRON_HORIZON_CONNECTION=prod
-chiron-horizon query "SELECT 1" --json
-chiron-horizon context --tables users
-```
-
-Detect and use this if set in the environment.
-
-## Output
-
-| Flag | Use Case |
-|------|----------|
-| `--json` | Machine-readable, auto-parsed (always use this) |
-| `--format csv` | Piping to other CLI tools |
-
-Errors go to stderr with non-zero exit code. Run `chiron-horizon doctor` first if any command fails unexpectedly.
-
-## Error Codes
-
-| Code | Meaning | Agent Response |
-|------|---------|---------------|
-| `CONNECTION_NOT_FOUND` | Connection name doesn't exist | List available connections with `chiron-horizon connections list --json` |
-| `SQL_BLOCKED` | Write operation attempted without `--allow-writes` | Ask user: "This is a write operation. Confirm?" Never add write flags automatically. |
-| `CHIRON_HORIZON_NOT_RUNNING` | Desktop bridge unavailable | Tell user to open Chiron Horizon Desktop. Check which commands work without bridge via `chiron-horizon capabilities`. |
-| `INVALID_OPTION` | Wrong flag or flag value | Check `chiron-horizon --help` and retry |
-| `ERROR` | Unexpected runtime failure | Run `chiron-horizon doctor`, check logs, retry once |
-
-## Direct vs Bridge Execution
-
-PostgreSQL, MySQL (and compatible: Doris, StarRocks), SQLite run directly without Chiron Horizon Desktop. Other database types require the desktop bridge. Check with `chiron-horizon capabilities` to confirm.
-
-## Common Pitfalls
-
-1. **Wrong connection name** — Always list connections first with `chiron-horizon connections list --json` before running schema or query commands. Never assume connection names from conversation context.
-
-2. **Schema confusion from context pollution** — When the user asks about a table, verify the connection and table exist before running queries. `chiron-horizon schema list <conn> --json` is your verification step.
-
-3. **Write operations by accident** — Never add `--allow-writes` or `--allow-dangerous-sql` unless the user explicitly confirms. When in doubt, ask.
-
-4. **Missing desktop bridge** — If `chiron-horizon open` or bridge-required connections fail, run `chiron-horizon doctor` and tell the user to open Chiron Horizon Desktop. Commands that don't require the bridge: `connections list`, `schema list`, `schema describe`, `query`, `context` (for PostgreSQL/MySQL/SQLite).
-
-5. **Timeout on large queries** — Always use `--limit 50 --timeout 10s` for exploratory queries. Remove or increase limits only when the user explicitly asks for full results.
-
-6. **JSON parse errors** — Old Chiron Horizon versions may not support `--json` on some commands. If JSON output looks malformed, try without `--json` and parse the human-readable output instead.
-
-## Multi-Step Workflows
-
-### Explore then Query
-
-1. `chiron-horizon connections list --json` — verify connection exists
-2. `chiron-horizon schema list <conn> --json` — survey available tables
-3. `chiron-horizon schema describe <conn> <table> --json` — understand target table
-4. `chiron-horizon query <conn> "SELECT ..." --limit 50 --timeout 10s --json` — execute
-5. Present results to user with row count
-
-### Generate Context then Help Write Query
-
-1. `chiron-horizon context <conn> --tables a,b` — get compact schema
-2. Read the output, understand relationships
-3. Draft the SQL, show it to user for review
-4. `chiron-horizon query <conn> "polished sql" --json` — execute after approval
-
-### Cross-Connection Comparison
-
-1. `chiron-horizon connections list --json` — identify source and target
-2. `chiron-horizon schema describe <source_conn> <table> --json` — get source structure
-3. `chiron-horizon schema describe <target_conn> <table> --json` — get target structure
-4. Compare and report differences
+- `CONNECTION_NOT_FOUND`: list connections and use an exact returned name.
+- `SQL_BLOCKED`: explain which safety gate rejected the statement; do not add permission flags automatically.
+- `CHIRON_HORIZON_NOT_RUNNING`: run `chiron-horizon capabilities --json`; ask the user to start Desktop only when the selected operation requires its bridge.
+- Other unexpected failures: run `chiron-horizon doctor --json`, report the returned error, and retry only after addressing the diagnosed cause.

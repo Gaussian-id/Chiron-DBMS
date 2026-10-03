@@ -3,9 +3,9 @@
 import Link from "next/link";
 import { Github, Menu, X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
-import type { DocsLang } from "@/lib/i18n";
+import { i18n as docsI18n, type DocsLang } from "@/lib/i18n";
 
-const LANG_CYCLE = ["en", "cn"] as const satisfies readonly DocsLang[];
+const LANG_CYCLE: readonly DocsLang[] = docsI18n.languages;
 const LANG_BUTTON_LABEL: Record<DocsLang, string> = { en: "EN", cn: "中" };
 
 const i18n = {
@@ -37,7 +37,7 @@ const i18n = {
   },
 };
 
-export function LandingNav({ lang, active }: { lang: DocsLang; active?: "home" | "databases" | "changelog" | "community" | "issue" | "sponsors" | "contributors" | "drivers" }) {
+export function LandingNav({ lang, active }: { lang: DocsLang; active?: "home" | "databases" | "changelog" | "community" | "issue" | "sponsors" | "contributors" | "drivers" | "plugins" | "privacy" }) {
   const ref = useRef<HTMLElement>(null);
   const [menuOpen, setMenuOpen] = useState(false);
   const t = i18n[lang];
@@ -50,6 +50,7 @@ export function LandingNav({ lang, active }: { lang: DocsLang; active?: "home" |
     sponsors: `/${otherLang}/sponsors`,
     contributors: `/${otherLang}/contributors`,
     drivers: `/${otherLang}/drivers`,
+    privacy: `/${otherLang}/privacy`,
   };
   const langHref = langHrefMap[active ?? ""] ?? `/${otherLang}`;
   const navItems = [
@@ -116,12 +117,12 @@ export function LandingNav({ lang, active }: { lang: DocsLang; active?: "home" |
               {item.label}
             </Link>
           ))}
-          <Link href="https://github.com/Gaussian-id/Chiron-Horizon" target="_blank" rel="noopener noreferrer" aria-label="GitHub" title="GitHub" className="landing-nav-link inline-flex size-9 items-center justify-center rounded-[7px] text-landing-muted max-[760px]:hidden">
+          <Link href="https://github.com/Gaussian-id/Chiron-DBMS" target="_blank" rel="noopener noreferrer" aria-label="GitHub" title="GitHub" className="landing-nav-link inline-flex size-9 items-center justify-center rounded-[7px] text-landing-muted max-[760px]:hidden">
             <Github size={18} strokeWidth={2} />
           </Link>
-          <Link href={langHref} prefetch={false} aria-label={t.langLabel} title={t.langLabel} className="landing-nav-link ml-1.5 inline-flex h-9 items-center justify-center rounded-[7px] border border-landing-line px-3 text-[12px] font-[650] tracking-tight text-landing-muted" onClick={() => setMenuOpen(false)}>
+          {LANG_CYCLE.length > 1 && <Link href={langHref} prefetch={false} aria-label={t.langLabel} title={t.langLabel} className="landing-nav-link ml-1.5 inline-flex h-9 items-center justify-center rounded-[7px] border border-landing-line px-3 text-[12px] font-[650] tracking-tight text-landing-muted" onClick={() => setMenuOpen(false)}>
             {LANG_BUTTON_LABEL[otherLang]}
-          </Link>
+          </Link>}
           <button
             type="button"
             className="landing-nav-link ml-1 inline-flex size-11 items-center justify-center rounded-[7px] border border-landing-line text-landing-ink min-[761px]:hidden"
@@ -151,7 +152,7 @@ export function LandingNav({ lang, active }: { lang: DocsLang; active?: "home" |
               <span aria-hidden="true">→</span>
             </Link>
           ))}
-          <Link href="https://github.com/Gaussian-id/Chiron-Horizon" target="_blank" rel="noopener noreferrer" className="landing-mobile-menu-link" onClick={() => setMenuOpen(false)} tabIndex={menuOpen ? 0 : -1}>
+          <Link href="https://github.com/Gaussian-id/Chiron-DBMS" target="_blank" rel="noopener noreferrer" className="landing-mobile-menu-link" onClick={() => setMenuOpen(false)} tabIndex={menuOpen ? 0 : -1}>
             <span className="inline-flex items-center gap-2"><Github size={17} /> GitHub</span>
             <span aria-hidden="true">↗</span>
           </Link>

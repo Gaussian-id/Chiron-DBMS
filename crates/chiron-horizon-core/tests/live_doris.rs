@@ -11,7 +11,6 @@ use std::time::Duration;
 use chiron_horizon_core::connection::{connect_bare_metadata_pool, AppState};
 use chiron_horizon_core::models::connection::{ConnectionConfig, DatabaseType};
 use chiron_horizon_core::schema::get_columns_core;
-use chiron_horizon_core::storage::Storage;
 use mysql_async::prelude::Queryable;
 
 fn live_doris_config(id: &str) -> ConnectionConfig {
@@ -47,7 +46,7 @@ fn live_doris_config(id: &str) -> ConnectionConfig {
 async fn doris_qualified_table_metadata_resolves_schema_database_with_comments() {
     let config = live_doris_config("doris-6590-live");
     let db_path = std::env::temp_dir().join(format!("chiron-horizon-doris-6590-{}.db", uuid::Uuid::new_v4().simple()));
-    let storage = Storage::open(&db_path).await.expect("open temp storage");
+    let storage = chiron_horizon_core::persistence::test_storage::open(&db_path).await.expect("open temp storage");
     let state = AppState::new(storage);
     state.configs.write().await.insert(config.id.clone(), config.clone());
 

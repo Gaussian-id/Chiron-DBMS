@@ -47,9 +47,9 @@ export type ChangelogBootstrap = {
   fallbackReleases: ChangelogRelease[] | null;
 };
 
-const CHANGELOG_URL = "https://raw.githubusercontent.com/Gaussian-id/Chiron-Horizon/main/crates/chiron-horizon-core/assets/changelog.json";
+const CHANGELOG_URL = "https://raw.githubusercontent.com/Gaussian-id/Chiron-DBMS/main/crates/chiron-horizon-core/assets/changelog.json";
 export type ChangelogLang = "en" | "cn";
-export function changelogDataLang(lang: DocsLang): ChangelogLang { return lang === "cn" ? "cn" : "en"; }
+export function changelogDataLang(lang: DocsLang): ChangelogLang { return "en"; }
 export function changelogUrl(_lang: ChangelogLang) { return CHANGELOG_URL; }
 export function changelogIndexUrl(lang: ChangelogLang) { return changelogUrl(lang); }
 export function changelogReleaseUrl(lang: ChangelogLang, _tag: string) { return changelogUrl(lang); }

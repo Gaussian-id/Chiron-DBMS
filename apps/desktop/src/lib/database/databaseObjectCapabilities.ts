@@ -25,15 +25,16 @@ const OPENGAUSS_A_OBJECTS: SidebarObjectKind[] = [...POSTGRES_OBJECTS, "PACKAGE"
 const POSTGRES_NO_TYPE_OBJECTS: SidebarObjectKind[] = ["TABLE", "VIEW", "MATERIALIZED_VIEW", "PROCEDURE", "FUNCTION", "SEQUENCE"];
 
 // Kingbase and Vastbase agents support the same user-defined type listing via
-// their own metadata query, but do not expose sequences. Kingbase additionally
-// has a verified schema-trigger path; keep Vastbase separate until its Agent
+// their own metadata query, and their sequences are read from the PostgreSQL
+// catalogs over the agent connection (t8y2/chiron-horizon#9016). Kingbase additionally has
+// a verified schema-trigger path; keep Vastbase separate until its Agent
 // exposes the same parent-table-aware metadata contract.
-const KINGBASE_OBJECTS: SidebarObjectKind[] = ["TABLE", "VIEW", "MATERIALIZED_VIEW", "PROCEDURE", "FUNCTION", "TRIGGER", "TYPE"];
-const VASTBASE_OBJECTS: SidebarObjectKind[] = ["TABLE", "VIEW", "MATERIALIZED_VIEW", "PROCEDURE", "FUNCTION", "TYPE"];
+const KINGBASE_OBJECTS: SidebarObjectKind[] = ["TABLE", "VIEW", "MATERIALIZED_VIEW", "PROCEDURE", "FUNCTION", "TRIGGER", "SEQUENCE", "TYPE"];
+const VASTBASE_OBJECTS: SidebarObjectKind[] = ["TABLE", "VIEW", "MATERIALIZED_VIEW", "PROCEDURE", "FUNCTION", "SEQUENCE", "TYPE"];
 
 const POSTGRES_LIKE_OBJECTS: SidebarObjectKind[] = ["TABLE", "VIEW", "MATERIALIZED_VIEW", "PROCEDURE", "FUNCTION"];
 const ORACLE_OBJECTS: SidebarObjectKind[] = ["TABLE", "VIEW", "MATERIALIZED_VIEW", "PROCEDURE", "FUNCTION", "SEQUENCE", "SYNONYM", "PACKAGE", "PACKAGE_BODY"];
-const OCEANBASE_ORACLE_OBJECTS: SidebarObjectKind[] = ["TABLE", "VIEW", "MATERIALIZED_VIEW", "PROCEDURE", "FUNCTION", "SEQUENCE", "PACKAGE", "PACKAGE_BODY"];
+const OCEANBASE_ORACLE_OBJECTS: SidebarObjectKind[] = ["TABLE", "VIEW", "MATERIALIZED_VIEW", "PROCEDURE", "FUNCTION", "SEQUENCE", "SYNONYM", "PACKAGE", "PACKAGE_BODY"];
 const DAMENG_OBJECTS: SidebarObjectKind[] = ["TABLE", "VIEW", "MATERIALIZED_VIEW", "PROCEDURE", "FUNCTION", "SEQUENCE", "PACKAGE", "PACKAGE_BODY"];
 const XUGU_OBJECTS: SidebarObjectKind[] = ["TABLE", "VIEW", "PROCEDURE", "FUNCTION", "TRIGGER", "SEQUENCE", "SYNONYM", "PACKAGE", "PACKAGE_BODY", "TYPE", "TYPE_BODY"];
 const PACKAGE_MEMBER_EXPANSION_DATABASES = new Set<DatabaseType>(["oracle", "xugu"]);
@@ -68,7 +69,7 @@ const DATABASE_TYPE_OBJECTS = new Map<DatabaseType, SidebarObjectKind[]>([
   ["duckdb", TABLE_VIEW_OBJECTS],
   ["clickhouse", TABLE_VIEW_OBJECTS],
   // Doris: backend listing path still uses the generic SHOW TABLES path (see
-  // `list_tables_once` for `PoolKind::Mysql` in crates/chiron-horizon-core/src/schema.rs)
+  // `list_tables_once` for `PoolKind::Mysql` in crates/chiron-horizon-core/src/schema/mod.rs)
   // and lacks a MV classifier. Keep Doris on TABLE_VIEW_OBJECTS until a
   // Doris-specific MV listing/classification lands, otherwise the UI advertises
   // MV support that the backend cannot route.
@@ -79,6 +80,7 @@ const DATABASE_TYPE_OBJECTS = new Map<DatabaseType, SidebarObjectKind[]>([
   // ArgoDB (Transwarp) shares the Hive agent; its catalog views
   // (system.procedures_v / system.functions_v) expose routines natively.
   ["argo", ROUTINE_OBJECTS],
+  ["transwarp", ["TABLE", "VIEW", "PROCEDURE", "FUNCTION", "PACKAGE", "PACKAGE_BODY"]],
   ["kyuubi", TABLE_VIEW_OBJECTS],
   ["impala", TABLE_VIEW_OBJECTS],
   ["spark", TABLE_VIEW_OBJECTS],
@@ -95,11 +97,13 @@ const DATABASE_TYPE_OBJECTS = new Map<DatabaseType, SidebarObjectKind[]>([
   ["tdengine", TABLE_VIEW_OBJECTS],
   ["iotdb", TABLE_VIEW_OBJECTS],
   ["neo4j", TABLE_VIEW_OBJECTS],
+  ["nebula", TABLE_VIEW_OBJECTS],
   // others
   ["influxdb", ["TABLE"]],
   ["influxdb3", ["TABLE"]],
   ["victoriametrics", ["TABLE"]],
   ["hbase", ["TABLE"]],
+  ["salesforce", ["TABLE"]],
   ["questdb", ["TABLE", "VIEW", "MATERIALIZED_VIEW"]],
   ["manticoresearch", ["TABLE", "FUNCTION"]],
   ["databend", ["TABLE", "VIEW", "PROCEDURE"]],

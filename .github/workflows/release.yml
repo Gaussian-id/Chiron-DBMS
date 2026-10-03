@@ -17,7 +17,11 @@ jobs:
     runs-on: ubuntu-22.04
     env:
       CARGO_INCREMENTAL: "0"
+      CARGO_BUILD_JOBS: "3"
+      CARGO_PROFILE_DEV_DEBUG: "0"
+      CARGO_PROFILE_TEST_DEBUG: "0"
       CARGO_TARGET_DIR: ${{ github.workspace }}/.release-target-preflight
+      RUST_MIN_STACK: "16777216"
       NODE_OPTIONS: --max-old-space-size=6144
     steps:
       - uses: actions/checkout@v4
@@ -49,14 +53,15 @@ jobs:
       - run: node scripts/audit-branding.mjs
       - run: node scripts/sync-connection-types.mjs --check
       - run: pnpm exec vue-tsc --noEmit -p apps/desktop/tsconfig.json
-      - run: pnpm exec vitest run apps/desktop/src/lib/chiron apps/desktop/src/components/vector/__tests__ apps/desktop/src/lib/compat
+      - run: pnpm exec vitest run apps/desktop/src/lib/chiron apps/desktop/src/components/vector/__tests__ apps/desktop/src/lib/compat apps/desktop/src/i18n/__tests__/chironMessages.spec.ts apps/desktop/src/components/editor/__tests__/AiAssistant.chironLifecycle.spec.ts
       - run: pnpm test:database-availability
       - run: pnpm build:docs-export
       - run: pnpm --dir docs content:check
       - run: cargo test -p chiron-horizon-core --no-default-features --features sqlite-bundled --lib
       - run: cargo test -p chiron-horizon-core --no-default-features --features sqlite-bundled --test ai_credentials --test chirondb_connector
+      - run: cargo test -p chiron-horizon-driver-postgres --lib postgres_reset_search_path_sql_selects_dialect_compatible_statement
       - run: cargo check -p chiron-horizon-cli -p chiron-horizon-web -p chiron-horizon-mcp --no-default-features
-      - run: cargo check --manifest-path plugins/sdk/cli/Cargo.toml
+      - run: cargo test --manifest-path plugins/sdk/cli/Cargo.toml creates_frontend_rust_and_go_projects
       - run: node --test packages/plugin-cli/tests/launcher.test.mjs packages/plugin-cli/tests/dev-launcher.test.mjs
       - name: Validate and test Java agents on JDK 21
         working-directory: agents
@@ -69,6 +74,7 @@ jobs:
           (cd agents/scripts && python3 -m unittest validate_agents_test.py driver_release_packages_test.py)
           node --check scripts/stage-desktop-release.mjs
           node --check scripts/create-release-manifest.mjs
+          node --test scripts/release.test.mjs agents/scripts/verify_offline_jdbc_release.test.mjs
 
   desktop:
     name: Desktop ${{ matrix.platform }}
@@ -82,37 +88,38 @@ jobs:
             platform: macos-arm64
             bundles: app,dmg
             extension: .dmg
-            output: Chiron-Horizon_0.1.2_macos-arm64.dmg
+            output: Chiron-Horizon_0.1.3_macos-arm64.dmg
           - os: macos-15-intel
             target: x86_64-apple-darwin
             platform: macos-x64
             bundles: app,dmg
             extension: .dmg
-            output: Chiron-Horizon_0.1.2_macos-x64.dmg
+            output: Chiron-Horizon_0.1.3_macos-x64.dmg
           - os: windows-2022
             target: x86_64-pc-windows-msvc
             platform: windows-x64
             bundles: nsis
             extension: .exe
-            output: Chiron-Horizon_0.1.2_windows-x64-setup.exe
+            output: Chiron-Horizon_0.1.3_windows-x64-setup.exe
           - os: ubuntu-22.04
             target: x86_64-unknown-linux-gnu
             platform: linux-x64
             bundles: deb,appimage
             extension: .deb
-            output: Chiron-Horizon_0.1.2_linux-x64.deb
+            output: Chiron-Horizon_0.1.3_linux-x64.deb
           - os: ubuntu-22.04
             target: x86_64-unknown-linux-gnu
             platform: linux-appimage-x64
             bundles: appimage
             extension: .AppImage
-            output: Chiron-Horizon_0.1.2_linux-x64.AppImage
+            output: Chiron-Horizon_0.1.3_linux-x64.AppImage
     runs-on: ${{ matrix.os }}
     env:
       CARGO_INCREMENTAL: "0"
       CARGO_BUILD_JOBS: "3"
       CARGO_PROFILE_RELEASE_DEBUG: "0"
       CARGO_TARGET_DIR: ${{ github.workspace }}/.release-target-desktop
+      RUST_MIN_STACK: "16777216"
       NODE_OPTIONS: --max-old-space-size=6144
     steps:
       - uses: actions/checkout@v4
@@ -235,6 +242,78 @@ jobs:
           path: release-agents/
           if-no-files-found: error
 
+  oracle-oci-agent:
+    needs: preflight
+    runs-on: windows-2022
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.25.x"
+          cache-dependency-path: agents/drivers/oracle-go/go.sum
+      - name: Prepare MinGW-w64 and the Oracle Instant Client
+        shell: bash
+        run: |
+          cc="$(command -v gcc || true)"
+          if [ -z "$cc" ]; then
+            choco install mingw -y --no-progress
+            cc="$(ls /c/ProgramData/chocolatey/lib/mingw/tools/install/mingw64/bin/gcc.exe | head -1)"
+          fi
+          mkdir -p instantclient
+          fetch_ic() {
+            local name="$1" url="$2"
+            for attempt in 1 2 3; do
+              curl -fSL --retry 5 --retry-delay 5 --retry-all-errors -o "$name" "$url" || true
+              if [ "$(head -c 2 "$name" 2>/dev/null)" = "PK" ]; then
+                echo "$name: $(wc -c < "$name") bytes, zip magic OK (attempt $attempt)"
+                return 0
+              fi
+              echo "::warning::$name attempt $attempt was not a zip; first 200 bytes:"
+              head -c 200 "$name" 2>/dev/null || echo "(no file written)"
+              sleep 10
+            done
+            echo "::error::$name could not be downloaded as a valid zip after 3 attempts"
+            return 1
+          }
+          fetch_ic ic-basic.zip "https://download.oracle.com/otn_software/nt/instantclient/2326300/instantclient-basic-windows.x64-23.26.3.0.0.zip"
+          fetch_ic ic-sdk.zip "https://download.oracle.com/otn_software/nt/instantclient/2326300/instantclient-sdk-windows.x64-23.26.3.0.0.zip"
+          extract_ic() {
+            if command -v 7z >/dev/null 2>&1; then
+              7z x -y -oinstantclient "$1" >/dev/null
+            else
+              powershell.exe -NoProfile -Command "Expand-Archive -Path '$1' -DestinationPath 'instantclient' -Force"
+            fi
+          }
+          extract_ic ic-basic.zip
+          extract_ic ic-sdk.zip
+          ic_dir="$(ls -d "${GITHUB_WORKSPACE}/instantclient"/instantclient_* | head -1)"
+          echo "MinGW gcc: $cc / Instant Client: $ic_dir"
+          {
+            echo "CGO_ENABLED=1"
+            echo "GOOS=windows"
+            echo "GOARCH=amd64"
+            echo "CC=${cc}"
+            echo "CGO_CFLAGS=-I${ic_dir}/sdk/include"
+            echo "CGO_LDFLAGS=-L${ic_dir}/sdk/lib/msvc"
+          } >> "$GITHUB_ENV"
+      - name: Test Oracle agent with the OCI build tag
+        shell: bash
+        working-directory: agents/drivers/oracle-go
+        run: go test -mod=mod -tags oci ./...
+      - name: Build Oracle OCI agent (Windows x64)
+        shell: bash
+        working-directory: agents/drivers/oracle-go
+        run: |
+          mkdir -p ../../../release-native
+          output="../../../release-native/chiron-horizon-agent-oracle-oci-${GITHUB_REF_NAME#v}-windows-x64.exe"
+          go build -mod=mod -tags oci -trimpath -ldflags="-s -w" -o "$output" .
+          ls -lh ../../../release-native
+      - uses: actions/upload-artifact@v4
+        with:
+          name: oracle-oci-native
+          path: "release-native/chiron-horizon-agent-oracle-oci-*"
+
+
   rust-agents:
     name: Native Rust agents ${{ matrix.platform }}
     needs: preflight
@@ -320,8 +399,8 @@ jobs:
           if-no-files-found: error
 
   publish:
-    name: Publish verified v0.1.2 release
-    needs: [desktop, java-agents, go-agents, rust-agents, managed-jre]
+    name: Publish verified v0.1.3 release
+    needs: [desktop, java-agents, go-agents, oracle-oci-agent, rust-agents, managed-jre]
     runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v4
@@ -357,12 +436,14 @@ jobs:
       - name: Validate staged public assets
         run: |
           test "$(find release -maxdepth 1 -name "Chiron-Horizon_${GITHUB_REF_NAME#v}_*" -type f | wc -l)" -eq 5
-          sha256sum -c release/SHA256SUMS
+          (cd release && sha256sum -c SHA256SUMS)
           test -f "docs/releases/${GITHUB_REF_NAME}.md"
       - name: Create public GitHub Release
         env:
           GH_TOKEN: ${{ github.token }}
-        run: gh release create "$GITHUB_REF_NAME" release/* --repo "$GITHUB_REPOSITORY" --title "Chiron Horizon ${GITHUB_REF_NAME#v}" --notes-file "docs/releases/${GITHUB_REF_NAME}.md" --latest
+        run: |
+          mapfile -d '' release_assets < <(find release -maxdepth 1 -type f -print0)
+          gh release create "$GITHUB_REF_NAME" "${release_assets[@]}" --repo "$GITHUB_REPOSITORY" --title "Chiron Horizon ${GITHUB_REF_NAME#v}" --notes-file "docs/releases/${GITHUB_REF_NAME}.md" --latest
       - name: Download published assets and reverify checksums
         env:
           GH_TOKEN: ${{ github.token }}
@@ -370,5 +451,5 @@ jobs:
           mkdir published
           gh release download "$GITHUB_REF_NAME" --repo "$GITHUB_REPOSITORY" --dir published
           (cd published && sha256sum -c SHA256SUMS)
-          curl --fail --location --retry 3 "https://github.com/Gaussian-id/Chiron-Horizon/releases/latest/download/agent-registry.json" -o published/latest-agent-registry.json
+          curl --fail --location --retry 3 "https://github.com/Gaussian-id/Chiron-DBMS/releases/latest/download/agent-registry.json" -o published/latest-agent-registry.json
           cmp published/agent-registry.json published/latest-agent-registry.json

@@ -10,7 +10,8 @@ export const i18nUI = defineI18nUI(i18n, {
   en: { displayName: "English" },
 });
 
-export type DocsLang = "en";
+// Legacy labels remain typed for imported components; public routes use i18n.languages.
+export type DocsLang = "en" | "cn";
 
 /**
  * Narrow an arbitrary route segment to a supported docs language.

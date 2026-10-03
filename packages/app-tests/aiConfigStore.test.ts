@@ -65,7 +65,9 @@ test("setDefaultAiConfig rejects -> isDefault unchanged", async () => {
 test("createAiConfig succeeds -> state reflects new config", async () => {
   setActivePinia(createPinia());
   const store = useSettingsStore();
-  await store.createAiConfig({ id: "c1", name: "t", model: "m", config: {} } as any);
+  apiMock.loadAiConfigs.mockResolvedValueOnce([{ id: "c1", name: "t", model: "m", config: { apiKey: "secret-ref:stored" } } as any]);
+  await store.createAiConfig({ id: "c1", name: "t", model: "m", config: { apiKey: "private-key" } } as any);
+  assert.equal(store.aiConfigs[0].config.apiKey, "secret-ref:stored");
   assert.equal(store.aiConfigs.length, 1);
   assert.equal(store.aiConfigs[0].id, "c1");
 });
@@ -74,6 +76,7 @@ test("updateAiConfigItem succeeds -> state updated", async () => {
   setActivePinia(createPinia());
   const store = useSettingsStore();
   store.aiConfigs.push({ id: "c1", name: "old", config: {} } as any);
+  apiMock.loadAiConfigs.mockResolvedValueOnce([{ id: "c1", name: "new", config: {} } as any]);
   await store.updateAiConfigItem("c1", { name: "new" });
   assert.equal(store.aiConfigs[0].name, "new");
 });

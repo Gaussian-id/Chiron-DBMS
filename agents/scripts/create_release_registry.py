@@ -10,7 +10,7 @@ from email.parser import Parser
 from pathlib import Path
 
 PLATFORMS = ("macos-aarch64", "macos-x64", "windows-x64", "linux-x64")
-RELEASE_PREFIX = "https://github.com/Gaussian-id/Chiron-Horizon/releases/download"
+RELEASE_PREFIX = "https://github.com/Gaussian-id/Chiron-DBMS/releases/download"
 
 
 def digest(path: Path) -> str:

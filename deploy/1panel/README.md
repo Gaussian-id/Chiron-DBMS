@@ -16,6 +16,6 @@ Supported databases: MySQL, PostgreSQL, SQLite, Redis, MongoDB, DuckDB, ClickHou
 
 ## Links
 
-- GitHub: https://github.com/Gaussian-id/Chiron-Horizon
+- GitHub: https://github.com/Gaussian-id/Chiron-DBMS
 - Discord: https://discord.gg/W7NyVDRt6a
 - Community channel: 1087880322

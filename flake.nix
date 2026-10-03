@@ -184,7 +184,7 @@
         # ------------------------------------------------------------------ #
         packages.chiron-horizon-desktop = pkgs.stdenv.mkDerivation (finalAttrs: {
           pname = "chiron-horizon-desktop";
-          version = "0.6.16";
+          version = "0.6.31";
 
           src = pkgs.lib.cleanSource ./.;
 
@@ -197,7 +197,7 @@
             fetcherVersion = 4;
             # Update with the hash reported by a failed fixed-output build:
             #   nix build .#chiron-horizon-pnpm-deps 2>&1 | grep 'got:'
-            hash = "sha256-8hA97KK+5J9w1YZpMEQuzFZnsXMuIQ0oSYySc3AVGcg=";
+            hash = "sha256-M79LmFqGZMv/0/3VMq1B6l44GpAAJYhoN4HbcTdu5vw=";
           };
 
           # ── Step 2: vendor Cargo dependencies ───────────────────────────── #
@@ -252,7 +252,7 @@
             icon = "chiron_horizon";
             desktopName = "Chiron Horizon";
             genericName = "Database Management Tool";
-            comment = "Open-source database management tool for 90+ databases";
+            comment = "Open-source database management tool for 100+ databases";
             categories = [ "Development" "Database" ];
             keywords = [
               "database"
@@ -414,7 +414,7 @@
           meta = with pkgs.lib; {
             description = "Chiron Horizon desktop — open-source database management tool (Tauri 2)";
             longDescription = ''
-              Chiron Horizon is a lightweight (~15 MB) database management tool supporting 90+
+              Chiron Horizon is a lightweight (~15 MB) database management tool supporting 100+
               databases. Built with Tauri 2, Vue 3, and Rust. No Java, no Chromium.
             '';
             license = licenses.asl20;

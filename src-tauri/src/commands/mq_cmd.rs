@@ -126,6 +126,17 @@ pub async fn mq_list_topics(
 }
 
 #[tauri::command]
+pub async fn mq_list_topics_page(
+    state: State<'_, Arc<AppState>>,
+    connection_id: String,
+    ns: chiron_horizon_core::mq::NamespaceRef,
+    opts: chiron_horizon_core::mq::ListTopicsOpts,
+    pagination: chiron_horizon_core::mq::MqListPageRequest,
+) -> Result<chiron_horizon_core::mq::MqListPage<chiron_horizon_core::mq::TopicInfo>, String> {
+    chiron_horizon_core::mq::service::mq_list_topics_page_core(&state, &connection_id, ns, opts, pagination).await
+}
+
+#[tauri::command]
 pub async fn mq_create_topic(
     state: State<'_, Arc<AppState>>,
     connection_id: String,
@@ -185,6 +196,16 @@ pub async fn mq_list_exchanges(
     ns: chiron_horizon_core::mq::NamespaceRef,
 ) -> Result<Vec<chiron_horizon_core::mq::MqExchangeInfo>, String> {
     chiron_horizon_core::mq::service::mq_list_exchanges_core(&state, &connection_id, ns).await
+}
+
+#[tauri::command]
+pub async fn mq_list_exchanges_page(
+    state: State<'_, Arc<AppState>>,
+    connection_id: String,
+    ns: chiron_horizon_core::mq::NamespaceRef,
+    pagination: chiron_horizon_core::mq::MqListPageRequest,
+) -> Result<chiron_horizon_core::mq::MqListPage<chiron_horizon_core::mq::MqExchangeInfo>, String> {
+    chiron_horizon_core::mq::service::mq_list_exchanges_page_core(&state, &connection_id, ns, pagination).await
 }
 
 #[tauri::command]

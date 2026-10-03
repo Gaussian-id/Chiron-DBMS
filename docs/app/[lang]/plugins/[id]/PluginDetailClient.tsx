@@ -304,7 +304,7 @@ export function PluginDetailClient({
                       <div className="mt-4">
                         <div className="flex flex-wrap items-center gap-3">
                           <a
-                            href={`chiron_horizon://plugins/install?url=${encodeURIComponent(preferredArtifact.url)}`}
+                            href={`chiron-horizon://plugins/install?url=${encodeURIComponent(preferredArtifact.url)}`}
                             onClick={handleDeepLinkInstall}
                             className="inline-flex h-10 items-center gap-2 rounded-lg bg-[#f0f1f4] px-4 text-[13px] font-[720] text-[#0a0b0e] transition hover:bg-white"
                           >

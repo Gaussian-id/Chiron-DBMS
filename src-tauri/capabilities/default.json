@@ -19,6 +19,8 @@
     "core:window:allow-destroy",
     "core:window:allow-start-dragging",
     "core:window:allow-set-focus",
+    "core:window:allow-set-always-on-top",
+    "core:window:allow-is-always-on-top",
     "core:window:allow-set-position",
     "core:window:allow-inner-position",
     "core:window:allow-scale-factor",
@@ -34,13 +36,13 @@
     "fs:default",
     {
       "identifier": "fs:allow-exists",
-      "allow": [{ "path": "$HOME/.chiron-horizon/ui-tuning.json" }]
+      "allow": [{ "path": "$HOME/.chiron-horizon/ui-tuning.json" }, { "path": "$HOME/.chiron-horizon/vimrc" }]
     },
     "fs:allow-write-file",
     "fs:allow-write-text-file",
     {
       "identifier": "fs:allow-read-text-file",
-      "allow": [{ "path": "$HOME/.chiron-horizon/ui-tuning.json" }]
+      "allow": [{ "path": "$HOME/.chiron-horizon/ui-tuning.json" }, { "path": "$HOME/.chiron-horizon/vimrc" }]
     },
     "fs:allow-stat",
     "fs:allow-read-file",

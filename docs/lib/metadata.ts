@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 
-export const SITE_URL = "https://github.com/Gaussian-id/Chiron-Horizon";
+export const SITE_URL = "https://github.com/Gaussian-id/Chiron-DBMS";
 export const SITE_NAME = "Chiron Horizon";
 export const DEFAULT_DESCRIPTION = "Chiron Horizon desktop database workbench with AI and MCP support.";
 export const DEFAULT_OG_IMAGE = "/logo.png";
@@ -18,7 +18,7 @@ export function getHtmlLang(lang: string): string {
 }
 
 function swapLang(path: string, to: string): string {
-  return path.replace(/^\/(en|cn)/, `/${to}`);
+  return path.replace(/^\/(en|cn)(?=\/|$)/, `/${to}`);
 }
 
 interface BuildMetadataParams {
@@ -29,24 +29,15 @@ interface BuildMetadataParams {
   ogType?: "website" | "article";
   images?: string[];
   lastModified?: Date;
+  markdownPath?: string;
 }
 
-export function buildMetadata({
-  title,
-  description,
-  path,
-  lang,
-  ogType = "website",
-  images,
-  lastModified,
-}: BuildMetadataParams): Metadata {
-  const canonical = `${SITE_URL}${path}`;
+export function buildMetadata({ title, description, path, lang, ogType = "website", images, lastModified, markdownPath }: BuildMetadataParams): Metadata {
+  const normalizedPath = path.split(/[?#]/)[0].replace(/\/+$/, "") || "/";
+  const canonical = `${SITE_URL}${normalizedPath}`;
   const locale = LOCALE_MAP[lang] ?? "en_US";
-  const ogImages = images?.map((url) => ({
-    url,
-    width: url === DEFAULT_OG_IMAGE ? 512 : 1200,
-    height: url === DEFAULT_OG_IMAGE ? 512 : 630,
-  })) ?? [{ url: DEFAULT_OG_IMAGE, width: 512, height: 512 }];
+  const defaultImage = { url: DEFAULT_OG_IMAGE, width: 1792, height: 896 };
+  const ogImages = images?.map((url) => (url === DEFAULT_OG_IMAGE ? defaultImage : { url })) ?? [defaultImage];
 
   const base: Metadata = {
     title,
@@ -54,9 +45,15 @@ export function buildMetadata({
     alternates: {
       canonical,
       languages: {
-        en: `${SITE_URL}${swapLang(path, "en")}`,
-        "x-default": `${SITE_URL}${swapLang(path, "en")}`,
+        en: `${SITE_URL}${swapLang(normalizedPath, "en")}`,
+        "x-default": `${SITE_URL}${swapLang(normalizedPath, "en")}`,
       },
+      ...(markdownPath ? { types: { "text/markdown": `${SITE_URL}${markdownPath}` } } : {}),
+    },
+    robots: {
+      index: true,
+      follow: true,
+      googleBot: { index: true, follow: true, "max-image-preview": "large", "max-snippet": -1, "max-video-preview": -1 },
     },
     openGraph: {
       title,
@@ -65,6 +62,7 @@ export function buildMetadata({
       siteName: SITE_NAME,
       type: ogType,
       locale,
+      alternateLocale: Object.values(LOCALE_MAP).filter((alternate) => alternate !== locale),
       images: ogImages,
     },
     twitter: {

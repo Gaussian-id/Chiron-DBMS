@@ -1,8 +1,19 @@
 # Chiron Horizon changelog
 
-Canonical repository: [Gaussian-id/Chiron-Horizon](https://github.com/Gaussian-id/Chiron-Horizon).
+Canonical repository: [Gaussian-id/Chiron-DBMS](https://github.com/Gaussian-id/Chiron-DBMS).
 
 The in-application changelog checks the canonical file on GitHub and falls back to the copy bundled with the installed build. Detailed, landing-page-ready notes are kept in [`docs/releases`](docs/releases/).
+
+## 0.1.3
+
+Stable upstream 0.6.31 integration with Horizon feature preservation.
+
+- Integrated the reorganized Rust workspace, database and plugin improvements, and new driver support.
+- Preserved native ChironDB, ChironDB Relational, Schema Viewer, migration compatibility, the database version monitor, and Horizon branding.
+- Restored the native ChironDB assistant in the updated UI and protected AI credentials through upgrades and sync imports.
+- Registered 86 connection types and 110 profiles and corrected desktop/driver release packaging.
+
+See [the full 0.1.3 release notes](docs/releases/v0.1.3.md).
 
 ## 0.1.2
 

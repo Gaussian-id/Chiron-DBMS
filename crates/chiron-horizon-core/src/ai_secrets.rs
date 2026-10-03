@@ -14,6 +14,58 @@ struct Secrets {
     scope: String,
     api_key: String,
     headers: HashMap<String, String>,
+    #[serde(default)]
+    additional: HashMap<String, String>,
+}
+
+const ADDITIONAL_FIELDS: &[&str] = &[
+    "proxyUrl",
+    "codexCliEnv",
+    "claudeCodeCliEnv",
+    "piAgentCliEnv",
+    "opencodeCliEnv",
+    "cursorCliEnv",
+    "grokCliEnv",
+    "codebuddyCliEnv",
+    "qoderCliEnv",
+];
+
+fn additional_values(value: &serde_json::Value) -> HashMap<String, String> {
+    let mut result = HashMap::new();
+    for field in ADDITIONAL_FIELDS {
+        if let Some(text) = value[field].as_str().filter(|s| !s.is_empty()) {
+            result.insert(format!("additional:{}", serde_json::json!([field])), text.into());
+        } else if let Some(values) = value[field].as_object() {
+            for (key, text) in values {
+                if let Some(text) = text.as_str() {
+                    result.insert(format!("additional:{}", serde_json::json!([field, key])), text.into());
+                }
+            }
+        }
+    }
+    result
+}
+
+fn set_additional(value: &mut serde_json::Value, field: &str, text: String) -> Result<(), String> {
+    let path: Vec<String> =
+        serde_json::from_str(field.strip_prefix("additional:").ok_or("Invalid AI credential field")?)
+            .map_err(|_| "Invalid AI credential field")?;
+    if path.is_empty() || !ADDITIONAL_FIELDS.contains(&path[0].as_str()) || path.len() > 2 {
+        return Err("Invalid AI credential field".into());
+    }
+    if path.len() == 1 {
+        value[&path[0]] = serde_json::Value::String(text);
+    } else {
+        if !value[&path[0]].is_object() {
+            value[&path[0]] = serde_json::json!({});
+        }
+        value[&path[0]][&path[1]] = serde_json::Value::String(text);
+    }
+    Ok(())
+}
+
+pub(crate) fn has_envelope(json: &str) -> bool {
+    serde_json::from_str::<serde_json::Value>(json).is_ok_and(|v| v.get(ENVELOPE).is_some())
 }
 
 fn reference(scope: &str, field: &str) -> String {
@@ -96,6 +148,7 @@ fn secrets(dir: &Path, scope: &str, value: &serde_json::Value) -> Result<Secrets
             scope: scope.into(),
             api_key: value["apiKey"].as_str().unwrap_or_default().into(),
             headers: serde_json::from_value(value["customHeaders"].clone()).unwrap_or_default(),
+            additional: additional_values(value),
         })
     }
 }
@@ -120,8 +173,24 @@ pub(crate) fn encode(dir: &Path, scope: &str, config: &AiConfig, old_json: Optio
         }
         Ok(value.into())
     };
+    let config_value = serde_json::to_value(config).map_err(|e| e.to_string())?;
+    let additional = additional_values(&config_value)
+        .into_iter()
+        .map(|(field, value)| {
+            let resolved = if let Some((owner, name)) = parse_reference(&value)? {
+                if owner != scope || name != field {
+                    return Err("AI credential reference does not belong to this configuration".into());
+                }
+                old.additional.get(&field).cloned().ok_or("Saved AI credential no longer exists")?
+            } else {
+                value
+            };
+            Ok((field, resolved))
+        })
+        .collect::<Result<HashMap<_, _>, String>>()?;
     let secret = Secrets {
         scope: scope.into(),
+        additional,
         api_key: resolve(&config.api_key, "apiKey")?,
         headers: config
             .custom_headers
@@ -129,13 +198,17 @@ pub(crate) fn encode(dir: &Path, scope: &str, config: &AiConfig, old_json: Optio
             .map(|(name, value)| Ok((name.clone(), resolve(value, name)?)))
             .collect::<Result<_, String>>()?,
     };
-    let mut value = serde_json::to_value(config).map_err(|e| e.to_string())?;
+    let mut value = config_value;
+    for field in ADDITIONAL_FIELDS {
+        value.as_object_mut().unwrap().remove(*field);
+    }
+    value["_aiAdditionalFields"] = serde_json::json!(secret.additional.keys().collect::<Vec<_>>());
     value["apiKey"] = serde_json::Value::String(String::new());
     value["customHeaders"] = serde_json::json!({});
     // Credential presence is public; values are not.
     value["_aiKeyConfigured"] = serde_json::json!(!secret.api_key.is_empty());
     value["_aiHeaderNames"] = serde_json::json!(secret.headers.keys().collect::<Vec<_>>());
-    if !secret.api_key.is_empty() || !secret.headers.is_empty() {
+    if !secret.api_key.is_empty() || !secret.headers.is_empty() || !secret.additional.is_empty() {
         value[ENVELOPE] = serde_json::to_value(EncryptedPayload::encrypt(
             &serde_json::to_vec(&secret).map_err(|e| e.to_string())?,
             &master_key(dir, old_value.get(ENVELOPE).is_none())?,
@@ -146,7 +219,11 @@ pub(crate) fn encode(dir: &Path, scope: &str, config: &AiConfig, old_json: Optio
 }
 
 pub(crate) fn public_config(scope: &str, json: &str) -> Result<AiConfig, String> {
-    let value: serde_json::Value = serde_json::from_str(json).map_err(|_| "Invalid AI configuration")?;
+    let mut value: serde_json::Value = serde_json::from_str(json).map_err(|_| "Invalid AI configuration")?;
+    let additional_fields = value["_aiAdditionalFields"].as_array().cloned().unwrap_or_default();
+    for field in additional_fields.iter().filter_map(|v| v.as_str()) {
+        set_additional(&mut value, field, reference(scope, field))?;
+    }
     let mut config: AiConfig = serde_json::from_value(value.clone()).map_err(|_| "Invalid AI configuration")?;
     if value.get(ENVELOPE).is_some() {
         config.api_key.clear();
@@ -179,7 +256,8 @@ fn load_json(conn: &Connection, scope: &str) -> Result<Option<String>, String> {
 impl Storage {
     /// Only transfers references during explicit legacy migration/duplication.
     pub(crate) async fn rebind_ai_config(&self, scope: &str, config: &AiConfig) -> Result<AiConfig, String> {
-        for value in std::iter::once(&config.api_key).chain(config.custom_headers.values()) {
+        let additional = additional_values(&serde_json::to_value(config).map_err(|e| e.to_string())?);
+        for value in std::iter::once(&config.api_key).chain(config.custom_headers.values()).chain(additional.values()) {
             if parse_reference(value)?.is_some_and(|(owner, _)| owner != scope) {
                 return self.resolve_ai_config(config).await;
             }
@@ -191,7 +269,10 @@ impl Storage {
         let dir = self.data_dir().to_path_buf();
         self.with_conn(move |conn| {
             let mut owner: Option<String> = None;
-            for value in std::iter::once(&config.api_key).chain(config.custom_headers.values()) {
+            let additional = additional_values(&serde_json::to_value(&config).map_err(|e| e.to_string())?);
+            for value in
+                std::iter::once(&config.api_key).chain(config.custom_headers.values()).chain(additional.values())
+            {
                 if let Some((scope, _)) = parse_reference(value)? {
                     if owner.as_ref().is_some_and(|o| o != &scope) {
                         return Err("Mixed AI credential scopes".into());
@@ -210,6 +291,20 @@ impl Storage {
                     );
                 }
                 let secret = secrets(&dir, &scope, &stored)?;
+                let mut value = serde_json::to_value(&config).map_err(|e| e.to_string())?;
+                for (field, text) in additional {
+                    if let Some((_, name)) = parse_reference(&text)? {
+                        if name != field {
+                            return Err("Invalid AI credential field reference".into());
+                        }
+                        set_additional(
+                            &mut value,
+                            &field,
+                            secret.additional.get(&field).cloned().ok_or("Saved AI credential no longer exists")?,
+                        )?;
+                    }
+                }
+                config = serde_json::from_value(value).map_err(|e| e.to_string())?;
                 if let Some((_, field)) = parse_reference(&config.api_key)? {
                     if field != "apiKey" {
                         return Err("Invalid API key reference".into());
@@ -253,9 +348,10 @@ impl Storage {
                 }
             }
             for (table, column, id, scope, value) in records {
-                if value.get(ENVELOPE).is_none() {
-                    let config: AiConfig = serde_json::from_value(value).map_err(|_|"Invalid saved AI configuration")?;
-                    let encoded = encode(&dir, &scope, &config, None)?;
+                if value.get(ENVELOPE).is_none() || !additional_values(&value).is_empty() {
+                    let old = serde_json::to_string(&value).map_err(|e|e.to_string())?;
+                    let config: AiConfig = if value.get(ENVELOPE).is_some() { public_config(&scope, &old)? } else { serde_json::from_value(value).map_err(|_|"Invalid saved AI configuration")? };
+                    let encoded = encode(&dir, &scope, &config, Some(&old))?;
                     tx.execute(&format!("UPDATE {table} SET config_json=?1 WHERE {column}=?2"), rusqlite::params![encoded,id]).map_err(|e|e.to_string())?;
                 }
             }

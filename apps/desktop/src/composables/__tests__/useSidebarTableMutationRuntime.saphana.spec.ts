@@ -220,7 +220,7 @@ describe("useSidebarTableMutationRuntime SAP HANA schema-scoped actions", () => 
 
   it("classifies a JDBC-agent-routed timeout (SAP HANA/Oracle/DB2/SQL Server) as timed-out, not failed, even though its message has no timeout wording", async () => {
     const { feature } = runtime("");
-    // AgentCallError::Timeout carries no `detail` (crates/chiron-horizon-core/src/backend_error.rs),
+    // AgentCallError::Timeout carries no `detail` (crates/chiron-horizon-driver-agent/src/backend_error.rs),
     // so BackendErrorException.message degrades to a generic fallback with no
     // "timed out" text — only the structured backendError distinguishes it.
     const agentTimeoutError = {
@@ -228,7 +228,7 @@ describe("useSidebarTableMutationRuntime SAP HANA schema-scoped actions", () => 
       message: "Backend request failed",
       backendError: {
         version: 1,
-        code: "Chiron Horizon-JDBC-2001",
+        code: "CHIRON-HORIZON-JDBC-2001",
         messageKey: "backendErrors.jdbc.operationTimedOut",
         messageParams: { stage: "execute" },
         source: "jdbcAgent",

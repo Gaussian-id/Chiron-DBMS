@@ -35,7 +35,7 @@ def main() -> int:
     args = parser.parse_args()
     root = args.release_dir.resolve()
     version = args.tag.removeprefix("v")
-    prefix = f"https://github.com/Gaussian-id/Chiron-Horizon/releases/download/{args.tag}/"
+    prefix = f"https://github.com/Gaussian-id/Chiron-DBMS/releases/download/{args.tag}/"
     registry_path = root / "agent-registry.json"
     errors: list[str] = []
     if not registry_path.is_file():
@@ -64,7 +64,7 @@ def main() -> int:
                     errors.append(f"driver {key}: unsupported native platform {platform}")
                 check_artifact(root, value, errors, f"driver {key} {platform}", prefix)
     for path in root.iterdir():
-        if re.search(r"(?:chiron_horizon|chiron)", path.name, re.I):
+        if re.search(r"(?:dbx|gauss[-_]?horizon)", path.name, re.I):
             errors.append(f"legacy product name in release asset: {path.name}")
     if errors:
         print("Release asset validation failed:\n- " + "\n- ".join(errors), file=sys.stderr)

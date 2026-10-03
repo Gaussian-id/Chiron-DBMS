@@ -171,7 +171,7 @@ class ValidateAgentsTest(unittest.TestCase):
             ):
                 (root / "drivers" / driver).mkdir(parents=True)
             (root / "versions.json").write_text(
-                json.dumps({"h2": "0.1.0", "cassandra": "0.1.0", "hive": "0.1.0", "oracle": "0.1.0", "kingbase": "0.1.0", "iotdb": "0.1.0", "neo4j": "0.1.0", "vastbase": "0.1.0", "xugu": "0.1.0", "rabbitmq": "0.1.0", "rocketmq": "0.1.0", "zookeeper": "0.1.0", "tdengine": "0.1.0"}),
+                json.dumps({"h2": "0.1.0", "cassandra": "0.1.0", "hive": "0.1.0", "oracle": "0.1.0", "oracle-oci": "0.1.0", "kingbase": "0.1.0", "iotdb": "0.1.0", "neo4j": "0.1.0", "vastbase": "0.1.0", "xugu": "0.1.0", "rabbitmq": "0.1.0", "rocketmq": "0.1.0", "zookeeper": "0.1.0", "tdengine": "0.1.0"}),
                 encoding="utf-8",
             )
 
@@ -468,6 +468,16 @@ class ValidateAgentsTest(unittest.TestCase):
             with zipfile.ZipFile(jar, "a") as archive:
                 archive.writestr("com/chiron/horizon/agent/h2/H2Agent.class", b"class-bytes")
 
+            self.assertEqual([], validate_agent_jars.validate_agent_jars(root))
+
+    def test_agent_jar_validation_unfolds_long_main_class(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            jar = root / "h2/build/libs/chiron-horizon-agent-h2.jar"
+            jar.parent.mkdir(parents=True)
+            with zipfile.ZipFile(jar, "w") as archive:
+                archive.writestr("META-INF/MANIFEST.MF", "Manifest-Version: 1.0\r\nAgent-Label: H2\r\nMain-Class: com.chiron.horizon.agent.h2.H2Agen\r\n t\r\n\r\n")
+                archive.writestr("com/chiron/horizon/agent/h2/H2Agent.class", b"class-bytes")
             self.assertEqual([], validate_agent_jars.validate_agent_jars(root))
 
     def test_agent_jar_validation_supports_drivers_directory(self):

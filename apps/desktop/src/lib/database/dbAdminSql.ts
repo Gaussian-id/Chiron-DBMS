@@ -294,7 +294,7 @@ export async function buildDuplicateTableStructurePlan(options: DuplicateTableSt
   }
 
   // `SELECT TOP 0 * INTO` copies columns and the IDENTITY property but drops constraints, so the
-  // cloned table silently loses its primary key (Gaussian-id/Chiron-Horizon#8931). Load the source primary key and
+  // cloned table silently loses its primary key (Gaussian-id/Chiron-DBMS#8931). Load the source primary key and
   // let the backend append an `ALTER TABLE ... ADD CONSTRAINT ... PRIMARY KEY` for it.
   if (options.databaseType === "sqlserver") {
     const indexes = await api.listIndexes(options.connectionId, options.database, options.schema || "", options.sourceName, options.catalog);
@@ -314,16 +314,20 @@ export async function buildDuplicateTableStructurePlan(options: DuplicateTableSt
     return { sql, sourceColumns: options.sourceColumns, executeAsScript: primaryKeyColumns.length > 0 || duplicateTableStructureRequiresScript(sql) };
   }
 
+  let sourceColumns = options.sourceColumns;
+  if (options.databaseType === "vastbase") {
+    sourceColumns ??= await api.getColumns(options.connectionId, options.database, options.schema || "", options.sourceName, options.catalog);
+  }
   const sql = await buildDuplicateTableStructureSql({
     databaseType: options.databaseType,
     schema: options.schema,
     sourceName: options.sourceName,
     targetName: options.targetName,
     tableComment: options.tableComment,
-    columnComments: [],
+    columnComments: options.databaseType === "vastbase" ? collectDuplicateTableColumnComments(sourceColumns ?? []) : [],
     identifierQuote: options.identifierQuote,
   });
-  return { sql, sourceColumns: options.sourceColumns, executeAsScript: duplicateTableStructureRequiresScript(sql) };
+  return { sql, sourceColumns, executeAsScript: duplicateTableStructureRequiresScript(sql) };
 }
 
 export interface CopyTableDataSqlOptions {
@@ -334,6 +338,7 @@ export interface CopyTableDataSqlOptions {
   columns?: string[];
   postgresOverridingSystemValue?: boolean;
   sqlserverIdentityInsert?: boolean;
+  damengIdentityInsert?: boolean;
   normalizeNewTargetName?: boolean;
   /** Quote character reported by the connected server, for types whose quote is not fixed by the
    * database type alone (Cloud Spanner's two dialects differ). Mirrors `identifierQuote` on the

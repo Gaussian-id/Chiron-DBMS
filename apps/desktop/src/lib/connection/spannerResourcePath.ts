@@ -123,7 +123,7 @@ export function spannerSchemaDisplayName(schema: string): string {
 /**
  * Percent-encode a Spanner resource path for display, keeping the `/` separators
  * intact — they are structure, not data. Mirrors `encode_spanner_resource_path`
- * in crates/chiron-horizon-core/src/models/connection.rs.
+ * in crates/chiron-horizon-types/src/models/connection.rs.
  *
  * Every other database type keeps whole-value encoding, where a slash inside a
  * database name really is data and should be escaped.

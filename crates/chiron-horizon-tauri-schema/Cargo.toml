@@ -1,0 +1,9 @@
+[package]
+name = "chiron-horizon-tauri-schema"
+version = "0.1.3"
+edition = "2021"
+rust-version = "1.88.0"
+
+[dependencies]
+chiron-horizon-core = { path = "../chiron-horizon-core", default-features = false }
+tauri = "2.10.3"

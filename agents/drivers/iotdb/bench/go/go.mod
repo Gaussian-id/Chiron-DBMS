@@ -1,4 +1,4 @@
-module github.com/Gaussian-id/Chiron-Horizon/agents/drivers/iotdb/bench
+module github.com/Gaussian-id/Chiron-DBMS/agents/drivers/iotdb/bench
 
 go 1.23
 
