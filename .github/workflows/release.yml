@@ -74,6 +74,7 @@ jobs:
           (cd agents/scripts && python3 -m unittest validate_agents_test.py driver_release_packages_test.py)
           node --check scripts/stage-desktop-release.mjs
           node --check scripts/create-release-manifest.mjs
+          node --test scripts/release.test.mjs agents/scripts/verify_offline_jdbc_release.test.mjs
 
   desktop:
     name: Desktop ${{ matrix.platform }}
@@ -440,7 +441,9 @@ jobs:
       - name: Create public GitHub Release
         env:
           GH_TOKEN: ${{ github.token }}
-        run: gh release create "$GITHUB_REF_NAME" release/* --repo "$GITHUB_REPOSITORY" --title "Chiron Horizon ${GITHUB_REF_NAME#v}" --notes-file "docs/releases/${GITHUB_REF_NAME}.md" --latest
+        run: |
+          mapfile -d '' release_assets < <(find release -maxdepth 1 -type f -print0)
+          gh release create "$GITHUB_REF_NAME" "${release_assets[@]}" --repo "$GITHUB_REPOSITORY" --title "Chiron Horizon ${GITHUB_REF_NAME#v}" --notes-file "docs/releases/${GITHUB_REF_NAME}.md" --latest
       - name: Download published assets and reverify checksums
         env:
           GH_TOKEN: ${{ github.token }}
