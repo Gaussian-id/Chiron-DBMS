@@ -1907,6 +1907,14 @@ mod tests {
     fn creates_frontend_rust_and_go_projects() {
         let root = tempfile::tempdir().unwrap();
         let sdk_root = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../..");
+        let app_config: serde_json::Value =
+            serde_json::from_str(include_str!("../../../../src-tauri/tauri.conf.json")).unwrap();
+        let app_version = semver::Version::parse(app_config["version"].as_str().unwrap()).unwrap();
+        let example: serde_json::Value =
+            serde_json::from_str(include_str!("../../../examples/hello-workbench/manifest.json")).unwrap();
+        assert!(semver::VersionReq::parse(example["engines"]["chiron-horizon"].as_str().unwrap())
+            .unwrap()
+            .matches(&app_version));
         for template in [ProjectTemplate::Frontend, ProjectTemplate::Svelte, ProjectTemplate::Rust, ProjectTemplate::Go]
         {
             let directory = root.path().join(template.as_str());
@@ -1941,6 +1949,13 @@ mod tests {
             let manifest: serde_json::Value =
                 serde_json::from_slice(&std::fs::read(directory.join("manifest.json")).unwrap()).unwrap();
             assert_eq!(manifest["version"], "1.2.3");
+            assert!(semver::VersionReq::parse(manifest["engines"]["chiron-horizon"].as_str().unwrap())
+                .unwrap()
+                .matches(&app_version));
+            assert_eq!(
+                manifest["$schema"],
+                "https://raw.githubusercontent.com/Gaussian-id/Chiron-DBMS/main/plugins/manifest.schema.json"
+            );
             let config: toml::Value =
                 toml::from_str(&std::fs::read_to_string(directory.join("chiron-horizon-plugin.toml")).unwrap())
                     .unwrap();

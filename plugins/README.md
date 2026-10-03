@@ -141,7 +141,7 @@ Add the schema to a manifest for editor validation:
   "source": "https://github.com/example/chiron-horizon-plugin",
   "homepage": "https://example.com/chiron-horizon-plugin",
   "engines": {
-    "chiron-horizon": ">=0.5.68",
+    "chiron-horizon": ">=0.1.3",
     "host_api": "^1.0"
   }
 }

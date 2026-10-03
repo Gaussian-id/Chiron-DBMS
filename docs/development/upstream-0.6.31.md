@@ -18,7 +18,7 @@ The upstream crate extraction required resolving the fork at logical module boun
 | Credential storage and sync | Native envelope survives generalized migration; encrypted upstream secrets migrate on load; CLI/proxy fields remain encrypted; credential and sync tests |
 | Database version monitor | Configuration and generated availability preserved; monitor tests |
 | English documentation | English public route set and 42 content pages retained; content check and documentation type check |
-| Plugins and distribution | Canonical package extension; custom repository trust retained; unconfigured official services disabled; installer/runtime/SDK tests |
+| Plugins and distribution | Canonical package extension and compatible SDK host-version requirements; custom repository trust retained; unconfigured official services disabled; installer/runtime/SDK tests |
 
 ## Measured local results
 

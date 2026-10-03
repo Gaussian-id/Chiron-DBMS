@@ -10,7 +10,7 @@
   "source": "https://github.com/Gaussian-id/Chiron-DBMS",
   "homepage": "https://github.com/Gaussian-id/Chiron-DBMS/tree/main/plugins/examples/hello-workbench",
   "engines": {
-    "chiron-horizon": ">=0.5.68",
+    "chiron-horizon": ">=0.1.3",
     "host_api": "^1.0"
   },
   "permissions": ["host.events", "host.filesystem", "host.data:read", "host.ai"],
