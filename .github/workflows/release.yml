@@ -435,7 +435,7 @@ jobs:
       - name: Validate staged public assets
         run: |
           test "$(find release -maxdepth 1 -name "Chiron-Horizon_${GITHUB_REF_NAME#v}_*" -type f | wc -l)" -eq 5
-          sha256sum -c release/SHA256SUMS
+          (cd release && sha256sum -c SHA256SUMS)
           test -f "docs/releases/${GITHUB_REF_NAME}.md"
       - name: Create public GitHub Release
         env:
