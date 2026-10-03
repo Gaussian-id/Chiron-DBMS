@@ -24,6 +24,52 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - run: pnpm test:database-availability
 
+  go-agents:
+    name: Go agent release packages
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: stable
+          cache: false
+      - name: Test agents and build every release target with fresh dependencies
+        run: agents/scripts/build_go_release_agents.sh release-agents
+
+  managed-jre:
+    name: Managed Java runtime ${{ matrix.platform }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: macos-14
+            platform: macos-aarch64
+          - os: macos-15-intel
+            platform: macos-x64
+          - os: windows-2022
+            platform: windows-x64
+          - os: ubuntu-22.04
+            platform: linux-x64
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+      - name: Install zstd
+        shell: bash
+        run: |
+          if command -v zstd >/dev/null; then exit 0; fi
+          case "$RUNNER_OS" in
+            Linux) sudo apt-get update && sudo apt-get install -y zstd ;;
+            macOS) brew install zstd ;;
+            Windows) choco install zstd -y ;;
+          esac
+      - name: Build and smoke the managed Java runtime
+        shell: bash
+        run: agents/scripts/build_managed_jre.sh release-jre ${{ matrix.platform }}
+
   desktop:
     strategy:
       fail-fast: false
@@ -64,7 +110,7 @@ jobs:
         if: runner.os == 'Linux'
         run: sudo apt-get update && sudo apt-get install -y libwebkit2gtk-4.1-dev libayatana-appindicator3-dev librsvg2-dev patchelf libssl-dev libsecret-1-dev libfontconfig1-dev libxdo-dev
       - run: pnpm install --frozen-lockfile
-      - run: node --test scripts/core-architecture.test.mjs
+      - run: node --test scripts/core-architecture.test.mjs scripts/dependency-checksums.test.mjs
       - run: node scripts/audit-branding.mjs
       - run: node scripts/sync-connection-types.mjs --check
       - run: pnpm exec vue-tsc --noEmit -p apps/desktop/tsconfig.json
@@ -90,6 +136,6 @@ jobs:
         run: codesign --verify --deep --strict --verbose=2 "target/${{ matrix.target }}/release/bundle/macos/Chiron Horizon.app"
       - uses: actions/upload-artifact@v4
         with:
-          name: Chiron Horizon-0.1.4-${{ matrix.target }}
+          name: Chiron Horizon-0.1.5-${{ matrix.target }}
           path: target/${{ matrix.target }}/release/bundle/
           if-no-files-found: error

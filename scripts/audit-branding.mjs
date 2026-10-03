@@ -1,5 +1,6 @@
 import { execFileSync } from "node:child_process";
 import { existsSync, readFileSync, readdirSync } from "node:fs";
+import { goSumErrors } from "./dependency-checksums.mjs";
 
 const files = [
   ...new Set(
@@ -35,7 +36,11 @@ let checked = 0;
 for (const file of files) {
   if (!existsSync(file) || excluded.test(file) || /(?:^|\/)(?:[^/]*-)?(?:LICENSE|NOTICE)(?:[._-]|$)/i.test(file) || compatibility.has(file) || file.startsWith("apps/desktop/src/lib/compat/")) continue;
   const bytes = readFileSync(file);
-  if (bytes.includes(0) || file.endsWith("go.sum")) continue;
+  if (bytes.includes(0)) continue;
+  if (file.endsWith("go.sum")) {
+    failures.push(...goSumErrors(bytes.toString("utf8")).map((error) => `${file}:${error}`));
+    continue;
+  }
   const text = bytes.toString("utf8");
   checked++;
   for (const [index, line] of text.split("\n").entries()) {

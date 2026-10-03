@@ -8,7 +8,7 @@ use std::io::Read;
 use std::path::{Path, PathBuf};
 
 const JDBC_PLUGIN_DOWNLOAD_URL: &str =
-    "https://github.com/Gaussian-id/Chiron-DBMS/releases/download/v0.1.4/chiron-horizon-jdbc-plugin-0.1.4.zip";
+    "https://github.com/Gaussian-id/Chiron-DBMS/releases/download/v0.1.5/chiron-horizon-jdbc-plugin-0.1.5.zip";
 const OFFLINE_JDBC_MANIFEST_ENTRY: &str = "jdbc/offline-manifest.json";
 const OFFLINE_JDBC_FORMAT_VERSION: u32 = 1;
 const OFFLINE_JDBC_PLUGIN_ENTRY: &str = "jdbc/plugin.zip";
@@ -503,7 +503,7 @@ async fn jdbc_plugin_status_from_dir(plugin_dir: &Path) -> Result<JdbcPluginStat
 }
 
 /// Reads the local manifest after an optional supplied release record. The
-/// desktop updater is disabled in 0.1.4, so normal status checks supply no
+/// desktop updater is disabled in 0.1.5, so normal status checks supply no
 /// remote record; the parameter remains for deterministic local tests.
 async fn jdbc_plugin_status_from_dir_after(
     plugin_dir: &Path,
@@ -1194,7 +1194,7 @@ mod tests {
             br#"{
               "id": "jdbc",
               "name": "Chiron Horizon JDBC Plugin",
-              "version": "0.1.40",
+              "version": "0.1.50",
               "protocol_version": 1,
               "executable": "bin/chiron-horizon-jdbc-plugin",
               "drivers": [{"id":"jdbc","label":"JDBC","kind":"external","database_type":"jdbc"}]
@@ -1583,13 +1583,13 @@ mod tests {
         // above is still waiting on its simulated network round-trip.
         std::fs::write(
             plugin_dir.join("manifest.json"),
-            r#"{"id":"jdbc","name":"Chiron Horizon JDBC Plugin","version":"0.1.40","protocol_version":1,"executable":"bin/chiron-horizon-jdbc-plugin","drivers":[]}"#,
+            r#"{"id":"jdbc","name":"Chiron Horizon JDBC Plugin","version":"0.1.50","protocol_version":1,"executable":"bin/chiron-horizon-jdbc-plugin","drivers":[]}"#,
         )
         .unwrap();
 
         let status = status_task.await.unwrap().unwrap();
         assert!(status.installed, "stale pre-install snapshot must not overwrite the completed local install");
-        assert_eq!(status.version.as_deref(), Some("0.1.40"));
+        assert_eq!(status.version.as_deref(), Some("0.1.50"));
 
         let _ = std::fs::remove_dir_all(root);
     }

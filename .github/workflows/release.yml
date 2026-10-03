@@ -74,7 +74,7 @@ jobs:
           (cd agents/scripts && python3 -m unittest validate_agents_test.py driver_release_packages_test.py)
           node --check scripts/stage-desktop-release.mjs
           node --check scripts/create-release-manifest.mjs
-          node --test scripts/release.test.mjs agents/scripts/verify_offline_jdbc_release.test.mjs
+          node --test scripts/release.test.mjs scripts/dependency-checksums.test.mjs agents/scripts/verify_offline_jdbc_release.test.mjs
 
   desktop:
     name: Desktop ${{ matrix.platform }}
@@ -88,31 +88,31 @@ jobs:
             platform: macos-arm64
             bundles: app,dmg
             extension: .dmg
-            output: Chiron-Horizon_0.1.4_macos-arm64.dmg
+            output: Chiron-Horizon_0.1.5_macos-arm64.dmg
           - os: macos-15-intel
             target: x86_64-apple-darwin
             platform: macos-x64
             bundles: app,dmg
             extension: .dmg
-            output: Chiron-Horizon_0.1.4_macos-x64.dmg
+            output: Chiron-Horizon_0.1.5_macos-x64.dmg
           - os: windows-2022
             target: x86_64-pc-windows-msvc
             platform: windows-x64
             bundles: nsis
             extension: .exe
-            output: Chiron-Horizon_0.1.4_windows-x64-setup.exe
+            output: Chiron-Horizon_0.1.5_windows-x64-setup.exe
           - os: ubuntu-22.04
             target: x86_64-unknown-linux-gnu
             platform: linux-x64
             bundles: deb,appimage
             extension: .deb
-            output: Chiron-Horizon_0.1.4_linux-x64.deb
+            output: Chiron-Horizon_0.1.5_linux-x64.deb
           - os: ubuntu-22.04
             target: x86_64-unknown-linux-gnu
             platform: linux-appimage-x64
             bundles: appimage
             extension: .AppImage
-            output: Chiron-Horizon_0.1.4_linux-x64.AppImage
+            output: Chiron-Horizon_0.1.5_linux-x64.AppImage
     runs-on: ${{ matrix.os }}
     env:
       CARGO_INCREMENTAL: "0"
@@ -235,6 +235,7 @@ jobs:
       - uses: actions/setup-go@v5
         with:
           go-version: stable
+          cache: false
       - run: agents/scripts/build_go_release_agents.sh release-agents
       - uses: actions/upload-artifact@v4
         with:
@@ -391,7 +392,9 @@ jobs:
             macOS) brew install zstd ;;
             Windows) choco install zstd -y ;;
           esac
-      - run: agents/scripts/build_managed_jre.sh release-jre ${{ matrix.platform }}
+      - name: Build and smoke the managed Java runtime
+        shell: bash
+        run: agents/scripts/build_managed_jre.sh release-jre ${{ matrix.platform }}
       - uses: actions/upload-artifact@v4
         with:
           name: managed-jre-${{ matrix.platform }}
@@ -399,7 +402,7 @@ jobs:
           if-no-files-found: error
 
   publish:
-    name: Publish verified v0.1.4 release
+    name: Publish verified v0.1.5 release
     needs: [desktop, java-agents, go-agents, oracle-oci-agent, rust-agents, managed-jre]
     runs-on: ubuntu-22.04
     steps:

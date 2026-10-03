@@ -4,6 +4,19 @@ Canonical repository: [Gaussian-id/Chiron-DBMS](https://github.com/Gaussian-id/C
 
 The in-application changelog checks the canonical file on GitHub and falls back to the copy bundled with the installed build. Detailed, landing-page-ready notes are kept in [`docs/releases`](docs/releases/).
 
+## 0.1.5
+
+Stable upstream 0.6.31 integration with verified dependency hashes and cross-platform runtime packaging.
+
+- Includes the preserved Horizon features and backup-lock correction prepared in 0.1.3 and 0.1.4.
+- Restores seven Go checksum entries to the exact pinned upstream bytes and rejects malformed checksums during the branding audit.
+- Runs Windows Java runtime packaging with Bash and normalizes the installed JDK path.
+- Builds every Go agent target from fresh dependencies and packages Java runtimes on all four PR verification platforms before tagging.
+
+The 0.1.3 and 0.1.4 tags did not produce public releases. This patch supersedes those unpublished builds.
+
+See [the full 0.1.5 release notes](docs/releases/v0.1.5.md).
+
 ## 0.1.4
 
 Stable upstream 0.6.31 integration with reliable scheduled-backup leadership release.

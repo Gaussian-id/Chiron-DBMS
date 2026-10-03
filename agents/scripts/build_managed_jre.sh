@@ -10,8 +10,12 @@ case "$PLATFORM" in
   *) echo "Unsupported managed JRE platform: $PLATFORM" >&2; exit 2 ;;
 esac
 
-JLINK_BIN="${JAVA_HOME:?JAVA_HOME is required}/bin/jlink"
-JMODS="${JAVA_HOME}/jmods"
+JDK_DIR="${JAVA_HOME:?JAVA_HOME is required}"
+if [[ "$PLATFORM" == windows-* ]] && command -v cygpath >/dev/null; then
+  JDK_DIR="$(cygpath -u "$JDK_DIR")"
+fi
+JLINK_BIN="$JDK_DIR/bin/jlink"
+JMODS="$JDK_DIR/jmods"
 WORK_DIR="$(mktemp -d)"
 trap 'rm -rf "$WORK_DIR"' EXIT
 RUNTIME_DIR="$WORK_DIR/runtime"
