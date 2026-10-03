@@ -4309,16 +4309,20 @@ mod tests {
     #[test]
     fn startup_error_waits_briefly_for_exit_status_and_stderr_tail() {
         let mut child = test_shell_command(
-            "sleep 0.05; echo 'java.lang.UnsupportedClassVersionError: class file version 65.0' >&2; exit 1",
-            "Start-Sleep -Milliseconds 50; [Console]::Error.WriteLine('java.lang.UnsupportedClassVersionError: class file version 65.0'); exit 1",
+            "echo ready; sleep 0.05; echo 'java.lang.UnsupportedClassVersionError: class file version 65.0' >&2; exit 1",
+            "[Console]::Out.WriteLine('ready'); [Console]::Out.Flush(); Start-Sleep -Milliseconds 50; [Console]::Error.WriteLine('java.lang.UnsupportedClassVersionError: class file version 65.0'); exit 1",
         )
+            .stdout(Stdio::piped())
             .stderr(Stdio::piped())
             .spawn()
             .expect("child should start");
         let stderr_tail = Arc::new(Mutex::new(StderrTail::default()));
         start_stderr_collector(child.stderr.take().expect("stderr should be piped"), Arc::clone(&stderr_tail));
 
-        std::thread::sleep(Duration::from_millis(200));
+        // PowerShell startup can exceed the diagnostic wait on a busy runner.
+        // Synchronize with the script before testing the short exit wait.
+        let mut stdout = std::io::BufReader::new(child.stdout.take().expect("stdout should be piped"));
+        assert_eq!(read_agent_line(&mut stdout, "test readiness").unwrap().trim(), "ready");
 
         let message = format_agent_startup_error(
             "Failed to read startup line from agent: end of stream",
