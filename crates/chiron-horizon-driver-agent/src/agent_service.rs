@@ -657,7 +657,7 @@ fn record_local_agent_install(state: &mut crate::agent_manager::AgentState, db_t
     state.installed_drivers.insert(
         db_type.to_string(),
         InstalledDriver {
-            version: "0.1.3-local".to_string(),
+            version: "0.1.4-local".to_string(),
             installed_at: chrono::Utc::now().to_rfc3339(),
             jre: jre_key.to_string(),
         },
@@ -2866,7 +2866,7 @@ async fn import_tar_zstd_driver_package(
         failures: Vec::new(),
     };
     if let Some(installed) = am.load_state().installed_drivers.get(&info.db_type) {
-        if installed.version != "0.1.3-local"
+        if installed.version != "0.1.4-local"
             && installed.version != "local"
             && !chiron_horizon_platform::version::is_newer_version(&info.version, &installed.version)
         {
@@ -4199,7 +4199,7 @@ pub async fn import_agent_driver(am: &AgentManager, db_type: &str, source_path: 
         state.installed_drivers.insert(
             db_type.to_string(),
             InstalledDriver {
-                version: "0.1.3-local".to_string(),
+                version: "0.1.4-local".to_string(),
                 installed_at: chrono::Utc::now().to_rfc3339(),
                 jre: DEFAULT_JRE_KEY.to_string(),
             },
@@ -4439,7 +4439,7 @@ mod agent_download_url_tests {
             vec!["https://github.com/Gaussian-id/Chiron-DBMS/releases/latest/download/agent-registry.json"]
         );
 
-        let asset = "https://github.com/Gaussian-id/Chiron-DBMS/releases/download/v0.1.3/chiron-horizon-jre-21-linux-x64.tar.zst";
+        let asset = "https://github.com/Gaussian-id/Chiron-DBMS/releases/download/v0.1.4/chiron-horizon-jre-21-linux-x64.tar.zst";
         assert_eq!(agent_download_candidate_urls(DownloadSource::Official, asset).unwrap(), vec![asset.to_string()]);
     }
 
@@ -4550,7 +4550,7 @@ mod agent_registry_install_tests {
             DriverInfo {
                 version: version.to_string(),
                 label: db_type.to_string(),
-                min_app_version: "0.1.3".to_string(),
+                min_app_version: "0.1.4".to_string(),
                 jre: DEFAULT_JRE_KEY.to_string(),
                 jar: Some(ArtifactInfo {
                     url: format!("https://example.com/chiron-horizon-agent-{db_type}-legacy-placeholder.jar"),
@@ -4576,7 +4576,7 @@ mod agent_registry_install_tests {
             DriverInfo {
                 version: version.to_string(),
                 label: db_type.to_string(),
-                min_app_version: "0.1.3".to_string(),
+                min_app_version: "0.1.4".to_string(),
                 jre: DEFAULT_JRE_KEY.to_string(),
                 jar: Some(ArtifactInfo { url: url.to_string(), sha256: None, size, format: None }),
                 native: std::collections::HashMap::new(),
@@ -5164,7 +5164,7 @@ mod agent_registry_install_tests {
     async fn registry_install_replaces_hive_legacy_jar_with_native_driver() {
         let manager = test_manager("hive-native-replaces-legacy-jar");
         let db_type = "hive";
-        let version = "0.1.31";
+        let version = "0.1.41";
         let native_url = "https://example.com/chiron-horizon-agent-hive";
         let native_bytes = b"native-agent";
         let registry = registry_with_native_and_legacy_jar(db_type, version, native_url, native_bytes.len() as u64);
@@ -5204,7 +5204,7 @@ mod agent_registry_install_tests {
     async fn registry_install_sqlite_worker_downloads_both_linux_platforms() {
         let manager = test_manager("sqlite-worker-both-linux-platforms");
         let db_type = "sqlite-worker";
-        let version = "0.1.3";
+        let version = "0.1.4";
         let x64_url = "https://example.com/chiron-horizon-agent-sqlite-worker-linux-x64";
         let arm_url = "https://example.com/chiron-horizon-agent-sqlite-worker-linux-aarch64";
         let x64_bytes = b"sqlite-worker-linux-x64";
@@ -5224,7 +5224,7 @@ mod agent_registry_install_tests {
             DriverInfo {
                 version: version.to_string(),
                 label: "SQLite SSH Worker".to_string(),
-                min_app_version: "0.1.3".to_string(),
+                min_app_version: "0.1.4".to_string(),
                 jre: DEFAULT_JRE_KEY.to_string(),
                 jar: Some(ArtifactInfo {
                     url: "https://example.com/chiron-horizon-agent-sqlite-worker-legacy-placeholder.jar".to_string(),
@@ -5324,7 +5324,7 @@ mod agent_registry_install_tests {
     async fn registry_install_extracts_tar_zstd_native_driver_package() {
         let manager = test_manager("tar-zstd-native-package");
         let db_type = "duckdb";
-        let version = "0.1.3";
+        let version = "0.1.4";
         let package_url = "https://example.com/chiron-horizon-agent-duckdb.tar.zst";
         let native_bytes = current_platform_native_binary();
         let package_bytes = build_tar_zstd_driver_package(db_type, version, DriverArtifactKind::Native, &native_bytes);
@@ -5736,7 +5736,7 @@ mod agent_registry_install_tests {
 
         assert_eq!(std::fs::read(&jar_path).unwrap(), expected);
         let state = manager.load_state();
-        assert_eq!(state.installed_drivers[db_type].version, "0.1.3-local");
+        assert_eq!(state.installed_drivers[db_type].version, "0.1.4-local");
         assert_eq!(state.jre_versions[DEFAULT_JRE_KEY], "21.0.12");
     }
 
@@ -5771,7 +5771,7 @@ mod agent_registry_install_tests {
     async fn batch_registry_install_waits_for_an_existing_driver_operation() {
         let manager = test_manager("batch-driver-operation-lock");
         let db_type = "oracle";
-        let version = "0.1.31";
+        let version = "0.1.41";
         let native_url = "https://example.com/chiron-horizon-agent-oracle";
         let native_bytes = b"native-agent";
         let registry = registry_with_native_and_legacy_jar(db_type, version, native_url, native_bytes.len() as u64);
@@ -6279,7 +6279,7 @@ mod agent_registry_install_tests {
         let _test_guard = ENSURE_AGENT_TEST_LOCK.lock().await;
         let manager = std::sync::Arc::new(test_manager("concurrent-same-driver-cancel"));
         let db_type = "oracle";
-        let version = "0.1.31";
+        let version = "0.1.41";
         let native_url = "https://example.com/chiron-horizon-agent-oracle";
         let native_bytes = b"native-agent";
         let registry = registry_with_native_and_legacy_jar(db_type, version, native_url, native_bytes.len() as u64);
@@ -6414,7 +6414,7 @@ mod agent_registry_install_tests {
                 DriverInfo {
                     version: "1.0.0".to_string(),
                     label: "H2".to_string(),
-                    min_app_version: "0.1.3".to_string(),
+                    min_app_version: "0.1.4".to_string(),
                     jar: Some(ArtifactInfo {
                         url: format!("offline://{jar_name}"),
                         sha256: Some(sha256_bytes(&jar_bytes)),
@@ -6493,7 +6493,7 @@ mod agent_registry_install_tests {
                 DriverInfo {
                     version: "1.0.0".to_string(),
                     label: "H2".to_string(),
-                    min_app_version: "0.1.3".to_string(),
+                    min_app_version: "0.1.4".to_string(),
                     jar: Some(ArtifactInfo {
                         url: format!("offline://{jar_name}"),
                         sha256: Some(sha256_bytes(&jar_bytes)),
@@ -6532,7 +6532,7 @@ mod agent_registry_install_tests {
                 DriverInfo {
                     version: "1.0.0".to_string(),
                     label: "H2".to_string(),
-                    min_app_version: "0.1.3".to_string(),
+                    min_app_version: "0.1.4".to_string(),
                     jar: None,
                     native: [(
                         platform.to_string(),
@@ -6598,7 +6598,7 @@ mod agent_registry_install_tests {
                 DriverInfo {
                     version: "1.0.0".to_string(),
                     label: "H2".to_string(),
-                    min_app_version: "0.1.3".to_string(),
+                    min_app_version: "0.1.4".to_string(),
                     jar: Some(ArtifactInfo {
                         url: format!("offline://{jar_name}"),
                         sha256: Some(sha256_bytes(&jar_bytes)),
@@ -6712,7 +6712,7 @@ mod agent_registry_install_tests {
 
     #[tokio::test]
     async fn offline_zip_installs_the_single_sqlite_worker_platform_it_ships() {
-        let version = "0.1.3";
+        let version = "0.1.4";
         let x64_name = format!("chiron-horizon-agent-sqlite-worker-{version}-linux-x64");
         let registry = registry_with_sqlite_worker(version);
         let (_dir, package) = write_offline_zip(&registry, &[(format!("drivers/{x64_name}"), linux_native_binary(62))]);

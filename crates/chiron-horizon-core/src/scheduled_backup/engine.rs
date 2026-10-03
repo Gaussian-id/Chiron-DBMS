@@ -11,6 +11,18 @@ use crate::{
     query, schema,
 };
 
+struct WorkerLock(std::fs::File);
+
+impl Drop for WorkerLock {
+    fn drop(&mut self) {
+        // A concurrently spawned process can inherit the open file description before exec.
+        // Closing our handle alone can leave that shared lock held until its copy closes.
+        if let Err(error) = fs2::FileExt::unlock(&self.0) {
+            log::warn!("[database-backup] worker lock release failed: {error}");
+        }
+    }
+}
+
 impl BackupService {
     pub(crate) async fn serve(&self, stop: CancellationToken, drain: CancellationToken) {
         let mut leader = None;
@@ -36,7 +48,8 @@ impl BackupService {
                             .open(self.store.directory.join("worker.lock"))
                     })
                     .ok()
-                    .filter(|file| fs2::FileExt::try_lock_exclusive(file).is_ok());
+                    .filter(|file| fs2::FileExt::try_lock_exclusive(file).is_ok())
+                    .map(WorkerLock);
                 if let Some(file) = acquired {
                     match self.store.recover().await {
                         Ok(()) => leader = Some(file),
@@ -51,7 +64,7 @@ impl BackupService {
             }
             tokio::select! { _ = stop.cancelled() => break, _ = drain.cancelled() => break, _ = tokio::time::sleep(Duration::from_secs(2)) => {} }
         }
-        // Dropping the locked handle transfers leadership, including after an unclean process exit.
+        // Release leadership on graceful stop/drain; the guard also handles task cancellation.
         drop(leader);
     }
 
@@ -437,6 +450,31 @@ fn check_cancel(stop: &CancellationToken) -> Result<(), String> {
         Err("Backup cancelled".into())
     } else {
         Ok(())
+    }
+}
+
+#[cfg(test)]
+mod lock_tests {
+    use super::WorkerLock;
+    use std::fs::OpenOptions;
+
+    #[test]
+    fn worker_lock_releases_ownership_even_with_a_duplicated_handle() {
+        let directory = tempfile::tempdir().unwrap();
+        let path = directory.path().join("worker.lock");
+        let file = OpenOptions::new().create(true).truncate(false).read(true).write(true).open(&path).unwrap();
+        fs2::FileExt::try_lock_exclusive(&file).unwrap();
+        let worker_lock = WorkerLock(file);
+        let inherited_handle = worker_lock.0.try_clone().unwrap();
+        let next_worker = OpenOptions::new().read(true).write(true).open(&path).unwrap();
+        assert!(fs2::FileExt::try_lock_exclusive(&next_worker).is_err());
+
+        drop(worker_lock);
+
+        // Simulate a child retaining the inherited descriptor during startup.
+        fs2::FileExt::try_lock_exclusive(&next_worker).unwrap();
+        fs2::FileExt::unlock(&next_worker).unwrap();
+        drop(inherited_handle);
     }
 }
 
